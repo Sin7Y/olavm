@@ -1,2 +1,2 @@
-# olavm
-A pure Rust Olavm implementation.
+# Olavm
+Olavm's assembler and virtual machine cl
