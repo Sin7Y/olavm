@@ -1,0 +1,18 @@
+[package]
+name = "olavm-verifier"
+version = "0.1.0"
+description="Olavm execution verifier"
+readme="README.md"
+license = "MIT"
+edition = "2021"
+
+
+[lib]
+bench = false
+doctest = false
+
+
+[dependencies]
+air = { package = "olavm-circuits", path = "../vm-circuits", version = "0.1.0", default-features = false }
+assembly = { package = "olavm-assembly", path = "../assembly", version = "0.1.0", default-features = false }
+vm-core = { package = "olavm-core", path = "../vm-core", version = "0.1.0", default-features = false }
