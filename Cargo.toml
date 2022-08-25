@@ -1,0 +1,18 @@
+[workspace]
+members = [
+    "assembly",
+    "vm-core",
+    "vm-circuits",
+    "processor",
+    "prover",
+    "verifier",
+    "olavm"
+]
+
+[profile.release]
+codegen-units = 1
+lto = true
+
+[profile.bench]
+codegen-units = 1
+lto = true
