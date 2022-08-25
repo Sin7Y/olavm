@@ -1,0 +1,13 @@
+[package]
+name = "olavm-core"
+version = "0.1.0"
+description = "Olavm core components"
+readme = "README.md"
+license = "MIT"
+edition = "2021"
+
+[lib]
+bench = false
+doctest = false
+
+[dependencies]
