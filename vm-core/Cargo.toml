@@ -11,3 +11,5 @@ bench = false
 doctest = false
 
 [dependencies]
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
