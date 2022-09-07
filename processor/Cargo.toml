@@ -1,22 +1,14 @@
 [package]
 name = "olavm-processor"
 version = "0.1.0"
-description = "olaVM processor"
+description = "OlaVM processor"
 readme = "README.md"
 license = "MIT"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-log = "0.4.14"
 vm-core = { package = "olavm-core", path = "../vm-core", version = "0.1.0", default-features = false }
-
-
-[lib]
-bench = false
-doctest = false
-
-
-[dev-dependencies]
-olavm-assembly = { package = "olavm-assembly", path = "../assembly", version = "0.1.0", default-features = false }
+log = "0.4"
+serde_json = "1"
+serde = {version = "1" }
+serde_derive = {version = "1"}

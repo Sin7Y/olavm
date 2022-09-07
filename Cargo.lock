@@ -204,21 +204,26 @@ dependencies = [
 [[package]]
 name = "olavm-core"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "olavm-processor"
 version = "0.1.0"
 dependencies = [
  "log",
- "olavm-assembly",
  "olavm-core",
+ "serde",
+ "serde_derive",
+ "serde_json",
 ]
 
 [[package]]
 name = "olavm-prover"
 version = "0.1.0"
 dependencies = [
- "log",
  "olavm-core",
  "olavm-processor",
 ]
@@ -267,6 +272,9 @@ name = "serde"
 version = "1.0.144"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f747710de3dcd43b88c9168773254e809d8ddbdf9653b84e2554ab219f17860"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_derive"
