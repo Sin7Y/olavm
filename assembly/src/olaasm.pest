@@ -1,0 +1,47 @@
+program = { SOI ~ NEWLINE* ~ (import ~ NEWLINE+)* ~ (const_def ~ NEWLINE+)* ~ (line ~ NEWLINE+)* ~ line? ~ EOI }
+
+import = { "import" ~ quoted_string ~ ("as" ~ identifier)? }
+
+line = _{ label_def? ~ (statement ~ ";"+)* ~ statement? }
+
+label_def = ${ identifier ~ ":" }
+
+label = ${ ":" ~ identifier }
+
+const_def = _{ constant ~ "=" ~ param }
+
+constant = ${ "$" ~ identifier }
+
+address = {"[" ~ ( num | "...") ~ "]"}
+
+num = ${ decimal | hex | oct | bin }
+
+string = @{(!"\"" ~ ANY)*}
+
+quoted_string = _{ "\"" ~ string ~ "\"" }
+
+statement = { ternary_stmt | binary_stmt | unary_stmt }
+
+unary_stmt = { unary_instr ~ param }
+
+binary_stmt = { binary_instr ~ param ~ param }
+
+ternary_stmt = { ternary_instr ~ param ~ param ~ param }
+
+identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+
+// Instructions
+unary_instr = { "input" | "ret" | "jmp" | "cjmp" }
+binary_instr = { "mov" | "cmov" | "lte" | "gte" | "gt" | "lt" | "eq" | "not" | "mload" | "mstore" | "sload" | "store" }
+ternary_instr = { "add" | "sub" | "div" | "mod" | "xor" | "and" | "or" }
+
+// "-" 决定是否有符号位
+decimal = @{ "-"? ~ ASCII_DIGIT+ }
+hex = @{ "-"? ~ "0x" ~ ASCII_HEX_DIGIT+ }
+oct = @{ "-"? ~ "0o" ~ ASCII_OCT_DIGIT+ }
+bin = @{ "-"? ~ "0b" ~ ASCII_BIN_DIGIT+ }
+
+param = { identifier | constant | num | label | address }
+
+WHITESPACE = _{ " " | "\t" | "\\" ~ COMMENT? ~ NEWLINE}
+COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!NEWLINE ~ ANY)*) }
