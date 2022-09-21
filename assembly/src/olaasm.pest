@@ -8,13 +8,11 @@ label_def = ${ identifier ~ ":" }
 
 label = ${ ":" ~ identifier }
 
-const_def = _{ constant ~ "=" ~ param }
+const_def = ${ constant ~ "=" ~ param }
 
 constant = ${ "$" ~ identifier }
 
-address = {"[" ~ ( num | "...") ~ "]"}
-
-num = ${ decimal | hex | oct | bin }
+num = ${ dec | hex | oct | bin }
 
 string = @{(!"\"" ~ ANY)*}
 
@@ -35,13 +33,13 @@ unary_instr = { "input" | "ret" | "jmp" | "cjmp" }
 binary_instr = { "mov" | "cmov" | "lte" | "gte" | "gt" | "lt" | "eq" | "not" | "mload" | "mstore" | "sload" | "store" }
 ternary_instr = { "add" | "sub" | "div" | "mod" | "xor" | "and" | "or" }
 
-// "-" 决定是否有符号位
-decimal = @{ "-"? ~ ASCII_DIGIT+ }
+
+dec = @{ "-"? ~ ASCII_DIGIT+ }
 hex = @{ "-"? ~ "0x" ~ ASCII_HEX_DIGIT+ }
 oct = @{ "-"? ~ "0o" ~ ASCII_OCT_DIGIT+ }
 bin = @{ "-"? ~ "0b" ~ ASCII_BIN_DIGIT+ }
 
-param = { identifier | constant | num | label | address }
+param = { identifier | constant | num | label }
 
 WHITESPACE = _{ " " | "\t" | "\\" ~ COMMENT? ~ NEWLINE}
 COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!NEWLINE ~ ANY)*) }
