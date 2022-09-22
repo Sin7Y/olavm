@@ -4,7 +4,7 @@
 // extern crate pest_derive;
 //
 // #[derive(Parser)]
-// #[grammar = "olaasm.pest"]
+// #[grammar = "ola_asm.pest"]
 // struct OlaASMParser;
 //
 // pub fn parse(input: &str) -> Result<Pairs<Rule>, Error<Rule>> {

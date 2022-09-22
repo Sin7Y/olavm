@@ -6,11 +6,12 @@ use pest::error::Error;
 use pest::iterators::{Pair, Pairs};
 use pest::Parser;
 use std::borrow::Borrow;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Parser)]
-#[grammar = "olaasm.pest"]
+#[grammar = "ola_asm.pest"]
 struct OlaASMParser;
 
 pub fn parse(input: &str) -> Result<Pairs<Rule>, Error<Rule>> {
@@ -309,6 +310,115 @@ fn parse_num(pair: Pair<'_, Rule>) -> u64 {
         _ => unreachable!(),
     }
 }
+
+
+pub fn expand_syntax(source: &mut Vec<AST>) {
+    constants_expand(source);
+    labels_expand(source);
+}
+
+
+pub fn labels_expand(source: &mut Vec<AST>) {
+    let mut labels: HashMap<Ident, u32> = HashMap::new();
+    let mut offset = 0;
+
+    // Pass 1: Collect label definitions
+    source.retain(|ast| {
+        match ast.value {
+            // Store label name and current offset
+            AST::Label(ref name) => {
+                if labels.insert(name.clone(), offset).is_some() {
+                    warn!("redefinition of label: {:?}", name; stmt);
+                }
+
+                false  // Remove label definition from the source
+            },
+
+            // Increment the offset (only operation statements will count
+            // in the final binary)
+            AST::Instruction(_, ref args) => {
+                offset += 1 + args.len() as u32;
+                true  // Not a label definition, keep it
+            },
+
+            _ => true  // Something else, keep it
+        }
+    });
+
+    debug!("Labels: {:?}", labels);
+
+    // Pass 2: Replace label usages
+    for stmt in source.iter_mut() {
+
+        // Process all operations
+        if let AST::Instruction(_, ref mut args) = stmt.value {
+            for arg in args.iter_mut() {
+
+                // Get a new location if argument is a label
+                arg.value = if let Param::Label(ref name) = arg.value {
+
+                    if let Some(val) = labels.get(name) {
+                        Param::Literal(overflow_check!(*val, arg))
+                    } else {
+                        fatal!("unknown label: {:?}", name; arg)
+                    }
+
+                } else {
+                    continue
+                }
+
+            }
+        }
+    }
+}
+
+pub fn constants_expand(source: &mut Vec<AST>) {
+    let mut consts: HashMap<Ident, Param> = HashMap::new();
+
+    // Pass 1: Collect constant definitions & remove them from the source
+    source.retain(|ast| {
+        let (ident, param) = match ast.value {
+            AST::Const(ref ident, ref param) => (ident, param),
+            _ => return true  // Not a const assignment, keep it
+        };
+
+        // Collect value
+        match param.value {
+            Param::Literal(_) | Param::Address(_) => {
+                if consts.insert(ident.clone(), param.value.clone()).is_some() {
+                    warn!("redefinition of ${:?}", name; value);
+                }
+            },
+            _ => fatal!("invalid constant value: {:?}", value; value)
+        }
+
+        false  // Remove the definition from the source
+    });
+
+    debug!("Constants: {:?}", consts);
+
+    // Pass 2: Replace usages of constants
+    for stmt in source.iter_mut() {
+        let args = match stmt.value {
+            AST::Instruction(_, ref mut args) => args,
+            _ => continue
+        };
+
+        for arg in args.iter_mut() {
+            // Get the new value if the argument is a constant
+            arg.value = if let Param::Const(ref name) = arg.value {
+                match consts.get(name) {
+                    Some(value) => value.clone(),
+                    None => fatal!("unknown constant: ${:?}", name; arg)
+                }
+            } else {
+                continue
+            };
+        }
+    }
+}
+
+
 
 #[cfg(test)]
 mod tests {
