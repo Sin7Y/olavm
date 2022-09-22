@@ -29,15 +29,14 @@ ternary_stmt = { ternary_instr ~ param ~ param ~ param }
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 
 // Instructions
-unary_instr = { "input" | "ret" | "jmp" | "cjmp" }
-binary_instr = { "mov" | "cmov" | "lte" | "gte" | "gt" | "lt" | "eq" | "not" | "mload" | "mstore" | "sload" | "store" }
+unary_instr = { "input" | "ret" | "cjmp" | "jmp" }
+binary_instr = { "cmov" | "mov" | "lte" | "gte" | "gt" | "lt" | "eq" | "not" | "mload" | "mstore" | "sload" | "sstore" }
 ternary_instr = { "add" | "sub" | "div" | "mod" | "xor" | "and" | "or" }
 
-
-dec = @{ "-"? ~ ASCII_DIGIT+ }
-hex = @{ "-"? ~ "0x" ~ ASCII_HEX_DIGIT+ }
-oct = @{ "-"? ~ "0o" ~ ASCII_OCT_DIGIT+ }
-bin = @{ "-"? ~ "0b" ~ ASCII_BIN_DIGIT+ }
+dec = @{ "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+bin = @{ ^"0b" ~ ASCII_BIN_DIGIT+ }
+oct = @{ ^"0o" ~ ASCII_OCT_DIGIT+ }
+hex = @{ ^"0x" ~ ASCII_HEX_DIGIT+ }
 
 param = { identifier | constant | num | label }
 

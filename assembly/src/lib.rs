@@ -49,18 +49,19 @@ impl Display for Ident {
 
 #[derive(Clone, PartialEq)]
 pub enum Param {
-    Ident,        // A identifier
+    Identifier(Ident),        // A identifier
     Literal(u64), // A simple literal
     Const(Ident), // A constant (`$const`)
     Label(Ident), // A label (`:label`)
 }
 
+
 impl Debug for Param {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
-            Param::Ident => write!(f, "{}", *self),
+            Param::Identifier(ref name ) => write!(f, "{}", name),
             Param::Literal(i) => write!(f, "{}", i),
-            Param::Const(ref name) => write!(f, "${}", name),
+            Param::Const(ref name) => write!(f, "{}", name),
             Param::Label(ref name) => write!(f, ":{}", name),
         }
     }
@@ -90,7 +91,7 @@ pub enum Opcode {
     OR,
     JMP,
     CJMP,
-    READ,
+    INPUT,
     RET,
     MOV,
     CMOV,
@@ -121,7 +122,7 @@ impl Opcode {
             "or" => Self::OR,
             "jmp" => Self::JMP,
             "cjmp" => Self::CJMP,
-            "read" => Self::READ,
+            "input" => Self::INPUT,
             "ret" => Self::RET,
             "mov" => Self::MOV,
             "cmov" => Self::CMOV,
@@ -153,7 +154,7 @@ impl ToString for Opcode {
             Self::OR => "or".to_string(),
             Self::JMP => "jmp".to_string(),
             Self::CJMP => "cjmp".to_string(),
-            Self::READ => "read".to_string(),
+            Self::INPUT => "input".to_string(),
             Self::RET => "ret".to_string(),
             Self::MOV => "mov".to_string(),
             Self::CMOV => "cmov".to_string(),
@@ -204,7 +205,7 @@ impl Debug for AST {
         match *self {
             AST::Label(ref name) => write!(f, "{}:", name),
             AST::Const(ref name, ref value) => {
-                write!(f, "${} = {}", name, value)
+                write!(f, "{} = {}", name, value)
             }
             AST::Instruction(ref op, ref args) => {
                 write!(f, "{}", op.to_string())?;
@@ -249,6 +250,7 @@ fn parse_const_def(pair: Pair<'_, Rule>, ast: &mut Vec<AST>) {
 
 fn parse_statement(pair: Pair<'_, Rule>, ast: &mut Vec<AST>) {
     match pair.as_rule() {
+        Rule::statement => parse_statement(pair.into_inner().next().unwrap(), ast),
         Rule::unary_stmt => {
             let mut params: Vec<Param> = vec![];
             let mut pairs = pair.into_inner();
@@ -279,7 +281,11 @@ fn parse_statement(pair: Pair<'_, Rule>, ast: &mut Vec<AST>) {
 
 fn parse_param(pair: Pair<'_, Rule>) -> Param {
     match pair.as_rule() {
-        Rule::identifier => Param::Ident,
+        Rule::param => parse_param(pair.into_inner().next().unwrap()),
+        Rule::identifier => {
+            let s = pair.as_str();
+            Param::Identifier(Ident(s.to_owned()))
+        }
         Rule::constant => {
             let s = pair.into_inner().next().unwrap().as_str();
             Param::Const(Ident(s.to_owned()))
@@ -287,18 +293,19 @@ fn parse_param(pair: Pair<'_, Rule>) -> Param {
         Rule::label => {
             let s = pair.into_inner().next().unwrap().as_str();
             Param::Label(Ident(s.to_owned()))
-        }
+        },
         Rule::num => Param::Literal(parse_num(pair)),
         _ => unreachable!("unknown param rule: {}", pair.as_str()),
     }
 }
 
-fn parse_num(pair: Pair<Rule>) -> u64 {
-    match pair.as_rule() {
-        Rule::bin => u64::from_str_radix(pair.as_str(), 2).unwrap(),
-        Rule::oct => u64::from_str_radix(pair.as_str(), 8).unwrap(),
-        Rule::dec => u64::from_str_radix(pair.as_str(), 10).unwrap(),
-        Rule::hex => u64::from_str_radix(pair.as_str(), 16).unwrap(),
+fn parse_num(pair: Pair<'_, Rule>) -> u64 {
+    let child = pair.into_inner().next().unwrap();
+    match child.as_rule() {
+        Rule::bin => u64::from_str_radix(child.as_str(), 2).unwrap(),
+        Rule::oct => u64::from_str_radix(child.as_str(), 8).unwrap(),
+        Rule::dec => u64::from_str_radix(child.as_str(), 10).unwrap(),
+        Rule::hex => u64::from_str_radix(child.as_str(), 16).unwrap(),
         _ => unreachable!(),
     }
 }
@@ -322,7 +329,17 @@ mod tests {
                     let mut file = fs::File::open(path).unwrap();
                     let mut data = String::new();
                     file.read_to_string(&mut data).unwrap();
-                    assert!(OlaASMParser::parse(Rule::program, &data).is_ok());
+                    let ast = match AST::parse(data.borrow()) {
+                        Ok(code) => code,
+                        Err(error) => {
+                            eprintln!("Error during parsing:");
+                            eprintln!("{}", error);
+                            return;
+                        }
+                    };
+                    for stmt in ast.iter() {
+                        println!("{}", stmt);
+                    }
                 }
                 Err(e) => panic!("{:?}", e),
             }
