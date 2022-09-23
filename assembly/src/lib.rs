@@ -50,19 +50,18 @@ impl Display for Ident {
 
 #[derive(Clone, PartialEq)]
 pub enum Param {
-    Identifier(Ident),        // A identifier
-    Literal(u64), // A simple literal
-    Const(Ident), // A constant (`$const`)
-    Label(Ident), // A label (`:label`)
+    Identifier(Ident), // A identifier
+    Literal(u64),      // A simple literal
+    Const(Ident),      // A constant (`$const`)
+    Label(Ident),      // A label (`:label`)
 }
-
 
 impl Debug for Param {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
-            Param::Identifier(ref name ) => write!(f, "{}", name),
+            Param::Identifier(ref name) => write!(f, "{}", name),
             Param::Literal(i) => write!(f, "{}", i),
-            Param::Const(ref name) => write!(f, "{}", name),
+            Param::Const(ref name) => write!(f, "${}", name),
             Param::Label(ref name) => write!(f, ":{}", name),
         }
     }
@@ -102,7 +101,6 @@ pub enum Opcode {
     SSTORE,
     HALT,
 }
-
 
 impl Opcode {
     fn string_to_op(s: &str) -> Self {
@@ -174,7 +172,6 @@ impl Debug for Opcode {
     }
 }
 
-
 #[derive(Clone, PartialEq)]
 pub enum AST {
     Label(Ident),
@@ -186,8 +183,8 @@ impl AST {
     /// Turn the source code to AST,
     /// which can be serialized to json.
     pub fn parse<T>(source_code: T) -> Result<Vec<AST>, impl Display>
-        where
-            T: Borrow<str>,
+    where
+        T: Borrow<str>,
     {
         match OlaASMParser::parse(Rule::program, source_code.borrow()) {
             Ok(mut root) => {
@@ -206,7 +203,7 @@ impl Debug for AST {
         match *self {
             AST::Label(ref name) => write!(f, "{}:", name),
             AST::Const(ref name, ref value) => {
-                write!(f, "{} = {}", name, value)
+                write!(f, "${} = {}", name, value)
             }
             AST::Instruction(ref op, ref args) => {
                 write!(f, "{}", op.to_string())?;
@@ -244,9 +241,21 @@ fn parse_label_def(pair: Pair<'_, Rule>, ast: &mut Vec<AST>) {
 }
 
 fn parse_const_def(pair: Pair<'_, Rule>, ast: &mut Vec<AST>) {
-    let mut pairs = pair.into_inner();
-    let s = pairs.next().unwrap().as_str();
-    ast.push(AST::Const(Ident(s.to_owned()), parse_param(pairs.next().unwrap())));
+    let mut ident = Ident("".to_string());
+    let mut param: Param = Param::Literal(0);
+    for node in pair.into_inner() {
+        match node.as_rule() {
+            Rule::constant => {
+                let s = node.into_inner().next().unwrap().as_str();
+                ident = Ident(s.to_owned());
+            }
+            Rule::param => {
+                param.clone_from(&parse_param(node.into_inner().next().unwrap()));
+            }
+            _ => unreachable!(),
+        }
+    }
+    ast.push(AST::Const(ident.clone(), param.clone()));
 }
 
 fn parse_statement(pair: Pair<'_, Rule>, ast: &mut Vec<AST>) {
@@ -294,7 +303,7 @@ fn parse_param(pair: Pair<'_, Rule>) -> Param {
         Rule::label => {
             let s = pair.into_inner().next().unwrap().as_str();
             Param::Label(Ident(s.to_owned()))
-        },
+        }
         Rule::num => Param::Literal(parse_num(pair)),
         _ => unreachable!("unknown param rule: {}", pair.as_str()),
     }
@@ -311,62 +320,50 @@ fn parse_num(pair: Pair<'_, Rule>) -> u64 {
     }
 }
 
-
 pub fn expand_syntax(source: &mut Vec<AST>) {
     constants_expand(source);
     labels_expand(source);
 }
 
-
 pub fn labels_expand(source: &mut Vec<AST>) {
-    let mut labels: HashMap<Ident, u32> = HashMap::new();
+    let mut labels: HashMap<Ident, u64> = HashMap::new();
     let mut offset = 0;
 
     // Pass 1: Collect label definitions
     source.retain(|ast| {
-        match ast.value {
+        match ast {
             // Store label name and current offset
             AST::Label(ref name) => {
                 if labels.insert(name.clone(), offset).is_some() {
-                    warn!("redefinition of label: {:?}", name; stmt);
+                    panic!("redefinition of label ${:?}", name);
                 }
-
-                false  // Remove label definition from the source
-            },
+                false // Remove label definition from the source
+            }
 
             // Increment the offset (only operation statements will count
             // in the final binary)
-            AST::Instruction(_, ref args) => {
-                offset += 1 + args.len() as u32;
-                true  // Not a label definition, keep it
-            },
+            AST::Instruction(_, ref params) => {
+                offset += 1 + params.len() as u64;
+                true // Not a label definition, keep it
+            }
 
-            _ => true  // Something else, keep it
+            _ => true, // Something else, keep it
         }
     });
 
-    debug!("Labels: {:?}", labels);
-
     // Pass 2: Replace label usages
-    for stmt in source.iter_mut() {
-
+    for ast in source.iter_mut() {
         // Process all operations
-        if let AST::Instruction(_, ref mut args) = stmt.value {
-            for arg in args.iter_mut() {
-
+        if let AST::Instruction(_, ref mut params) = ast {
+            for param in params.iter_mut() {
                 // Get a new location if argument is a label
-                arg.value = if let Param::Label(ref name) = arg.value {
-
+                if let Param::Label(ref name) = param {
                     if let Some(val) = labels.get(name) {
-                        Param::Literal(overflow_check!(*val, arg))
+                        param.clone_from(&Param::Literal(*val))
                     } else {
-                        fatal!("unknown label: {:?}", name; arg)
+                        panic!("unknown label: {:?}", name)
                     }
-
-                } else {
-                    continue
                 }
-
             }
         }
     }
@@ -377,48 +374,33 @@ pub fn constants_expand(source: &mut Vec<AST>) {
 
     // Pass 1: Collect constant definitions & remove them from the source
     source.retain(|ast| {
-        let (ident, param) = match ast.value {
-            AST::Const(ref ident, ref param) => (ident, param),
-            _ => return true  // Not a const assignment, keep it
-        };
-
-        // Collect value
-        match param.value {
-            Param::Literal(_) | Param::Address(_) => {
-                if consts.insert(ident.clone(), param.value.clone()).is_some() {
-                    warn!("redefinition of ${:?}", name; value);
+        match ast {
+            AST::Const(ref ident, ref param) => {
+                if consts.insert(ident.clone(), param.clone()).is_some() {
+                    panic!("redefinition of const ${:?}", ident);
                 }
-            },
-            _ => fatal!("invalid constant value: {:?}", value; value)
-        }
-
-        false  // Remove the definition from the source
+                return false;
+            }
+            _ => true, // Not a const assignment, keep it
+        };
+        true // Remove the definition from the source
     });
 
-    debug!("Constants: {:?}", consts);
-
     // Pass 2: Replace usages of constants
-    for stmt in source.iter_mut() {
-        let args = match stmt.value {
-            AST::Instruction(_, ref mut args) => args,
-            _ => continue
-        };
-
-        for arg in args.iter_mut() {
-            // Get the new value if the argument is a constant
-            arg.value = if let Param::Const(ref name) = arg.value {
-                match consts.get(name) {
-                    Some(value) => value.clone(),
-                    None => fatal!("unknown constant: ${:?}", name; arg)
+    for ast in source.iter_mut() {
+        if let AST::Instruction(_, ref mut params) = ast {
+            for param in params.iter_mut() {
+                // Get the new value if the argument is a constant
+                if let Param::Const(ref name) = param {
+                    match consts.get(name) {
+                        Some(value) => param.clone_from(value),
+                        None => panic!("unknown constant: ${:?}", name),
+                    }
                 }
-            } else {
-                continue
-            };
+            }
         }
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -439,7 +421,7 @@ mod tests {
                     let mut file = fs::File::open(path).unwrap();
                     let mut data = String::new();
                     file.read_to_string(&mut data).unwrap();
-                    let ast = match AST::parse(data.borrow()) {
+                    let mut ast = match AST::parse(data.borrow()) {
                         Ok(code) => code,
                         Err(error) => {
                             eprintln!("Error during parsing:");
@@ -447,6 +429,9 @@ mod tests {
                             return;
                         }
                     };
+
+                    expand_syntax(&mut ast);
+
                     for stmt in ast.iter() {
                         println!("{}", stmt);
                     }
