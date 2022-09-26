@@ -1,28 +1,17 @@
+use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Serialize, Deserialize};
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct Felt(pub u32);
+use num_enum::TryFromPrimitive;
+use std::convert::TryFrom;
+use std::fmt;
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ImmediateOrRegName {
-    Immediate(Felt),
+    Immediate(GoldilocksField),
     RegName(u8),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Equal {
-    pub ri: u8,
-    pub a: ImmediateOrRegName,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Gt {
-    pub ri: u8,
-    pub a: ImmediateOrRegName,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Lt {
     pub ri: u8,
     pub a: ImmediateOrRegName,
 }
@@ -68,21 +57,62 @@ pub struct Mul {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Ret {
-    pub ri: u8
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Call {
+    pub ri: ImmediateOrRegName
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Instruction {
     MOV(Mov),
     EQ(Equal),
-    GT(Gt),
-    LT(Lt),
     CJMP(CJmp),
     JMP(Jmp),
     ADD(Add),
     SUB(Sub),
     MUL(Mul),
     RET(Ret),
-    // todo spec remove this inst!
-    END()
+    CALL(Call),
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, TryFromPrimitive)]
+#[repr(u8)]
+pub enum Opcode {
+    HALT = 0,
+    ADD,
+    MUL,
+    EQ,
+    MOV,
+    JMP,
+    CJMP,
+    CALL,
+    RET,
+    MLOAD,
+    MSTORE,
+    SLOAD,
+    SSTORE,
+    SUB,
+}
+
+impl fmt::Display for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Opcode::HALT => write!(f, "halt"),
+            Opcode::ADD => write!(f, "add"),
+            Opcode::MUL => write!(f, "mul"),
+            Opcode::EQ => write!(f, "eq"),
+            Opcode::MOV => write!(f, "mov"),
+            Opcode::JMP => write!(f, "jmp"),
+            Opcode::CJMP => write!(f, "cjmp"),
+            Opcode::CALL => write!(f, "call"),
+            Opcode::RET => write!(f, "ret"),
+            Opcode::MLOAD => write!(f, "mload"),
+            Opcode::MSTORE => write!(f, "mstore"),
+            Opcode::SLOAD => write!(f, "sload"),
+            Opcode::SSTORE => write!(f, "sstore"),
+            Opcode::SUB => write!(f, "sub"),
+        }
+    }
 }
