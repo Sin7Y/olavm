@@ -63,7 +63,7 @@ impl Process {
             match opcode.as_str() {
                 "mov" => {
                     debug!("opcode: mov");
-                    assert!(ops.len() == 3 ,  "movi params len is 2");
+                    assert!(ops.len() == 3 ,  "mov params len is 2");
                     let dst_index = self.get_reg_index(ops.get(1).unwrap());
                     let value = self.get_index_value(ops.get(2).unwrap());
                     self.registers[dst_index] = value.0;
@@ -107,7 +107,7 @@ impl Process {
                 }
                 "cjmp" => {
                     debug!("opcode: cjmp");
-                    assert!(ops.len() == 2 ,  "cjmp params len is 2");
+                    assert!(ops.len() == 2 ,  "cjmp params len is 1");
                     let value = self.get_index_value(ops.get(1).unwrap());
                     if self.flag == true {
                         // fixme: use flag need reset?
@@ -125,7 +125,7 @@ impl Process {
                 }
                 "jmp" => {
                     debug!("opcode: jmp");
-                    assert!(ops.len() == 2 ,  "jmp params len is 2");
+                    assert!(ops.len() == 2 ,  "jmp params len is 1");
                     let value = self.get_index_value(ops.get(1).unwrap());
                     program.trace.insert_step(self.clk, self.pc as u32, self.fp[self.fp.len()-1] as u32, Instruction::JMP(Jmp{a: value.1}),
                                               self.registers.clone(),self.flag, None);
@@ -135,7 +135,7 @@ impl Process {
                 }
                 "add" => {
                     debug!("opcode: add");
-                    assert!(ops.len() == 4 ,  "add params len is 2");
+                    assert!(ops.len() == 4 ,  "add params len is 3");
                     let dst_index = self.get_reg_index(ops.get(1).unwrap());
                     let op1_index = self.get_reg_index(ops.get(2).unwrap());
                     let op2_value = self.get_index_value(ops.get(3).unwrap());
@@ -147,7 +147,7 @@ impl Process {
                 }
                 "sub" => {
                     debug!("opcode: sub");
-                    assert!(ops.len() == 4 ,  "sub params len is 2");
+                    assert!(ops.len() == 4 ,  "sub params len is 3");
                     let dst_index = self.get_reg_index(ops.get(1).unwrap());
                     let op1_index = self.get_reg_index(ops.get(2).unwrap());
                     let op2_value = self.get_index_value(ops.get(3).unwrap());
@@ -159,7 +159,7 @@ impl Process {
                 }
                 "mul" => {
                     debug!("opcode: sub");
-                    assert!(ops.len() == 4 ,  "mul params len is 2");
+                    assert!(ops.len() == 4 ,  "mul params len is 3");
                     let dst_index = self.get_reg_index(ops.get(1).unwrap());
                     let op1_index = self.get_reg_index(ops.get(2).unwrap());
                     let op2_value = self.get_index_value(ops.get(3).unwrap());
