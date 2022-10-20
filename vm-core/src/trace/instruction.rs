@@ -9,69 +9,69 @@ pub enum ImmediateOrRegName {
     RegName(u8),
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Equal {
     pub ri: u8,
     pub a: ImmediateOrRegName,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Gt {
     pub ri: u8,
     pub a: ImmediateOrRegName,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Lt {
     pub ri: u8,
     pub a: ImmediateOrRegName,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Mov {
     pub ri: u8,
     pub a: ImmediateOrRegName,
 }
 
 /// stall or halt (and the return value is `[A]u` )
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Jmp {
     pub a: ImmediateOrRegName,
 }
 
 /// stall or halt (and the return value is `[A]u` )
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct CJmp {
     pub a: ImmediateOrRegName,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Add {
     pub ri: u8,
     pub rj: u8,
     pub a: ImmediateOrRegName,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Sub {
     pub ri: u8,
     pub rj: u8,
     pub a: ImmediateOrRegName,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Mul {
     pub ri: u8,
     pub rj: u8,
     pub a: ImmediateOrRegName,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Ret {
     pub ri: u8
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum Instruction {
     MOV(Mov),
     EQ(Equal),

@@ -10,12 +10,13 @@ use plonky2::starky::{config::StarkConfig, proof::StarkProofWithPublicInputs, st
 type F = GoldilocksField;
 type C = PoseidonGoldilocksConfig;
 
-use vm_core::trace::{trace::Trace, instruction::Instruction};
+use vm_core::trace::{trace::Trace, instruction::Instruction::*};
 use crate::circuit::*;
+use crate::arithmetic_stark::ArithmeticStark;
 
 #[derive(Clone, Copy, Default)]
 pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
-    pub airthmic: AirthmicStark<F, D>,
+    pub airthmetic: ArithmeticStark<F, D>,
     pub mov: MoveStark<F, D>,
     pub flow: FlowStark<F, D>,
     pub io: IOStark<F, D>,
@@ -24,15 +25,23 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
+    // TODO: the return value should be array instead of vec.
     pub fn generate_trace(&self, trace: &Trace) -> Vec<Vec<PolynomialValues<F>>> {
         // for every stark, generate AIR-based traces
         // TODO
 
-        // 1. airthmic.generate_trace()
-        // 2. mov.generate_trace()
-        // 3. flow.generate_trace()
-        // 4. io.generate_trace()
-        // 5. memory.generate_trace
+        let mut converted_trace = vec::new();
+        for step in trace.exec.iter() {
+            let row = match step.instruction {
+                MOV(Mov) => { self.mov.generate_trace(step) },
+                CJMP(CJmp) | JMP(Jmp) => { self.flow.generate_trace(step) },
+                EQ(Equal) |  GT(Gt) | LT(Lt) | ADD(Add) | SUB(Sub) | MUL(Mul) => { self.airthmetic.generate_trace(step) },
+                RET(Ret) => { self.io.generate_trace(step) },
+                END() => 1,
+            };
+            converted_trace.push(row);
+        }
+        converted_trace
     }
 }
 
@@ -109,4 +118,22 @@ where
         &mut TimingTree::default(),
     )?;
     proof
+}
+
+mod tests {
+    use vm_core::trace::trace::Trace;
+
+    #[ignore]
+    #[test]
+    fn test_prove() -> Result<()> {
+        // TODO: 
+        let witnes_trace: Trace = Trace::default();
+        let stark = OlaStark::default();
+        let trace = stark.generate_trace(witnes_trace);
+        let config = StarkConfig::standard_fast_config();
+        let public_inputs = PublicValues::default();
+
+        let proof = prove_with_traces(&stark, &config, trace, public_inputs);
+        verify_stark_proof(&stark, proof, config)
+    }
 }
