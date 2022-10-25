@@ -11,4 +11,8 @@ edition = "2021"
 vm-core = { package = "olavm-core", path = "../vm-core", version = "0.1.0", default-features = false }
 processor = { package = "olavm-processor", path = "../processor", version = "0.1.0", default-features = false }
 
-plonky2 = { git = "https://github.com/mir-protocol/plonky2" }
+plonky2 = { git = "https://github.com/mir-protocol/plonky2", rev = "7b2f515c007a78eb4bca36821ad28a762b1e1095" }
+
+starky = { git = "https://github.com/mir-protocol/plonky2", rev = "7b2f515c007a78eb4bca36821ad28a762b1e1095" }
+
+anyhow = "1.0"

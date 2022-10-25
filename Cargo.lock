@@ -3,6 +3,15 @@
 version = 3
 
 [[package]]
+name = "aho-corasick"
+version = "0.7.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4f55bd91a0978cbfd91c457a164bab8b4001c833b7f323132c0a4e1922dd44e"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -166,7 +175,11 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
 dependencies = [
+ "atty",
+ "humantime",
  "log",
+ "regex",
+ "termcolor",
 ]
 
 [[package]]
@@ -227,6 +240,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
 name = "indexmap"
 version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -285,10 +304,16 @@ dependencies = [
 [[package]]
 name = "maybe_rayon"
 version = "0.1.0"
-source = "git+https://github.com/mir-protocol/plonky2#49eecfadf2880ff1c58b3e72665c2d9a319f4c4f"
+source = "git+https://github.com/mir-protocol/plonky2?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
 dependencies = [
  "rayon",
 ]
+
+[[package]]
+name = "memchr"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "memoffset"
@@ -441,9 +466,11 @@ dependencies = [
 name = "olavm-prover"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "olavm-core",
  "olavm-processor",
  "plonky2",
+ "starky",
 ]
 
 [[package]]
@@ -464,7 +491,7 @@ checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
 [[package]]
 name = "plonky2"
 version = "0.1.0"
-source = "git+https://github.com/mir-protocol/plonky2#49eecfadf2880ff1c58b3e72665c2d9a319f4c4f"
+source = "git+https://github.com/mir-protocol/plonky2?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
 dependencies = [
  "anyhow",
  "itertools",
@@ -485,7 +512,7 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.1.0"
-source = "git+https://github.com/mir-protocol/plonky2#49eecfadf2880ff1c58b3e72665c2d9a319f4c4f"
+source = "git+https://github.com/mir-protocol/plonky2?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
 dependencies = [
  "anyhow",
  "itertools",
@@ -500,7 +527,7 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.1.0"
-source = "git+https://github.com/mir-protocol/plonky2#49eecfadf2880ff1c58b3e72665c2d9a319f4c4f"
+source = "git+https://github.com/mir-protocol/plonky2?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
 
 [[package]]
 name = "ppv-lite86"
@@ -591,6 +618,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c4eb3267174b8c6c2f654116623910a0fef09c4753f8dd83db29c48a0df988b"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-syntax"
+version = "0.6.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
+
+[[package]]
 name = "ryu"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -662,6 +706,20 @@ checksum = "0a31480366ec990f395a61b7c08122d99bd40544fdb5abcfc1b06bb29994312c"
 dependencies = [
  "digest",
  "keccak",
+]
+
+[[package]]
+name = "starky"
+version = "0.1.0"
+source = "git+https://github.com/mir-protocol/plonky2?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
+dependencies = [
+ "anyhow",
+ "env_logger",
+ "itertools",
+ "log",
+ "maybe_rayon",
+ "plonky2",
+ "plonky2_util",
 ]
 
 [[package]]
