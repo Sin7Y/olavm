@@ -1,22 +1,16 @@
 [package]
 name = "olavm-processor"
 version = "0.1.0"
-description = "olaVM processor"
+description = "OlaVM processor"
 readme = "README.md"
 license = "MIT"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-log = "0.4.14"
 vm-core = { package = "olavm-core", path = "../vm-core", version = "0.1.0", default-features = false }
-
-
-[lib]
-bench = false
-doctest = false
-
-
-[dev-dependencies]
-olavm-assembly = { package = "olavm-assembly", path = "../assembly", version = "0.1.0", default-features = false }
+log = "0.4"
+env_logger = "0.6"
+serde_json = "1"
+serde = {version = "1" }
+serde_derive = {version = "1"}
+plonky2 = { git="https://github.com/mir-protocol/plonky2.git/", rev="58256ce05207cf30c627d92d63f354ce4d314662"}
