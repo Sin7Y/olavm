@@ -108,7 +108,7 @@ impl Process {
                 Instruction::SUB(Sub { ri: dst_index as u8, rj: op1_index as u8, a: op2_value.1 })
             }
             "mul" => {
-                debug!("opcode: sub");
+                debug!("opcode: mul");
                 assert!(ops.len() == 4, "mul params len is 3");
                 let dst_index = self.get_reg_index(&ops[1]);
                 let op1_index = self.get_reg_index(&ops[2]);
@@ -117,7 +117,7 @@ impl Process {
             }
             "call" => {
                 debug!("opcode: call");
-                assert!(ops.len() == 2, "jmp params len is 1");
+                assert!(ops.len() == 2, "call params len is 1");
                 let call_addr = self.get_index_value(&ops[1]);
                 Instruction::CALL(Call { ri: call_addr.1 })
             }
