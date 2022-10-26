@@ -21,10 +21,10 @@ impl<F: RichField, const D: usize> AddStark<F, D> {
         assert!(matches!(step.instruction, Instruction::ADD(..)));
 
         let mut lv = [F::default(); NUM_ARITH_COLS];
-        lv[INST_COL] = F::from_canonical_u32(ADD_ID as u32);
-        lv[CLK_COL] = F::from_canonical_u32(step.clk);
-        lv[PC_COL] = F::from_canonical_u32(step.pc);
-        lv[FLAG_COL] = F::from_canonical_u32(step.flag as u32);
+        lv[COL_INST] = F::from_canonical_u32(ADD_ID as u32);
+        lv[COL_CLK] = F::from_canonical_u32(step.clk);
+        lv[COL_PC] = F::from_canonical_u32(step.pc);
+        lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
 
         let (ri, rj, a) = if let Instruction::ADD(Add{ri, rj, a}) = step.instruction {
             (ri, rj, a)
@@ -44,9 +44,9 @@ impl<F: RichField, const D: usize> AddStark<F, D> {
             },
         };
 
-        lv[ADD_OUTPUT_COL] = F::from_canonical_u32(output);
-        lv[ADD_INPUT0_COL] = F::from_canonical_u32(input0);
-        lv[ADD_INPUT1_COL] = F::from_canonical_u32(input1);
+        lv[COL_ADD_OUTPUT] = F::from_canonical_u32(output);
+        lv[COL_ADD_INPUT0] = F::from_canonical_u32(input0);
+        lv[COL_ADD_INPUT] = F::from_canonical_u32(input1);
         lv
     }
 }
@@ -56,11 +56,11 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
     // Get ADD data from trace.
-    let is_add =lv[INST_COL];
-    let output =lv[ADD_OUTPUT_COL];
-    let input0 =lv[ADD_INPUT0_COL];
-    let input1 =lv[ADD_INPUT1_COL];
-    let flag =lv[FLAG_COL];
+    let is_add =lv[COL_INST];
+    let output =lv[COL_ADD_OUTPUT];
+    let input0 =lv[COL_ADD_INPUT0];
+    let input1 =lv[COL_ADD_INPUT];
+    let flag =lv[COL_FLAG];
 
     // flag should be 0 or 1.
     yield_constr.constraint(flag * (P::ONES - flag));
@@ -85,11 +85,11 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     // Get ADD data from trace.
-    let is_add =lv[INST_COL];
-    let output =lv[ADD_OUTPUT_COL];
-    let input0 =lv[ADD_INPUT0_COL];
-    let input1 =lv[ADD_INPUT1_COL];
-    let flag =lv[FLAG_COL];
+    let is_add =lv[COL_INST];
+    let output =lv[COL_ADD_OUTPUT];
+    let input0 =lv[COL_ADD_INPUT0];
+    let input1 =lv[COL_ADD_INPUT];
+    let flag =lv[COL_FLAG];
 
     let unreduced_output = builder.add_extension(input0, input1);
     let output_diff = builder.sub_extension(unreduced_output, output);
@@ -134,6 +134,43 @@ mod tests {
             regs: [10, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             v_addr: None,
             flag: false
+
+        };
+        let stark = S::default();
+        let trace = stark.generate_trace(&step);
+
+        let mut constraint_consumer = ConstraintConsumer::new(
+            vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
+            GoldilocksField::ONE,
+            GoldilocksField::ONE,
+            GoldilocksField::ONE,
+        );
+        eval_packed_generic(&trace, &mut constraint_consumer);
+        for &acc in &constraint_consumer.constraint_accs {
+            assert_eq!(acc, GoldilocksField::ZERO);
+        }
+    }
+
+    #[test]
+    fn test_add_with_overflow_stark() {
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = AddStark<F, D>;
+
+        let overflow = 1_u64 << 32;
+        let input0 = overflow - 1;
+        let input1 = 100;
+        let output = (input0 + input1) % overflow;
+        let carry = (input0 + input1) / overflow;
+        let step = Step {
+            clk: 0,
+            pc: 0,
+            fp: 0,
+            instruction: Instruction::ADD(Add{ri: 0, rj: 1, a: ImmediateOrRegName::RegName(2)}),
+            regs: [output as u32,input0 as u32, input1 as u32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            v_addr: None,
+            flag: carry != 0,
 
         };
         let stark = S::default();
