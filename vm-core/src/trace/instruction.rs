@@ -56,12 +56,11 @@ pub struct Mul {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Ret {
-}
+pub struct Ret {}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Call {
-    pub ri: ImmediateOrRegName
+    pub ri: ImmediateOrRegName,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -71,10 +70,11 @@ pub enum Instruction {
     CJMP(CJmp),
     JMP(Jmp),
     ADD(Add),
-    SUB(Sub),
     MUL(Mul),
     RET(Ret),
     CALL(Call),
+    // todo: for test, delete next version
+    SUB(Sub),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, TryFromPrimitive)]
@@ -93,6 +93,7 @@ pub enum Opcode {
     MSTORE,
     SLOAD,
     SSTORE,
+    // todo: for test, delete next version
     SUB,
 }
 

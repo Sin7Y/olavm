@@ -23,9 +23,15 @@ fn fibo_use_loop() {
         ";
 
     let instructions = program_src.split('\n');
-    let mut program: Program = Program{ instructions: Vec::new(),
-                                        trace: Trace{raw_instructions: Vec::new(), raw_binary_instructions: Vec::new(),
-                                            exec: Vec::new(), memory: Vec::new() }};
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
+    };
     debug!("instructions:{:?}", program.instructions);
 
     for inst in instructions.into_iter() {
@@ -33,7 +39,7 @@ fn fibo_use_loop() {
     }
 
     let mut process = Process::new();
-    process.execute(& mut program, false);
+    process.execute(&mut program, false);
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -60,10 +66,14 @@ fn add_mul_decode() {
         ";
 
     let instructions = program_src.split('\n');
-    let mut program: Program = Program{
+    let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Trace{ raw_instructions: Vec::new(), raw_binary_instructions: Vec::new(),
-                        exec: Vec::new(), memory: Vec::new()}
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -72,7 +82,7 @@ fn add_mul_decode() {
     }
 
     let mut process = Process::new();
-    process.execute(& mut program, true);
+    process.execute(&mut program, true);
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -105,10 +115,14 @@ fn fibo_use_loop_decode() {
         ";
 
     let instructions = program_src.split('\n');
-    let mut program: Program = Program{
+    let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Trace{ raw_instructions: Vec::new(), raw_binary_instructions: Vec::new(),
-            exec: Vec::new(), memory: Vec::new()}
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -117,7 +131,7 @@ fn fibo_use_loop_decode() {
     }
 
     let mut process = Process::new();
-    process.execute(& mut program, true);
+    process.execute(&mut program, true);
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -145,10 +159,14 @@ fn call_test() {
                              ";
 
     let instructions = program_src.split('\n');
-    let mut program: Program = Program{
+    let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Trace{ raw_instructions: Vec::new(), raw_binary_instructions: Vec::new(),
-                        exec: Vec::new(), memory: Vec::new()}
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -157,7 +175,7 @@ fn call_test() {
     }
 
     let mut process = Process::new();
-    process.execute(& mut program, false);
+    process.execute(&mut program, false);
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
