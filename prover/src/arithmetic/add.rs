@@ -11,47 +11,40 @@ use plonky2::field::types::Field;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-#[derive(Copy, Clone, Default)]
-pub struct AddStark<F, const D: usize> {
-    pub _f: PhantomData<F>,
+pub (crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] {
+    assert!(matches!(step.instruction, Instruction::ADD(..)));
+
+    let mut lv = [F::default(); NUM_ARITH_COLS];
+    lv[COL_INST] = F::from_canonical_u32(ADD_ID as u32);
+    lv[COL_CLK] = F::from_canonical_u32(step.clk);
+    lv[COL_PC] = F::from_canonical_u32(step.pc);
+    lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
+
+    let (ri, rj, a) = if let Instruction::ADD(Add{ri, rj, a}) = step.instruction {
+        (ri, rj, a)
+    } else {
+        todo!()
+    };
+    assert!(ri < REG_LEN as u8);
+    assert!(rj < REG_LEN as u8);
+
+    let output = step.regs[ri as usize];
+    let input0 = step.regs[rj as usize];
+    let input1 = match a {
+        ImmediateOrRegName::Immediate(input1) => input1.0,
+        ImmediateOrRegName::RegName(reg_index) => {
+            assert!(reg_index < REG_LEN as u8);
+            step.regs[reg_index as usize]
+        },
+    };
+
+    lv[COL_ADD_OUTPUT] = F::from_canonical_u32(output);
+    lv[COL_ADD_INPUT0] = F::from_canonical_u32(input0);
+    lv[COL_ADD_INPUT] = F::from_canonical_u32(input1);
+    lv
 }
 
-impl<F: RichField, const D: usize> AddStark<F, D> {
-    pub fn generate_trace(&self, step: &Step) -> [F; NUM_ARITH_COLS] {
-        assert!(matches!(step.instruction, Instruction::ADD(..)));
-
-        let mut lv = [F::default(); NUM_ARITH_COLS];
-        lv[COL_INST] = F::from_canonical_u32(ADD_ID as u32);
-        lv[COL_CLK] = F::from_canonical_u32(step.clk);
-        lv[COL_PC] = F::from_canonical_u32(step.pc);
-        lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
-
-        let (ri, rj, a) = if let Instruction::ADD(Add{ri, rj, a}) = step.instruction {
-            (ri, rj, a)
-        } else {
-            todo!()
-        };
-        assert!(ri < REG_LEN as u8);
-        assert!(rj < REG_LEN as u8);
-
-        let output = step.regs[ri as usize];
-        let input0 = step.regs[rj as usize];
-        let input1 = match a {
-            ImmediateOrRegName::Immediate(input1) => input1.0,
-            ImmediateOrRegName::RegName(reg_index) => {
-                assert!(reg_index < REG_LEN as u8);
-                step.regs[reg_index as usize]
-            },
-        };
-
-        lv[COL_ADD_OUTPUT] = F::from_canonical_u32(output);
-        lv[COL_ADD_INPUT0] = F::from_canonical_u32(input0);
-        lv[COL_ADD_INPUT] = F::from_canonical_u32(input1);
-        lv
-    }
-}
-
-pub(crate) fn eval_packed_generic<P: PackedField>(
+pub (crate) fn eval_packed_generic<P: PackedField>(
     lv: &[P; NUM_ARITH_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
@@ -79,7 +72,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     yield_constr.constraint(is_add * output_diff * (output_diff - flag * overflow));
 }
 
-pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
+pub (crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
     lv: &[ExtensionTarget<D>; NUM_ARITH_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
@@ -116,7 +109,6 @@ mod tests {
     use starky::constraint_consumer::ConstraintConsumer;
     use plonky2::field::goldilocks_field::GoldilocksField;
 
-    use crate::arithmetic::add::AddStark;
     use super::*;
 
     #[test]
@@ -124,7 +116,6 @@ mod tests {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
-        type S = AddStark<F, D>;
 
         let step = Step {
             clk: 0,
@@ -136,8 +127,7 @@ mod tests {
             flag: false
 
         };
-        let stark = S::default();
-        let trace = stark.generate_trace(&step);
+        let trace = generate_trace(&step);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
@@ -156,7 +146,6 @@ mod tests {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
-        type S = AddStark<F, D>;
 
         let overflow = 1_u64 << 32;
         let input0 = overflow - 1;
@@ -173,8 +162,7 @@ mod tests {
             flag: carry != 0,
 
         };
-        let stark = S::default();
-        let trace = stark.generate_trace(&step);
+        let trace = generate_trace(&step);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
