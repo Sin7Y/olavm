@@ -59,7 +59,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticSta
     }
 
     fn constraint_degree(&self) -> usize {
-        30
+        3
     }
 }
 
@@ -77,11 +77,11 @@ mod tests {
     use starky::config::StarkConfig;
     use starky::prover::prove;
     use starky::verifier::verify_stark_proof;
+    use starky::util::trace_rows_to_poly_values;
 
     use super::*;
     use vm_core::trace::{ trace::Step, instruction::* };
 
-    #[ignore = "need more row trace."]
     #[test]
     fn test_arithmetic_stark() -> Result<()> {
         const D: usize = 2;
@@ -103,13 +103,9 @@ mod tests {
 
         };
         let trace = stark.generate_trace(&step);
-        let trace = vec![trace];
-        let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
-        let  trace_col_vecs: Vec<Vec<F>> =  transpose(&trace_row_vecs);
-        let trace = trace_col_vecs
-                .into_iter()
-                .map(|column| PolynomialValues::new(column))
-                .collect();
+        // The height_cap is 4, we need at least an 8 rows trace.
+        let trace = vec![trace; 8];
+        let trace = trace_rows_to_poly_values(trace);
 
         let proof = prove::<F, C, S, D>(
             stark,
