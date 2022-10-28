@@ -1,7 +1,31 @@
 use crate::program::REGISTER_NUM;
-use crate::trace::instruction::{Instruction, Opcode};
+use crate::program::instruction::{Instruction, Opcode};
 use serde::{Serialize, Deserialize};
 use plonky2::field::goldilocks_field::GoldilocksField;
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum MemoryOperation {
+    Read,
+    Write,
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct MemoryCell {
+    pub clk: u32,
+    pub pc: u64,
+    pub op: MemoryOperation,
+    pub value: GoldilocksField,
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct MemoryTraceCell {
+    pub addr: u64,
+    pub clk: u32,
+    pub pc: u64,
+    pub op: MemoryOperation,
+    pub value: GoldilocksField,
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Step {
@@ -19,7 +43,7 @@ pub struct Trace {
     pub raw_binary_instructions: Vec<(String, Option<String>)>,
     // todo need limit the trace size
     pub exec: Vec<Step>,
-    pub memory: Vec<String>,
+    pub memory: Vec<MemoryTraceCell>,
 }
 
 impl Trace {
