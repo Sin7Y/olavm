@@ -92,13 +92,15 @@ mod tests {
         let stark = S::default();
         let config = StarkConfig::standard_fast_config();
 
+        let output = GoldilocksField(10);
+        let input0 = GoldilocksField(8);
+        let input1 = GoldilocksField(2);
+        let zero = GoldilocksField::default();
         let step = Step {
             clk: 0,
             pc: 0,
-            fp: 0,
             instruction: Instruction::ADD(Add{ri: 0, rj: 1, a: ImmediateOrRegName::RegName(2)}),
-            regs: [10, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            v_addr: None,
+            regs: [output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero],
             flag: false
 
         };

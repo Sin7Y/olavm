@@ -23,7 +23,7 @@ pub (crate) const COL_ADD_OUTPUT: usize = COL_REG;
 // reg_1 for input0.
 pub (crate) const COL_ADD_INPUT0: usize = COL_ADD_OUTPUT + 1;
 // reg_2 for input1.
-pub (crate) const COL_ADD_INPUT: usize = COL_ADD_INPUT0 + 1;
+pub (crate) const COL_ADD_INPUT1: usize = COL_ADD_INPUT0 + 1;
 
 // MUL register columns.
 // reg_0 for output.
