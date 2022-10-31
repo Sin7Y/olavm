@@ -176,7 +176,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aafcde04e90a5226a6443b7aabdb016ba2f8307c847d524724bd9b346dd1a2d3"
 dependencies = [
  "atty",
- "humantime",
+ "humantime 1.3.0",
  "log",
  "regex",
  "termcolor",
@@ -189,19 +189,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
 dependencies = [
  "atty",
- "humantime",
+ "humantime 2.1.0",
  "log",
  "regex",
  "termcolor",
-]
-
-[[package]]
-name = "fixed-hash"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
-dependencies = [
- "static_assertions",
 ]
 
 [[package]]
@@ -271,6 +262,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
 name = "indexmap"
 version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -329,7 +326,7 @@ dependencies = [
 [[package]]
 name = "maybe_rayon"
 version = "0.1.0"
-source = "git+https://github.com/mir-protocol/plonky2.git/?rev=58256ce05207cf30c627d92d63f354ce4d314662#58256ce05207cf30c627d92d63f354ce4d314662"
+source = "git+https://github.com/mir-protocol/plonky2.git/?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
 dependencies = [
  "rayon",
 ]
@@ -517,6 +514,7 @@ name = "olavm-prover"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "num",
  "olavm-core",
  "olavm-processor",
  "plonky2",
@@ -547,7 +545,7 @@ checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
 [[package]]
 name = "plonky2"
 version = "0.1.0"
-source = "git+https://github.com/mir-protocol/plonky2.git/?rev=58256ce05207cf30c627d92d63f354ce4d314662#58256ce05207cf30c627d92d63f354ce4d314662"
+source = "git+https://github.com/mir-protocol/plonky2.git/?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
 dependencies = [
  "anyhow",
  "itertools",
@@ -568,7 +566,7 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.1.0"
-source = "git+https://github.com/mir-protocol/plonky2.git/?rev=58256ce05207cf30c627d92d63f354ce4d314662#58256ce05207cf30c627d92d63f354ce4d314662"
+source = "git+https://github.com/mir-protocol/plonky2.git/?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
 dependencies = [
  "anyhow",
  "itertools",
@@ -583,7 +581,7 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.1.0"
-source = "git+https://github.com/mir-protocol/plonky2.git/?rev=58256ce05207cf30c627d92d63f354ce4d314662#58256ce05207cf30c627d92d63f354ce4d314662"
+source = "git+https://github.com/mir-protocol/plonky2.git/?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
 
 [[package]]
 name = "ppv-lite86"
@@ -779,6 +777,20 @@ checksum = "0a31480366ec990f395a61b7c08122d99bd40544fdb5abcfc1b06bb29994312c"
 dependencies = [
  "digest",
  "keccak",
+]
+
+[[package]]
+name = "starky"
+version = "0.1.0"
+source = "git+https://github.com/mir-protocol/plonky2.git/?rev=7b2f515c007a78eb4bca36821ad28a762b1e1095#7b2f515c007a78eb4bca36821ad28a762b1e1095"
+dependencies = [
+ "anyhow",
+ "env_logger 0.9.0",
+ "itertools",
+ "log",
+ "maybe_rayon",
+ "plonky2",
+ "plonky2_util",
 ]
 
 [[package]]

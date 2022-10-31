@@ -64,7 +64,7 @@ pub struct Call {
     pub ri: ImmediateOrRegName,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Instruction {
     MOV(Mov),
     EQ(Equal),

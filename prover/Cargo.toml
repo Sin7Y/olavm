@@ -16,3 +16,4 @@ plonky2 = { git = "https://github.com/mir-protocol/plonky2", rev = "7b2f515c007a
 starky = { git = "https://github.com/mir-protocol/plonky2", rev = "7b2f515c007a78eb4bca36821ad28a762b1e1095" }
 
 anyhow = "1.0"
+num = "0.4"
