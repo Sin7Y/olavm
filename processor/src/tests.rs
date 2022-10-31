@@ -20,11 +20,18 @@ fn fibo_use_loop() {
         mov r4 1
         sub r0 r0 r4
         jmp 4
-        end";
+        ";
 
     let instructions = program_src.split('\n');
-    let mut program: Program = Program{ instructions: Vec::new(),
-                                        trace: Trace{exec: Vec::new()} };
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
+    };
     debug!("instructions:{:?}", program.instructions);
 
     for inst in instructions.into_iter() {
@@ -32,7 +39,7 @@ fn fibo_use_loop() {
     }
 
     let mut process = Process::new();
-    process.execute(& mut program);
+    process.execute(&mut program, false);
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -41,31 +48,33 @@ fn fibo_use_loop() {
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
-pub fn jsonstr_format(s: String) -> String {
-    s.replace("\\", "")
-}
 #[test]
-fn call_test() {
-    let program_src = "JMP 6
-                             ADD r0 r1 r2
-                             MUL r3 r0 2
-                             MOV r4 r3
-                             MOV r8 r4
-                             RET r8
-                             MOV r5 3
-                             ADD r5 r5 5
-                             MOV r1 r5
-                             MOV r2 7
-                             JMP 1
-                             MOV r6 r8
-                             MUL r7 r4 r4
-                             MOV r4 r7
-                             END
-                             ";
+fn add_mul_decode() {
+    //mov r0 8
+    //mov r1 2
+    //mov r2 3
+    //add r3 r0 r1
+    //mul r4 r3 r2
+    let program_src = "0x24000000
+        0x8
+        0x24400000
+        0x2
+        0x24800000
+        0x3
+        0x08c04000
+        0x110c8000
+        ";
 
     let instructions = program_src.split('\n');
-    let mut program: Program = Program{ instructions: Vec::new() ,
-                                        trace: Trace{exec: Vec::new()}};
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
+    };
     debug!("instructions:{:?}", program.instructions);
 
     for inst in instructions.into_iter() {
@@ -73,7 +82,100 @@ fn call_test() {
     }
 
     let mut process = Process::new();
-    process.execute(& mut program);
+    process.execute(&mut program, true);
+
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("fibo_trace.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn fibo_use_loop_decode() {
+    let program_src = "0x24000000
+        0x8
+        0x24400000
+        0x1
+        0x24800000
+        0x1
+        0x24c00000
+        0x0
+        0x180c0000
+        0x34000000
+        0x13
+        0x09048000
+        0x20480000
+        0x20900000
+        0x25000000
+        0x1
+        0x68010000
+        0x2c000000
+        0x8
+        ";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program, true);
+
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("fibo_trace.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn call_test() {
+    let program_src = "JMP 7
+                             MUL r4 [1] 100
+                             MUL r5 [2] 20
+                             ADD r6 r4 r5
+                             MOV [3] r6
+                             MOV r31 [3]
+                             RET
+                             ADD r7 [1] [2]
+                             MUL r8 r7 2
+                             MOV [3] r8
+                             MOV [257] [3]
+                             MOV [258] [1]
+                             ADD fp fp 256
+                             CALL 1
+                             ";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program, false);
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();

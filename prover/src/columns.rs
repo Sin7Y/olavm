@@ -1,5 +1,3 @@
-pub (crate) const REG_LEN: usize = 16;
-
 // The trace for starky should be like:
 // ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────┬────────┐
 // │  inst │  clk  │  pc   │ flag  │ reg_0 │ reg_1 │ reg_2 │  ...   │ reg_15 |

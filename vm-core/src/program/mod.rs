@@ -10,5 +10,4 @@ pub struct Program {
     pub trace: Trace,
 }
 
-impl Program {
-}
+impl Program {}
