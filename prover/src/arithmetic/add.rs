@@ -2,6 +2,7 @@ use std::matches;
 use std::marker::PhantomData;
 
 use vm_core::trace::{ trace::Step, instruction::* };
+use vm_core::program::REGISTER_NUM;
 use crate::columns::*;
 
 use plonky2::field::extension::Extendable;
@@ -25,22 +26,22 @@ pub (crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] 
     } else {
         todo!()
     };
-    assert!(ri < REG_LEN as u8);
-    assert!(rj < REG_LEN as u8);
+    assert!(ri < REGISTER_NUM as u8);
+    assert!(rj < REGISTER_NUM as u8);
 
     let output = step.regs[ri as usize];
     let input0 = step.regs[rj as usize];
     let input1 = match a {
         ImmediateOrRegName::Immediate(input1) => input1.0,
         ImmediateOrRegName::RegName(reg_index) => {
-            assert!(reg_index < REG_LEN as u8);
+            assert!(reg_index < REGISTER_NUM as u8);
             step.regs[reg_index as usize]
         },
     };
 
-    lv[COL_ADD_OUTPUT] = F::from_canonical_u32(output);
-    lv[COL_ADD_INPUT0] = F::from_canonical_u32(input0);
-    lv[COL_ADD_INPUT] = F::from_canonical_u32(input1);
+    lv[COL_ADD_OUTPUT] = output;
+    lv[COL_ADD_INPUT0] = input0;
+    lv[COL_ADD_INPUT] = input1;
     lv
 }
 
