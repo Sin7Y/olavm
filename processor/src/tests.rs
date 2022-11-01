@@ -1,10 +1,10 @@
-use std::fs::File;
-use std::io::Write;
+use crate::Process;
 use log::debug;
 use serde_json::Value;
+use std::fs::File;
+use std::io::Write;
 use vm_core::program::Program;
 use vm_core::trace::trace::Trace;
-use crate::Process;
 
 #[test]
 fn fibo_use_loop() {

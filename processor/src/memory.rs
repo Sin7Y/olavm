@@ -1,5 +1,5 @@
-use std::collections::{BTreeMap, HashMap};
 use crate::GoldilocksField;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug, Default)]
 pub struct Memory {

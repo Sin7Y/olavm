@@ -1,19 +1,19 @@
 use std::marker::PhantomData;
 
-use plonky2::field::polynomial::PolynomialValues;
-use plonky2::plonk::circuit_data::CircuitData;
-use plonky2::hash::hash_types::RichField;
-use plonky2::field::packed::PackedField;
 use plonky2::field::extension::{Extendable, FieldExtension};
-use plonky2::plonk::{circuit_data::CircuitConfig, circuit_builder::CircuitBuilder};
-use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::field::goldilocks_field::GoldilocksField;
-use starky::{config::StarkConfig, proof::StarkProofWithPublicInputs, stark::Stark, prover::prove};
+use plonky2::field::packed::PackedField;
+use plonky2::field::polynomial::PolynomialValues;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+use plonky2::plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitConfig};
+use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use starky::vars::StarkEvaluationTargets;
 use starky::vars::StarkEvaluationVars;
-use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use starky::{config::StarkConfig, proof::StarkProofWithPublicInputs, prover::prove, stark::Stark};
 
-use vm_core::trace::{trace::Trace, instruction::Instruction::*};
+use vm_core::trace::{instruction::Instruction::*, trace::Trace};
 // use crate::arithmetic_stark::ArithmeticStark;
 
 #[derive(Clone, Copy, Default)]
@@ -103,7 +103,7 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
 //     trace: Vec<Vec<PolynomialValues<F>>>,
 //     public_values: &PublicValues,
 // ) -> Result<StarkProofWithPublicInputs<F, C, D>>
-// where 
+// where
 //     F: RichField + Extendable<D>,
 //     C: GenericConfig<D, F = F>
 // {
@@ -123,7 +123,7 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
 //     #[ignore]
 //     #[test]
 //     fn test_prove() -> Result<()> {
-//         // TODO: 
+//         // TODO:
 //         let witnes_trace: Trace = Trace::default();
 //         let stark = OlaStark::default();
 //         let trace = stark.generate_trace(witnes_trace);

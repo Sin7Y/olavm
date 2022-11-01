@@ -1,20 +1,21 @@
-use std::collections::{BTreeMap, HashMap};
-use log::debug;
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
-use vm_core::program::{Program, REGISTER_NUM};
-use vm_core::trace::instruction::{Add, Call, CJmp, Equal, ImmediateOrRegName, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub};
-use vm_core::trace::instruction::ImmediateOrRegName::Immediate;
 use crate::decode::{decode_raw_instruction, IMM_INSTRUCTION_LEN};
 use crate::error::ProcessorError;
 use crate::memory::Memory;
+use log::debug;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::Field;
+use std::collections::{BTreeMap, HashMap};
+use vm_core::program::{Program, REGISTER_NUM};
+use vm_core::trace::instruction::ImmediateOrRegName::Immediate;
+use vm_core::trace::instruction::{
+    Add, CJmp, Call, Equal, ImmediateOrRegName, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub,
+};
 
-
-#[cfg(test)]
-mod tests;
-mod memory;
 mod decode;
 pub mod error;
+mod memory;
+#[cfg(test)]
+mod tests;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 15;
@@ -35,7 +36,10 @@ impl Process {
             registers: [Default::default(); REGISTER_NUM],
             pc: 0,
             flag: false,
-            memory: Memory { state: HashMap::new(), trace: BTreeMap::new() },
+            memory: Memory {
+                state: HashMap::new(),
+                trace: BTreeMap::new(),
+            },
         };
     }
 
@@ -51,7 +55,10 @@ impl Process {
         let mut value = Default::default();
         if src.is_ok() {
             let data: u64 = src.unwrap();
-            return (GoldilocksField::from_canonical_u64(data), ImmediateOrRegName::Immediate(GoldilocksField::from_canonical_u64(data)));
+            return (
+                GoldilocksField::from_canonical_u64(data),
+                ImmediateOrRegName::Immediate(GoldilocksField::from_canonical_u64(data)),
+            );
         } else {
             let src_index = self.get_reg_index(op_str);
             value = self.registers[src_index];
@@ -69,7 +76,10 @@ impl Process {
                 assert!(ops.len() == 3, "mov params len is 2");
                 let dst_index = self.get_reg_index(&ops[1]);
                 let value = self.get_index_value(&ops[2]);
-                Instruction::MOV(Mov { ri: dst_index as u8, a: value.1 })
+                Instruction::MOV(Mov {
+                    ri: dst_index as u8,
+                    a: value.1,
+                })
             }
             "eq" => {
                 debug!("opcode: eq");
@@ -77,7 +87,10 @@ impl Process {
                 let dst_index = self.get_reg_index(&ops[1]);
                 // let src_index = self.get_reg_index(&ops[2]);
                 let value = self.get_index_value(&ops[2]);
-                Instruction::EQ(Equal { ri: dst_index as u8, a: value.1 })
+                Instruction::EQ(Equal {
+                    ri: dst_index as u8,
+                    a: value.1,
+                })
             }
             "cjmp" => {
                 debug!("opcode: cjmp");
@@ -97,7 +110,11 @@ impl Process {
                 let dst_index = self.get_reg_index(&ops[1]);
                 let op1_index = self.get_reg_index(&ops[2]);
                 let op2_value = self.get_index_value(&ops[3]);
-                Instruction::ADD(Add { ri: dst_index as u8, rj: op1_index as u8, a: op2_value.1 })
+                Instruction::ADD(Add {
+                    ri: dst_index as u8,
+                    rj: op1_index as u8,
+                    a: op2_value.1,
+                })
             }
             "sub" => {
                 debug!("opcode: sub");
@@ -105,7 +122,11 @@ impl Process {
                 let dst_index = self.get_reg_index(&ops[1]);
                 let op1_index = self.get_reg_index(&ops[2]);
                 let op2_value = self.get_index_value(&ops[3]);
-                Instruction::SUB(Sub { ri: dst_index as u8, rj: op1_index as u8, a: op2_value.1 })
+                Instruction::SUB(Sub {
+                    ri: dst_index as u8,
+                    rj: op1_index as u8,
+                    a: op2_value.1,
+                })
             }
             "mul" => {
                 debug!("opcode: mul");
@@ -113,7 +134,11 @@ impl Process {
                 let dst_index = self.get_reg_index(&ops[1]);
                 let op1_index = self.get_reg_index(&ops[2]);
                 let op2_value = self.get_index_value(&ops[3]);
-                Instruction::MUL(Mul { ri: dst_index as u8, rj: op1_index as u8, a: op2_value.1 })
+                Instruction::MUL(Mul {
+                    ri: dst_index as u8,
+                    rj: op1_index as u8,
+                    a: op2_value.1,
+                })
             }
             "call" => {
                 debug!("opcode: call");
@@ -127,12 +152,16 @@ impl Process {
                 let dst_index = self.get_reg_index(&ops[1]);
                 Instruction::RET(Ret {})
             }
-            _ => panic!("not match opcode:{}", opcode)
+            _ => panic!("not match opcode:{}", opcode),
         };
         instuction
     }
 
-    pub fn execute(&mut self, program: &mut Program, decode_flag: bool) -> Result<(), ProcessorError> {
+    pub fn execute(
+        &mut self,
+        program: &mut Program,
+        decode_flag: bool,
+    ) -> Result<(), ProcessorError> {
         let mut pc = 0;
         loop {
             let instruct_line = program.instructions[pc as usize].trim();
@@ -148,9 +177,15 @@ impl Process {
                     (txt_instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
                 }
                 if step == IMM_INSTRUCTION_LEN {
-                    program.trace.raw_binary_instructions.push((instruct_line.to_string(), Some(imm_line.to_string())));
+                    program
+                        .trace
+                        .raw_binary_instructions
+                        .push((instruct_line.to_string(), Some(imm_line.to_string())));
                 } else {
-                    program.trace.raw_binary_instructions.push((instruct_line.to_string(), None));
+                    program
+                        .trace
+                        .raw_binary_instructions
+                        .push((instruct_line.to_string(), None));
                 }
 
                 let instruction = self.decode_instruction(txt_instruction);
@@ -161,7 +196,9 @@ impl Process {
                 break;
             }
         }
-        assert!(program.trace.raw_binary_instructions.len() == program.trace.raw_instructions.len());
+        assert!(
+            program.trace.raw_binary_instructions.len() == program.trace.raw_instructions.len()
+        );
         loop {
             let instruct_line = program.instructions[self.pc as usize].trim();
 
@@ -177,9 +214,15 @@ impl Process {
                     (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
                 }
                 if step == IMM_INSTRUCTION_LEN {
-                    program.trace.raw_binary_instructions.push((instruct_line.to_string(), Some(imm_line.to_string())));
+                    program
+                        .trace
+                        .raw_binary_instructions
+                        .push((instruct_line.to_string(), Some(imm_line.to_string())));
                 } else {
-                    program.trace.raw_binary_instructions.push((instruct_line.to_string(), None));
+                    program
+                        .trace
+                        .raw_binary_instructions
+                        .push((instruct_line.to_string(), None));
                 }
             } else {
                 instruction = instruct_line.to_string();
@@ -195,8 +238,17 @@ impl Process {
                     let value = self.get_index_value(&ops[2]);
                     self.registers[dst_index] = value.0;
 
-                    program.trace.insert_step(self.clk, self.pc, Instruction::MOV(Mov { ri: dst_index as u8, a: value.1 }),
-                                              self.registers.clone(), self.flag, None);
+                    program.trace.insert_step(
+                        self.clk,
+                        self.pc,
+                        Instruction::MOV(Mov {
+                            ri: dst_index as u8,
+                            a: value.1,
+                        }),
+                        self.registers.clone(),
+                        self.flag,
+                        None,
+                    );
                     self.pc += step;
                 }
                 "eq" => {
@@ -206,8 +258,17 @@ impl Process {
                     // let src_index = self.get_reg_index(&ops[2]);
                     let value = self.get_index_value(&ops[2]);
                     self.flag = self.registers[dst_index] == value.0;
-                    program.trace.insert_step(self.clk, self.pc, Instruction::EQ(Equal { ri: dst_index as u8, a: value.1 }),
-                                              self.registers.clone(), self.flag, None);
+                    program.trace.insert_step(
+                        self.clk,
+                        self.pc,
+                        Instruction::EQ(Equal {
+                            ri: dst_index as u8,
+                            a: value.1,
+                        }),
+                        self.registers.clone(),
+                        self.flag,
+                        None,
+                    );
                     self.pc += step;
                 }
                 "cjmp" => {
@@ -217,12 +278,24 @@ impl Process {
                     if self.flag == true {
                         // fixme: use flag need reset?
                         self.flag = false;
-                        program.trace.insert_step(self.clk, self.pc, Instruction::CJMP(CJmp { a: value.1 }),
-                                                  self.registers.clone(), self.flag, None);
-                        self.pc = value.0.0;
+                        program.trace.insert_step(
+                            self.clk,
+                            self.pc,
+                            Instruction::CJMP(CJmp { a: value.1 }),
+                            self.registers.clone(),
+                            self.flag,
+                            None,
+                        );
+                        self.pc = value.0 .0;
                     } else {
-                        program.trace.insert_step(self.clk, self.pc, Instruction::CJMP(CJmp { a: value.1 }),
-                                                  self.registers.clone(), self.flag, None);
+                        program.trace.insert_step(
+                            self.clk,
+                            self.pc,
+                            Instruction::CJMP(CJmp { a: value.1 }),
+                            self.registers.clone(),
+                            self.flag,
+                            None,
+                        );
                         self.pc += step;
                     }
                 }
@@ -230,9 +303,15 @@ impl Process {
                     debug!("opcode: jmp");
                     assert!(ops.len() == 2, "jmp params len is 1");
                     let value = self.get_index_value(&ops[1]);
-                    program.trace.insert_step(self.clk, self.pc, Instruction::JMP(Jmp { a: value.1 }),
-                                              self.registers.clone(), self.flag, None);
-                    self.pc = value.0.0;
+                    program.trace.insert_step(
+                        self.clk,
+                        self.pc,
+                        Instruction::JMP(Jmp { a: value.1 }),
+                        self.registers.clone(),
+                        self.flag,
+                        None,
+                    );
+                    self.pc = value.0 .0;
                 }
                 "add" => {
                     debug!("opcode: add");
@@ -241,9 +320,18 @@ impl Process {
                     let op1_index = self.get_reg_index(&ops[2]);
                     let op2_value = self.get_index_value(&ops[3]);
                     self.registers[dst_index] = self.registers[op1_index] + op2_value.0;
-                    program.trace.insert_step(self.clk, self.pc,
-                                              Instruction::ADD(Add { ri: dst_index as u8, rj: op1_index as u8, a: op2_value.1 }),
-                                              self.registers.clone(), self.flag, None);
+                    program.trace.insert_step(
+                        self.clk,
+                        self.pc,
+                        Instruction::ADD(Add {
+                            ri: dst_index as u8,
+                            rj: op1_index as u8,
+                            a: op2_value.1,
+                        }),
+                        self.registers.clone(),
+                        self.flag,
+                        None,
+                    );
                     self.pc += step;
                 }
                 "sub" => {
@@ -253,9 +341,18 @@ impl Process {
                     let op1_index = self.get_reg_index(&ops[2]);
                     let op2_value = self.get_index_value(&ops[3]);
                     self.registers[dst_index] = self.registers[op1_index] - op2_value.0;
-                    program.trace.insert_step(self.clk, self.pc,
-                                              Instruction::SUB(Sub { ri: dst_index as u8, rj: op1_index as u8, a: op2_value.1 }),
-                                              self.registers.clone(), self.flag, None);
+                    program.trace.insert_step(
+                        self.clk,
+                        self.pc,
+                        Instruction::SUB(Sub {
+                            ri: dst_index as u8,
+                            rj: op1_index as u8,
+                            a: op2_value.1,
+                        }),
+                        self.registers.clone(),
+                        self.flag,
+                        None,
+                    );
                     self.pc += step;
                 }
                 "mul" => {
@@ -265,33 +362,65 @@ impl Process {
                     let op1_index = self.get_reg_index(&ops[2]);
                     let op2_value = self.get_index_value(&ops[3]);
                     self.registers[dst_index] = self.registers[op1_index] * op2_value.0;
-                    program.trace.insert_step(self.clk, self.pc,
-                                              Instruction::MUL(Mul { ri: dst_index as u8, rj: op1_index as u8, a: op2_value.1 }),
-                                              self.registers.clone(), self.flag, None);
+                    program.trace.insert_step(
+                        self.clk,
+                        self.pc,
+                        Instruction::MUL(Mul {
+                            ri: dst_index as u8,
+                            rj: op1_index as u8,
+                            a: op2_value.1,
+                        }),
+                        self.registers.clone(),
+                        self.flag,
+                        None,
+                    );
                     self.pc += step;
                 }
                 "call" => {
                     debug!("opcode: jmp");
                     assert!(ops.len() == 2, "jmp params len is 1");
                     let call_addr = self.get_index_value(&ops[1]);
-                    self.memory.state.insert(self.registers[FP_REG_INDEX].0 - 1, GoldilocksField::from_canonical_u64(self.pc + 1));
-                    program.trace.insert_step(self.clk, self.pc,
-                                              Instruction::CALL(Call { ri: call_addr.1 }),
-                                              self.registers.clone(), self.flag, None);
-                    self.pc = call_addr.0.0;
+                    self.memory.state.insert(
+                        self.registers[FP_REG_INDEX].0 - 1,
+                        GoldilocksField::from_canonical_u64(self.pc + 1),
+                    );
+                    program.trace.insert_step(
+                        self.clk,
+                        self.pc,
+                        Instruction::CALL(Call { ri: call_addr.1 }),
+                        self.registers.clone(),
+                        self.flag,
+                        None,
+                    );
+                    self.pc = call_addr.0 .0;
                 }
                 "ret" => {
                     debug!("opcode: ret");
                     assert!(ops.len() == 2, "ret params len is 1");
                     let dst_index = self.get_reg_index(&ops[1]);
-                    program.trace.insert_step(self.clk, self.pc,
-                                              Instruction::RET(Ret {}),
-                                              self.registers.clone(), self.flag, None);
-                    self.pc = self.memory.state.get(&(self.registers[FP_REG_INDEX].0 - 1)).unwrap().0;
-                    self.registers[FP_REG_INDEX] = self.memory.state.get(&(self.registers[FP_REG_INDEX].0 - 2)).unwrap().clone();
+                    program.trace.insert_step(
+                        self.clk,
+                        self.pc,
+                        Instruction::RET(Ret {}),
+                        self.registers.clone(),
+                        self.flag,
+                        None,
+                    );
+                    self.pc = self
+                        .memory
+                        .state
+                        .get(&(self.registers[FP_REG_INDEX].0 - 1))
+                        .unwrap()
+                        .0;
+                    self.registers[FP_REG_INDEX] = self
+                        .memory
+                        .state
+                        .get(&(self.registers[FP_REG_INDEX].0 - 2))
+                        .unwrap()
+                        .clone();
                     //self.fp.pop().unwrap();
                 }
-                _ => panic!("not match opcode:{}", opcode)
+                _ => panic!("not match opcode:{}", opcode),
             }
             if self.pc >= (program.instructions.len() as u64 - 1) {
                 break;
