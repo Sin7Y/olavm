@@ -1,7 +1,7 @@
 use crate::program::REGISTER_NUM;
 use crate::trace::instruction::{Instruction, Opcode};
-use serde::{Serialize, Deserialize};
 use plonky2::field::goldilocks_field::GoldilocksField;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Step {
@@ -23,7 +23,15 @@ pub struct Trace {
 }
 
 impl Trace {
-    pub fn insert_step(&mut self, clk: u32, pc: u64, instruction: Instruction, regs: [GoldilocksField; REGISTER_NUM], flag: bool, v_addr: Option<u32>) {
+    pub fn insert_step(
+        &mut self,
+        clk: u32,
+        pc: u64,
+        instruction: Instruction,
+        regs: [GoldilocksField; REGISTER_NUM],
+        flag: bool,
+        v_addr: Option<u32>,
+    ) {
         let step = Step {
             clk,
             pc,

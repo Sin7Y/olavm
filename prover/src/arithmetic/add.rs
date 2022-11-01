@@ -1,18 +1,18 @@
-use std::matches;
 use std::marker::PhantomData;
+use std::matches;
 
-use vm_core::trace::{ trace::Step, instruction::* };
-use vm_core::program::REGISTER_NUM;
 use crate::columns::*;
+use vm_core::program::REGISTER_NUM;
+use vm_core::trace::{instruction::*, trace::Step};
 
 use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::RichField;
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
+use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-pub (crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] {
+pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] {
     assert!(matches!(step.instruction, Instruction::ADD(..)));
 
     let mut lv = [F::default(); NUM_ARITH_COLS];
@@ -21,7 +21,7 @@ pub (crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] 
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
 
-    let (ri, rj, a) = if let Instruction::ADD(Add{ri, rj, a}) = step.instruction {
+    let (ri, rj, a) = if let Instruction::ADD(Add { ri, rj, a }) = step.instruction {
         (ri, rj, a)
     } else {
         todo!()
@@ -36,24 +36,24 @@ pub (crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] 
         ImmediateOrRegName::RegName(reg_index) => {
             assert!(reg_index < REGISTER_NUM as u8);
             step.regs[reg_index as usize]
-        },
+        }
     };
 
-    lv[COL_ADD_OUTPUT] = F::from_canonical_u64(output.0);
-    lv[COL_ADD_INPUT0] = F::from_canonical_u64(input0.0);
-    lv[COL_ADD_INPUT1] = F::from_canonical_u64(input1.0);
+    lv[COL_ARITH_OUTPUT] = F::from_canonical_u64(output.0);
+    lv[COL_ARITH_INPUT0] = F::from_canonical_u64(input0.0);
+    lv[COL_ARITH_INPUT1] = F::from_canonical_u64(input1.0);
     lv
 }
 
-pub (crate) fn eval_packed_generic<P: PackedField>(
+pub(crate) fn eval_packed_generic<P: PackedField>(
     lv: &[P; NUM_ARITH_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
     // Get ADD data from trace.
-    let is_add =lv[COL_INST];
-    let output =lv[COL_ADD_OUTPUT];
-    let input0 =lv[COL_ADD_INPUT0];
-    let input1 =lv[COL_ADD_INPUT1];
+    let is_add = lv[COL_INST];
+    let output = lv[COL_ARITH_OUTPUT];
+    let input0 = lv[COL_ARITH_INPUT0];
+    let input1 = lv[COL_ARITH_INPUT1];
 
     // TODO: We use range_check to check input/output are in 32 bits.
     // range_check(output, 32);
@@ -68,16 +68,16 @@ pub (crate) fn eval_packed_generic<P: PackedField>(
     yield_constr.constraint(is_add * output_diff);
 }
 
-pub (crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
+pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
     lv: &[ExtensionTarget<D>; NUM_ARITH_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     // Get ADD data from trace.
-    let is_add =lv[COL_INST];
-    let output =lv[COL_ADD_OUTPUT];
-    let input0 =lv[COL_ADD_INPUT0];
-    let input1 =lv[COL_ADD_INPUT1];
+    let is_add = lv[COL_INST];
+    let output = lv[COL_ARITH_OUTPUT];
+    let input0 = lv[COL_ARITH_INPUT0];
+    let input1 = lv[COL_ARITH_INPUT1];
 
     let unreduced_output = builder.add_extension(input0, input1);
     let output_diff = builder.sub_extension(unreduced_output, output);
@@ -90,11 +90,12 @@ mod tests {
     use num::bigint::BigUint;
     use num::ToPrimitive;
 
-    use plonky2::{plonk::config::{
-        GenericConfig, PoseidonGoldilocksConfig,
-    }, field::types::Field64};
-    use starky::constraint_consumer::ConstraintConsumer;
     use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2::{
+        field::types::Field64,
+        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    };
+    use starky::constraint_consumer::ConstraintConsumer;
 
     use super::*;
 
@@ -111,10 +112,16 @@ mod tests {
         let step = Step {
             clk: 0,
             pc: 0,
-            instruction: Instruction::ADD(Add{ri: 0, rj: 1, a: ImmediateOrRegName::RegName(2)}),
-            regs: [output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero],
-            flag: false
-
+            instruction: Instruction::ADD(Add {
+                ri: 0,
+                rj: 1,
+                a: ImmediateOrRegName::RegName(2),
+            }),
+            regs: [
+                output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero, zero,
+            ],
+            flag: false,
         };
         let trace = generate_trace(&step);
 
@@ -144,10 +151,16 @@ mod tests {
         let step = Step {
             clk: 0,
             pc: 0,
-            instruction: Instruction::ADD(Add{ri: 0, rj: 1, a: ImmediateOrRegName::RegName(2)}),
-            regs: [output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero],
+            instruction: Instruction::ADD(Add {
+                ri: 0,
+                rj: 1,
+                a: ImmediateOrRegName::RegName(2),
+            }),
+            regs: [
+                output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero, zero,
+            ],
             flag: false,
-
         };
         let trace = generate_trace(&step);
 

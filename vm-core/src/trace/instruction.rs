@@ -1,6 +1,6 @@
-use plonky2::field::goldilocks_field::GoldilocksField;
-use serde::{Serialize, Deserialize};
 use num_enum::TryFromPrimitive;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -54,7 +54,6 @@ pub struct Mul {
     pub rj: u8,
     pub a: ImmediateOrRegName,
 }
-
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Ret {}

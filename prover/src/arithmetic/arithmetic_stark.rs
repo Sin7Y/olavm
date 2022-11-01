@@ -4,13 +4,13 @@ use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
+use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use starky::stark::Stark;
 use starky::vars::{StarkEvaluationTargets, StarkEvaluationVars};
-use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-use vm_core::trace::{trace::Step, instruction::Instruction::*};
 use crate::arithmetic::add;
 use crate::columns::*;
+use vm_core::trace::{instruction::Instruction::*, trace::Step};
 // use crate::arithmetic::compare;
 // use crate::arithmetic::modular;
 // use crate::arithmetic::mul;
@@ -23,7 +23,7 @@ pub struct ArithmeticStark<F, const D: usize> {
 
 impl<F: RichField, const D: usize> ArithmeticStark<F, D> {
     pub fn generate_trace(&self, step: &Step) -> [F; NUM_ARITH_COLS] {
-        let empty:[F; NUM_ARITH_COLS] = [F::default(); NUM_ARITH_COLS];
+        let empty: [F; NUM_ARITH_COLS] = [F::default(); NUM_ARITH_COLS];
         let ret = match step.instruction {
             ADD(_) => add::generate_trace(step),
             _ => empty,
@@ -66,21 +66,19 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticSta
 mod tests {
     use anyhow::Result;
 
-    use plonky2::plonk::config::{
-        GenericConfig, PoseidonGoldilocksConfig,
-    };
-    use plonky2::util::timing::TimingTree;
     use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::util::transpose;
     use plonky2::field::polynomial::PolynomialValues;
-    use starky::constraint_consumer::ConstraintConsumer;
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::util::timing::TimingTree;
+    use plonky2::util::transpose;
     use starky::config::StarkConfig;
+    use starky::constraint_consumer::ConstraintConsumer;
     use starky::prover::prove;
-    use starky::verifier::verify_stark_proof;
     use starky::util::trace_rows_to_poly_values;
+    use starky::verifier::verify_stark_proof;
 
     use super::*;
-    use vm_core::trace::{ trace::Step, instruction::* };
+    use vm_core::trace::{instruction::*, trace::Step};
 
     #[test]
     fn test_arithmetic_stark() -> Result<()> {
@@ -99,23 +97,23 @@ mod tests {
         let step = Step {
             clk: 0,
             pc: 0,
-            instruction: Instruction::ADD(Add{ri: 0, rj: 1, a: ImmediateOrRegName::RegName(2)}),
-            regs: [output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero],
-            flag: false
-
+            instruction: Instruction::ADD(Add {
+                ri: 0,
+                rj: 1,
+                a: ImmediateOrRegName::RegName(2),
+            }),
+            regs: [
+                output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero, zero,
+            ],
+            flag: false,
         };
         let trace = stark.generate_trace(&step);
         // The height_cap is 4, we need at least an 8 rows trace.
         let trace = vec![trace; 8];
         let trace = trace_rows_to_poly_values(trace);
 
-        let proof = prove::<F, C, S, D>(
-            stark,
-            &config,
-            trace,
-            [],
-            &mut TimingTree::default(),
-        )?;
+        let proof = prove::<F, C, S, D>(stark, &config, trace, [], &mut TimingTree::default())?;
 
         verify_stark_proof(stark, proof, &config)
     }
