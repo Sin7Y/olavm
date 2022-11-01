@@ -1,4 +1,5 @@
-pub mod add;
-pub mod arithmetic_stark;
+mod add;
 mod cmp;
 mod mul;
+
+pub mod arithmetic_stark;
