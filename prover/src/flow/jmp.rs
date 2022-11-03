@@ -13,23 +13,21 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_FLOW_COLS] {
-    assert!(matches!(step.instruction, Instruction::MOV(..)));
+    assert!(matches!(step.instruction, Instruction::JMP(..)));
 
     let mut lv = [F::default(); NUM_FLOW_COLS];
-    lv[COL_INST] = F::from_canonical_u32(MOV_ID as u32);
+    lv[COL_INST] = F::from_canonical_u32(JMP_ID as u32);
     lv[COL_CLK] = F::from_canonical_u32(step.clk);
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
 
-    let (ri, a) = if let Instruction::MOV(Mov { ri, a }) = step.instruction {
-        (ri, a)
+    let a = if let Instruction::JMP(Jmp { a }) = step.instruction {
+        a
     } else {
         todo!()
     };
-    assert!(ri < REGISTER_NUM as u8);
 
-    let dst = step.regs[ri as usize];
-    let src = match a {
+    let dst = match a {
         ImmediateOrRegName::Immediate(val) => val,
         ImmediateOrRegName::RegName(reg_index) => {
             assert!(reg_index < REGISTER_NUM as u8);
@@ -38,7 +36,6 @@ pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_FLOW_COLS] {
     };
 
     lv[COL_FLOW_DST] = F::from_canonical_u64(dst.0);
-    lv[COL_FLOW_SRC] = F::from_canonical_u64(src.0);
     lv
 }
 
@@ -46,14 +43,12 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     lv: &[P; NUM_FLOW_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    let is_mov = lv[COL_INST];
+    let is_jmp = lv[COL_INST];
+    let pc = lv[COL_PC];
     let dst = lv[COL_FLOW_DST];
-    let src = lv[COL_FLOW_SRC];
 
-    // TODO: range check dst and src.
-
-    let output_diff = dst - src;
-    yield_constr.constraint(is_mov * output_diff);
+    let output_diff = dst - pc;
+    yield_constr.constraint(is_jmp * output_diff);
 }
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
@@ -61,13 +56,13 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     lv: &[ExtensionTarget<D>; NUM_FLOW_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
-    let is_mov = lv[COL_INST];
+    let is_jmp = lv[COL_INST];
+    let pc = lv[COL_PC];
     let dst = lv[COL_FLOW_DST];
-    let src = lv[COL_FLOW_SRC];
 
-    let output_diff = builder.sub_extension(dst, src);
+    let output_diff = builder.sub_extension(dst, pc);
 
-    let filtered_constraint = builder.mul_extension(is_mov, output_diff);
+    let filtered_constraint = builder.mul_extension(is_jmp, output_diff);
     yield_constr.constraint(builder, filtered_constraint);
 }
 
@@ -85,23 +80,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_mov_stark() {
+    fn test_jmp_stark() {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
 
         let dst = GoldilocksField(10);
-        let src = GoldilocksField(10);
+        let pc = 10;
         let zero = GoldilocksField::ZERO;
         let step = Step {
             clk: 0,
-            pc: 0,
-            instruction: Instruction::MOV(Mov {
-                ri: 0,
-                a: ImmediateOrRegName::Immediate(src),
+            pc,
+            instruction: Instruction::JMP(Jmp {
+                a: ImmediateOrRegName::Immediate(dst),
             }),
             regs: [
-                dst, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
                 zero, zero,
             ],
             flag: false,

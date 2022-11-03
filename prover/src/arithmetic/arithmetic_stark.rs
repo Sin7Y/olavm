@@ -43,9 +43,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticSta
         P: PackedField<Scalar = FE>,
     {
         let lv = vars.local_values;
+        let nv = vars.next_values;
         add::eval_packed_generic(lv, yield_constr);
         mul::eval_packed_generic(lv, yield_constr);
         cmp::eval_packed_generic(lv, yield_constr);
+
+        // every setp, clk increase 1.
+        yield_constr.constraint(nv[COL_CLK] * (nv[COL_CLK] - lv[COL_CLK] - P::ONES));
     }
 
     fn eval_ext_circuit(
@@ -55,9 +59,17 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticSta
         yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
         let lv = vars.local_values;
+        let nv = vars.next_values;
         add::eval_ext_circuit(builder, lv, yield_constr);
         mul::eval_ext_circuit(builder, lv, yield_constr);
         cmp::eval_ext_circuit(builder, lv, yield_constr);
+
+        // constraint clk.
+        let cst = builder.sub_extension(nv[COL_CLK], lv[COL_CLK]);
+        let one = builder.one_extension();
+        let cst = builder.sub_extension(cst, one);
+        let cst = builder.mul_extension(nv[COL_CLK], cst);
+        yield_constr.constraint(builder, cst);
     }
 
     fn constraint_degree(&self) -> usize {
