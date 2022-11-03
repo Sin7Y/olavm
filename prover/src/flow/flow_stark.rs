@@ -13,6 +13,8 @@ use crate::columns::*;
 use crate::flow::{jmp, mov};
 use vm_core::trace::{instruction::Instruction::*, trace::Step};
 
+use super::cjmp;
+
 #[derive(Copy, Clone, Default)]
 pub struct ArithmeticStark<F, const D: usize> {
     pub f: PhantomData<F>,
@@ -24,6 +26,7 @@ impl<F: RichField, const D: usize> ArithmeticStark<F, D> {
         let ret = match step.instruction {
             MOV(_) => mov::generate_trace(step),
             JMP(_) => jmp::generate_trace(step),
+            CJMP(_) => cjmp::generate_trace(step),
             _ => empty,
         };
         ret
@@ -46,6 +49,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticSta
         let nv = vars.next_values;
         mov::eval_packed_generic(lv, yield_constr);
         jmp::eval_packed_generic(lv, yield_constr);
+        cjmp::eval_packed_generic(lv, nv, yield_constr);
 
         // every setp, clk increase 1.
         yield_constr.constraint(nv[COL_CLK] * (nv[COL_CLK] - lv[COL_CLK] - P::ONES));
@@ -61,6 +65,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticSta
         let nv = vars.next_values;
         mov::eval_ext_circuit(builder, lv, yield_constr);
         jmp::eval_ext_circuit(builder, lv, yield_constr);
+        cjmp::eval_ext_circuit(builder, lv, nv, yield_constr);
 
         // constraint clk.
         let cst = builder.sub_extension(nv[COL_CLK], lv[COL_CLK]);
@@ -133,7 +138,7 @@ mod tests {
         };
         let mov_trace = stark.generate_trace(&mov_step);
         let jmp_trace = stark.generate_trace(&jmp_step);
-        // The height_cap is 4, we need at least an 8 rows trace.
+        // TODO, the clk and pc should be reasonable!
         let trace = vec![
             mov_trace, mov_trace, mov_trace, mov_trace, jmp_trace, jmp_trace, jmp_trace, jmp_trace,
         ];
