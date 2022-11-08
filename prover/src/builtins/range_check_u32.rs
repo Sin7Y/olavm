@@ -10,12 +10,12 @@ use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsume
 use starky::stark::Stark;
 use starky::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
-#[derive(Copy, Clone， Debug)]
-pub struct RangeCheckU32Stark<F: RichField + Extendable<D>, const D: usize> {
-    _phantom: PhantomData<F>,
+#[derive(Copy, Clone)]
+pub struct RangeCheckU32Stark<F, const D: usize> {
+    pub _phantom: PhantomData<F>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> RangeCheckU32Stark<F, D> {
+impl<F: RichField, const D: usize> RangeCheckU32Stark<F, D> {
     /**
     LIMBS are all in [0, 4) and arranged in little-endian
     +-------+-------+------+-------+-------+
@@ -23,12 +23,12 @@ impl<F: RichField + Extendable<D>, const D: usize> RangeCheckU32Stark<F, D> {
     +-------+-------+------+-------+-------+
      **/
 
-    pub const BASE: usize = 4;
+    const BASE: usize = 4;
 
-    pub const COL_INPUT: usize = 0;
-    pub const COL_START_LIMBS: usize = Self::COL_INPUT + 1;
+    const COL_INPUT: usize = 0;
+    const COL_START_LIMBS: usize = Self::COL_INPUT + 1;
 
-    pub fn range_limbs(&self) -> Range<usize> {
+    fn range_limbs(&self) -> Range<usize> {
         Self::COL_START_LIMBS..Self::COL_START_LIMBS + 16
     }
 }
@@ -37,20 +37,25 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
     const COLUMNS: usize = 17;
     const PUBLIC_INPUTS: usize = 0;
 
-    fn eval_packed_generic<FE, P, const D2: usize>(&self, vars: StarkEvaluationVars<FE, P, { Self::COLUMNS }, { Self::PUBLIC_INPUTS }>, yield_constr: &mut ConstraintConsumer<P>) where FE: FieldExtension<D2, plonky2_field::extension::BaseField=F>, P: PackedField<plonky2_field::packed::Scalar=FE> {
-        let input = vars.local_values[RangeCheckU32Stark::COL_INPUT];
+    fn eval_packed_generic<FE, P, const D2: usize>(&self, vars: StarkEvaluationVars<FE, P,
+        { Self::COLUMNS }, { Self::PUBLIC_INPUTS }>, yield_constr: &mut ConstraintConsumer<P>)
+        where FE: FieldExtension<D2, BaseField=F>,
+              P: PackedField<Scalar=FE> {
+        let input = vars.local_values[Self::COL_INPUT];
         let limbs = vars.local_values[self.range_limbs()];
         for limb in limbs {
             yield_constr.constraint(
-                (0..RangeCheckU32Stark::BASE).map(|i| limb - F::Extension::from_canonical_usize(i)).product()
+                (0..Self::BASE).map(|i| limb - F::Extension::from_canonical_usize(i)).product()
             )
         }
-        let computed_sum = reduce_with_powers(&limbs, RangeCheckU32Stark::BASE);
+        let computed_sum = reduce_with_powers(&limbs, Self::BASE);
         yield_constr.constraint(computed_sum - input)
     }
 
-    fn eval_ext_circuit(&self, builder: &mut CircuitBuilder<F, D>, vars: StarkEvaluationTargets<D, { Self::COLUMNS }, { Self::PUBLIC_INPUTS }>, yield_constr: &mut RecursiveConstraintConsumer<F, D>) {
-        let input = vars.local_values[RangeCheckU32Stark::COL_INPUT];
+    fn eval_ext_circuit(&self, builder: &mut CircuitBuilder<F, D>,
+                        vars: StarkEvaluationTargets<D, { Self::COLUMNS }, { Self::PUBLIC_INPUTS }>,
+                        yield_constr: &mut RecursiveConstraintConsumer<F, D>) {
+        let input = vars.local_values[Self::COL_INPUT];
         let limbs = vars.local_values[self.range_limbs()];
         for limb in limbs {
             yield_constr.constraint(builder, {
