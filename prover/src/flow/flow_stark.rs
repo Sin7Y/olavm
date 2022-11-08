@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::marker::PhantomData;
 
 use plonky2::field::extension::{Extendable, FieldExtension};
@@ -11,7 +10,8 @@ use starky::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
 use crate::columns::*;
 use crate::flow::{jmp, mov};
-use vm_core::trace::{instruction::Instruction::*, trace::Step};
+use vm_core::trace::trace::Step;
+use vm_core::program::instruction::*;
 
 use super::cjmp;
 
@@ -24,9 +24,9 @@ impl<F: RichField, const D: usize> ArithmeticStark<F, D> {
     pub fn generate_trace(&self, step: &Step) -> [F; NUM_FLOW_COLS] {
         let empty: [F; NUM_FLOW_COLS] = [F::default(); NUM_FLOW_COLS];
         let ret = match step.instruction {
-            MOV(_) => mov::generate_trace(step),
-            JMP(_) => jmp::generate_trace(step),
-            CJMP(_) => cjmp::generate_trace(step),
+            Instruction::MOV(_) => mov::generate_trace(step),
+            Instruction::JMP(_) => jmp::generate_trace(step),
+            Instruction::CJMP(_) => cjmp::generate_trace(step),
             _ => empty,
         };
         ret
@@ -95,7 +95,8 @@ mod tests {
     use starky::verifier::verify_stark_proof;
 
     use super::*;
-    use vm_core::trace::{instruction::*, trace::Step};
+    use vm_core::trace::trace::Step;
+    use vm_core::program::instruction::*;
 
     #[ignore = "Mismatch between evaluation and opening of quotient polynomial"]
     #[test]

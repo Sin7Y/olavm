@@ -1,5 +1,7 @@
-use crate::trace::trace::{Step, Trace};
 use serde::{Deserialize, Serialize};
+use crate::trace::trace::{Step, Trace};
+
+pub mod instruction;
 
 /// fixme: use 16 registers
 pub const REGISTER_NUM: usize = 16;

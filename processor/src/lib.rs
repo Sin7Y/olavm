@@ -1,15 +1,14 @@
-use crate::decode::{decode_raw_instruction, IMM_INSTRUCTION_LEN};
-use crate::error::ProcessorError;
-use crate::memory::Memory;
+use std::collections::{BTreeMap, HashMap};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
-use std::collections::{BTreeMap, HashMap};
 use vm_core::program::{Program, REGISTER_NUM};
-use vm_core::trace::instruction::ImmediateOrRegName::Immediate;
-use vm_core::trace::instruction::{
-    Add, CJmp, Call, Equal, ImmediateOrRegName, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub,
-};
+use vm_core::program::instruction::{Add, Call, CJmp, Equal, ImmediateOrRegName, Instruction, Jmp, Mload, Mov, Mstore, Mul, Opcode, Ret, Sub};
+use vm_core::program::instruction::ImmediateOrRegName::Immediate;
+use vm_core::trace::trace::MemoryTraceCell;
+use crate::decode::{decode_raw_instruction, IMM_INSTRUCTION_LEN};
+use crate::error::ProcessorError;
+use crate::memory::{MemoryTree};
 
 mod decode;
 pub mod error;
@@ -26,7 +25,7 @@ pub struct Process {
     pub registers: [GoldilocksField; REGISTER_NUM],
     pub pc: u64,
     pub flag: bool,
-    pub memory: Memory,
+    pub memory: MemoryTree,
 }
 
 impl Process {
@@ -36,10 +35,7 @@ impl Process {
             registers: [Default::default(); REGISTER_NUM],
             pc: 0,
             flag: false,
-            memory: Memory {
-                state: HashMap::new(),
-                trace: BTreeMap::new(),
-            },
+            memory: MemoryTree { trace: BTreeMap::new() },
         };
     }
 
@@ -152,7 +148,21 @@ impl Process {
                 let dst_index = self.get_reg_index(&ops[1]);
                 Instruction::RET(Ret {})
             }
-            _ => panic!("not match opcode:{}", opcode),
+            "mstore" => {
+                debug!("opcode: mstore");
+                assert!(ops.len() == 3, "mstore params len is 2");
+                let op1_value = self.get_index_value(&ops[1]);
+                let op2_index = self.get_reg_index(&ops[2]);
+                Instruction::MSTORE(Mstore { ri: op1_value.1, rj: op2_index as u8})
+            }
+            "mload" => {
+                debug!("opcode: mload");
+                assert!(ops.len() == 3, "mload params len is 2");
+                let op2_value = self.get_index_value(&ops[2]);
+                let op1_index = self.get_reg_index(&ops[1]);
+                Instruction::MLOAD(Mload { ri: op1_index as u8, rj: op2_value.1})
+            }
+            _ => panic!("not match opcode:{}", opcode)
         };
         instuction
     }
@@ -380,47 +390,46 @@ impl Process {
                     debug!("opcode: jmp");
                     assert!(ops.len() == 2, "jmp params len is 1");
                     let call_addr = self.get_index_value(&ops[1]);
-                    self.memory.state.insert(
-                        self.registers[FP_REG_INDEX].0 - 1,
-                        GoldilocksField::from_canonical_u64(self.pc + 1),
-                    );
-                    program.trace.insert_step(
-                        self.clk,
-                        self.pc,
-                        Instruction::CALL(Call { ri: call_addr.1 }),
-                        self.registers.clone(),
-                        self.flag,
-                        None,
-                    );
-                    self.pc = call_addr.0 .0;
+                    self.memory.write(self.registers[FP_REG_INDEX].0 - 1, self.clk, self.pc,   GoldilocksField::from_canonical_u64(self.pc + 1));
+                    program.trace.insert_step(self.clk, self.pc,
+                                              Instruction::CALL(Call { ri: call_addr.1 }),
+                                              self.registers.clone(), self.flag, None);
+                    self.pc = call_addr.0.0;
                 }
                 "ret" => {
                     debug!("opcode: ret");
                     assert!(ops.len() == 2, "ret params len is 1");
                     let dst_index = self.get_reg_index(&ops[1]);
-                    program.trace.insert_step(
-                        self.clk,
-                        self.pc,
-                        Instruction::RET(Ret {}),
-                        self.registers.clone(),
-                        self.flag,
-                        None,
-                    );
-                    self.pc = self
-                        .memory
-                        .state
-                        .get(&(self.registers[FP_REG_INDEX].0 - 1))
-                        .unwrap()
-                        .0;
-                    self.registers[FP_REG_INDEX] = self
-                        .memory
-                        .state
-                        .get(&(self.registers[FP_REG_INDEX].0 - 2))
-                        .unwrap()
-                        .clone();
+                    program.trace.insert_step(self.clk, self.pc,
+                                              Instruction::RET(Ret {}),
+                                              self.registers.clone(), self.flag, None);
+                    self.pc = self.memory.read(self.registers[FP_REG_INDEX].0 - 1, self.clk, self.pc).0;
+                    self.registers[FP_REG_INDEX] = self.memory.read(self.registers[FP_REG_INDEX].0 - 2, self.clk, self.pc);
                     //self.fp.pop().unwrap();
                 }
-                _ => panic!("not match opcode:{}", opcode),
+                "mstore" => {
+                    debug!("opcode: mstore");
+                    assert!(ops.len() == 3, "mstore params len is 2");
+                    let op1_value = self.get_index_value(&ops[1]);
+                    let op2_index = self.get_reg_index(&ops[2]);
+                    self.memory.write(op1_value.0.0, self.clk, self.pc,   self.registers[op2_index]);
+                    program.trace.insert_step(self.clk, self.pc,
+                                              Instruction::MSTORE(Mstore { ri: op1_value.1, rj: op2_index as u8}),
+                                              self.registers.clone(), self.flag, None);
+                    self.pc += step;
+                }
+                "mload" => {
+                    debug!("opcode: mload");
+                    assert!(ops.len() == 3, "mload params len is 2");
+                    let op1_index = self.get_reg_index(&ops[1]);
+                    let op2_value = self.get_index_value(&ops[2]);
+                    self.registers[op1_index] = self.memory.read(op2_value.0.0, self.clk, self.pc);
+                    program.trace.insert_step(self.clk, self.pc,
+                                              Instruction::MLOAD(Mload { ri: op1_index as u8, rj: op2_value.1}),
+                                              self.registers.clone(), self.flag, None);
+                    self.pc += step;
+                }
+                _ => panic!("not match opcode:{}", opcode)
             }
             if self.pc >= (program.instructions.len() as u64 - 1) {
                 break;
@@ -428,5 +437,14 @@ impl Process {
             self.clk += 1;
         }
         Ok(())
+    }
+
+    pub fn gen_memory_table(&mut self, program: &mut Program) {
+        for (addr, mut cells) in self.memory.trace.iter() {
+            for cell in cells {
+                let trace_cell = MemoryTraceCell{addr: *addr, clk: cell.clk, pc: cell.pc, op: cell.op.clone(), value: cell.value.clone()};
+                program.trace.memory.push(trace_cell);
+            }
+        }
     }
 }
