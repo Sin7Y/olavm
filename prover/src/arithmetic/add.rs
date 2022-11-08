@@ -1,13 +1,11 @@
-use std::marker::PhantomData;
 use std::matches;
 
 use crate::columns::*;
-use vm_core::program::REGISTER_NUM;
-use vm_core::trace::{instruction::*, trace::Step};
+use vm_core::program::{REGISTER_NUM, instruction::*};
+use vm_core::trace::trace::Step;
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
-use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};

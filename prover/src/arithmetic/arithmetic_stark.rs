@@ -10,7 +10,8 @@ use starky::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
 use crate::arithmetic::{add, cmp, mul};
 use crate::columns::*;
-use vm_core::trace::{instruction::Instruction::*, trace::Step};
+use vm_core::trace::trace::Step;
+use vm_core::program::instruction::*;
 
 #[derive(Copy, Clone, Default)]
 pub struct ArithmeticStark<F, const D: usize> {
@@ -21,9 +22,9 @@ impl<F: RichField, const D: usize> ArithmeticStark<F, D> {
     pub fn generate_trace(&self, step: &Step) -> [F; NUM_ARITH_COLS] {
         let empty: [F; NUM_ARITH_COLS] = [F::default(); NUM_ARITH_COLS];
         let ret = match step.instruction {
-            ADD(_) => add::generate_trace(step),
-            MUL(_) => mul::generate_trace(step),
-            EQ(_) => cmp::generate_trace(step),
+            Instruction::ADD(_) => add::generate_trace(step),
+            Instruction::MUL(_) => mul::generate_trace(step),
+            Instruction::EQ(_) => cmp::generate_trace(step),
             _ => empty,
         };
         ret
@@ -92,7 +93,8 @@ mod tests {
     use starky::verifier::verify_stark_proof;
 
     use super::*;
-    use vm_core::trace::{instruction::*, trace::Step};
+    use vm_core::trace::trace::Step;
+    use vm_core::program::instruction::*;
 
     #[ignore = "Mismatch between evaluation and opening of quotient polynomial"]
     #[test]

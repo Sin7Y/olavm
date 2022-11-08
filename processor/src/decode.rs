@@ -3,7 +3,8 @@ use crate::{GoldilocksField, FP_REG_INDEX};
 use log::{debug, info};
 use std::fmt::Display;
 use std::num::ParseIntError;
-use vm_core::trace::instruction::{Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub};
+use vm_core::program::instruction::{Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub};
+
 pub const NO_IMM_INSTRUCTION_LEN: u64 = 1;
 pub const IMM_INSTRUCTION_LEN: u64 = 2;
 
@@ -66,7 +67,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::MOV | Opcode::EQ => {
+            Opcode::MOV | Opcode::EQ | Opcode::MLOAD => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
@@ -80,6 +81,21 @@ pub fn decode_raw_instruction(
                     let reg1_name = format!("r{}", reg1);
                     instruction += &reg1_name;
                 }
+            }
+            Opcode::MSTORE => {
+                instruction += &op_code.to_string();
+                instruction += " ";
+                if imm_flag == 1 {
+                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
+                    instruction += &imm.to_string();
+                    step = IMM_INSTRUCTION_LEN;
+                } else {
+                    let reg0_name = format!("r{}", reg0);
+                    instruction += &reg0_name;
+                }
+                instruction += " ";
+                let reg1_name = format!("r{}", reg1);
+                instruction += &reg1_name;
             }
             Opcode::JMP | Opcode::CJMP | Opcode::CALL => {
                 instruction += &op_code.to_string();
@@ -96,7 +112,7 @@ pub fn decode_raw_instruction(
             Opcode::RET => {
                 instruction += &op_code.to_string();
             }
-            _ => panic!("not match opcode:{}", op_code),
+            _ => panic!("not match opcode:{}", op_code)
         };
         return Ok((instruction, step));
     }

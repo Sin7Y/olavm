@@ -64,6 +64,18 @@ pub struct Call {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Mstore {
+    pub ri: ImmediateOrRegName,
+    pub rj: u8,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Mload {
+    pub ri: u8,
+    pub rj: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Instruction {
     MOV(Mov),
     EQ(Equal),
@@ -73,6 +85,8 @@ pub enum Instruction {
     MUL(Mul),
     RET(Ret),
     CALL(Call),
+    MSTORE(Mstore),
+    MLOAD(Mload),
     // todo: for test, delete next version
     SUB(Sub),
 }

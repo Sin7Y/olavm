@@ -1,31 +1,33 @@
+use std::marker::PhantomData;
 use std::matches;
 
 use crate::columns::*;
-use vm_core::trace::trace::Step;
-use vm_core::program::{REGISTER_NUM, instruction::*};
+use vm_core::program::REGISTER_NUM;
+use vm_core::trace::{instruction::*, trace::Step};
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
+use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_FLOW_COLS] {
-    assert!(matches!(step.instruction, Instruction::CJMP(..)));
+    assert!(matches!(step.instruction, Instruction::CALL(..)));
 
     let mut lv = [F::default(); NUM_FLOW_COLS];
-    lv[COL_INST] = F::from_canonical_u32(CJMP_ID as u32);
+    lv[COL_INST] = F::from_canonical_u32(CALL_ID as u32);
     lv[COL_CLK] = F::from_canonical_u32(step.clk);
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
 
-    let a = if let Instruction::CJMP(CJmp { a }) = step.instruction {
-        a
+    let ri = if let Instruction::CALL(Call { ri }) = step.instruction {
+        ri
     } else {
         todo!()
     };
 
-    let dst = match a {
+    let dst = match ri {
         ImmediateOrRegName::Immediate(val) => val,
         ImmediateOrRegName::RegName(reg_index) => {
             assert!(reg_index < REGISTER_NUM as u8);
