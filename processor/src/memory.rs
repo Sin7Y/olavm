@@ -1,7 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
-use plonky2::field::types::Field;
-use vm_core::trace::trace::{MemoryCell, MemoryOperation};
 use crate::GoldilocksField;
+use plonky2::field::types::Field;
+use std::collections::{BTreeMap, HashMap};
+use vm_core::trace::trace::{MemoryCell, MemoryOperation};
 
 const INIT_MEMORY_DATA: u64 = 0x0;
 
@@ -20,11 +20,21 @@ impl MemoryTree {
             .entry(addr)
             .and_modify(|addr_trace| {
                 let last_value = addr_trace.last().expect("empty address trace").value;
-                let new_value = MemoryCell{pc, clk, op: MemoryOperation::Read, value:last_value};
+                let new_value = MemoryCell {
+                    pc,
+                    clk,
+                    op: MemoryOperation::Read,
+                    value: last_value,
+                };
                 addr_trace.push(new_value);
             })
             .or_insert_with(|| {
-                let new_value = MemoryCell{pc, clk, op: MemoryOperation::Read, value: GoldilocksField::from_canonical_u64(INIT_MEMORY_DATA)};
+                let new_value = MemoryCell {
+                    pc,
+                    clk,
+                    op: MemoryOperation::Read,
+                    value: GoldilocksField::from_canonical_u64(INIT_MEMORY_DATA),
+                };
                 vec![new_value]
             })
             .last()
@@ -35,7 +45,12 @@ impl MemoryTree {
     pub fn write(&mut self, addr: u64, clk: u32, pc: u64, value: GoldilocksField) {
         // add a memory access to the appropriate address trace; if this is the first time
         // we access this address, initialize address trace.
-        let new_cell = MemoryCell{clk, pc, op: MemoryOperation::Write, value};
+        let new_cell = MemoryCell {
+            clk,
+            pc,
+            op: MemoryOperation::Write,
+            value,
+        };
         self.trace
             .entry(addr)
             .and_modify(|addr_trace| addr_trace.push(new_cell))

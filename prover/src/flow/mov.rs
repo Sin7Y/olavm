@@ -1,9 +1,9 @@
 use std::matches;
 
 use crate::columns::*;
+use vm_core::program::instruction::*;
 use vm_core::program::REGISTER_NUM;
 use vm_core::trace::trace::Step;
-use vm_core::program::instruction::*;
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;

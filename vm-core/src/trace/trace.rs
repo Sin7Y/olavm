@@ -1,7 +1,7 @@
-use crate::program::REGISTER_NUM;
 use crate::program::instruction::{Instruction, Opcode};
-use serde::{Serialize, Deserialize};
+use crate::program::REGISTER_NUM;
 use plonky2::field::goldilocks_field::GoldilocksField;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum MemoryOperation {
@@ -25,7 +25,6 @@ pub struct MemoryTraceCell {
     pub op: MemoryOperation,
     pub value: GoldilocksField,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Step {

@@ -3,7 +3,9 @@ use crate::{GoldilocksField, FP_REG_INDEX};
 use log::{debug, info};
 use std::fmt::Display;
 use std::num::ParseIntError;
-use vm_core::program::instruction::{Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub};
+use vm_core::program::instruction::{
+    Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub,
+};
 
 pub const NO_IMM_INSTRUCTION_LEN: u64 = 1;
 pub const IMM_INSTRUCTION_LEN: u64 = 2;
@@ -112,7 +114,7 @@ pub fn decode_raw_instruction(
             Opcode::RET => {
                 instruction += &op_code.to_string();
             }
-            _ => panic!("not match opcode:{}", op_code)
+            _ => panic!("not match opcode:{}", op_code),
         };
         return Ok((instruction, step));
     }
