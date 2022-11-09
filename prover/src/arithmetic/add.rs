@@ -1,7 +1,7 @@
 use std::matches;
 
 use crate::columns::*;
-use vm_core::program::{REGISTER_NUM, instruction::*};
+use vm_core::program::{instruction::*, REGISTER_NUM};
 use vm_core::trace::trace::Step;
 
 use plonky2::field::extension::Extendable;

@@ -13,8 +13,8 @@ use starky::vars::StarkEvaluationTargets;
 use starky::vars::StarkEvaluationVars;
 use starky::{config::StarkConfig, proof::StarkProofWithPublicInputs, prover::prove, stark::Stark};
 
-use vm_core::trace::trace::Step;
 use vm_core::program::instruction::*;
+use vm_core::trace::trace::Step;
 // use crate::arithmetic_stark::ArithmeticStark;
 
 #[derive(Clone, Copy, Default)]

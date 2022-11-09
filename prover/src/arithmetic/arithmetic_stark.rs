@@ -10,8 +10,8 @@ use starky::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
 use crate::arithmetic::{add, cmp, mul};
 use crate::columns::*;
-use vm_core::trace::trace::Step;
 use vm_core::program::instruction::*;
+use vm_core::trace::trace::Step;
 
 #[derive(Copy, Clone, Default)]
 pub struct ArithmeticStark<F, const D: usize> {
@@ -93,8 +93,8 @@ mod tests {
     use starky::verifier::verify_stark_proof;
 
     use super::*;
-    use vm_core::trace::trace::Step;
     use vm_core::program::instruction::*;
+    use vm_core::trace::trace::Step;
 
     #[ignore = "Mismatch between evaluation and opening of quotient polynomial"]
     #[test]

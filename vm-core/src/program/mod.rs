@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::trace::trace::{Step, Trace};
+use serde::{Deserialize, Serialize};
 
 pub mod instruction;
 
