@@ -65,8 +65,8 @@ pub struct Call {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Mstore {
-    pub ri: ImmediateOrRegName,
-    pub rj: u8,
+    pub a: ImmediateOrRegName,
+    pub ri: u8,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

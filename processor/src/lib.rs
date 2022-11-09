@@ -159,8 +159,8 @@ impl Process {
                 let op1_value = self.get_index_value(&ops[1]);
                 let op2_index = self.get_reg_index(&ops[2]);
                 Instruction::MSTORE(Mstore {
-                    ri: op1_value.1,
-                    rj: op2_index as u8,
+                    a: op1_value.1,
+                    ri: op2_index as u8,
                 })
             }
             "mload" => {
@@ -449,8 +449,8 @@ impl Process {
                         self.clk,
                         self.pc,
                         Instruction::MSTORE(Mstore {
-                            ri: op1_value.1,
-                            rj: op2_index as u8,
+                            a: op1_value.1,
+                            ri: op2_index as u8,
                         }),
                         self.registers.clone(),
                         self.flag,

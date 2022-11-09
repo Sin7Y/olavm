@@ -86,7 +86,7 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
 mod tests {
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::{
-        field::types::Field64,
+        field::types::{Field, Field64},
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
     use starky::constraint_consumer::ConstraintConsumer;
