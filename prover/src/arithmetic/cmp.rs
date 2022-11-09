@@ -79,7 +79,7 @@ mod tests {
 
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::{
-        field::types::Field64,
+        field::types::Field,
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
     use starky::constraint_consumer::ConstraintConsumer;

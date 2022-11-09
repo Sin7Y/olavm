@@ -27,6 +27,9 @@ pub(crate) const NUM_ARITH_COLS: usize = COL_REG + 3;
 // For flow operation, we need `NUM_FLOW_COLS` columns for stark trace.
 pub(crate) const NUM_FLOW_COLS: usize = COL_REG + 4;
 
+// For RAM operation, we need `` columns for stark trace.
+pub(crate) const NUM_RAM_COLS: usize = COL_REG + 2;
+
 // Arithmetic register columns.
 // reg_0 for output.
 pub(crate) const COL_ARITH_OUTPUT: usize = COL_REG;
@@ -54,6 +57,12 @@ pub(crate) const COL_FLOW_MEM_CLK: usize = COL_FLOW_MEM_ADDR + 1;
 pub(crate) const COL_FLOW_MEM_PC: usize = COL_FLOW_MEM_CLK + 1;
 // value of this memory trace.
 pub(crate) const COL_FLOW_MEM_VAL: usize = COL_FLOW_MEM_PC + 1;
+
+// RAM register columns.
+// reg_0 for dst.
+pub(crate) const COL_RAM_DST: usize = COL_REG;
+// reg_1 for src.
+pub(crate) const COL_RAM_SRC: usize = COL_RAM_DST + 1;
 
 // usize type of instruction.
 pub(crate) const ADD_ID: usize = 1;
