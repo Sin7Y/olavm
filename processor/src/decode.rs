@@ -64,7 +64,7 @@ pub fn decode_raw_instruction(raw_inst_str: &str, imm_str: &str) -> Result<(Stri
                     instruction += &reg2_name;
                 }
             }
-            Opcode::MOV | Opcode::EQ | Opcode::MLOAD => {
+            Opcode::MOV | Opcode::EQ | Opcode::MLOAD | Opcode::ASSERT => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);

@@ -76,6 +76,12 @@ pub struct Mload {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Assert {
+    pub ri: u8,
+    pub a: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Instruction {
     MOV(Mov),
     EQ(Equal),
@@ -87,6 +93,7 @@ pub enum Instruction {
     CALL(Call),
     MSTORE(Mstore),
     MLOAD(Mload),
+    ASSERT(Assert),
     // todo: for test, delete next version
     SUB(Sub),
 }
@@ -105,8 +112,7 @@ pub enum Opcode {
     RET,
     MLOAD,
     MSTORE,
-    SLOAD,
-    SSTORE,
+    ASSERT,
     // todo: for test, delete next version
     SUB,
 }
@@ -125,8 +131,7 @@ impl fmt::Display for Opcode {
             Opcode::RET => write!(f, "ret"),
             Opcode::MLOAD => write!(f, "mload"),
             Opcode::MSTORE => write!(f, "mstore"),
-            Opcode::SLOAD => write!(f, "sload"),
-            Opcode::SSTORE => write!(f, "sstore"),
+            Opcode::ASSERT => write!(f, "assert"),
             Opcode::SUB => write!(f, "sub"),
         }
     }

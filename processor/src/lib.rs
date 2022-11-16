@@ -3,7 +3,7 @@ use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use vm_core::program::{Program, REGISTER_NUM};
-use vm_core::program::instruction::{Add, Call, CJmp, Equal, ImmediateOrRegName, Instruction, Jmp, Mload, Mov, Mstore, Mul, Opcode, Ret, Sub};
+use vm_core::program::instruction::{Add, Assert, Call, CJmp, Equal, ImmediateOrRegName, Instruction, Jmp, Mload, Mov, Mstore, Mul, Opcode, Ret, Sub};
 use vm_core::program::instruction::ImmediateOrRegName::Immediate;
 use vm_core::trace::trace::MemoryTraceCell;
 use crate::decode::{decode_raw_instruction, IMM_INSTRUCTION_LEN};
@@ -218,10 +218,22 @@ impl Process {
                     debug!("opcode: eq");
                     assert!(ops.len() == 3, "eq params len is 2");
                     let dst_index = self.get_reg_index(&ops[1]);
-                    // let src_index = self.get_reg_index(&ops[2]);
                     let value = self.get_index_value(&ops[2]);
                     self.flag = self.registers[dst_index] == value.0;
                     program.trace.insert_step(self.clk, self.pc, Instruction::EQ(Equal { ri: dst_index as u8, a: value.1 }),
+                                              self.registers.clone(), self.flag, None);
+                    self.pc += step;
+                }
+                "assert" => {
+                    debug!("opcode: assert");
+                    assert!(ops.len() == 3, "assert params len is 2");
+                    let dst_index = self.get_reg_index(&ops[1]);
+                    let value = self.get_index_value(&ops[2]);
+                    self.flag = self.registers[dst_index] == value.0;
+                    if !self.flag {
+                        panic!("opcode assert failed, dst:{}, src:{}", self.registers[dst_index], value.0)
+                    }
+                    program.trace.insert_step(self.clk, self.pc, Instruction::ASSERT(Assert { ri: dst_index as u8, a: value.1 }),
                                               self.registers.clone(), self.flag, None);
                     self.pc += step;
                 }
