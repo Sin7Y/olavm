@@ -12,12 +12,12 @@ use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsume
 
 pub(crate) fn generate_trace<F: RichField>(
     step: &Step,
-    memory: &Vec<MemoryTraceCell>,
+    _memory: &Vec<MemoryTraceCell>,
 ) -> [F; NUM_FLOW_COLS] {
     assert!(matches!(step.instruction, Instruction::RET(..)));
 
     let mut lv = [F::default(); NUM_FLOW_COLS];
-    lv[COL_INST] = F::from_canonical_u32(RET_ID as u32);
+    lv[COL_S_RET] = F::from_canonical_u32(RET_ID as u32);
     lv[COL_CLK] = F::from_canonical_u32(step.clk);
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
@@ -26,6 +26,7 @@ pub(crate) fn generate_trace<F: RichField>(
     lv
 }
 
+#[allow(dead_code)]
 pub(crate) fn eval_packed_generic<P: PackedField>(
     lv: &[P; NUM_FLOW_COLS],
     nv: &[P; NUM_FLOW_COLS],
@@ -34,6 +35,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     todo!();
 }
 
+#[allow(dead_code)]
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
     lv: &[ExtensionTarget<D>; NUM_FLOW_COLS],

@@ -14,7 +14,7 @@ pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] {
     assert!(matches!(step.instruction, Instruction::EQ(..)));
 
     let mut lv = [F::default(); NUM_ARITH_COLS];
-    lv[COL_INST] = F::from_canonical_u32(EQ_ID as u32);
+    lv[COL_S_EQ] = F::from_canonical_u32(EQ_ID as u32);
     lv[COL_CLK] = F::from_canonical_u32(step.clk);
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
@@ -44,7 +44,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     lv: &[P; NUM_ARITH_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    let is_eq = lv[COL_INST];
+    let is_eq = lv[COL_S_EQ];
     let lhs = lv[COL_ARITH_INPUT0];
     let rhs = lv[COL_ARITH_INPUT1];
     let flag = lv[COL_FLAG];
@@ -61,7 +61,7 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     lv: &[ExtensionTarget<D>; NUM_ARITH_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
-    let is_eq = lv[COL_INST];
+    let is_eq = lv[COL_S_EQ];
     let lhs = lv[COL_ARITH_INPUT0];
     let rhs = lv[COL_ARITH_INPUT1];
     let flag = lv[COL_FLAG];
@@ -123,10 +123,6 @@ mod tests {
 
     #[test]
     fn test_not_equal_stark() {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-
         let input0 = GoldilocksField(100);
         let input1 = GoldilocksField(22);
         let zero = GoldilocksField::ZERO;

@@ -1,15 +1,30 @@
 use vm_core::program::REGISTER_NUM;
 
 // The trace for starky should be like:
-// ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────┬───────┬───────┬───────┬────────┐
-// │  inst │  clk  │  pc   │ flag  │ reg_0 │ reg_1 │ reg_2 │  ...  │ reg_15 │ mem_0 │ mem_1 │ mem_2 │ mem_n  |
-// ├───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼────────┼───────┼───────┼───────┼────────|
-// │  add  │  10   │  123  │   0   │   0   │   1   │   2   │       │        │   0   │   1   │   2   │        |
-// └───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴────────┴───────┴───────┴───────┴────────┘
-
+// There are several selector columns for instructions.
+// ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────┬─────────┬
+// │ s_add │ s_mul │  s_eq │ s_mov │ s_jmp │ s_cjmp│ s_call│ s_ret │ s_mload│ s_mstore│
+// ├───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼────────┼─────────┼
+// │  1    │   0   │   0   │   0   │   0   │   0   │   0   │   0   │   0    │    0    │
+// └───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴────────┴─────────┴
+// Other columns are regular context columns and 16 register columns.
+// ┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────┐
+// │  clk  │  pc   │ flag  │ reg_0 │ reg_1 │ reg_2 │  ...  │ reg_15 |
+// ┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼────────|
+// │  10   │  123  │   0   │   0   │   1   │   2   │       │        |
+// ┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴────────┘
 // Columns number of trace.
-pub(crate) const COL_INST: usize = 0;
-pub(crate) const COL_CLK: usize = COL_INST + 1;
+pub(crate) const COL_S_ADD: usize = 0;
+pub(crate) const COL_S_MUL: usize = COL_S_ADD + 1;
+pub(crate) const COL_S_EQ: usize = COL_S_MUL + 1;
+pub(crate) const COL_S_MOV: usize = COL_S_EQ + 1;
+pub(crate) const COL_S_JMP: usize = COL_S_MOV + 1;
+pub(crate) const COL_S_CJMP: usize = COL_S_JMP + 1;
+pub(crate) const COL_S_CALL: usize = COL_S_CJMP + 1;
+pub(crate) const COL_S_RET: usize = COL_S_CALL + 1;
+pub(crate) const COL_S_MLOAD: usize = COL_S_RET + 1;
+pub(crate) const COL_S_MSTORE: usize = COL_S_MLOAD + 1;
+pub(crate) const COL_CLK: usize = COL_S_MSTORE + 1;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
 pub(crate) const COL_FLAG: usize = COL_PC + 1;
 

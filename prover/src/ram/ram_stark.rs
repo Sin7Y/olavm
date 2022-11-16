@@ -10,7 +10,7 @@ use starky::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
 use crate::columns::*;
 use vm_core::program::instruction::*;
-use vm_core::trace::trace::{MemoryTraceCell, Step};
+use vm_core::trace::trace::{MemoryOperation, MemoryTraceCell, Step};
 
 use super::{mload, mstore};
 
@@ -22,12 +22,11 @@ pub struct RamStark<F, const D: usize> {
 impl<F: RichField, const D: usize> RamStark<F, D> {
     pub fn generate_trace(&self, step: &Step, memory: &Vec<MemoryTraceCell>) -> [F; NUM_RAM_COLS] {
         let empty: [F; NUM_RAM_COLS] = [F::default(); NUM_RAM_COLS];
-        let ret = match step.instruction {
+        match step.instruction {
             Instruction::MLOAD(_) => mload::generate_trace(step, memory),
             Instruction::MSTORE(_) => mstore::generate_trace(step, memory),
             _ => empty,
-        };
-        ret
+        }
     }
 }
 
@@ -94,7 +93,6 @@ mod tests {
     use vm_core::program::instruction::*;
     use vm_core::trace::trace::Step;
 
-    #[ignore = "Mismatch between evaluation and opening of quotient polynomial"]
     #[test]
     fn test_ram_stark() -> Result<()> {
         const D: usize = 2;
@@ -104,9 +102,18 @@ mod tests {
 
         let stark = S::default();
         let config = StarkConfig::standard_fast_config();
+        // Test vector
+        // TODO: This is just for test instructions, for memory constraints,
+        // write first then read.
+        /*
+           clk: 0, pc: 0, mload 0 10 -> memory(addr: 10, clk: 0, pc: 0, op: read, value: 100)
+           clk: 1, pc: 1, mstore 20 0 => memory(addr: 20, clk: 1, pc: 1, op: write, value: reg[0])
+        */
 
-        let dst = GoldilocksField(10);
-        let src = GoldilocksField(10);
+        let val1 = GoldilocksField(49);
+        let val2 = GoldilocksField(32);
+        let dst = GoldilocksField(18);
+        let src = GoldilocksField(76);
         let zero = GoldilocksField::default();
         let mload_step = Step {
             clk: 0,
@@ -116,30 +123,172 @@ mod tests {
                 rj: ImmediateOrRegName::Immediate(src),
             }),
             regs: [
-                dst, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                val1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
                 zero, zero,
             ],
             flag: false,
         };
-        let mstore_step = Step {
+        let mload_step1 = Step {
             clk: 1,
             pc: 1,
+            instruction: Instruction::MLOAD(Mload {
+                ri: 0,
+                rj: ImmediateOrRegName::Immediate(src),
+            }),
+            regs: [
+                val1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero,
+            ],
+            flag: false,
+        };
+        let mload_step2 = Step {
+            clk: 2,
+            pc: 2,
+            instruction: Instruction::MLOAD(Mload {
+                ri: 0,
+                rj: ImmediateOrRegName::Immediate(src),
+            }),
+            regs: [
+                val1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero,
+            ],
+            flag: false,
+        };
+        let mload_step3 = Step {
+            clk: 3,
+            pc: 3,
+            instruction: Instruction::MLOAD(Mload {
+                ri: 0,
+                rj: ImmediateOrRegName::Immediate(src),
+            }),
+            regs: [
+                val1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero,
+            ],
+            flag: false,
+        };
+
+        let mstore_step = Step {
+            clk: 4,
+            pc: 4,
             instruction: Instruction::MSTORE(Mstore {
                 a: ImmediateOrRegName::Immediate(dst),
                 ri: 0,
             }),
             regs: [
-                zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                val2, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
                 zero, zero,
             ],
             flag: false,
         };
-        let memory_trace: Vec<MemoryTraceCell> = Vec::new();
-        let mov_trace = stark.generate_trace(&mload_step, &memory_trace);
-        let jmp_trace = stark.generate_trace(&mstore_step, &memory_trace);
-        // TODO, the clk and pc should be reasonable!
+        let mstore_step1 = Step {
+            clk: 5,
+            pc: 5,
+            instruction: Instruction::MSTORE(Mstore {
+                a: ImmediateOrRegName::Immediate(dst),
+                ri: 0,
+            }),
+            regs: [
+                val2, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero,
+            ],
+            flag: false,
+        };
+        let mstore_step2 = Step {
+            clk: 6,
+            pc: 6,
+            instruction: Instruction::MSTORE(Mstore {
+                a: ImmediateOrRegName::Immediate(dst),
+                ri: 0,
+            }),
+            regs: [
+                val2, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero,
+            ],
+            flag: false,
+        };
+        let mstore_step3 = Step {
+            clk: 7,
+            pc: 7,
+            instruction: Instruction::MSTORE(Mstore {
+                a: ImmediateOrRegName::Immediate(dst),
+                ri: 0,
+            }),
+            regs: [
+                val2, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero,
+            ],
+            flag: false,
+        };
+
+        let mc = MemoryTraceCell {
+            addr: src.0,
+            clk: 0,
+            pc: 0,
+            op: MemoryOperation::Read,
+            value: val1,
+        };
+        let mc1 = MemoryTraceCell {
+            addr: src.0,
+            clk: 1,
+            pc: 1,
+            op: MemoryOperation::Read,
+            value: val1,
+        };
+        let mc2 = MemoryTraceCell {
+            addr: src.0,
+            clk: 2,
+            pc: 2,
+            op: MemoryOperation::Read,
+            value: val1,
+        };
+        let mc3 = MemoryTraceCell {
+            addr: src.0,
+            clk: 3,
+            pc: 3,
+            op: MemoryOperation::Read,
+            value: val1,
+        };
+        let mc4 = MemoryTraceCell {
+            addr: dst.0,
+            clk: 4,
+            pc: 4,
+            op: MemoryOperation::Write,
+            value: val2,
+        };
+        let mc5 = MemoryTraceCell {
+            addr: dst.0,
+            clk: 5,
+            pc: 5,
+            op: MemoryOperation::Write,
+            value: val2,
+        };
+        let mc6 = MemoryTraceCell {
+            addr: dst.0,
+            clk: 6,
+            pc: 6,
+            op: MemoryOperation::Write,
+            value: val2,
+        };
+        let mc7 = MemoryTraceCell {
+            addr: dst.0,
+            clk: 7,
+            pc: 7,
+            op: MemoryOperation::Write,
+            value: val2,
+        };
+        let memory_trace: Vec<MemoryTraceCell> = vec![mc, mc1, mc2, mc3, mc4, mc5, mc6, mc7];
+        let ml_trace = stark.generate_trace(&mload_step, &memory_trace);
+        let ml_trace1 = stark.generate_trace(&mload_step1, &memory_trace);
+        let ml_trace2 = stark.generate_trace(&mload_step2, &memory_trace);
+        let ml_trace3 = stark.generate_trace(&mload_step3, &memory_trace);
+        let ms_trace = stark.generate_trace(&mstore_step, &memory_trace);
+        let ms_trace1 = stark.generate_trace(&mstore_step1, &memory_trace);
+        let ms_trace2 = stark.generate_trace(&mstore_step2, &memory_trace);
+        let ms_trace3 = stark.generate_trace(&mstore_step3, &memory_trace);
+
         let trace = vec![
-            mov_trace, mov_trace, mov_trace, mov_trace, jmp_trace, jmp_trace, jmp_trace, jmp_trace,
+            ml_trace, ml_trace1, ml_trace2, ml_trace3, ms_trace, ms_trace1, ms_trace2, ms_trace3,
         ];
         let trace = trace_rows_to_poly_values(trace);
 

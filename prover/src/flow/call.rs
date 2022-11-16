@@ -17,7 +17,7 @@ pub(crate) fn generate_trace<F: RichField>(
     assert!(matches!(step.instruction, Instruction::CALL(..)));
 
     let mut lv = [F::default(); NUM_FLOW_COLS];
-    lv[COL_INST] = F::from_canonical_u32(CALL_ID as u32);
+    lv[COL_S_CALL] = F::from_canonical_u32(CALL_ID as u32);
     lv[COL_CLK] = F::from_canonical_u32(step.clk);
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
@@ -50,12 +50,13 @@ pub(crate) fn generate_trace<F: RichField>(
     lv
 }
 
+#[allow(dead_code)]
 pub(crate) fn eval_packed_generic<P: PackedField>(
     lv: &[P; NUM_FLOW_COLS],
     nv: &[P; NUM_FLOW_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    let is_call = lv[COL_INST];
+    let is_call = lv[COL_S_CALL];
     let dst = lv[COL_FLOW_DST];
     let cur_pc = lv[COL_PC];
     let next_pc = nv[COL_PC];
@@ -74,6 +75,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     yield_constr.constraint(is_call * cur_pc_diff * cur_clk * val_diff * next_pc_diff);
 }
 
+#[allow(dead_code)]
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
     lv: &[ExtensionTarget<D>; NUM_FLOW_COLS],

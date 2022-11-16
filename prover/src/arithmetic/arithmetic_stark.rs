@@ -21,13 +21,12 @@ pub struct ArithmeticStark<F, const D: usize> {
 impl<F: RichField, const D: usize> ArithmeticStark<F, D> {
     pub fn generate_trace(&self, step: &Step) -> [F; NUM_ARITH_COLS] {
         let empty: [F; NUM_ARITH_COLS] = [F::default(); NUM_ARITH_COLS];
-        let ret = match step.instruction {
+        match step.instruction {
             Instruction::ADD(_) => add::generate_trace(step),
             Instruction::MUL(_) => mul::generate_trace(step),
             Instruction::EQ(_) => cmp::generate_trace(step),
             _ => empty,
-        };
-        ret
+        }
     }
 }
 
@@ -74,7 +73,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticSta
     }
 
     fn constraint_degree(&self) -> usize {
-        2
+        3
     }
 }
 
@@ -96,7 +95,6 @@ mod tests {
     use vm_core::program::instruction::*;
     use vm_core::trace::trace::Step;
 
-    #[ignore = "Mismatch between evaluation and opening of quotient polynomial"]
     #[test]
     fn test_arithmetic_stark() -> Result<()> {
         const D: usize = 2;
@@ -126,8 +124,31 @@ mod tests {
             flag: false,
         };
         let trace = stark.generate_trace(&step);
+        let mut trace1 = trace.clone();
+        trace1[COL_CLK] = trace1[COL_CLK] + GoldilocksField(1);
+
+        let mut trace2 = trace1.clone();
+        trace2[COL_CLK] = trace2[COL_CLK] + GoldilocksField(1);
+
+        let mut trace3 = trace2.clone();
+        trace3[COL_CLK] = trace3[COL_CLK] + GoldilocksField(1);
+
+        let mut trace4 = trace3.clone();
+        trace4[COL_CLK] = trace4[COL_CLK] + GoldilocksField(1);
+
+        let mut trace5 = trace4.clone();
+        trace5[COL_CLK] = trace5[COL_CLK] + GoldilocksField(1);
+
+        let mut trace6 = trace5.clone();
+        trace6[COL_CLK] = trace6[COL_CLK] + GoldilocksField(1);
+
+        let mut trace7 = trace6.clone();
+        trace7[COL_CLK] = trace7[COL_CLK] + GoldilocksField(1);
+
         // The height_cap is 4, we need at least an 8 rows trace.
-        let trace = vec![trace; 8];
+        let trace = vec![
+            trace, trace1, trace2, trace3, trace4, trace5, trace6, trace7,
+        ];
         let trace = trace_rows_to_poly_values(trace);
 
         let proof = prove::<F, C, S, D>(stark, &config, trace, [], &mut TimingTree::default())?;

@@ -3,7 +3,7 @@ use std::matches;
 use crate::columns::*;
 use vm_core::program::instruction::*;
 use vm_core::program::REGISTER_NUM;
-use vm_core::trace::trace::{MemoryTraceCell, Step, MemoryOperation};
+use vm_core::trace::trace::{MemoryOperation, MemoryTraceCell, Step};
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
@@ -11,11 +11,14 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-pub(crate) fn generate_trace<F: RichField>(step: &Step, memory: &Vec<MemoryTraceCell>) -> [F; NUM_RAM_COLS] {
+pub(crate) fn generate_trace<F: RichField>(
+    step: &Step,
+    memory: &Vec<MemoryTraceCell>,
+) -> [F; NUM_RAM_COLS] {
     assert!(matches!(step.instruction, Instruction::MSTORE(..)));
 
     let mut lv = [F::default(); NUM_RAM_COLS];
-    lv[COL_INST] = F::from_canonical_u32(MSTORE_ID as u32);
+    lv[COL_S_MSTORE] = F::from_canonical_u32(MSTORE_ID as u32);
     lv[COL_CLK] = F::from_canonical_u32(step.clk);
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
@@ -51,7 +54,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     lv: &[P; NUM_RAM_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    let is_mov = lv[COL_INST];
+    let is_mov = lv[COL_S_MSTORE];
     let dst = lv[COL_RAM_DST];
     let src = lv[COL_RAM_SRC];
 
@@ -67,7 +70,7 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     lv: &[ExtensionTarget<D>; NUM_RAM_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
-    let is_mov = lv[COL_INST];
+    let is_mov = lv[COL_S_MSTORE];
     let dst = lv[COL_RAM_DST];
     let src = lv[COL_RAM_SRC];
 
@@ -92,11 +95,6 @@ mod tests {
 
     #[test]
     fn test_mstore_stark() {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-
-        let dst = GoldilocksField(10);
         let value = GoldilocksField(10);
         let mem_addr = GoldilocksField(4);
         let zero = GoldilocksField::ZERO;
@@ -108,19 +106,19 @@ mod tests {
                 ri: 0,
             }),
             regs: [
-                value, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
-                zero, zero,
+                value, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero, zero,
             ],
             flag: false,
         };
-        let mem =  MemoryTraceCell {
+        let mem = MemoryTraceCell {
             addr: mem_addr.0,
             clk: step.clk,
             pc: step.pc,
             op: MemoryOperation::Write,
             value: value,
         };
-        let memory_trace = vec!(mem);
+        let memory_trace = vec![mem];
 
         let trace = generate_trace(&step, &memory_trace);
 
