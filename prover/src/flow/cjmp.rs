@@ -14,7 +14,7 @@ pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_FLOW_COLS] {
     assert!(matches!(step.instruction, Instruction::CJMP(..)));
 
     let mut lv = [F::default(); NUM_FLOW_COLS];
-    lv[COL_INST] = F::from_canonical_u32(CJMP_ID as u32);
+    lv[COL_S_CJMP] = F::from_canonical_u32(CJMP_ID as u32);
     lv[COL_CLK] = F::from_canonical_u32(step.clk);
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
@@ -42,7 +42,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     nv: &[P; NUM_FLOW_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    let is_cjmp = lv[COL_INST];
+    let is_cjmp = lv[COL_S_CJMP];
     let flag = lv[COL_FLAG];
     let dst = lv[COL_FLOW_DST];
     let cur_pc = lv[COL_PC];
@@ -60,7 +60,7 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     nv: &[ExtensionTarget<D>; NUM_FLOW_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
-    let is_cjmp = lv[COL_INST];
+    let is_cjmp = lv[COL_S_CJMP];
     let flag = lv[COL_FLAG];
     let dst = lv[COL_FLOW_DST];
     let cur_pc = lv[COL_PC];
@@ -95,10 +95,6 @@ mod tests {
 
     #[test]
     fn test_cjmp_stark() {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-
         let dst = GoldilocksField(10);
         let pc = 10;
         let zero = GoldilocksField::ZERO;

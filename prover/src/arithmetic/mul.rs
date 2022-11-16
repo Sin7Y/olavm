@@ -14,7 +14,7 @@ pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] {
     assert!(matches!(step.instruction, Instruction::MUL(..)));
 
     let mut lv = [F::default(); NUM_ARITH_COLS];
-    lv[COL_INST] = F::from_canonical_u32(MUL_ID as u32);
+    lv[COL_S_MUL] = F::from_canonical_u32(MUL_ID as u32);
     lv[COL_CLK] = F::from_canonical_u32(step.clk);
     lv[COL_PC] = F::from_canonical_u64(step.pc);
     lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
@@ -48,7 +48,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
     // Get MUL data from trace.
-    let is_mul = lv[COL_INST];
+    let is_mul = lv[COL_S_MUL];
     let output = lv[COL_ARITH_OUTPUT];
     let input0 = lv[COL_ARITH_INPUT0];
     let input1 = lv[COL_ARITH_INPUT1];
@@ -71,7 +71,7 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     // Get MUL data from trace.
-    let is_mul = lv[COL_INST];
+    let is_mul = lv[COL_S_MUL];
     let output = lv[COL_ARITH_OUTPUT];
     let input0 = lv[COL_ARITH_INPUT0];
     let input1 = lv[COL_ARITH_INPUT1];
@@ -95,10 +95,6 @@ mod tests {
 
     #[test]
     fn test_mul_stark() {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-
         let output = GoldilocksField(16);
         let input0 = GoldilocksField(8);
         let input1 = GoldilocksField(2);
