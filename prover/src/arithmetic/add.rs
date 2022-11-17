@@ -51,6 +51,24 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     let is_add = lv[COL_S_ADD];
     let output = lv[COL_ARITH_OUTPUT];
     let input0 = lv[COL_ARITH_INPUT0];
+    // let operand2 = lv[COL_OP_2];
+    // let ior = lv[COL_IOR];
+    // let input1 = ior * lv[COL_REG + operand2.]
+
+    // let index: Field = operand2.into();
+
+    /*
+    fn foo(ior, operand2) -> P {
+        if ior {
+            return lv[COL_REG + operand2];
+        } else {
+            return operand2;
+        }
+    }
+
+    f(ior, operand2) = ior * lv[COL_REG + operand2] + (1 - ior) * operand2;
+    */
+
     let input1 = lv[COL_ARITH_INPUT1];
 
     // TODO: We use range_check to check input/output are in 32 bits.

@@ -4,3 +4,4 @@ pub mod columns;
 pub mod flow;
 pub mod prover;
 pub mod ram;
+mod utils;
