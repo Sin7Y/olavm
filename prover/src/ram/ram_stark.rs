@@ -19,24 +19,13 @@ pub struct RamStark<F, const D: usize> {
     pub f: PhantomData<F>,
 }
 
-impl<F: RichField, const D: usize> RamStark<F, D> {
-    pub fn generate_trace(&self, step: &Step, memory: &Vec<MemoryTraceCell>) -> [F; NUM_RAM_COLS] {
-        let empty: [F; NUM_RAM_COLS] = [F::default(); NUM_RAM_COLS];
-        match step.instruction {
-            Instruction::MLOAD(_) => mload::generate_trace(step, memory),
-            Instruction::MSTORE(_) => mstore::generate_trace(step, memory),
-            _ => empty,
-        }
-    }
-}
-
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RamStark<F, D> {
-    const COLUMNS: usize = NUM_RAM_COLS;
+    const COLUMNS: usize = NUM_INST_COLS;
     const PUBLIC_INPUTS: usize = 0;
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
-        vars: StarkEvaluationVars<FE, P, NUM_RAM_COLS, 0>,
+        vars: StarkEvaluationVars<FE, P, NUM_INST_COLS, 0>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
@@ -54,7 +43,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RamStark<F, D
     fn eval_ext_circuit(
         &self,
         builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, NUM_RAM_COLS, 0>,
+        vars: StarkEvaluationTargets<D, NUM_INST_COLS, 0>,
         yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
         let lv = vars.local_values;
@@ -88,6 +77,8 @@ mod tests {
     use starky::prover::prove;
     use starky::util::trace_rows_to_poly_values;
     use starky::verifier::verify_stark_proof;
+
+    use crate::utils::generate_inst_trace;
 
     use super::*;
     use vm_core::program::instruction::*;
@@ -278,18 +269,19 @@ mod tests {
             value: val2,
         };
         let memory_trace: Vec<MemoryTraceCell> = vec![mc, mc1, mc2, mc3, mc4, mc5, mc6, mc7];
-        let ml_trace = stark.generate_trace(&mload_step, &memory_trace);
-        let ml_trace1 = stark.generate_trace(&mload_step1, &memory_trace);
-        let ml_trace2 = stark.generate_trace(&mload_step2, &memory_trace);
-        let ml_trace3 = stark.generate_trace(&mload_step3, &memory_trace);
-        let ms_trace = stark.generate_trace(&mstore_step, &memory_trace);
-        let ms_trace1 = stark.generate_trace(&mstore_step1, &memory_trace);
-        let ms_trace2 = stark.generate_trace(&mstore_step2, &memory_trace);
-        let ms_trace3 = stark.generate_trace(&mstore_step3, &memory_trace);
-
-        let trace = vec![
-            ml_trace, ml_trace1, ml_trace2, ml_trace3, ms_trace, ms_trace1, ms_trace2, ms_trace3,
-        ];
+        let trace = generate_inst_trace(
+            &vec![
+                mload_step,
+                mload_step1,
+                mload_step2,
+                mload_step3,
+                mstore_step,
+                mstore_step1,
+                mstore_step2,
+                mstore_step3,
+            ],
+            &memory_trace,
+        );
         let trace = trace_rows_to_poly_values(trace);
 
         let proof = prove::<F, C, S, D>(stark, &config, trace, [], &mut TimingTree::default())?;

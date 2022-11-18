@@ -2,7 +2,7 @@ use std::matches;
 
 use crate::columns::*;
 use vm_core::program::{instruction::*, REGISTER_NUM};
-use vm_core::trace::trace::Step;
+use vm_core::trace::trace::{MemoryTraceCell, Step};
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
@@ -10,41 +10,14 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_FLOW_COLS] {
-    assert!(matches!(step.instruction, Instruction::CJMP(..)));
-
-    let mut lv = [F::default(); NUM_FLOW_COLS];
-    lv[COL_S_CJMP] = F::from_canonical_u32(CJMP_ID as u32);
-    lv[COL_CLK] = F::from_canonical_u32(step.clk);
-    lv[COL_PC] = F::from_canonical_u64(step.pc);
-    lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
-
-    let a = if let Instruction::CJMP(CJmp { a }) = step.instruction {
-        a
-    } else {
-        todo!()
-    };
-
-    let dst = match a {
-        ImmediateOrRegName::Immediate(val) => val,
-        ImmediateOrRegName::RegName(reg_index) => {
-            assert!(reg_index < REGISTER_NUM as u8);
-            step.regs[reg_index as usize]
-        }
-    };
-
-    lv[COL_FLOW_DST] = F::from_canonical_u64(dst.0);
-    lv
-}
-
 pub(crate) fn eval_packed_generic<P: PackedField>(
-    lv: &[P; NUM_FLOW_COLS],
-    nv: &[P; NUM_FLOW_COLS],
+    lv: &[P; NUM_INST_COLS],
+    nv: &[P; NUM_INST_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
     let is_cjmp = lv[COL_S_CJMP];
     let flag = lv[COL_FLAG];
-    let dst = lv[COL_FLOW_DST];
+    let dst = lv[COL_OP_2];
     let cur_pc = lv[COL_PC];
     let next_pc = nv[COL_PC];
 
@@ -56,13 +29,13 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    lv: &[ExtensionTarget<D>; NUM_FLOW_COLS],
-    nv: &[ExtensionTarget<D>; NUM_FLOW_COLS],
+    lv: &[ExtensionTarget<D>; NUM_INST_COLS],
+    nv: &[ExtensionTarget<D>; NUM_INST_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     let is_cjmp = lv[COL_S_CJMP];
     let flag = lv[COL_FLAG];
-    let dst = lv[COL_FLOW_DST];
+    let dst = lv[COL_OP_2];
     let cur_pc = lv[COL_PC];
     let next_pc = nv[COL_PC];
 
@@ -92,6 +65,7 @@ mod tests {
     use starky::constraint_consumer::ConstraintConsumer;
 
     use super::*;
+    use crate::utils::generate_inst_trace;
 
     #[test]
     fn test_cjmp_stark() {
@@ -122,8 +96,8 @@ mod tests {
             ],
             flag: false,
         };
-        let trace0 = generate_trace(&step0);
-        let trace1 = generate_trace(&step1);
+        let memory: Vec<MemoryTraceCell> = Vec::new();
+        let trace = generate_inst_trace(&vec![step0, step1], &memory);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
@@ -131,7 +105,7 @@ mod tests {
             GoldilocksField::ONE,
             GoldilocksField::ONE,
         );
-        eval_packed_generic(&trace0, &trace1, &mut constraint_consumer);
+        eval_packed_generic(&trace[0], &trace[1], &mut constraint_consumer);
         for &acc in &constraint_consumer.constraint_accs {
             assert_eq!(acc, GoldilocksField::ZERO);
         }
@@ -170,8 +144,8 @@ mod tests {
             ],
             flag: false,
         };
-        let trace0 = generate_trace(&step0);
-        let trace1 = generate_trace(&step1);
+        let memory: Vec<MemoryTraceCell> = Vec::new();
+        let trace = generate_inst_trace(&vec![step0, step1], &memory);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
@@ -181,7 +155,7 @@ mod tests {
         );
         // TODO, for now we only eval CJMP trace, but we should eval other instructions' as well,
         // which means the step1 does not have to be a CJMP, it can be any other instructions.
-        eval_packed_generic(&trace0, &trace1, &mut constraint_consumer);
+        eval_packed_generic(&trace[0], &trace[1], &mut constraint_consumer);
         for &acc in &constraint_consumer.constraint_accs {
             assert_eq!(acc, GoldilocksField::ZERO);
         }

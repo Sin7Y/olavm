@@ -11,32 +11,20 @@ use starky::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use crate::arithmetic::{add, cmp, mul};
 use crate::columns::*;
 use vm_core::program::instruction::*;
-use vm_core::trace::trace::Step;
+use vm_core::trace::trace::{MemoryTraceCell, Step};
 
 #[derive(Copy, Clone, Default)]
 pub struct ArithmeticStark<F, const D: usize> {
     pub f: PhantomData<F>,
 }
 
-impl<F: RichField, const D: usize> ArithmeticStark<F, D> {
-    pub fn generate_trace(&self, step: &Step) -> [F; NUM_ARITH_COLS] {
-        let empty: [F; NUM_ARITH_COLS] = [F::default(); NUM_ARITH_COLS];
-        match step.instruction {
-            Instruction::ADD(_) => add::generate_trace(step),
-            Instruction::MUL(_) => mul::generate_trace(step),
-            Instruction::EQ(_) => cmp::generate_trace(step),
-            _ => empty,
-        }
-    }
-}
-
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticStark<F, D> {
-    const COLUMNS: usize = NUM_ARITH_COLS;
+    const COLUMNS: usize = NUM_INST_COLS;
     const PUBLIC_INPUTS: usize = 0;
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
-        vars: StarkEvaluationVars<FE, P, NUM_ARITH_COLS, 0>,
+        vars: StarkEvaluationVars<FE, P, NUM_INST_COLS, 0>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
@@ -55,7 +43,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ArithmeticSta
     fn eval_ext_circuit(
         &self,
         builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, NUM_ARITH_COLS, 0>,
+        vars: StarkEvaluationTargets<D, NUM_INST_COLS, 0>,
         yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
         let lv = vars.local_values;
@@ -92,6 +80,7 @@ mod tests {
     use starky::verifier::verify_stark_proof;
 
     use super::*;
+    use crate::utils::generate_inst_trace;
     use vm_core::program::instruction::*;
     use vm_core::trace::trace::Step;
 
@@ -123,8 +112,9 @@ mod tests {
             ],
             flag: false,
         };
-        let trace = stark.generate_trace(&step);
-        let mut trace1 = trace.clone();
+        let memory: Vec<MemoryTraceCell> = Vec::new();
+        let trace = generate_inst_trace(&vec![step], &memory);
+        let mut trace1 = trace[0].clone();
         trace1[COL_CLK] = trace1[COL_CLK] + GoldilocksField(1);
 
         let mut trace2 = trace1.clone();
@@ -147,7 +137,7 @@ mod tests {
 
         // The height_cap is 4, we need at least an 8 rows trace.
         let trace = vec![
-            trace, trace1, trace2, trace3, trace4, trace5, trace6, trace7,
+            trace[0], trace1, trace2, trace3, trace4, trace5, trace6, trace7,
         ];
         let trace = trace_rows_to_poly_values(trace);
 

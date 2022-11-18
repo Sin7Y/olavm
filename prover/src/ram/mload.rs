@@ -11,52 +11,13 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-pub(crate) fn generate_trace<F: RichField>(
-    step: &Step,
-    memory: &Vec<MemoryTraceCell>,
-) -> [F; NUM_RAM_COLS] {
-    assert!(matches!(step.instruction, Instruction::MLOAD(..)));
-
-    let mut lv = [F::default(); NUM_RAM_COLS];
-    lv[COL_S_MLOAD] = F::from_canonical_u32(MLOAD_ID as u32);
-    lv[COL_CLK] = F::from_canonical_u32(step.clk);
-    lv[COL_PC] = F::from_canonical_u64(step.pc);
-    lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
-
-    let (ri, a) = if let Instruction::MLOAD(Mload { ri, rj }) = step.instruction {
-        (ri, rj)
-    } else {
-        todo!()
-    };
-    assert!(ri < REGISTER_NUM as u8);
-
-    let dst = step.regs[ri as usize];
-    let src = match a {
-        ImmediateOrRegName::Immediate(val) => val,
-        ImmediateOrRegName::RegName(reg_index) => {
-            assert!(reg_index < REGISTER_NUM as u8);
-            step.regs[reg_index as usize]
-        }
-    };
-
-    let mem_cell: Vec<_> = memory
-        .iter()
-        .filter(|mc| mc.addr == src.0 && mc.clk == step.clk && mc.pc == step.pc)
-        .collect();
-    assert!(mem_cell.len() == 1);
-
-    lv[COL_RAM_DST] = F::from_canonical_u64(dst.0);
-    lv[COL_RAM_SRC] = F::from_canonical_u64(mem_cell[0].value.0);
-    lv
-}
-
 pub(crate) fn eval_packed_generic<P: PackedField>(
-    lv: &[P; NUM_RAM_COLS],
+    lv: &[P; NUM_INST_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
     let is_mov = lv[COL_S_MLOAD];
-    let dst = lv[COL_RAM_DST];
-    let src = lv[COL_RAM_SRC];
+    let dst = lv[COL_OP_0];
+    let src = lv[COL_OP_2];
 
     // TODO: range check dst and src.
 
@@ -66,12 +27,12 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    lv: &[ExtensionTarget<D>; NUM_RAM_COLS],
+    lv: &[ExtensionTarget<D>; NUM_INST_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     let is_mov = lv[COL_S_MLOAD];
-    let dst = lv[COL_RAM_DST];
-    let src = lv[COL_RAM_SRC];
+    let dst = lv[COL_OP_0];
+    let src = lv[COL_OP_2];
 
     let output_diff = builder.sub_extension(dst, src);
 
@@ -91,6 +52,7 @@ mod tests {
     use starky::constraint_consumer::ConstraintConsumer;
 
     use super::*;
+    use crate::utils::generate_inst_trace;
 
     #[test]
     fn test_mload_stark() {
@@ -120,7 +82,7 @@ mod tests {
         };
         let memory_trace = vec![mem];
 
-        let trace = generate_trace(&step, &memory_trace);
+        let trace = generate_inst_trace(&vec![step], &memory_trace);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
@@ -128,7 +90,7 @@ mod tests {
             GoldilocksField::ONE,
             GoldilocksField::ONE,
         );
-        eval_packed_generic(&trace, &mut constraint_consumer);
+        eval_packed_generic(&trace[0], &mut constraint_consumer);
         for &acc in &constraint_consumer.constraint_accs {
             assert_eq!(acc, GoldilocksField::ZERO);
         }

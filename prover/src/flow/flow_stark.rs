@@ -19,27 +19,13 @@ pub struct FlowStark<F, const D: usize> {
     pub f: PhantomData<F>,
 }
 
-impl<F: RichField, const D: usize> FlowStark<F, D> {
-    pub fn generate_trace(&self, step: &Step, memory: &Vec<MemoryTraceCell>) -> [F; NUM_FLOW_COLS] {
-        let empty: [F; NUM_FLOW_COLS] = [F::default(); NUM_FLOW_COLS];
-        match step.instruction {
-            Instruction::MOV(_) => mov::generate_trace(step),
-            Instruction::JMP(_) => jmp::generate_trace(step),
-            Instruction::CJMP(_) => cjmp::generate_trace(step),
-            Instruction::CALL(_) => call::generate_trace(step, memory),
-            Instruction::RET(_) => ret::generate_trace(step, memory),
-            _ => empty,
-        }
-    }
-}
-
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for FlowStark<F, D> {
-    const COLUMNS: usize = NUM_FLOW_COLS;
+    const COLUMNS: usize = NUM_INST_COLS;
     const PUBLIC_INPUTS: usize = 0;
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
-        vars: StarkEvaluationVars<FE, P, NUM_FLOW_COLS, 0>,
+        vars: StarkEvaluationVars<FE, P, NUM_INST_COLS, 0>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
@@ -60,7 +46,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for FlowStark<F, 
     fn eval_ext_circuit(
         &self,
         builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, NUM_FLOW_COLS, 0>,
+        vars: StarkEvaluationTargets<D, NUM_INST_COLS, 0>,
         yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
         let lv = vars.local_values;
@@ -99,6 +85,7 @@ mod tests {
     use starky::verifier::verify_stark_proof;
 
     use super::*;
+    use crate::utils::generate_inst_trace;
     use vm_core::program::instruction::*;
     use vm_core::trace::trace::Step;
 
@@ -141,11 +128,11 @@ mod tests {
             flag: false,
         };
         let memory_trace: Vec<MemoryTraceCell> = Vec::new();
-        let mov_trace = stark.generate_trace(&mov_step, &memory_trace);
-        let jmp_trace = stark.generate_trace(&jmp_step, &memory_trace);
+        let mov_trace = generate_inst_trace(&vec![mov_step, jmp_step], &memory_trace);
+        let mov_trace0 = mov_trace[0].clone();
 
-        let mut mov_trace1 = mov_trace.clone();
-        mov_trace1[COL_CLK] = mov_trace[COL_CLK] + GoldilocksField(1);
+        let mut mov_trace1 = mov_trace0.clone();
+        mov_trace1[COL_CLK] = mov_trace0[COL_CLK] + GoldilocksField(1);
 
         let mut mov_trace2 = mov_trace1.clone();
         mov_trace2[COL_CLK] = mov_trace1[COL_CLK] + GoldilocksField(1);
@@ -153,7 +140,7 @@ mod tests {
         let mut mov_trace3 = mov_trace2.clone();
         mov_trace3[COL_CLK] = mov_trace2[COL_CLK] + GoldilocksField(1);
 
-        let mut jmp_trace = jmp_trace;
+        let mut jmp_trace = mov_trace[1];
         jmp_trace[COL_CLK] = mov_trace3[COL_CLK] + GoldilocksField(1);
 
         let mut jmp_trace1 = jmp_trace.clone();
@@ -167,7 +154,7 @@ mod tests {
 
         // TODO, the clk and pc should be reasonable!
         let trace = vec![
-            mov_trace, mov_trace1, mov_trace2, mov_trace3, jmp_trace, jmp_trace1, jmp_trace2,
+            mov_trace0, mov_trace1, mov_trace2, mov_trace3, jmp_trace, jmp_trace1, jmp_trace2,
             jmp_trace3,
         ];
         let trace = trace_rows_to_poly_values(trace);

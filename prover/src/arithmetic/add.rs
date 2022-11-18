@@ -1,75 +1,26 @@
 use std::matches;
 
-use crate::columns::*;
+use crate::{columns::*, utils::generate_inst_trace};
+use plonky2::field::types::Field;
 use vm_core::program::{instruction::*, REGISTER_NUM};
-use vm_core::trace::trace::Step;
+use vm_core::trace::trace::{MemoryTraceCell, Step};
 
 use plonky2::field::extension::Extendable;
+use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::packed::PackedField;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] {
-    assert!(matches!(step.instruction, Instruction::ADD(..)));
-
-    let mut lv = [F::default(); NUM_ARITH_COLS];
-    lv[COL_S_ADD] = F::from_canonical_u32(ADD_ID as u32);
-    lv[COL_CLK] = F::from_canonical_u32(step.clk);
-    lv[COL_PC] = F::from_canonical_u64(step.pc);
-    lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
-
-    let (ri, rj, a) = if let Instruction::ADD(Add { ri, rj, a }) = step.instruction {
-        (ri, rj, a)
-    } else {
-        todo!()
-    };
-    assert!(ri < REGISTER_NUM as u8);
-    assert!(rj < REGISTER_NUM as u8);
-
-    let output = step.regs[ri as usize];
-    let input0 = step.regs[rj as usize];
-    let input1 = match a {
-        ImmediateOrRegName::Immediate(input1) => input1,
-        ImmediateOrRegName::RegName(reg_index) => {
-            assert!(reg_index < REGISTER_NUM as u8);
-            step.regs[reg_index as usize]
-        }
-    };
-
-    lv[COL_ARITH_OUTPUT] = F::from_canonical_u64(output.0);
-    lv[COL_ARITH_INPUT0] = F::from_canonical_u64(input0.0);
-    lv[COL_ARITH_INPUT1] = F::from_canonical_u64(input1.0);
-    lv
-}
-
 pub(crate) fn eval_packed_generic<P: PackedField>(
-    lv: &[P; NUM_ARITH_COLS],
+    lv: &[P; NUM_INST_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
     // Get ADD data from trace.
     let is_add = lv[COL_S_ADD];
-    let output = lv[COL_ARITH_OUTPUT];
-    let input0 = lv[COL_ARITH_INPUT0];
-    // let operand2 = lv[COL_OP_2];
-    // let ior = lv[COL_IOR];
-    // let input1 = ior * lv[COL_REG + operand2.]
-
-    // let index: Field = operand2.into();
-
-    /*
-    fn foo(ior, operand2) -> P {
-        if ior {
-            return lv[COL_REG + operand2];
-        } else {
-            return operand2;
-        }
-    }
-
-    f(ior, operand2) = ior * lv[COL_REG + operand2] + (1 - ior) * operand2;
-    */
-
-    let input1 = lv[COL_ARITH_INPUT1];
+    let output = lv[COL_OP_0];
+    let input0 = lv[COL_OP_1];
+    let input1 = lv[COL_OP_2];
 
     // TODO: We use range_check to check input/output are in 32 bits.
     // range_check(output, 32);
@@ -86,14 +37,14 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    lv: &[ExtensionTarget<D>; NUM_ARITH_COLS],
+    lv: &[ExtensionTarget<D>; NUM_INST_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     // Get ADD data from trace.
     let is_add = lv[COL_S_ADD];
-    let output = lv[COL_ARITH_OUTPUT];
-    let input0 = lv[COL_ARITH_INPUT0];
-    let input1 = lv[COL_ARITH_INPUT1];
+    let output = lv[COL_OP_0];
+    let input0 = lv[COL_OP_1];
+    let input1 = lv[COL_OP_2];
 
     let unreduced_output = builder.add_extension(input0, input1);
     let output_diff = builder.sub_extension(unreduced_output, output);
@@ -112,6 +63,8 @@ mod tests {
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
     use starky::constraint_consumer::ConstraintConsumer;
+
+    use crate::memory;
 
     use super::*;
 
@@ -135,7 +88,8 @@ mod tests {
             ],
             flag: false,
         };
-        let trace = generate_trace(&step);
+        let memory: Vec<MemoryTraceCell> = Vec::new();
+        let trace = generate_inst_trace(&vec![step], &memory);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
@@ -143,7 +97,7 @@ mod tests {
             GoldilocksField::ONE,
             GoldilocksField::ONE,
         );
-        eval_packed_generic(&trace, &mut constraint_consumer);
+        eval_packed_generic(&trace[0], &mut constraint_consumer);
         for &acc in &constraint_consumer.constraint_accs {
             assert_eq!(acc, GoldilocksField::ZERO);
         }
@@ -174,7 +128,8 @@ mod tests {
             ],
             flag: false,
         };
-        let trace = generate_trace(&step);
+        let memory: Vec<MemoryTraceCell> = Vec::new();
+        let trace = generate_inst_trace(&vec![step], &memory);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
@@ -182,7 +137,7 @@ mod tests {
             GoldilocksField::ONE,
             GoldilocksField::ONE,
         );
-        eval_packed_generic(&trace, &mut constraint_consumer);
+        eval_packed_generic(&trace[0], &mut constraint_consumer);
         for &acc in &constraint_consumer.constraint_accs {
             assert_eq!(acc, GoldilocksField::ZERO);
         }
