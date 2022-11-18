@@ -1,6 +1,6 @@
 use crate::columns::*;
 use vm_core::program::{instruction::*, REGISTER_NUM};
-use vm_core::trace::trace::{MemoryTraceCell, Step};
+use vm_core::trace::trace::{MemoryOperation, MemoryTraceCell, Step};
 
 use plonky2::hash::hash_types::RichField;
 
@@ -71,9 +71,27 @@ pub(crate) fn generate_inst_trace<F: RichField>(
                 Instruction::CALL(Call { ri }) => {
                     row[COL_S_CALL] = F::from_canonical_u64(1);
                     assign_op2!(ri, s, row);
+
+                    row[COL_M_ADDR] = F::from_canonical_u64(s.regs[15].0 - 1);
+                    row[COL_M_VAL] = F::from_canonical_u64(s.pc + 1);
+                    row[COL_M_RW] = F::from_canonical_u64(MemoryOperation::Write as u64);
+                    row[COL_M_CLK] = row[COL_CLK];
+                    row[COL_M_PC] = row[COL_PC];
                 }
                 Instruction::RET(..) => {
                     row[COL_S_RET] = F::from_canonical_u64(1);
+
+                    row[COL_M_RW] = F::from_canonical_u64(MemoryOperation::Read as u64);
+                    row[COL_M_ADDR] = F::from_canonical_u64(s.regs[15].0 - 2);
+                    row[COL_M_VAL] = row[15];
+
+                    let addr = s.regs[15].0 - 2;
+                    let mem_cell: Vec<_> = memory
+                        .iter()
+                        .filter(|mc| mc.addr == addr && mc.clk == s.clk && mc.pc == s.pc)
+                        .collect();
+                    assert!(mem_cell.len() == 1);
+                    row[COL_REG + 15] = F::from_canonical_u64(mem_cell[0].value.0);
                 }
                 Instruction::MLOAD(Mload { ri, rj }) => {
                     row[COL_S_MLOAD] = F::from_canonical_u64(1);
