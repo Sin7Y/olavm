@@ -1,8 +1,8 @@
 use std::matches;
 
-use crate::columns::*;
-use vm_core::program::{instruction::*, REGISTER_NUM};
-use vm_core::trace::trace::Step;
+use crate::{columns::*, utils::generate_inst_trace};
+use vm_core::program::instruction::*;
+use vm_core::trace::trace::{MemoryTraceCell, Step};
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
@@ -10,43 +10,13 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-pub(crate) fn generate_trace<F: RichField>(step: &Step) -> [F; NUM_ARITH_COLS] {
-    assert!(matches!(step.instruction, Instruction::EQ(..)));
-
-    let mut lv = [F::default(); NUM_ARITH_COLS];
-    lv[COL_S_EQ] = F::from_canonical_u32(EQ_ID as u32);
-    lv[COL_CLK] = F::from_canonical_u32(step.clk);
-    lv[COL_PC] = F::from_canonical_u64(step.pc);
-    lv[COL_FLAG] = F::from_canonical_u32(step.flag as u32);
-
-    let (ri, a) = if let Instruction::EQ(Equal { ri, a }) = step.instruction {
-        (ri, a)
-    } else {
-        todo!()
-    };
-    assert!(ri < REGISTER_NUM as u8);
-
-    let lhs = step.regs[ri as usize];
-    let rhs = match a {
-        ImmediateOrRegName::Immediate(rhs) => rhs,
-        ImmediateOrRegName::RegName(reg_index) => {
-            assert!(reg_index < REGISTER_NUM as u8);
-            step.regs[reg_index as usize]
-        }
-    };
-
-    lv[COL_ARITH_INPUT0] = F::from_canonical_u64(lhs.0);
-    lv[COL_ARITH_INPUT1] = F::from_canonical_u64(rhs.0);
-    lv
-}
-
 pub(crate) fn eval_packed_generic<P: PackedField>(
-    lv: &[P; NUM_ARITH_COLS],
+    lv: &[P; NUM_INST_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
     let is_eq = lv[COL_S_EQ];
-    let lhs = lv[COL_ARITH_INPUT0];
-    let rhs = lv[COL_ARITH_INPUT1];
+    let lhs = lv[COL_OP_0];
+    let rhs = lv[COL_OP_2];
     let flag = lv[COL_FLAG];
 
     // TODO: we need range check lhs, rhs are within P,
@@ -58,12 +28,12 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    lv: &[ExtensionTarget<D>; NUM_ARITH_COLS],
+    lv: &[ExtensionTarget<D>; NUM_INST_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     let is_eq = lv[COL_S_EQ];
-    let lhs = lv[COL_ARITH_INPUT0];
-    let rhs = lv[COL_ARITH_INPUT1];
+    let lhs = lv[COL_OP_0];
+    let rhs = lv[COL_OP_2];
     let flag = lv[COL_FLAG];
 
     let output_diff = builder.sub_extension(lhs, rhs);
@@ -107,7 +77,8 @@ mod tests {
             ],
             flag: true,
         };
-        let trace = generate_trace(&step);
+        let memory: Vec<MemoryTraceCell> = Vec::new();
+        let trace = generate_inst_trace(&vec![step], &memory);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
@@ -115,7 +86,7 @@ mod tests {
             GoldilocksField::ONE,
             GoldilocksField::ONE,
         );
-        eval_packed_generic(&trace, &mut constraint_consumer);
+        eval_packed_generic(&trace[0], &mut constraint_consumer);
         for &acc in &constraint_consumer.constraint_accs {
             assert_eq!(acc, GoldilocksField::ZERO);
         }
@@ -139,7 +110,8 @@ mod tests {
             ],
             flag: false,
         };
-        let trace = generate_trace(&step);
+        let memory: Vec<MemoryTraceCell> = Vec::new();
+        let trace = generate_inst_trace(&vec![step], &memory);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
@@ -147,7 +119,7 @@ mod tests {
             GoldilocksField::ONE,
             GoldilocksField::ONE,
         );
-        eval_packed_generic(&trace, &mut constraint_consumer);
+        eval_packed_generic(&trace[0], &mut constraint_consumer);
         for &acc in &constraint_consumer.constraint_accs {
             assert_eq!(acc, GoldilocksField::ZERO);
         }

@@ -4,21 +4,22 @@ use vm_core::trace::trace::{MemoryTraceCell, Step};
 
 use plonky2::hash::hash_types::RichField;
 
-pub(crate) fn generate_inst_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_INST_COLS]> {
+pub(crate) fn generate_inst_trace<F: RichField>(
+    steps: &Vec<Step>,
+    memory: &Vec<MemoryTraceCell>,
+) -> Vec<[F; NUM_INST_COLS]> {
     #[macro_export]
-    macro_rules! handle_op2 {
-        ( $a:expr, $row:expr ) => {
-            match $a {
-                ImmediateOrRegName::Immediate(input1) => {
-                    $row[COL_OP_2] = F::from_canonical_u64(input1.0);
-                    $row[COL_IOR] = F::from_canonical_u64(0);
-                }
+    macro_rules! assign_op2 {
+        ( $a:expr, $step:expr, $row:expr ) => {
+            let op2 = match $a {
+                ImmediateOrRegName::Immediate(input1) => input1,
                 ImmediateOrRegName::RegName(reg_index) => {
                     assert!(reg_index < REGISTER_NUM as u8);
-                    $row[COL_OP_2] = F::from_canonical_u8(reg_index);
-                    $row[COL_IOR] = F::from_canonical_u64(1);
+                    $step.regs[reg_index as usize]
                 }
             };
+
+            $row[COL_OP_2] = F::from_canonical_u64(op2.0);
         };
     }
 
@@ -37,52 +38,68 @@ pub(crate) fn generate_inst_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NU
                     assert!(ri < REGISTER_NUM as u8);
                     assert!(rj < REGISTER_NUM as u8);
                     row[COL_S_ADD] = F::from_canonical_u64(1);
-                    row[COL_OP_0] = F::from_canonical_u8(ri);
-                    row[COL_OP_1] = F::from_canonical_u8(rj);
-                    handle_op2!(a, row);
+                    row[COL_OP_0] = F::from_canonical_u64(s.regs[ri as usize].0);
+                    row[COL_OP_1] = F::from_canonical_u64(s.regs[rj as usize].0);
+                    assign_op2!(a, s, row);
                 }
                 Instruction::MUL(Mul { ri, rj, a }) => {
                     assert!(ri < REGISTER_NUM as u8);
                     assert!(rj < REGISTER_NUM as u8);
                     row[COL_S_MUL] = F::from_canonical_u64(1);
-                    row[COL_OP_0] = F::from_canonical_u8(ri);
-                    row[COL_OP_1] = F::from_canonical_u8(rj);
-                    handle_op2!(a, row);
+                    row[COL_OP_0] = F::from_canonical_u64(s.regs[ri as usize].0);
+                    row[COL_OP_1] = F::from_canonical_u64(s.regs[rj as usize].0);
+                    assign_op2!(a, s, row);
                 }
                 Instruction::EQ(Equal { ri, a }) => {
                     row[COL_S_EQ] = F::from_canonical_u64(1);
-                    row[COL_OP_0] = F::from_canonical_u8(ri);
-                    handle_op2!(a, row);
+                    row[COL_OP_0] = F::from_canonical_u64(s.regs[ri as usize].0);
+                    assign_op2!(a, s, row);
                 }
                 Instruction::MOV(Mov { ri, a }) => {
                     row[COL_S_MOV] = F::from_canonical_u64(1);
-                    row[COL_OP_0] = F::from_canonical_u8(ri);
-                    handle_op2!(a, row);
+                    row[COL_OP_0] = F::from_canonical_u64(s.regs[ri as usize].0);
+                    assign_op2!(a, s, row);
                 }
                 Instruction::JMP(Jmp { a }) => {
                     row[COL_S_JMP] = F::from_canonical_u64(1);
-                    handle_op2!(a, row);
+                    assign_op2!(a, s, row);
                 }
                 Instruction::CJMP(CJmp { a }) => {
                     row[COL_S_CJMP] = F::from_canonical_u64(1);
-                    handle_op2!(a, row);
+                    assign_op2!(a, s, row);
                 }
                 Instruction::CALL(Call { ri }) => {
                     row[COL_S_CALL] = F::from_canonical_u64(1);
-                    handle_op2!(ri, row);
+                    assign_op2!(ri, s, row);
                 }
                 Instruction::RET(..) => {
                     row[COL_S_RET] = F::from_canonical_u64(1);
                 }
                 Instruction::MLOAD(Mload { ri, rj }) => {
                     row[COL_S_MLOAD] = F::from_canonical_u64(1);
-                    row[COL_OP_0] = F::from_canonical_u8(ri);
-                    handle_op2!(rj, row);
+                    row[COL_OP_0] = F::from_canonical_u64(s.regs[ri as usize].0);
+                    assign_op2!(rj, s, row);
+                    // This is just address of src memory, we need value of that memory cell.
+                    let src = row[COL_OP_2].to_canonical_u64();
+                    let mem_cell: Vec<_> = memory
+                        .iter()
+                        .filter(|mc| mc.addr == src && mc.clk == s.clk && mc.pc == s.pc)
+                        .collect();
+                    assert!(mem_cell.len() == 1);
+                    row[COL_OP_2] = F::from_canonical_u64(mem_cell[0].value.0);
                 }
                 Instruction::MSTORE(Mstore { a, ri }) => {
                     row[COL_S_MSTORE] = F::from_canonical_u64(1);
-                    row[COL_OP_0] = F::from_canonical_u8(ri);
-                    handle_op2!(a, row);
+                    row[COL_OP_0] = F::from_canonical_u64(s.regs[ri as usize].0);
+                    assign_op2!(a, s, row);
+                    // Again, this is just address of dst memory.
+                    let dst = row[COL_OP_2].to_canonical_u64();
+                    let mem_cell: Vec<_> = memory
+                        .iter()
+                        .filter(|mc| mc.addr == dst && mc.clk == s.clk && mc.pc == s.pc)
+                        .collect();
+                    assert!(mem_cell.len() == 1);
+                    row[COL_OP_2] = F::from_canonical_u64(mem_cell[0].value.0);
                 }
                 _ => panic!("Unsupported instruction!"),
             }
