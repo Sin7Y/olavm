@@ -27,6 +27,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
     const COLUMNS: usize = NUM_MEM_COLS;
     const PUBLIC_INPUTS: usize = 0;
 
+    // TODO, we also should use permutation to check our origin memory trace and sorted memory trace.
+    // Make sure they are same.
+
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
         vars: StarkEvaluationVars<FE, P, NUM_MEM_COLS, 0>,
