@@ -16,6 +16,7 @@ mod tests;
 mod memory;
 mod decode;
 pub mod error;
+mod hash;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 15;
