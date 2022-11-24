@@ -30,6 +30,7 @@ fn fibo_use_loop() {
             raw_binary_instructions: Vec::new(),
             exec: Vec::new(),
             memory: Vec::new(),
+            builtin: Vec::new()
         },
     };
     debug!("instructions:{:?}", program.instructions);
@@ -73,6 +74,7 @@ fn add_mul_decode() {
             raw_binary_instructions: Vec::new(),
             exec: Vec::new(),
             memory: Vec::new(),
+            builtin: Vec::new()
         },
     };
     debug!("instructions:{:?}", program.instructions);
@@ -129,12 +131,7 @@ fn fibo_use_loop_decode() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Trace {
-            raw_instructions: Vec::new(),
-            raw_binary_instructions: Vec::new(),
-            exec: Vec::new(),
-            memory: Vec::new(),
-        },
+        trace: Default::default()
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -173,12 +170,7 @@ fn memory_test() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Trace {
-            raw_instructions: Vec::new(),
-            raw_binary_instructions: Vec::new(),
-            exec: Vec::new(),
-            memory: Vec::new(),
-        },
+        trace: Default::default()
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -217,12 +209,7 @@ fn call_test() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Trace {
-            raw_instructions: Vec::new(),
-            raw_binary_instructions: Vec::new(),
-            exec: Vec::new(),
-            memory: Vec::new(),
-        },
+        trace: Default::default()
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -237,5 +224,44 @@ fn call_test() {
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
     let mut file = File::create("call_trace.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn prophet_range_check_test() {
+    //mov r0 8
+    //mov r1 2
+    //mov r2 3
+    //add r3 r0 r1
+    //mul r4 r3 r2
+    //range_check r4
+    let program_src = "0x24000000
+        0x8
+        0x24400000
+        0x2
+        0x24800000
+        0x3
+        0x08c04000
+        0x110c8000
+        ";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default()
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program, true);
+
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("fibo_trace.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }

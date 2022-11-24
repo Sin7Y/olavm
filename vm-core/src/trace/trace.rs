@@ -44,6 +44,7 @@ pub struct Trace {
     // todo need limit the trace size
     pub exec: Vec<Step>,
     pub memory: Vec<MemoryTraceCell>,
+    pub builtin: Vec<String>,
 }
 
 impl Trace {
