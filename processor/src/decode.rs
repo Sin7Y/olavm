@@ -1,9 +1,11 @@
+use crate::error::ProcessorError;
+use crate::{GoldilocksField, FP_REG_INDEX};
+use log::{debug, info};
 use std::fmt::Display;
 use std::num::ParseIntError;
-use log::{debug, info};
-use vm_core::program::instruction::{Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub};
-use crate::{FP_REG_INDEX, GoldilocksField};
-use crate::error::ProcessorError;
+use vm_core::program::instruction::{
+    Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub,
+};
 
 pub const NO_IMM_INSTRUCTION_LEN: u64 = 1;
 pub const IMM_INSTRUCTION_LEN: u64 = 2;
@@ -28,7 +30,10 @@ fn parse_hex_str(hex_str: &str) -> Result<u32, ProcessorError> {
     }
 }
 
-pub fn decode_raw_instruction(raw_inst_str: &str, imm_str: &str) -> Result<(String, u64), ProcessorError> {
+pub fn decode_raw_instruction(
+    raw_inst_str: &str,
+    imm_str: &str,
+) -> Result<(String, u64), ProcessorError> {
     let mut step = NO_IMM_INSTRUCTION_LEN;
     let raw_inst = parse_hex_str(raw_inst_str.trim_start_matches("0x"))?;
 
@@ -109,7 +114,7 @@ pub fn decode_raw_instruction(raw_inst_str: &str, imm_str: &str) -> Result<(Stri
             Opcode::RET => {
                 instruction += &op_code.to_string();
             }
-            _ => panic!("not match opcode:{}", op_code)
+            _ => panic!("not match opcode:{}", op_code),
         };
         return Ok((instruction, step));
     }

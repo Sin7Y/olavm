@@ -1,10 +1,10 @@
-use std::fs::File;
-use std::io::Write;
+use crate::Process;
 use log::debug;
 use serde_json::Value;
+use std::fs::File;
+use std::io::Write;
 use vm_core::program::Program;
 use vm_core::trace::trace::Trace;
-use crate::Process;
 
 #[test]
 fn fibo_use_loop() {
@@ -30,7 +30,6 @@ fn fibo_use_loop() {
             raw_binary_instructions: Vec::new(),
             exec: Vec::new(),
             memory: Vec::new(),
-            builtin: Vec::new()
         },
     };
     debug!("instructions:{:?}", program.instructions);
@@ -74,7 +73,6 @@ fn add_mul_decode() {
             raw_binary_instructions: Vec::new(),
             exec: Vec::new(),
             memory: Vec::new(),
-            builtin: Vec::new()
         },
     };
     debug!("instructions:{:?}", program.instructions);
@@ -123,7 +121,7 @@ fn fibo_use_loop_decode() {
         0x20900000
         0x25000000
         0x1
-        0x98010000
+        0x68010000
         0x2c000000
         0x8
         ";
