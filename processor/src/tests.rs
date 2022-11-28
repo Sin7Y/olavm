@@ -1,10 +1,10 @@
-use std::fs::File;
-use std::io::Write;
+use crate::Process;
 use log::debug;
 use serde_json::Value;
+use std::fs::File;
+use std::io::Write;
 use vm_core::program::Program;
 use vm_core::trace::trace::Trace;
-use crate::Process;
 
 #[test]
 fn fibo_use_loop() {
@@ -93,6 +93,18 @@ fn add_mul_decode() {
 
 #[test]
 fn fibo_use_loop_decode() {
+    // mov r0 8
+    // mov r1 1
+    // mov r2 1
+    // mov r3 0
+    // EQ r0 r3
+    // cjmp 19
+    // add r4 r1 r2
+    // mov r1 r2
+    // mov r2 r4
+    // mov r4 1
+    // sub r0 r0 r4
+    // jmp 8
     let program_src = "0x24000000
         0x8
         0x24400000
@@ -141,6 +153,50 @@ fn fibo_use_loop_decode() {
 }
 
 #[test]
+fn memory_test() {
+    // mov r0 8
+    // mstore  0x100 r0
+    // mov r0 20
+    // mload r1 0x100
+    // add r0 r1 r1
+    let program_src = "0x24000000
+                            0x8
+                            0x54000000
+                            0x100
+                            0x24000000
+                            0x14
+                            0x4c400000
+                            0x100
+                            0x08004000
+                            ";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Trace {
+            raw_instructions: Vec::new(),
+            raw_binary_instructions: Vec::new(),
+            exec: Vec::new(),
+            memory: Vec::new(),
+        },
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program, true);
+    process.gen_memory_table(&mut program);
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("memory_trace.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
 fn call_test() {
     let program_src = "JMP 7
                              MUL r4 [1] 100
@@ -154,7 +210,7 @@ fn call_test() {
                              MOV [3] r8
                              MOV [257] [3]
                              MOV [258] [1]
-                             ADD fp fp 256
+                             ADD r15 r15 256
                              CALL 1
                              ";
 
