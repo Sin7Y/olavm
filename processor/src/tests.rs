@@ -25,12 +25,7 @@ fn fibo_use_loop() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Trace {
-            raw_instructions: Vec::new(),
-            raw_binary_instructions: Vec::new(),
-            exec: Vec::new(),
-            memory: Vec::new(),
-        },
+        trace: Default::default(),
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -68,12 +63,7 @@ fn add_mul_decode() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Trace {
-            raw_instructions: Vec::new(),
-            raw_binary_instructions: Vec::new(),
-            exec: Vec::new(),
-            memory: Vec::new(),
-        },
+        trace: Default::default(),
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -121,7 +111,7 @@ fn fibo_use_loop_decode() {
         0x20900000
         0x25000000
         0x1
-        0x68010000
+        0x98010000
         0x2c000000
         0x8
         ";
@@ -129,7 +119,7 @@ fn fibo_use_loop_decode() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Default::default()
+        trace: Default::default(),
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -168,7 +158,7 @@ fn memory_test() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Default::default()
+        trace: Default::default(),
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -207,7 +197,7 @@ fn call_test() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Default::default()
+        trace: Default::default(),
     };
     debug!("instructions:{:?}", program.instructions);
 
@@ -226,7 +216,7 @@ fn call_test() {
 }
 
 #[test]
-fn prophet_range_check_test() {
+fn range_check_test() {
     //mov r0 8
     //mov r1 2
     //mov r2 3
@@ -238,7 +228,7 @@ fn prophet_range_check_test() {
         0x24400000
         0x2
         0x24800000
-        0x3
+        0x300
         0x08c04000
         0x110c8000
         0x61000000
@@ -247,7 +237,87 @@ fn prophet_range_check_test() {
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
         instructions: Vec::new(),
-        trace: Default::default()
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program, true);
+
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("fibo_trace.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn bitwise_test() {
+    //mov r0 8
+    //mov r1 2
+    //mov r2 3
+    //add r3 r0 r1
+    //mul r4 r3 r2
+    //and r5 r4 r3
+    let program_src = "0x24000000
+        0x8
+        0x24400000
+        0x2
+        0x24800000
+        0x3
+        0x08c04000
+        0x110c8000
+        0x6950c000
+        ";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program, true);
+
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("fibo_trace.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn comparison_test() {
+    //mov r0 8
+    //mov r1 2
+    //mov r2 3
+    //add r3 r0 r1
+    //mul r4 r3 r2
+    //gte r4 r3 0x910c0000
+    let program_src = "0x24000000
+        0x8
+        0x24400000
+        0x2
+        0x24800000
+        0x3
+        0x08c04000
+        0x110c8000
+        0x90d00000
+        ";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
     };
     debug!("instructions:{:?}", program.instructions);
 

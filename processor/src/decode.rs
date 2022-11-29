@@ -51,7 +51,7 @@ pub fn decode_raw_instruction(
 
         let mut instruction = "".to_string();
         match op_code {
-            Opcode::ADD | Opcode::MUL | Opcode::SUB => {
+            Opcode::ADD | Opcode::MUL | Opcode::SUB | Opcode::AND | Opcode::OR | Opcode::XOR => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
@@ -69,7 +69,12 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::MOV | Opcode::EQ | Opcode::MLOAD | Opcode::ASSERT => {
+            Opcode::MOV
+            | Opcode::EQ
+            | Opcode::MLOAD
+            | Opcode::ASSERT
+            | Opcode::NEQ
+            | Opcode::GTE => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
@@ -99,7 +104,7 @@ pub fn decode_raw_instruction(
                 let reg1_name = format!("r{}", reg1);
                 instruction += &reg1_name;
             }
-            Opcode::JMP | Opcode::CJMP | Opcode::CALL => {
+            Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RANGE_CHECK => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 if imm_flag == 1 {
