@@ -76,6 +76,56 @@ pub struct Mload {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Assert {
+    pub ri: u8,
+    pub a: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Range {
+    pub ri: u8,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct And {
+    pub ri: u8,
+    pub rj: u8,
+    pub a: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Or {
+    pub ri: u8,
+    pub rj: u8,
+    pub a: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Xor {
+    pub ri: u8,
+    pub rj: u8,
+    pub a: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Not {
+    pub ri: u8,
+    pub a: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Neq {
+    pub ri: u8,
+    pub a: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Gte {
+    pub ri: u8,
+    pub a: ImmediateOrRegName,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Instruction {
     MOV(Mov),
     EQ(Equal),
@@ -87,6 +137,14 @@ pub enum Instruction {
     CALL(Call),
     MSTORE(Mstore),
     MLOAD(Mload),
+    ASSERT(Assert),
+    RANGE(Range),
+    AND(And),
+    OR(Or),
+    XOR(Xor),
+    NOT(Not),
+    NEQ(Neq),
+    GTE(Gte),
     // todo: for test, delete next version
     SUB(Sub),
 }
@@ -105,8 +163,14 @@ pub enum Opcode {
     RET,
     MLOAD,
     MSTORE,
-    SLOAD,
-    SSTORE,
+    ASSERT,
+    RANGE_CHECK,
+    AND,
+    OR,
+    XOR,
+    NOT,
+    NEQ,
+    GTE,
     // todo: for test, delete next version
     SUB,
 }
@@ -125,8 +189,14 @@ impl fmt::Display for Opcode {
             Opcode::RET => write!(f, "ret"),
             Opcode::MLOAD => write!(f, "mload"),
             Opcode::MSTORE => write!(f, "mstore"),
-            Opcode::SLOAD => write!(f, "sload"),
-            Opcode::SSTORE => write!(f, "sstore"),
+            Opcode::ASSERT => write!(f, "assert"),
+            Opcode::RANGE_CHECK => write!(f, "range"),
+            Opcode::AND => write!(f, "and"),
+            Opcode::OR => write!(f, "or"),
+            Opcode::XOR => write!(f, "xor"),
+            Opcode::NOT => write!(f, "not"),
+            Opcode::NEQ => write!(f, "neq"),
+            Opcode::GTE => write!(f, "gte"),
             Opcode::SUB => write!(f, "sub"),
         }
     }
