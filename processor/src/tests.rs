@@ -223,15 +223,16 @@ fn range_check_test() {
     //add r3 r0 r1
     //mul r4 r3 r2
     //range_check r4
-    let program_src = "0x24000000
+    let program_src = "0x4000000840000000
         0x8
-        0x24400000
+        0x4000001040000000
         0x2
-        0x24800000
+        0x4000002040000000
         0x300
-        0x08c04000
-        0x110c8000
-        0x61000000
+        0x0020204400000000
+        0x0100408200000000
+        0x0001000000400000
+        0x0000000000800000
         ";
 
     let instructions = program_src.split('\n');
