@@ -5,6 +5,29 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use serde::{Deserialize, Serialize};
 
+pub const OPCODE_END_SEL_INDEX: usize = 0;
+pub const OPCODE_MSTORE_SEL_INDEX: usize = OPCODE_END_SEL_INDEX + 1;
+pub const OPCODE_MLOAD_SEL_INDEX: usize = OPCODE_MSTORE_SEL_INDEX + 1;
+pub const OPCODE_RET_SEL_INDEX: usize = OPCODE_MLOAD_SEL_INDEX + 1;
+pub const OPCODE_CALL_SEL_INDEX: usize = OPCODE_RET_SEL_INDEX + 1;
+pub const OPCODE_CJMP_SEL_INDEX: usize = OPCODE_CALL_SEL_INDEX + 1;
+pub const OPCODE_JMP_SEL_INDEX: usize = OPCODE_CJMP_SEL_INDEX + 1;
+pub const OPCODE_MOV_SEL_INDEX: usize = OPCODE_JMP_SEL_INDEX + 1;
+pub const OPCODE_ASSERT_SEL_INDEX: usize = OPCODE_MOV_SEL_INDEX + 1;
+pub const OPCODE_EQ_SEL_INDEX: usize = OPCODE_ASSERT_SEL_INDEX + 1;
+pub const OPCODE_MUL_SEL_INDEX: usize = OPCODE_EQ_SEL_INDEX + 1;
+pub const OPCODE_ADD_SEL: usize = OPCODE_MUL_SEL_INDEX + 1;
+pub const OPCODE_NUM: usize = OPCODE_ADD_SEL + 1;
+
+pub const BUILTIN_GTE_SEL_INDEX: usize = 0;
+pub const BUILTIN_NEQ_SEL_INDEX: usize = BUILTIN_GTE_SEL_INDEX + 1;
+pub const BUILTIN_NOT_SEL_INDEX: usize = BUILTIN_NEQ_SEL_INDEX + 1;
+pub const BUILTIN_XOR_SEL_INDEX: usize = BUILTIN_NOT_SEL_INDEX + 1;
+pub const BUILTIN_OR_SEL_INDEX: usize = BUILTIN_XOR_SEL_INDEX + 1;
+pub const BUILTIN_AND_SEL_INDEX: usize = BUILTIN_OR_SEL_INDEX + 1;
+pub const BUILTIN_RANGE_SEL_INDEX: usize = BUILTIN_AND_SEL_INDEX + 1;
+pub const BUILTIN_NUM: usize = BUILTIN_RANGE_SEL_INDEX + 1;
+
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum MemoryOperation {
     Read,
@@ -41,14 +64,38 @@ pub struct MemoryTraceCell {
     pub value: GoldilocksField,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RegisterSelector {
+    pub op0: GoldilocksField,
+    pub op1: GoldilocksField,
+    pub dst: GoldilocksField,
+    pub aux0: GoldilocksField,
+    pub op0_reg_sel: [GoldilocksField; REGISTER_NUM],
+    pub op1_reg_sel: [GoldilocksField; REGISTER_NUM],
+    pub dst_reg_sel: [GoldilocksField; REGISTER_NUM],
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OpcodeSelector {
+    pub sel_opcodes: [GoldilocksField; OPCODE_NUM],
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BuiltinSelector {
+    pub sel_builtins: [GoldilocksField; BUILTIN_NUM],
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Step {
     pub clk: u32,
     pub pc: u64,
-    //todo for debug
-    pub instruction: Instruction,
+    pub instruction: GoldilocksField,
+    pub immediate_data: GoldilocksField,
+    pub opcode: GoldilocksField,
+    pub op1_imm: GoldilocksField,
     pub regs: [GoldilocksField; REGISTER_NUM],
     pub flag: bool,
+    pub register_selector: RegisterSelector,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -206,10 +253,13 @@ impl Trace {
         &mut self,
         clk: u32,
         pc: u64,
-        instruction: Instruction,
+        instruction: GoldilocksField,
+        immediate_data: GoldilocksField,
+        op1_imm: GoldilocksField,
+        opcode: GoldilocksField,
         regs: [GoldilocksField; REGISTER_NUM],
         flag: bool,
-        v_addr: Option<u32>,
+        register_selector: RegisterSelector,
     ) {
         let step = Step {
             clk,
@@ -217,6 +267,10 @@ impl Trace {
             instruction,
             regs,
             flag,
+            immediate_data,
+            op1_imm,
+            opcode,
+            register_selector,
         };
         self.exec.push(step);
     }
