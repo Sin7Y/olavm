@@ -11,26 +11,17 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 pub(crate) fn eval_packed_generic<P: PackedField>(
-    lv: &[P; NUM_INST_COLS],
-    nv: &[P; NUM_INST_COLS],
+    lv: &[P; NUM_CPU_COLS],
+    nv: &[P; NUM_CPU_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    let is_cjmp = lv[COL_S_CJMP];
-    let flag = lv[COL_FLAG];
-    let dst = lv[COL_OP_2];
-    let cur_pc = lv[COL_PC];
-    let next_pc = nv[COL_PC];
-
-    // if flag == 1, set pc to dst, else increased by 1.
-    let jmp_diff = cur_pc - dst;
-    yield_constr
-        .constraint(is_cjmp * (flag * jmp_diff + (P::ONES - flag) * (next_pc - cur_pc - P::ONES)));
+    yield_constr.constraint(lv[COL_S_CJMP] * (nv[COL_PC] - lv[COL_FLAG] * lv[COL_OP1] - (P::ONES - lv[COL_FLAG]) * (lv[COL_PC] + P::ONES)));
 }
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    lv: &[ExtensionTarget<D>; NUM_INST_COLS],
-    nv: &[ExtensionTarget<D>; NUM_INST_COLS],
+    lv: &[ExtensionTarget<D>; NUM_CPU_COLS],
+    nv: &[ExtensionTarget<D>; NUM_CPU_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     let is_cjmp = lv[COL_S_CJMP];

@@ -3,7 +3,7 @@ use std::matches;
 use crate::columns::*;
 use vm_core::program::instruction::*;
 use vm_core::program::REGISTER_NUM;
-use vm_core::trace::trace::{MemoryTraceCell, Step};
+use vm_core::trace::trace::{MemoryOperation, MemoryTraceCell, Step};
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
@@ -12,14 +12,16 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 pub(crate) fn eval_packed_generic<P: PackedField>(
-    lv: &[P; NUM_INST_COLS],
+    lv: &[P; NUM_CPU_COLS],
+    nv: &[P; NUM_CPU_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    let is_mov = lv[COL_S_MOV];
-    let dst = lv[COL_OP_0];
-    let src = lv[COL_OP_2];
+    let is_mov = lv[COL_S_MSTORE];
+    let dst = lv[COL_OP_2];
+    let src = lv[COL_OP_0];
 
     // TODO: range check dst and src.
+    // maybe we also need to constraint write action for memory?
 
     let output_diff = dst - src;
     yield_constr.constraint(is_mov * output_diff);
@@ -27,12 +29,12 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    lv: &[ExtensionTarget<D>; NUM_INST_COLS],
+    lv: &[ExtensionTarget<D>; NUM_CPU_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
-    let is_mov = lv[COL_S_MOV];
-    let dst = lv[COL_OP_0];
-    let src = lv[COL_OP_2];
+    let is_mov = lv[COL_S_MSTORE];
+    let dst = lv[COL_OP_2];
+    let src = lv[COL_OP_0];
 
     let output_diff = builder.sub_extension(dst, src);
 
@@ -55,25 +57,33 @@ mod tests {
     use crate::utils::generate_inst_trace;
 
     #[test]
-    fn test_mov_stark() {
-        let dst = GoldilocksField(10);
-        let src = GoldilocksField(10);
+    fn test_mstore_stark() {
+        let value = GoldilocksField(10);
+        let mem_addr = GoldilocksField(4);
         let zero = GoldilocksField::ZERO;
         let step = Step {
             clk: 0,
             pc: 0,
-            instruction: Instruction::MOV(Mov {
+            instruction: Instruction::MSTORE(Mstore {
+                a: ImmediateOrRegName::Immediate(mem_addr),
                 ri: 0,
-                a: ImmediateOrRegName::Immediate(src),
             }),
             regs: [
-                dst, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
-                zero, zero,
+                value, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                zero, zero, zero,
             ],
             flag: false,
         };
-        let memory: Vec<MemoryTraceCell> = Vec::new();
-        let trace = generate_inst_trace(&vec![step], &memory);
+        let mem = MemoryTraceCell {
+            addr: mem_addr.0,
+            clk: step.clk,
+            pc: step.pc,
+            op: MemoryOperation::Write,
+            value: value,
+        };
+        let memory_trace = vec![mem];
+
+        let trace = generate_inst_trace(&vec![step], &memory_trace);
 
         let mut constraint_consumer = ConstraintConsumer::new(
             vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],

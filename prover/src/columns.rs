@@ -1,7 +1,4 @@
-use {
-    // vm_core::program::REGISTER_NUM,
-    std::ops::Range,
-};
+use std::ops::Range;
 
 // TODO: we define REGISTER_NUM here for now, need to import it from vm_core.
 pub const REGISTER_NUM: usize = 9;
@@ -9,7 +6,7 @@ pub const REGISTER_NUM: usize = 9;
 // The Olavm trace for starky:
 // There are two kinds of traces, one for main trace, one for sub-table.
 
-// 1. Main trace.
+// 1. Main(CPU) trace.
 // There are 68 columns in main trace.
 //
 // Context related columns(12):
@@ -87,6 +84,10 @@ pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
 pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
 
+pub(crate) const NUM_CPU_COLS: usize = COL_S_ECDSA + 1;
+
+// 2. Memory Trace.
+
 // Column numbers of instruction trace.
 // Selector columns of instructions.
 // pub(crate) const COL_S_ADD: usize = 0;
@@ -119,7 +120,7 @@ pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
 // pub(crate) const COL_M_VAL: usize = COL_M_RW + 1;
 
 // // For Instruction trace, we need 37 columns.
-// pub(crate) const NUM_INST_COLS: usize = COL_M_VAL + 1;
+// pub(crate) const NUM_CPU_COLS: usize = COL_M_VAL + 1;
 
 // // 2. Memory trace.
 // // we sort memory by address, then clk, then pc.
