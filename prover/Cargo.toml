@@ -17,3 +17,4 @@ starky = { git = "https://github.com/mir-protocol/plonky2", rev = "7b2f515c007a7
 
 anyhow = "1.0"
 num = "0.4"
+itertools = "0.8"

@@ -13,31 +13,16 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 pub(crate) fn eval_packed_generic<P: PackedField>(
-    lv: &[P; NUM_INST_COLS],
+    lv: &[P; NUM_CPU_COLS],
+    nv: &[P; NUM_CPU_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    // Get ADD data from trace.
-    let is_add = lv[COL_S_ADD];
-    let output = lv[COL_OP_0];
-    let input0 = lv[COL_OP_1];
-    let input1 = lv[COL_OP_2];
-
-    // TODO: We use range_check to check input/output are in 32 bits.
-    // range_check(output, 32);
-    // range_check(input0, 32);
-    // range_check(input0, 32);
-
-    // Do a local addition.
-    let unreduced_output = input0 + input1;
-    let output_diff = unreduced_output - output;
-
-    // Constraint addition.
-    yield_constr.constraint(is_add * output_diff);
+    yield_constr.constraint(lv[COL_S_ADD] * (nv[COL_DST] - (lv[COL_OP0] + lv[COL_OP1])));
 }
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    lv: &[ExtensionTarget<D>; NUM_INST_COLS],
+    lv: &[ExtensionTarget<D>; NUM_CPU_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
     // Get ADD data from trace.

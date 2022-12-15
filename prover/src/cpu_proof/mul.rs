@@ -1,7 +1,7 @@
 use std::matches;
 
 use crate::{columns::*, utils::generate_inst_trace};
-use vm_core::program::instruction::*;
+use vm_core::program::{instruction::*, REGISTER_NUM};
 use vm_core::trace::trace::{MemoryTraceCell, Step};
 
 use plonky2::field::extension::Extendable;
@@ -11,45 +11,35 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 pub(crate) fn eval_packed_generic<P: PackedField>(
-    lv: &[P; NUM_INST_COLS],
+    lv: &[P; NUM_CPU_COLS],
+    nv: &[P; NUM_CPU_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    let is_eq = lv[COL_S_EQ];
-    let lhs = lv[COL_OP_0];
-    let rhs = lv[COL_OP_2];
-    let flag = lv[COL_FLAG];
-
-    // TODO: we need range check lhs, rhs are within P,
-    // so that the diff of them reduced in [0, P).
-
-    let diff = lhs - rhs;
-    yield_constr.constraint(is_eq * flag * diff);
+    yield_constr.constraint(lv[COL_S_MUL] * (nv[COL_DST] - lv[COL_OP0] * lv[COL_OP1]));
 }
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    lv: &[ExtensionTarget<D>; NUM_INST_COLS],
+    lv: &[ExtensionTarget<D>; NUM_CPU_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
-    let is_eq = lv[COL_S_EQ];
-    let lhs = lv[COL_OP_0];
-    let rhs = lv[COL_OP_2];
-    let flag = lv[COL_FLAG];
+    // Get MUL data from trace.
+    let is_mul = lv[COL_S_MUL];
+    let output = lv[COL_OP_0];
+    let input0 = lv[COL_OP_1];
+    let input1 = lv[COL_OP_2];
 
-    let output_diff = builder.sub_extension(lhs, rhs);
+    let unreduced_output = builder.mul_extension(input0, input1);
+    let output_diff = builder.sub_extension(unreduced_output, output);
 
-    let eq_constraint = builder.mul_extension(is_eq, flag);
-    let filtered_constraint = builder.mul_extension(eq_constraint, output_diff);
+    let filtered_constraint = builder.mul_extension(is_mul, output_diff);
     yield_constr.constraint(builder, filtered_constraint);
 }
 
 mod tests {
-    use num::bigint::BigUint;
-    use num::ToPrimitive;
-
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::{
-        field::types::Field,
+        field::types::{Field, Field64},
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
     use starky::constraint_consumer::ConstraintConsumer;
@@ -57,25 +47,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_equal_stark() {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-
-        let input = GoldilocksField(100);
+    fn test_mul_stark() {
+        let output = GoldilocksField(16);
+        let input0 = GoldilocksField(8);
+        let input1 = GoldilocksField(2);
         let zero = GoldilocksField::ZERO;
         let step = Step {
             clk: 0,
             pc: 0,
-            instruction: Instruction::EQ(Equal {
+            instruction: Instruction::MUL(Mul {
                 ri: 0,
-                a: ImmediateOrRegName::RegName(1),
+                rj: 1,
+                a: ImmediateOrRegName::RegName(2),
             }),
             regs: [
-                input, input, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
                 zero, zero, zero,
             ],
-            flag: true,
+            flag: false,
         };
         let memory: Vec<MemoryTraceCell> = Vec::new();
         let trace = generate_inst_trace(&vec![step], &memory);
@@ -93,19 +82,27 @@ mod tests {
     }
 
     #[test]
-    fn test_not_equal_stark() {
-        let input0 = GoldilocksField(100);
-        let input1 = GoldilocksField(22);
+    fn test_mul_with_overflow_stark() {
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+
+        let overflow = GoldilocksField::ORDER;
+        let input0 = GoldilocksField(overflow - 1);
+        let input1 = GoldilocksField(100);
+        let output =
+            GoldilocksField(((input0.0 as u128 * input1.0 as u128) % overflow as u128) as u64);
         let zero = GoldilocksField::ZERO;
         let step = Step {
             clk: 0,
             pc: 0,
-            instruction: Instruction::EQ(Equal {
+            instruction: Instruction::MUL(Mul {
                 ri: 0,
-                a: ImmediateOrRegName::RegName(1),
+                rj: 1,
+                a: ImmediateOrRegName::RegName(2),
             }),
             regs: [
-                input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
+                output, input0, input1, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero,
                 zero, zero, zero,
             ],
             flag: false,

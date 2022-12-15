@@ -7,7 +7,7 @@ use plonky2::hash::hash_types::RichField;
 pub(crate) fn generate_inst_trace<F: RichField>(
     steps: &Vec<Step>,
     memory: &Vec<MemoryTraceCell>,
-) -> Vec<[F; NUM_INST_COLS]> {
+) -> Vec<[F; NUM_CPU_COLS]> {
     #[macro_export]
     macro_rules! assign_op2 {
         ( $a:expr, $step:expr, $row:expr ) => {
@@ -23,10 +23,10 @@ pub(crate) fn generate_inst_trace<F: RichField>(
         };
     }
 
-    let trace: Vec<[F; NUM_INST_COLS]> = steps
+    let trace: Vec<[F; NUM_CPU_COLS]> = steps
         .iter()
         .map(|s| {
-            let mut row: [F; NUM_INST_COLS] = [F::default(); NUM_INST_COLS];
+            let mut row: [F; NUM_CPU_COLS] = [F::default(); NUM_CPU_COLS];
             row[COL_CLK] = F::from_canonical_u32(s.clk);
             row[COL_PC] = F::from_canonical_u64(s.pc);
             row[COL_FLAG] = F::from_canonical_u32(s.flag as u32);
