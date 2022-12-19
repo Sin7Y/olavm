@@ -107,6 +107,14 @@ pub struct RangeRow {
     pub limb3: GoldilocksField,
 }
 
+// Added by xb-2022-12-19
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RangeCheckRow {
+    pub val: GoldilocksField,
+    pub limb_lo: GoldilocksField,
+    pub limb_hi: GoldilocksField
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitwiseRow {
     pub clk: u32,
@@ -137,6 +145,50 @@ pub struct BitwiseRow {
     pub target_3: GoldilocksField,
 }
 
+
+// Added by xb-2022-12-16
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BitwiseCombinedRow {
+
+    // bitwise_tag = {0,1,2} = {AND, OR, XOR}
+    // Identify the bitwise_type in BIT_WISE Fixed Table
+    pub bitwise_tag: u32,
+
+    // Lookup with main Trace
+    pub op0: GoldilocksField,
+    pub op1: GoldilocksField,
+    pub res: GoldilocksField,
+
+    // Lookup with BIT_WISE Fixed Table {op0_0, op1_0, res_0}
+    // Lookup with RC Fixed Table {op0_0,...}
+    pub op0_0: GoldilocksField,
+    pub op0_1: GoldilocksField,
+    pub op0_2: GoldilocksField,
+    pub op0_3: GoldilocksField,
+
+    pub op1_0: GoldilocksField,
+    pub op1_1: GoldilocksField,
+    pub op1_2: GoldilocksField,
+    pub op1_3: GoldilocksField,
+
+    pub res_0: GoldilocksField,
+    pub res_1: GoldilocksField,
+    pub res_2: GoldilocksField,
+    pub res_3: GoldilocksField,
+
+    //pub rc_tag: GoldilocksField,
+}
+
+// Added by xb-2022-12-16
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CmpRow {
+    pub tag: u32,
+    pub op0: GoldilocksField,
+    pub op1: GoldilocksField,
+    pub diff: GoldilocksField,
+}
+
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComparisonRow {
     pub clk: u32,
@@ -158,9 +210,15 @@ pub struct Trace {
     pub builtin_range_check: Vec<RangeRow>,
     pub builtin_bitwise: Vec<BitwiseRow>,
     pub builtin_comparison: Vec<ComparisonRow>,
+    // added by xb
+    pub builtin_rangecheck: Vec<RangeCheckRow>,
+    pub builtin_bitwise_combined: Vec<BitwiseCombinedRow>,
+    pub builtin_cmp: Vec<CmpRow>,
+
 }
 
 impl Trace {
+
     pub fn insert_comparison(
         &mut self,
         clk: u32,
@@ -192,6 +250,25 @@ impl Trace {
             flag,
             diff,
             diff_inv,
+        });
+    }
+
+
+    // Added by xb 2022-12-19
+    pub fn insert_cmp(
+        &mut self,
+        op0: GoldilocksField,
+        op1: GoldilocksField,
+    ) {
+        let mut diff = Default::default();
+        
+        diff = op0 - op1;
+
+        self.builtin_cmp.push(CmpRow {
+            tag: 1,
+            op0,
+            op1,
+            diff,
         });
     }
 
@@ -237,6 +314,42 @@ impl Trace {
             target_3: GoldilocksField(target_limbs.3),
         });
     }
+    
+
+    // added by xb
+    pub fn insert_bitwise_combined(
+        &mut self,
+        bitwise_tag: u32,
+        op0: GoldilocksField,
+        op1: GoldilocksField,
+        res: GoldilocksField,
+    ) {
+        let op0_limbs = split_limbs_from_field(&op0);
+        let op1_limbs = split_limbs_from_field(&op1);
+        let res_limbs = split_limbs_from_field(&res);
+
+        self.builtin_bitwise_combined.push(BitwiseCombinedRow {
+            bitwise_tag,
+            op0,
+            op1,
+            res,
+            op0_0: GoldilocksField(op0_limbs.0),
+            op0_1: GoldilocksField(op0_limbs.1),
+            op0_2: GoldilocksField(op0_limbs.2),
+            op0_3: GoldilocksField(op0_limbs.3),
+
+            op1_0: GoldilocksField(op1_limbs.0),
+            op1_1: GoldilocksField(op1_limbs.1),
+            op1_2: GoldilocksField(op1_limbs.2),
+            op1_3: GoldilocksField(op1_limbs.3),
+
+            res_0: GoldilocksField(res_limbs.0),
+            res_1: GoldilocksField(res_limbs.1),
+            res_2: GoldilocksField(res_limbs.2),
+            res_3: GoldilocksField(res_limbs.3),
+
+        });
+    }
 
     pub fn insert_range_check(&mut self, input: GoldilocksField) {
         let split_limbs = split_limbs_from_field(&input);
@@ -246,6 +359,16 @@ impl Trace {
             limb1: GoldilocksField(split_limbs.1),
             limb2: GoldilocksField(split_limbs.2),
             limb3: GoldilocksField(split_limbs.3),
+        });
+    }
+
+    // added by xb
+    pub fn insert_range_check(&mut self, input: GoldilocksField) {
+        let split_limbs = split_U16_limbs_from_field(&input);
+        self.builtin_rangecheck.push(RangeCheckRow {
+            val: input,
+            limb_lo: GoldilocksField(split_limbs.0),
+            limb_hi: GoldilocksField(split_limbs.1)
         });
     }
 
