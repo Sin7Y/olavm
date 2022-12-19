@@ -8,6 +8,7 @@ members = [
     "verifier",
     "olavm",
     "plonky2",
+    "plonky2-evm",
     "field",
 ]
 
