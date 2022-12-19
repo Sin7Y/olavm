@@ -1,6 +1,6 @@
 [package]
-name = "plonky2 util"
-description = "Utilities used by Plonky2"
+name = "olavm_util"
+description = "Utilities used by OlaVM"
 version = "0.1.0"
 edition = "2021"
 
