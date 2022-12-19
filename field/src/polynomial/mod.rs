@@ -6,7 +6,7 @@ use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 use anyhow::{ensure, Result};
 use itertools::Itertools;
-use plonky2_util::log2_strict;
+use olavm_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
 use crate::extension::{Extendable, FieldExtension};

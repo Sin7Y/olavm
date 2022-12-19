@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 use std::option::Option;
 
-use plonky2_util::{log2_strict, reverse_index_bits_in_place};
+use olavm_util::{log2_strict, reverse_index_bits_in_place};
 use unroll::unroll_for_loops;
 
 use crate::packable::Packable;
@@ -207,7 +207,7 @@ pub(crate) fn fft_classic<F: Field>(values: &mut [F], r: usize, root_table: &Fft
 
 #[cfg(test)]
 mod tests {
-    use plonky2_util::{log2_ceil, log2_strict};
+    use olavm_util::{log2_ceil, log2_strict};
 
     use crate::fft::{fft, fft_with_options, ifft};
     use crate::goldilocks_field::GoldilocksField;

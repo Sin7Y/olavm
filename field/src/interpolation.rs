@@ -1,4 +1,4 @@
-use plonky2_util::log2_ceil;
+use olavm_util::log2_ceil;
 
 use crate::fft::ifft;
 use crate::polynomial::{PolynomialCoeffs, PolynomialValues};

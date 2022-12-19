@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssi
 
 use num::bigint::BigUint;
 use num::{Integer, One, ToPrimitive, Zero};
-use plonky2_util::bits_u64;
+use olavm_util::bits_u64;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 

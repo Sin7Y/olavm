@@ -9,7 +9,7 @@ default = ["rand"]
 rand = ["dep:rand"]
 
 [dependencies]
-plonky2_util = { path = "../util" }
+olavm_util = { path = "../util" }
 anyhow = "1.0.40"
 itertools = "0.10.0"
 num = { version = "0.4", features = [ "rand" ] }

@@ -5,7 +5,7 @@ use std::iter::{Product, Sum};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use num::{BigUint, Integer};
-use plonky2_util::{assume, branch_hint};
+use olavm_util::{assume, branch_hint};
 use serde::{Deserialize, Serialize};
 
 use crate::inversion::try_inverse_u64;
