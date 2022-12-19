@@ -9,6 +9,9 @@ members = [
     "olavm",
     "util",
     "field",
+    # "evm-stark",
+    # "plonky2",
+    "maybe_rayon",
 ]
 
 [profile.release]
