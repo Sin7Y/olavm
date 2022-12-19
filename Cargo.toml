@@ -8,6 +8,7 @@ members = [
     "verifier",
     "olavm",
     "plonky2",
+    "field",
 ]
 
 [profile.release]
