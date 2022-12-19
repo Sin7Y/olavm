@@ -10,8 +10,8 @@ members = [
     "util",
     "field",
     # "evm-stark",
-    # "plonky2",
-    "maybe_rayon",
+    "plonky2",
+    "wrapper_rayon",
 ]
 
 [profile.release]
