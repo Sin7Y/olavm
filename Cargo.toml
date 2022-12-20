@@ -1,12 +1,12 @@
 [workspace]
 members = [
-    "assembly",
-    "vm-core",
-    "vm-circuits",
-    "processor",
-    "prover",
-    "verifier",
-    "olavm",
+    "circuits",
+    "client",
+    "core",
+    "executor",
+    "plonky2/plonky2",
+    "plonky2/field",
+    "plonky2/starky"
 ]
 
 [profile.release]

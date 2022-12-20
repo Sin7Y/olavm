@@ -1,0 +1,35 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition = "2021"
+authors = ["olavm contributors"]
+description = "Ola virtual machine client"
+readme="README.md"
+license = "MIT"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[[bin]]
+name = "client"
+path = "src/main.rs"
+bench = false
+doctest = false
+
+[dependencies]
+env_logger = { version = "0.9", default-features = false, optional = true }
+hex = { version = "0.4", optional = true }
+log = { version = "0.4", default-features = false }
+clap = { version = "3.2.17"}
+executor = { package = "executor", path = "../executor", version = "0.1.0", default-features = false }
+circuits = { package = "circuits", path = "../circuits", version = "0.1.0", default-features = false }
+serde = {version = "1.0.117", optional = true }
+serde_derive = {version = "1.0.117", optional = true }
+serde_json = {version = "1.0.59", optional = true }
+core = { package = "core", path = "../core", version = "0.1.0", default-features = false }
+
+[dev-dependencies]
+sha2 = "0.10.2"
+sha3 = "0.10.1"
+
+[features]
+
