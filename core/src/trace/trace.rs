@@ -113,7 +113,7 @@ pub struct RangeRow {
 pub struct RangeCheckRow {
     pub val: GoldilocksField,
     pub limb_lo: GoldilocksField,
-    pub limb_hi: GoldilocksField
+    pub limb_hi: GoldilocksField,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -146,11 +146,9 @@ pub struct BitwiseRow {
     pub target_3: GoldilocksField,
 }
 
-
 // Added by xb-2022-12-16
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitwiseCombinedRow {
-
     // bitwise_tag = {0,1,2} = {AND, OR, XOR}
     // Identify the bitwise_type in BIT_WISE Fixed Table
     pub bitwise_tag: u32,
@@ -176,7 +174,6 @@ pub struct BitwiseCombinedRow {
     pub res_1: GoldilocksField,
     pub res_2: GoldilocksField,
     pub res_3: GoldilocksField,
-
     //pub rc_tag: GoldilocksField,
 }
 
@@ -188,7 +185,6 @@ pub struct CmpRow {
     pub op1: GoldilocksField,
     pub diff: GoldilocksField,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComparisonRow {
@@ -215,11 +211,9 @@ pub struct Trace {
     pub builtin_rangecheck: Vec<RangeCheckRow>,
     pub builtin_bitwise_combined: Vec<BitwiseCombinedRow>,
     pub builtin_cmp: Vec<CmpRow>,
-
 }
 
 impl Trace {
-
     pub fn insert_comparison(
         &mut self,
         clk: u32,
@@ -254,15 +248,10 @@ impl Trace {
         });
     }
 
-
     // Added by xb 2022-12-19
-    pub fn insert_cmp(
-        &mut self,
-        op0: GoldilocksField,
-        op1: GoldilocksField,
-    ) {
+    pub fn insert_cmp(&mut self, op0: GoldilocksField, op1: GoldilocksField) {
         let mut diff = Default::default();
-        
+
         diff = op0 - op1;
 
         self.builtin_cmp.push(CmpRow {
@@ -315,7 +304,6 @@ impl Trace {
             target_3: GoldilocksField(target_limbs.3),
         });
     }
-    
 
     // added by xb
     pub fn insert_bitwise_combined(
@@ -348,7 +336,6 @@ impl Trace {
             res_1: GoldilocksField(res_limbs.1),
             res_2: GoldilocksField(res_limbs.2),
             res_3: GoldilocksField(res_limbs.3),
-
         });
     }
 
@@ -369,7 +356,7 @@ impl Trace {
         self.builtin_rangecheck.push(RangeCheckRow {
             val: input,
             limb_lo: GoldilocksField(split_limbs.0),
-            limb_hi: GoldilocksField(split_limbs.1)
+            limb_hi: GoldilocksField(split_limbs.1),
         });
     }
 

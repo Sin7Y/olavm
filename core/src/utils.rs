@@ -20,4 +20,3 @@ pub fn split_u16_limbs_from_field(value: &GoldilocksField) -> (u64, u64) {
 
     (limb_lo, limb_hi)
 }
-
