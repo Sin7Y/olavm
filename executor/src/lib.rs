@@ -1,19 +1,19 @@
 use crate::decode::{decode_raw_instruction, IMM_INSTRUCTION_LEN};
 use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
+use core::program::instruction::ImmediateOrRegName::Immediate;
+use core::program::instruction::{
+    Add, And, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload, Mov,
+    Mstore, Mul, Neq, Opcode, Or, Range, Ret, Sub, Xor,
+};
+use core::program::{Program, REGISTER_NUM};
+use core::trace::trace::{
+    BitwiseOperation, ComparisonOperation, MemoryTraceCell, RangeRow, RegisterSelector,
+};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::{BTreeMap, HashMap};
-use vm_core::program::instruction::ImmediateOrRegName::Immediate;
-use vm_core::program::instruction::{
-    Add, And, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload, Mov,
-    Mstore, Mul, Neq, Opcode, Or, Range, Ret, Sub, Xor,
-};
-use vm_core::program::{Program, REGISTER_NUM};
-use vm_core::trace::trace::{
-    BitwiseOperation, ComparisonOperation, MemoryTraceCell, RangeRow, RegisterSelector,
-};
 
 mod decode;
 pub mod error;
@@ -259,6 +259,8 @@ impl Process {
                 let instruction = self.decode_instruction(txt_instruction);
                 program.trace.raw_instructions.push(instruction);
                 pc += step;
+            } else {
+                break;
             }
             if pc >= (program.instructions.len() as u64 - 1) {
                 break;
@@ -619,7 +621,6 @@ impl Process {
                 }
                 "end" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::END as u8);
-
                     break;
                 }
                 _ => panic!("not match opcode:{}", opcode),

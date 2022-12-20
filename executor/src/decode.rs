@@ -165,5 +165,5 @@ fn decode_raw_instruction_test() {
     let inst_str = "0x4000000840000000";
     let imm = "0x7b";
     let inst_str = decode_raw_instruction(&inst_str, imm);
-    debug!("inst_str:{:?}", inst_str);
+    println!("inst_str:{:?}", inst_str);
 }
