@@ -15,6 +15,10 @@ plonky2 = { package = "plonky2", path = "../plonky2/plonky2" }
 
 starky = { package = "starky", path = "../plonky2/starky" }
 
-anyhow = "1.0"
+anyhow = "1.0.40"
 num = "0.4"
-itertools = "0.8"
+itertools = "0.10.3"
+maybe_rayon = { path = "../plonky2/maybe_rayon" }
+plonky2_util = {  path = "../plonky2/util" }
+serde = { version = "1.0.144", features = ["derive"] }
+ethereum-types = "0.14.0"
