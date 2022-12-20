@@ -9,7 +9,7 @@ members = [
     "olavm",
     "util",
     "field",
-    # "evm-stark",
+    "evm-stark",
     "plonky2",
     "wrapper_rayon",
 ]
