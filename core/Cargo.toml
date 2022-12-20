@@ -1,0 +1,17 @@
+[package]
+name = "core"
+version = "0.1.0"
+description = "Olavm core components"
+readme = "README.md"
+license = "MIT"
+edition = "2021"
+
+[lib]
+bench = false
+doctest = false
+
+[dependencies]
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+num_enum = "0.5.7"
+plonky2 = { path = "../plonky2/plonky2"}
