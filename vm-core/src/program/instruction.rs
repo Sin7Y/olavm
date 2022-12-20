@@ -1,5 +1,5 @@
 use num_enum::TryFromPrimitive;
-use plonky2::field::goldilocks_field::GoldilocksField;
+use olavm_plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;

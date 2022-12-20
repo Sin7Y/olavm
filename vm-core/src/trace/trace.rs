@@ -1,6 +1,6 @@
 use crate::program::instruction::{Instruction, Opcode};
 use crate::program::REGISTER_NUM;
-use plonky2::field::goldilocks_field::GoldilocksField;
+use olavm_plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]

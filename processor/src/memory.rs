@@ -1,5 +1,5 @@
 use crate::GoldilocksField;
-use plonky2::field::types::Field;
+use olavm_plonky2::field::types::Field;
 use std::collections::{BTreeMap, HashMap};
 use vm_core::trace::trace::{MemoryCell, MemoryOperation};
 

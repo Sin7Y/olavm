@@ -2,8 +2,8 @@ use crate::decode::{decode_raw_instruction, IMM_INSTRUCTION_LEN};
 use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
 use log::debug;
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
+use olavm_plonky2::field::goldilocks_field::GoldilocksField;
+use olavm_plonky2::field::types::Field;
 use std::collections::{BTreeMap, HashMap};
 use vm_core::program::instruction::ImmediateOrRegName::Immediate;
 use vm_core::program::instruction::{
