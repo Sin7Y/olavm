@@ -12,6 +12,7 @@ use {
     crate::stark::Stark,
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     std::marker::PhantomData,
+    core::program::REGISTER_NUM,
 };
 
 #[derive(Copy, Clone, Default)]
