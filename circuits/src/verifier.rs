@@ -10,11 +10,9 @@ use crate::all_stark::{AllStark, Table};
 use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
+use crate::builtins::builtin_stark::BuiltinStark;
 use crate::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
-use crate::keccak::keccak_stark::KeccakStark;
-use crate::keccak_memory::keccak_memory_stark::KeccakMemoryStark;
-use crate::logic::LogicStark;
-use crate::memory::memory_stark::MemoryStark;
+use crate::memory::MemoryStark;
 use crate::permutation::PermutationCheckVars;
 use crate::proof::{
     AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges,
@@ -30,10 +28,8 @@ pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, co
 ) -> Result<()>
 where
     [(); CpuStark::<F, D>::COLUMNS]:,
-    [(); KeccakStark::<F, D>::COLUMNS]:,
-    [(); KeccakMemoryStark::<F, D>::COLUMNS]:,
-    [(); LogicStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
+    [(); BuiltinStark::<F, D>::COLUMNS]:,
     [(); C::Hasher::HASH_SIZE]:,
 {
     let AllProofChallenges {
@@ -45,10 +41,8 @@ where
 
     let AllStark {
         cpu_stark,
-        keccak_stark,
-        keccak_memory_stark,
-        logic_stark,
         memory_stark,
+        builtin_stark,
         cross_table_lookups,
     } = all_stark;
 
@@ -67,20 +61,6 @@ where
         config,
     )?;
     verify_stark_proof_with_challenges(
-        keccak_stark,
-        &all_proof.stark_proofs[Table::Keccak as usize],
-        &stark_challenges[Table::Keccak as usize],
-        &ctl_vars_per_table[Table::Keccak as usize],
-        config,
-    )?;
-    verify_stark_proof_with_challenges(
-        keccak_memory_stark,
-        &all_proof.stark_proofs[Table::KeccakMemory as usize],
-        &stark_challenges[Table::KeccakMemory as usize],
-        &ctl_vars_per_table[Table::KeccakMemory as usize],
-        config,
-    )?;
-    verify_stark_proof_with_challenges(
         memory_stark,
         &all_proof.stark_proofs[Table::Memory as usize],
         &stark_challenges[Table::Memory as usize],
@@ -88,7 +68,7 @@ where
         config,
     )?;
     verify_stark_proof_with_challenges(
-        logic_stark,
+        builtin_stark,
         &all_proof.stark_proofs[Table::Logic as usize],
         &stark_challenges[Table::Logic as usize],
         &ctl_vars_per_table[Table::Logic as usize],

@@ -6,7 +6,6 @@ members = [
     "executor",
     "plonky2/plonky2",
     "plonky2/field",
-    "plonky2/starky"
 ]
 
 [profile.release]

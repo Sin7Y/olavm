@@ -3,7 +3,7 @@ use std::ops::Range;
 // TODO: we define REGISTER_NUM here for now, need to import it from core.
 pub const REGISTER_NUM: usize = 9;
 
-// The Olavm trace for starky:
+// The Olavm trace for crate:
 // There are two kinds of traces, one for main trace, one for sub-table.
 
 // 1. Main(CPU) trace.
@@ -106,3 +106,6 @@ pub(crate) const COL_F_RC: usize = COL_DIFF_ADDR_P + 1;
 pub(crate) const COL_F_MAIN: usize = COL_F_RC + 1;
 
 pub(crate) const NUM_RAM_COLS: usize = COL_F_MAIN + 1;
+
+// 3. Builtin Trace.
+pub(crate) const NUM_BUILTIN_COLS: usize = 0;
