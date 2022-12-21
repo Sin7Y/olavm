@@ -1,13 +1,10 @@
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec::Vec;
-use alloc::{format, vec};
-use core::marker::PhantomData;
+use std::marker::PhantomData;
 
-use crate::field::extension::Extendable;
-use crate::field::ops::Square;
-use crate::field::packed::PackedField;
-use crate::field::types::Field;
+use plonky2_field::extension::Extendable;
+use plonky2_field::ops::Square;
+use plonky2_field::packed::PackedField;
+use plonky2_field::types::Field;
+
 use crate::gates::gate::Gate;
 use crate::gates::packed_util::PackedEvaluableBase;
 use crate::gates::util::StridedConstraintConsumer;
@@ -16,7 +13,7 @@ use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
 use crate::iop::target::Target;
 use crate::iop::wire::Wire;
-use crate::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::circuit_data::CircuitConfig;
 use crate::plonk::vars::{
@@ -73,7 +70,7 @@ impl<F: RichField + Extendable<D>, const D: usize> ExponentiationGate<F, D> {
 
 impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for ExponentiationGate<F, D> {
     fn id(&self) -> String {
-        format!("{self:?}<D={D}>")
+        format!("{:?}<D={}>", self, D)
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -285,17 +282,21 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
 
 #[cfg(test)]
 mod tests {
+    use std::marker::PhantomData;
+
     use anyhow::Result;
-    use rand::rngs::OsRng;
+    use plonky2_field::goldilocks_field::GoldilocksField;
+    use plonky2_field::types::Field;
+    use plonky2_util::log2_ceil;
     use rand::Rng;
 
-    use super::*;
-    use crate::field::goldilocks_field::GoldilocksField;
-    use crate::field::types::Sample;
+    use crate::gates::exponentiation::ExponentiationGate;
+    use crate::gates::gate::Gate;
     use crate::gates::gate_testing::{test_eval_fns, test_low_degree};
     use crate::hash::hash_types::HashOut;
+    use crate::plonk::circuit_data::CircuitConfig;
     use crate::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use crate::util::log2_ceil;
+    use crate::plonk::vars::EvaluationVars;
 
     const MAX_POWER_BITS: usize = 17;
 
@@ -378,7 +379,7 @@ mod tests {
             v.iter().map(|&x| x.into()).collect::<Vec<_>>()
         }
 
-        let mut rng = OsRng;
+        let mut rng = rand::thread_rng();
 
         let base = F::TWO;
         let power = rng.gen::<usize>() % (1 << MAX_POWER_BITS);

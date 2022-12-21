@@ -1,4 +1,5 @@
-use crate::field::extension::Extendable;
+use plonky2_field::extension::Extendable;
+
 use crate::hash::hash_types::RichField;
 use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::target::{BoolTarget, Target};
@@ -39,9 +40,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use plonky2_field::types::Field;
 
-    use crate::field::types::Sample;
-    use crate::iop::witness::{PartialWitness, WitnessWrite};
+    use crate::iop::witness::{PartialWitness, Witness};
     use crate::plonk::circuit_builder::CircuitBuilder;
     use crate::plonk::circuit_data::CircuitConfig;
     use crate::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
@@ -54,7 +55,7 @@ mod tests {
         type F = <C as GenericConfig<D>>::F;
         type FF = <C as GenericConfig<D>>::FE;
         let config = CircuitConfig::standard_recursion_config();
-        let mut pw = PartialWitness::<F>::new();
+        let mut pw = PartialWitness::new();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
         let (x, y) = (FF::rand(), FF::rand());

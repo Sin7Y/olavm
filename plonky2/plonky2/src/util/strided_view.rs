@@ -1,8 +1,8 @@
-use core::marker::PhantomData;
-use core::mem::size_of;
-use core::ops::{Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
+use std::marker::PhantomData;
+use std::mem::size_of;
+use std::ops::{Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
-use crate::field::packed::PackedField;
+use plonky2_field::packed::PackedField;
 
 /// Imagine a slice, but with a stride (a la a NumPy array).
 ///
@@ -122,11 +122,6 @@ impl<'a, P: PackedField> PackedStridedView<'a, P> {
     #[inline]
     pub fn len(&self) -> usize {
         self.length
-    }
-
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 }
 

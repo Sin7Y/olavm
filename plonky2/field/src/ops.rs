@@ -1,4 +1,4 @@
-use core::ops::Mul;
+use std::ops::Mul;
 
 pub trait Square {
     fn square(&self) -> Self;
