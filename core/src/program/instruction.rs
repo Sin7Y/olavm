@@ -7,7 +7,7 @@ use std::fmt;
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ImmediateOrRegName {
     Immediate(GoldilocksField),
-    RegName(u8),
+    RegName(usize),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -82,6 +82,9 @@ pub struct Assert {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct End {}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Range {
     pub ri: u8,
 }
@@ -138,6 +141,7 @@ pub enum Instruction {
     MSTORE(Mstore),
     MLOAD(Mload),
     ASSERT(Assert),
+    END(End),
     RANGE(Range),
     AND(And),
     OR(Or),
@@ -152,33 +156,32 @@ pub enum Instruction {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Opcode {
-    HALT = 0,
-    ADD,
-    MUL,
-    EQ,
-    MOV,
-    JMP,
-    CJMP,
-    CALL,
-    RET,
-    MLOAD,
-    MSTORE,
-    ASSERT,
-    RANGE_CHECK,
-    AND,
-    OR,
-    XOR,
-    NOT,
-    NEQ,
-    GTE,
+    ADD = 34,
+    MUL = 33,
+    EQ = 32,
+    ASSERT = 31,
+    MOV = 30,
+    JMP = 29,
+    CJMP = 28,
+    CALL = 27,
+    RET = 26,
+    MLOAD = 25,
+    MSTORE = 24,
+    END = 23,
+    RANGE_CHECK = 22,
+    AND = 21,
+    OR = 20,
+    XOR = 19,
+    NOT = 18,
+    NEQ = 17,
+    GTE = 16,
     // todo: for test, delete next version
-    SUB,
+    SUB = 15,
 }
 
 impl fmt::Display for Opcode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Opcode::HALT => write!(f, "halt"),
             Opcode::ADD => write!(f, "add"),
             Opcode::MUL => write!(f, "mul"),
             Opcode::EQ => write!(f, "eq"),
@@ -190,6 +193,7 @@ impl fmt::Display for Opcode {
             Opcode::MLOAD => write!(f, "mload"),
             Opcode::MSTORE => write!(f, "mstore"),
             Opcode::ASSERT => write!(f, "assert"),
+            Opcode::END => write!(f, "end"),
             Opcode::RANGE_CHECK => write!(f, "range"),
             Opcode::AND => write!(f, "and"),
             Opcode::OR => write!(f, "or"),
