@@ -1,8 +1,10 @@
+#![feature(generic_const_exprs)]
+
 pub mod all_stark;
 pub mod builtins;
 pub mod columns;
-pub mod cpu_proof;
-pub mod memory_proof;
+pub mod cpu;
+pub mod memory;
 pub mod config;
 pub mod permutation;
 pub mod vars;
