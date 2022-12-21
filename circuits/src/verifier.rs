@@ -69,9 +69,9 @@ where
     )?;
     verify_stark_proof_with_challenges(
         builtin_stark,
-        &all_proof.stark_proofs[Table::Logic as usize],
-        &stark_challenges[Table::Logic as usize],
-        &ctl_vars_per_table[Table::Logic as usize],
+        &all_proof.stark_proofs[Table::Builtin as usize],
+        &stark_challenges[Table::Builtin as usize],
+        &ctl_vars_per_table[Table::Builtin as usize],
         config,
     )?;
 
