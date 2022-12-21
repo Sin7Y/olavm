@@ -1,9 +1,9 @@
 [workspace]
 members = [
-    # "circuits",
+    "circuits",
     # "client",
-    # "core",
-    # "executor",
+    "core",
+    "executor",
     "plonky2/plonky2",
     "plonky2/field",
     "plonky2/util",
