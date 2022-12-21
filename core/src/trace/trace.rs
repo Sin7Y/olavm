@@ -30,6 +30,18 @@ pub const BUILTIN_RANGE_SEL_INDEX: usize = BUILTIN_AND_SEL_INDEX + 1;
 pub const BUILTIN_NUM: usize = BUILTIN_RANGE_SEL_INDEX + 1;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum FilterLockForMain {
+    True,
+    False,
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum MemoryType {
+    ReadWrite,
+    WriteOnce,
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum MemoryOperation {
     Read,
     Write,
@@ -51,17 +63,32 @@ pub enum ComparisonOperation {
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct MemoryCell {
     pub clk: u32,
-    pub pc: u64,
-    pub op: MemoryOperation,
+    pub is_rw: GoldilocksField,
+    pub op: GoldilocksField,
+    pub is_write: GoldilocksField,
+    pub filter_looked_for_main: GoldilocksField,
+    pub region_prophet: GoldilocksField,
+    pub region_poseidon: GoldilocksField,
+    pub region_ecdsa: GoldilocksField,
     pub value: GoldilocksField,
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct MemoryTraceCell {
-    pub addr: u64,
-    pub clk: u32,
-    pub pc: u64,
-    pub op: MemoryOperation,
+    pub addr: GoldilocksField,
+    pub clk: GoldilocksField,
+    pub is_rw: GoldilocksField,
+    pub op: GoldilocksField,
+    pub is_write: GoldilocksField,
+    pub diff_addr: GoldilocksField,
+    pub diff_addr_inv: GoldilocksField,
+    pub diff_clk: GoldilocksField,
+    pub diff_addr_cond: GoldilocksField,
+    pub filter_looked_for_main: GoldilocksField,
+    pub rw_addr_unchanged: GoldilocksField,
+    pub region_prophet: GoldilocksField,
+    pub region_poseidon: GoldilocksField,
+    pub region_ecdsa: GoldilocksField,
     pub value: GoldilocksField,
 }
 

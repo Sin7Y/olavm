@@ -10,6 +10,7 @@ use core::program::{Program, REGISTER_NUM};
 use core::trace::trace::{
     BitwiseOperation, ComparisonOperation, MemoryTraceCell, RangeRow, RegisterSelector,
 };
+use core::trace::trace::{FilterLockForMain, MemoryCell, MemoryOperation, MemoryType};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
@@ -431,7 +432,13 @@ impl Process {
                     self.memory.write(
                         self.registers[FP_REG_INDEX].0 - 1,
                         self.clk,
-                        self.pc,
+                        GoldilocksField::from_canonical_u64(1 << Opcode::CALL as u64),
+                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                        GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
+                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
                         GoldilocksField::from_canonical_u64(self.pc + step),
                     );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::CALL as u8);
@@ -447,11 +454,29 @@ impl Process {
 
                     self.pc = self
                         .memory
-                        .read(self.registers[FP_REG_INDEX].0 - 1, self.clk, self.pc)
+                        .read(
+                            self.registers[FP_REG_INDEX].0 - 1,
+                            self.clk,
+                            GoldilocksField::from_canonical_u64(1 << Opcode::RET as u64),
+                            GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                            GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
+                            GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+                            GoldilocksField::from_canonical_u64(0 as u64),
+                            GoldilocksField::from_canonical_u64(0 as u64),
+                            GoldilocksField::from_canonical_u64(0 as u64),
+                        )
                         .0;
-                    self.registers[FP_REG_INDEX] =
-                        self.memory
-                            .read(self.registers[FP_REG_INDEX].0 - 2, self.clk, self.pc);
+                    self.registers[FP_REG_INDEX] = self.memory.read(
+                        self.registers[FP_REG_INDEX].0 - 2,
+                        self.clk,
+                        GoldilocksField::from_canonical_u64(1 << Opcode::RET as u64),
+                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                        GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
+                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                    );
                     register_selector.op0 = self.registers[FP_REG_INDEX] - GoldilocksField::ONE;
                     register_selector.op1 = GoldilocksField::from_canonical_u64(self.pc);
                     register_selector.dst = self.registers[FP_REG_INDEX] - GoldilocksField::TWO;
@@ -462,8 +487,18 @@ impl Process {
                     assert!(ops.len() == 3, "mstore params len is 2");
                     let dst_value = self.get_index_value(&ops[1]);
                     let op1_index = self.get_reg_index(&ops[2]);
-                    self.memory
-                        .write(dst_value.0 .0, self.clk, self.pc, self.registers[op1_index]);
+                    self.memory.write(
+                        dst_value.0 .0,
+                        self.clk,
+                        GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u64),
+                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                        GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
+                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        self.registers[op1_index],
+                    );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u8);
 
                     register_selector.dst = dst_value.0;
@@ -481,7 +516,17 @@ impl Process {
                     assert!(ops.len() == 3, "mload params len is 2");
                     let dst_index = self.get_reg_index(&ops[1]);
                     let op1_value = self.get_index_value(&ops[2]);
-                    self.registers[dst_index] = self.memory.read(op1_value.0 .0, self.clk, self.pc);
+                    self.registers[dst_index] = self.memory.read(
+                        op1_value.0 .0,
+                        self.clk,
+                        GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u64),
+                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                        GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
+                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                    );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u8);
 
                     register_selector.dst = self.registers[dst_index];
@@ -647,14 +692,14 @@ impl Process {
     pub fn gen_memory_table(&mut self, program: &mut Program) {
         for (addr, mut cells) in self.memory.trace.iter() {
             for cell in cells {
-                let trace_cell = MemoryTraceCell {
-                    addr: *addr,
-                    clk: cell.clk,
-                    pc: cell.pc,
-                    op: cell.op.clone(),
-                    value: cell.value.clone(),
-                };
-                program.trace.memory.push(trace_cell);
+                println!("addr:{}, cell:{:?}", addr, cell);
+                // let trace_cell = MemoryTraceCell {
+                //     addr: *addr,
+                //     clk: cell.clk,
+                //     op: cell.op.clone(),
+                //     value: cell.value.clone(),
+                // };
+                // program.trace.memory.push(trace_cell);
             }
         }
     }

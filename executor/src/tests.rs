@@ -145,15 +145,15 @@ fn memory_test() {
     // mov r0 20
     // mload r1 0x100
     // add r0 r1 r1
-    let program_src = "0x24000000
+    let program_src = "0x4000000840000000
                             0x8
-                            0x54000000
+                            0x4000100001000000
                             0x100
-                            0x24000000
+                            0x4000000840000000
                             0x14
-                            0x4c400000
+                            0x4000001002000000
                             0x100
-                            0x08004000
+                            0x0040200c00000000
                             ";
 
     let instructions = program_src.split('\n');
