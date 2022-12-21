@@ -1,6 +1,6 @@
 use crate::columns::*;
 use plonky2::field::packed::PackedField;
-use starky::constraint_consumer::ConstraintConsumer;
+use crate::constraint_consumer::ConstraintConsumer;
 
 pub(crate) fn eval_packed_generic<P: PackedField>(
     lv: &[P; NUM_CPU_COLS],

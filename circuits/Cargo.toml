@@ -10,11 +10,7 @@ edition = "2021"
 [dependencies]
 core = { package = "core", path = "../core", version = "0.1.0", default-features = false }
 executor = { package = "executor", path = "../executor", version = "0.1.0", default-features = false }
-
 plonky2 = { package = "plonky2", path = "../plonky2/plonky2" }
-
-starky = { package = "starky", path = "../plonky2/starky" }
-
 anyhow = "1.0.40"
 num = "0.4"
 itertools = "0.10.3"
