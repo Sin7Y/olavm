@@ -1,8 +1,7 @@
 //! Information about the structure of a FRI instance, in terms of the oracles and polynomials
 //! involved, and the points they are opened at.
 
-use alloc::vec::Vec;
-use core::ops::Range;
+use std::ops::Range;
 
 use crate::field::extension::Extendable;
 use crate::hash::hash_types::RichField;

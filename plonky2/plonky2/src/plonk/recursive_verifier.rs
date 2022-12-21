@@ -1,4 +1,5 @@
-use crate::field::extension::Extendable;
+use plonky2_field::extension::Extendable;
+
 use crate::hash::hash_types::{HashOutTarget, RichField};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::circuit_data::{CommonCircuitData, VerifierCircuitTarget};
@@ -16,9 +17,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     /// Recursively verifies an inner proof.
     pub fn verify_proof<C: GenericConfig<D, F = F>>(
         &mut self,
-        proof_with_pis: &ProofWithPublicInputsTarget<D>,
+        proof_with_pis: ProofWithPublicInputsTarget<D>,
         inner_verifier_data: &VerifierCircuitTarget,
-        inner_common_data: &CommonCircuitData<F, D>,
+        inner_common_data: &CommonCircuitData<F, C, D>,
     ) where
         C::Hasher: AlgebraicHasher<F>,
     {
@@ -28,15 +29,15 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         );
         let public_inputs_hash =
             self.hash_n_to_hash_no_pad::<C::InnerHasher>(proof_with_pis.public_inputs.clone());
-        let challenges = proof_with_pis.get_challenges::<F, C>(
+        let challenges = proof_with_pis.get_challenges(
             self,
             public_inputs_hash,
             inner_verifier_data.circuit_digest,
             inner_common_data,
         );
 
-        self.verify_proof_with_challenges::<C>(
-            &proof_with_pis.proof,
+        self.verify_proof_with_challenges(
+            proof_with_pis.proof,
             public_inputs_hash,
             challenges,
             inner_verifier_data,
@@ -47,11 +48,11 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     /// Recursively verifies an inner proof.
     fn verify_proof_with_challenges<C: GenericConfig<D, F = F>>(
         &mut self,
-        proof: &ProofTarget<D>,
+        proof: ProofTarget<D>,
         public_inputs_hash: HashOutTarget,
         challenges: ProofChallengesTarget<D>,
         inner_verifier_data: &VerifierCircuitTarget,
-        inner_common_data: &CommonCircuitData<F, D>,
+        inner_common_data: &CommonCircuitData<F, C, D>,
     ) where
         C::Hasher: AlgebraicHasher<F>,
     {
@@ -74,7 +75,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let vanishing_polys_zeta = with_context!(
             self,
             "evaluate the vanishing polynomial at our challenge point, zeta.",
-            eval_vanishing_poly_circuit::<F, C, D>(
+            eval_vanishing_poly_circuit(
                 self,
                 inner_common_data,
                 challenges.plonk_zeta,
@@ -106,9 +107,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
 
         let merkle_caps = &[
             inner_verifier_data.constants_sigmas_cap.clone(),
-            proof.wires_cap.clone(),
-            proof.plonk_zs_partial_products_cap.clone(),
-            proof.quotient_polys_cap.clone(),
+            proof.wires_cap,
+            proof.plonk_zs_partial_products_cap,
+            proof.quotient_polys_cap,
         ];
 
         let fri_instance = inner_common_data.get_fri_instance_target(self, challenges.plonk_zeta);
@@ -128,9 +129,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
 
     pub fn add_virtual_proof_with_pis<InnerC: GenericConfig<D, F = F>>(
         &mut self,
-        common_data: &CommonCircuitData<F, D>,
+        common_data: &CommonCircuitData<F, InnerC, D>,
     ) -> ProofWithPublicInputsTarget<D> {
-        let proof = self.add_virtual_proof::<InnerC>(common_data);
+        let proof = self.add_virtual_proof(common_data);
         let public_inputs = self.add_virtual_targets(common_data.num_public_inputs);
         ProofWithPublicInputsTarget {
             proof,
@@ -140,7 +141,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
 
     fn add_virtual_proof<InnerC: GenericConfig<D, F = F>>(
         &mut self,
-        common_data: &CommonCircuitData<F, D>,
+        common_data: &CommonCircuitData<F, InnerC, D>,
     ) -> ProofTarget<D> {
         let config = &common_data.config;
         let fri_params = &common_data.fri_params;
@@ -158,14 +159,14 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             wires_cap: self.add_virtual_cap(cap_height),
             plonk_zs_partial_products_cap: self.add_virtual_cap(cap_height),
             quotient_polys_cap: self.add_virtual_cap(cap_height),
-            openings: self.add_opening_set::<InnerC>(common_data),
+            openings: self.add_opening_set(common_data),
             opening_proof: self.add_virtual_fri_proof(num_leaves_per_oracle, fri_params),
         }
     }
 
     fn add_opening_set<InnerC: GenericConfig<D, F = F>>(
         &mut self,
-        common_data: &CommonCircuitData<F, D>,
+        common_data: &CommonCircuitData<F, InnerC, D>,
     ) -> OpeningSetTarget<D> {
         let config = &common_data.config;
         let num_challenges = config.num_challenges;
@@ -191,9 +192,11 @@ mod tests {
     use crate::fri::reduction_strategies::FriReductionStrategy;
     use crate::fri::FriConfig;
     use crate::gates::noop::NoopGate;
-    use crate::iop::witness::{PartialWitness, WitnessWrite};
+    use crate::iop::witness::{PartialWitness, Witness};
     use crate::plonk::circuit_data::{CircuitConfig, VerifierOnlyCircuitData};
-    use crate::plonk::config::{GenericConfig, KeccakGoldilocksConfig, PoseidonGoldilocksConfig};
+    use crate::plonk::config::{
+        GenericConfig, Hasher, KeccakGoldilocksConfig, PoseidonGoldilocksConfig,
+    };
     use crate::plonk::proof::{CompressedProofWithPublicInputs, ProofWithPublicInputs};
     use crate::plonk::prover::prove;
     use crate::util::timing::TimingTree;
@@ -320,17 +323,18 @@ mod tests {
         Ok(())
     }
 
-    type Proof<F, C, const D: usize> = (
-        ProofWithPublicInputs<F, C, D>,
-        VerifierOnlyCircuitData<C, D>,
-        CommonCircuitData<F, D>,
-    );
-
     /// Creates a dummy proof which should have roughly `num_dummy_gates` gates.
     fn dummy_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
         config: &CircuitConfig,
         num_dummy_gates: u64,
-    ) -> Result<Proof<F, C, D>> {
+    ) -> Result<(
+        ProofWithPublicInputs<F, C, D>,
+        VerifierOnlyCircuitData<C, D>,
+        CommonCircuitData<F, C, D>,
+    )>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
         let mut builder = CircuitBuilder::<F, D>::new(config.clone());
         for _ in 0..num_dummy_gates {
             builder.add_gate(NoopGate, vec![]);
@@ -352,18 +356,23 @@ mod tests {
     >(
         inner_proof: ProofWithPublicInputs<F, InnerC, D>,
         inner_vd: VerifierOnlyCircuitData<InnerC, D>,
-        inner_cd: CommonCircuitData<F, D>,
+        inner_cd: CommonCircuitData<F, InnerC, D>,
         config: &CircuitConfig,
         min_degree_bits: Option<usize>,
         print_gate_counts: bool,
         print_timing: bool,
-    ) -> Result<Proof<F, C, D>>
+    ) -> Result<(
+        ProofWithPublicInputs<F, C, D>,
+        VerifierOnlyCircuitData<C, D>,
+        CommonCircuitData<F, C, D>,
+    )>
     where
         InnerC::Hasher: AlgebraicHasher<F>,
+        [(); C::Hasher::HASH_SIZE]:,
     {
         let mut builder = CircuitBuilder::<F, D>::new(config.clone());
         let mut pw = PartialWitness::new();
-        let pt = builder.add_virtual_proof_with_pis::<InnerC>(&inner_cd);
+        let pt = builder.add_virtual_proof_with_pis(&inner_cd);
         pw.set_proof_with_pis_target(&pt, &inner_proof);
 
         let inner_data = VerifierCircuitTarget {
@@ -376,7 +385,7 @@ mod tests {
         );
         pw.set_hash_target(inner_data.circuit_digest, inner_vd.circuit_digest);
 
-        builder.verify_proof::<InnerC>(&pt, &inner_data, &inner_cd);
+        builder.verify_proof(pt, &inner_data, &inner_cd);
 
         if print_gate_counts {
             builder.print_gate_counts(0);
@@ -413,9 +422,12 @@ mod tests {
     >(
         proof: &ProofWithPublicInputs<F, C, D>,
         vd: &VerifierOnlyCircuitData<C, D>,
-        cd: &CommonCircuitData<F, D>,
-    ) -> Result<()> {
-        let proof_bytes = proof.to_bytes();
+        cd: &CommonCircuitData<F, C, D>,
+    ) -> Result<()>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
+        let proof_bytes = proof.to_bytes()?;
         info!("Proof length: {} bytes", proof_bytes.len());
         let proof_from_bytes = ProofWithPublicInputs::from_bytes(proof_bytes, cd)?;
         assert_eq!(proof, &proof_from_bytes);
@@ -428,7 +440,7 @@ mod tests {
         info!("{:.4}s to compress proof", now.elapsed().as_secs_f64());
         assert_eq!(proof, &decompressed_compressed_proof);
 
-        let compressed_proof_bytes = compressed_proof.to_bytes();
+        let compressed_proof_bytes = compressed_proof.to_bytes()?;
         info!(
             "Compressed proof length: {} bytes",
             compressed_proof_bytes.len()
