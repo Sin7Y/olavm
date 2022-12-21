@@ -3,8 +3,8 @@ use std::ops::Range;
 // TODO: we define REGISTER_NUM here for now, need to import it from core.
 pub const REGISTER_NUM: usize = 9;
 
-// The Olavm trace for crate:
-// There are two kinds of traces, one for main trace, one for sub-table.
+// The Olavm trace for AIR:
+// There are 3 kinds of traces, one for main trace, one for memory trace, one for builtin.
 
 // 1. Main(CPU) trace.
 // There are 68 columns in main trace.
