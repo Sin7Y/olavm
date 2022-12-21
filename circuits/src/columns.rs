@@ -1,7 +1,5 @@
 use std::ops::Range;
-
-// TODO: we define REGISTER_NUM here for now, need to import it from core.
-pub const REGISTER_NUM: usize = 9;
+use core::program::REGISTER_NUM;
 
 // The Olavm trace for AIR:
 // There are 3 kinds of traces, one for main trace, one for memory trace, one for builtin.
