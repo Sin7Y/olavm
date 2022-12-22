@@ -13,7 +13,7 @@ use core::trace::trace::{
 use core::trace::trace::{FilterLockForMain, MemoryCell, MemoryOperation, MemoryType};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
+use plonky2::field::types::{Field, Field64};
 use std::collections::{BTreeMap, HashMap};
 
 mod decode;
@@ -26,6 +26,7 @@ mod tests;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 8;
+const REGION_SPAN: u64 = 2 ^ 32 - 1;
 
 #[derive(Debug, Default)]
 pub struct Process {
@@ -703,15 +704,15 @@ impl Process {
             for cell in cells {
                 debug!("addr:{}, cell:{:?}", addr, cell);
                 if cell.region_prophet.is_one() {
-                    diff_addr_cond =
-                        GoldilocksField::ZERO - GoldilocksField::from_canonical_u64(*addr);
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
+                        - GoldilocksField::from_canonical_u64(*addr);
                 } else if cell.region_poseidon.is_one() {
-                    diff_addr_cond = GoldilocksField::ZERO
-                        - GoldilocksField::from_canonical_u64(2 ^ 32)
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
+                        - GoldilocksField::from_canonical_u64(REGION_SPAN)
                         - GoldilocksField::from_canonical_u64(*addr);
                 } else if cell.region_ecdsa.is_one() {
-                    diff_addr_cond = GoldilocksField::ZERO
-                        - GoldilocksField::from_canonical_u64(2 * 2 ^ 32)
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
+                        - GoldilocksField::from_canonical_u64(2 * REGION_SPAN)
                         - GoldilocksField::from_canonical_u64(*addr);
                 } else {
                     diff_addr_cond = GoldilocksField::ZERO;
@@ -764,6 +765,10 @@ impl Process {
                     diff_addr = GoldilocksField::ZERO;
                     diff_addr_inv = GoldilocksField::ZERO;
                     diff_clk = GoldilocksField::from_canonical_u64(cell.clk as u64 - origin_clk);
+                    let mut rw_addr_unchanged = GoldilocksField::ONE;
+                    if cell.is_rw == GoldilocksField::ZERO {
+                        rw_addr_unchanged = GoldilocksField::ZERO;
+                    }
                     let trace_cell = MemoryTraceCell {
                         addr: GoldilocksField::from_canonical_u64(*addr),
                         clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
@@ -775,7 +780,7 @@ impl Process {
                         diff_clk,
                         diff_addr_cond,
                         filter_looked_for_main: cell.filter_looked_for_main,
-                        rw_addr_unchanged: GoldilocksField::ONE,
+                        rw_addr_unchanged,
                         region_prophet: cell.region_prophet,
                         region_poseidon: cell.region_poseidon,
                         region_ecdsa: cell.region_ecdsa,
