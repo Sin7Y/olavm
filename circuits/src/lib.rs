@@ -3,4 +3,6 @@ pub mod builtins;
 pub mod columns;
 pub mod cpu_proof;
 pub mod memory_proof;
+pub mod var;
+
 mod utils;

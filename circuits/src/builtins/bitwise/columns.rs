@@ -1,3 +1,5 @@
+
+use std::ops::Range;
 // 2022-12-15: written by xb
 
 /* AND_Table construction as follows:
@@ -42,4 +44,4 @@ pub(crate) const RES_LIMBS: Range<usize>  = OP1_LIMBS.end..OP1_LIMBS.end + 4;
 //pub(crate) const RES_LIMB_2: usize  = RES_LIMB_1 + 1;
 //pub(crate) const RES_LIMB_3: usize  = RES_LIMB_2 + 1;
 
-pub(crate) const COL_NUM_AND: usize  = RES_LIMBS.end + 1; // 3 + 3 * 4 = 15
+pub(crate) const COL_NUM_BITWISE: usize  = RES_LIMBS.end + 1; // 3 + 3 * 4 = 15
