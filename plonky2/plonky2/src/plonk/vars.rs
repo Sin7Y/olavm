@@ -1,9 +1,10 @@
-use core::ops::Range;
+use std::ops::Range;
 
-use crate::field::extension::algebra::ExtensionAlgebra;
-use crate::field::extension::{Extendable, FieldExtension};
-use crate::field::packed::PackedField;
-use crate::field::types::Field;
+use plonky2_field::extension::algebra::ExtensionAlgebra;
+use plonky2_field::extension::{Extendable, FieldExtension};
+use plonky2_field::packed::PackedField;
+use plonky2_field::types::Field;
+
 use crate::hash::hash_types::{HashOut, HashOutTarget, RichField};
 use crate::iop::ext_target::{ExtensionAlgebraTarget, ExtensionTarget};
 use crate::util::strided_view::PackedStridedView;
@@ -82,10 +83,6 @@ impl<'a, F: Field> EvaluationVarsBaseBatch<'a, F> {
 
     pub fn len(&self) -> usize {
         self.batch_size
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     pub fn view(&self, index: usize) -> EvaluationVarsBase<'a, F> {

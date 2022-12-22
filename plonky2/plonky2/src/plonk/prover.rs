@@ -1,14 +1,14 @@
-use alloc::vec::Vec;
-use alloc::{format, vec};
-use core::mem::swap;
+use std::mem::swap;
 
-use anyhow::{ensure, Result};
+use anyhow::ensure;
+use anyhow::Result;
 use maybe_rayon::*;
+use plonky2_field::extension::Extendable;
+use plonky2_field::polynomial::{PolynomialCoeffs, PolynomialValues};
+use plonky2_field::zero_poly_coset::ZeroPolyOnCoset;
+use plonky2_util::{ceil_div_usize, log2_ceil};
 
-use crate::field::extension::Extendable;
-use crate::field::polynomial::{PolynomialCoeffs, PolynomialValues};
 use crate::field::types::Field;
-use crate::field::zero_poly_coset::ZeroPolyOnCoset;
 use crate::fri::oracle::PolynomialBatch;
 use crate::hash::hash_types::RichField;
 use crate::iop::challenger::Challenger;
@@ -17,20 +17,24 @@ use crate::iop::witness::{MatrixWitness, PartialWitness, Witness};
 use crate::plonk::circuit_data::{CommonCircuitData, ProverOnlyCircuitData};
 use crate::plonk::config::{GenericConfig, Hasher};
 use crate::plonk::plonk_common::PlonkOracle;
-use crate::plonk::proof::{OpeningSet, Proof, ProofWithPublicInputs};
+use crate::plonk::proof::OpeningSet;
+use crate::plonk::proof::{Proof, ProofWithPublicInputs};
 use crate::plonk::vanishing_poly::eval_vanishing_poly_base_batch;
 use crate::plonk::vars::EvaluationVarsBaseBatch;
 use crate::timed;
 use crate::util::partial_products::{partial_products_and_z_gx, quotient_chunk_products};
 use crate::util::timing::TimingTree;
-use crate::util::{ceil_div_usize, log2_ceil, transpose};
+use crate::util::transpose;
 
 pub fn prove<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     prover_data: &ProverOnlyCircuitData<F, C, D>,
-    common_data: &CommonCircuitData<F, D>,
+    common_data: &CommonCircuitData<F, C, D>,
     inputs: PartialWitness<F>,
     timing: &mut TimingTree,
-) -> Result<ProofWithPublicInputs<F, C, D>> {
+) -> Result<ProofWithPublicInputs<F, C, D>>
+where
+    [(); C::Hasher::HASH_SIZE]:,
+{
     let config = &common_data.config;
     let num_challenges = config.num_challenges;
     let quotient_degree = common_data.quotient_degree();
@@ -229,7 +233,7 @@ fn all_wires_permutation_partial_products<
     betas: &[F],
     gammas: &[F],
     prover_data: &ProverOnlyCircuitData<F, C, D>,
-    common_data: &CommonCircuitData<F, D>,
+    common_data: &CommonCircuitData<F, C, D>,
 ) -> Vec<Vec<PolynomialValues<F>>> {
     (0..common_data.config.num_challenges)
         .map(|i| {
@@ -256,7 +260,7 @@ fn wires_permutation_partial_products_and_zs<
     beta: F,
     gamma: F,
     prover_data: &ProverOnlyCircuitData<F, C, D>,
-    common_data: &CommonCircuitData<F, D>,
+    common_data: &CommonCircuitData<F, C, D>,
 ) -> Vec<PolynomialValues<F>> {
     let degree = common_data.quotient_degree_factor;
     let subgroup = &prover_data.subgroup;
@@ -314,7 +318,7 @@ fn compute_quotient_polys<
     C: GenericConfig<D, F = F>,
     const D: usize,
 >(
-    common_data: &CommonCircuitData<F, D>,
+    common_data: &CommonCircuitData<F, C, D>,
     prover_data: &'a ProverOnlyCircuitData<F, C, D>,
     public_inputs_hash: &<<C as GenericConfig<D>>::InnerHasher as Hasher<F>>::Hash,
     wires_commitment: &'a PolynomialBatch<F, C, D>,
@@ -347,7 +351,7 @@ fn compute_quotient_polys<
     let num_batches = ceil_div_usize(points.len(), BATCH_SIZE);
     let quotient_values: Vec<Vec<F>> = points_batches
         .enumerate()
-        .flat_map(|(batch_i, xs_batch)| {
+        .map(|(batch_i, xs_batch)| {
             // Each batch must be the same size, except the last one, which may be smaller.
             debug_assert!(
                 xs_batch.len() == BATCH_SIZE
@@ -420,7 +424,7 @@ fn compute_quotient_polys<
                 public_inputs_hash,
             );
 
-            let mut quotient_values_batch = eval_vanishing_poly_base_batch::<F, C, D>(
+            let mut quotient_values_batch = eval_vanishing_poly_base_batch(
                 common_data,
                 &indices_batch,
                 &shifted_xs_batch,
@@ -444,6 +448,7 @@ fn compute_quotient_polys<
             }
             quotient_values_batch
         })
+        .flatten()
         .collect();
 
     transpose(&quotient_values)

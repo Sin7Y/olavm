@@ -1,11 +1,13 @@
 [workspace]
 members = [
     "circuits",
-    "client",
+    # "client",
     "core",
     "executor",
     "plonky2/plonky2",
     "plonky2/field",
+    "plonky2/util",
+    "plonky2/maybe_rayon",
 ]
 
 [profile.release]

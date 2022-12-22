@@ -1,11 +1,11 @@
-use core::marker::PhantomData;
+use std::marker::PhantomData;
 
 use anyhow::Result;
-use plonky2::field::types::{PrimeField, Sample};
+use plonky2::field::types::{Field, PrimeField};
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::Target;
-use plonky2::iop::witness::{PartialWitness, PartitionWitness, Witness, WitnessWrite};
+use plonky2::iop::witness::{PartialWitness, PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::circuit_data::CircuitConfig;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
@@ -31,7 +31,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
         let x_squared = witness.get_target(self.x_squared);
         let x = x_squared.sqrt().unwrap();
 
-        println!("Square root: {x}");
+        println!("Square root: {}", x);
 
         out_buffer.set_target(self.x, x);
     }
@@ -75,7 +75,7 @@ fn main() -> Result<()> {
     let proof = data.prove(pw.clone())?;
 
     let x_squared_actual = proof.public_inputs[0];
-    println!("Field element (square): {x_squared_actual}");
+    println!("Field element (square): {}", x_squared_actual);
 
     data.verify(proof)
 }

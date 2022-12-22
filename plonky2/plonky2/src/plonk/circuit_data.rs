@@ -1,13 +1,10 @@
-use alloc::boxed::Box;
-use alloc::collections::BTreeMap;
-use alloc::vec;
-use alloc::vec::Vec;
-use core::ops::{Range, RangeFrom};
+use std::collections::BTreeMap;
+use std::ops::{Range, RangeFrom};
 
 use anyhow::Result;
+use plonky2_field::extension::Extendable;
+use plonky2_field::fft::FftRootTable;
 
-use crate::field::extension::Extendable;
-use crate::field::fft::FftRootTable;
 use crate::field::types::Field;
 use crate::fri::oracle::PolynomialBatch;
 use crate::fri::reduction_strategies::FriReductionStrategy;
@@ -109,13 +106,16 @@ impl CircuitConfig {
 pub struct CircuitData<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> {
     pub prover_only: ProverOnlyCircuitData<F, C, D>,
     pub verifier_only: VerifierOnlyCircuitData<C, D>,
-    pub common: CommonCircuitData<F, D>,
+    pub common: CommonCircuitData<F, C, D>,
 }
 
 impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     CircuitData<F, C, D>
 {
-    pub fn prove(&self, inputs: PartialWitness<F>) -> Result<ProofWithPublicInputs<F, C, D>> {
+    pub fn prove(&self, inputs: PartialWitness<F>) -> Result<ProofWithPublicInputs<F, C, D>>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
         prove(
             &self.prover_only,
             &self.common,
@@ -124,14 +124,20 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         )
     }
 
-    pub fn verify(&self, proof_with_pis: ProofWithPublicInputs<F, C, D>) -> Result<()> {
+    pub fn verify(&self, proof_with_pis: ProofWithPublicInputs<F, C, D>) -> Result<()>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
         verify(proof_with_pis, &self.verifier_only, &self.common)
     }
 
     pub fn verify_compressed(
         &self,
         compressed_proof_with_pis: CompressedProofWithPublicInputs<F, C, D>,
-    ) -> Result<()> {
+    ) -> Result<()>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
         compressed_proof_with_pis.verify(&self.verifier_only, &self.common)
     }
 
@@ -145,7 +151,10 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     pub fn decompress(
         &self,
         proof: CompressedProofWithPublicInputs<F, C, D>,
-    ) -> Result<ProofWithPublicInputs<F, C, D>> {
+    ) -> Result<ProofWithPublicInputs<F, C, D>>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
         proof.decompress(&self.verifier_only.circuit_digest, &self.common)
     }
 
@@ -187,13 +196,16 @@ pub struct ProverCircuitData<
     const D: usize,
 > {
     pub prover_only: ProverOnlyCircuitData<F, C, D>,
-    pub common: CommonCircuitData<F, D>,
+    pub common: CommonCircuitData<F, C, D>,
 }
 
 impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     ProverCircuitData<F, C, D>
 {
-    pub fn prove(&self, inputs: PartialWitness<F>) -> Result<ProofWithPublicInputs<F, C, D>> {
+    pub fn prove(&self, inputs: PartialWitness<F>) -> Result<ProofWithPublicInputs<F, C, D>>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
         prove(
             &self.prover_only,
             &self.common,
@@ -211,20 +223,26 @@ pub struct VerifierCircuitData<
     const D: usize,
 > {
     pub verifier_only: VerifierOnlyCircuitData<C, D>,
-    pub common: CommonCircuitData<F, D>,
+    pub common: CommonCircuitData<F, C, D>,
 }
 
 impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     VerifierCircuitData<F, C, D>
 {
-    pub fn verify(&self, proof_with_pis: ProofWithPublicInputs<F, C, D>) -> Result<()> {
+    pub fn verify(&self, proof_with_pis: ProofWithPublicInputs<F, C, D>) -> Result<()>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
         verify(proof_with_pis, &self.verifier_only, &self.common)
     }
 
     pub fn verify_compressed(
         &self,
         compressed_proof_with_pis: CompressedProofWithPublicInputs<F, C, D>,
-    ) -> Result<()> {
+    ) -> Result<()>
+    where
+        [(); C::Hasher::HASH_SIZE]:,
+    {
         compressed_proof_with_pis.verify(&self.verifier_only, &self.common)
     }
 }
@@ -258,7 +276,7 @@ pub struct ProverOnlyCircuitData<
 }
 
 /// Circuit data required by the verifier, but not the prover.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct VerifierOnlyCircuitData<C: GenericConfig<D>, const D: usize> {
     /// A commitment to each constant polynomial and each permutation polynomial.
     pub constants_sigmas_cap: MerkleCap<C::F, C::Hasher>,
@@ -268,14 +286,18 @@ pub struct VerifierOnlyCircuitData<C: GenericConfig<D>, const D: usize> {
 }
 
 /// Circuit data required by both the prover and the verifier.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct CommonCircuitData<F: RichField + Extendable<D>, const D: usize> {
+#[derive(Debug, Eq, PartialEq)]
+pub struct CommonCircuitData<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+> {
     pub config: CircuitConfig,
 
     pub(crate) fri_params: FriParams,
 
     /// The types of gates used in this circuit, along with their prefixes.
-    pub(crate) gates: Vec<GateRef<F, D>>,
+    pub(crate) gates: Vec<GateRef<C::F, D>>,
 
     /// Information on the circuit's selector polynomials.
     pub(crate) selectors_info: SelectorsInfo,
@@ -292,13 +314,15 @@ pub struct CommonCircuitData<F: RichField + Extendable<D>, const D: usize> {
     pub(crate) num_public_inputs: usize,
 
     /// The `{k_i}` valued used in `S_ID_i` in Plonk's permutation argument.
-    pub(crate) k_is: Vec<F>,
+    pub(crate) k_is: Vec<C::F>,
 
     /// The number of partial products needed to compute the `Z` polynomials.
     pub(crate) num_partial_products: usize,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> CommonCircuitData<F, D> {
+impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
+    CommonCircuitData<F, C, D>
+{
     pub const fn degree_bits(&self) -> usize {
         self.fri_params.degree_bits
     }
@@ -470,7 +494,6 @@ impl<F: RichField + Extendable<D>, const D: usize> CommonCircuitData<F, D> {
 /// is intentionally missing certain fields, such as `CircuitConfig`, because we support only a
 /// limited form of dynamic inner circuits. We can't practically make things like the wire count
 /// dynamic, at least not without setting a maximum wire count and paying for the worst case.
-#[derive(Clone, Debug)]
 pub struct VerifierCircuitTarget {
     /// A commitment to each constant polynomial and each permutation polynomial.
     pub constants_sigmas_cap: MerkleCapTarget,

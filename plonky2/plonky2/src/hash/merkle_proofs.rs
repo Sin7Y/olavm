@@ -1,12 +1,9 @@
-use alloc::vec;
-use alloc::vec::Vec;
-
 use anyhow::{ensure, Result};
-use itertools::Itertools;
+use plonky2_field::extension::Extendable;
 use serde::{Deserialize, Serialize};
 
-use crate::field::extension::Extendable;
-use crate::hash::hash_types::{HashOutTarget, MerkleCapTarget, RichField};
+use crate::hash::hash_types::RichField;
+use crate::hash::hash_types::{HashOutTarget, MerkleCapTarget};
 use crate::hash::hashing::SPONGE_WIDTH;
 use crate::hash::merkle_tree::MerkleCap;
 use crate::iop::target::{BoolTarget, Target};
@@ -24,10 +21,6 @@ impl<F: RichField, H: Hasher<F>> MerkleProof<F, H> {
     pub fn len(&self) -> usize {
         self.siblings.len()
     }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -43,7 +36,10 @@ pub fn verify_merkle_proof<F: RichField, H: Hasher<F>>(
     leaf_index: usize,
     merkle_root: H::Hash,
     proof: &MerkleProof<F, H>,
-) -> Result<()> {
+) -> Result<()>
+where
+    [(); H::HASH_SIZE]:,
+{
     let merkle_cap = MerkleCap(vec![merkle_root]);
     verify_merkle_proof_to_cap(leaf_data, leaf_index, &merkle_cap, proof)
 }
@@ -55,7 +51,10 @@ pub fn verify_merkle_proof_to_cap<F: RichField, H: Hasher<F>>(
     leaf_index: usize,
     merkle_cap: &MerkleCap<F, H>,
     proof: &MerkleProof<F, H>,
-) -> Result<()> {
+) -> Result<()>
+where
+    [(); H::HASH_SIZE]:,
+{
     let mut index = leaf_index;
     let mut current_digest = H::hash_or_noop(&leaf_data);
     for &sibling_digest in proof.siblings.iter() {
@@ -146,24 +145,17 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             self.connect(x.elements[i], y.elements[i]);
         }
     }
-
-    pub fn connect_merkle_caps(&mut self, x: &MerkleCapTarget, y: &MerkleCapTarget) {
-        for (h0, h1) in x.0.iter().zip_eq(&y.0) {
-            self.connect_hashes(*h0, *h1);
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use rand::rngs::OsRng;
-    use rand::Rng;
+    use plonky2_field::types::Field;
+    use rand::{thread_rng, Rng};
 
     use super::*;
-    use crate::field::types::Field;
     use crate::hash::merkle_tree::MerkleTree;
-    use crate::iop::witness::{PartialWitness, WitnessWrite};
+    use crate::iop::witness::{PartialWitness, Witness};
     use crate::plonk::circuit_builder::CircuitBuilder;
     use crate::plonk::circuit_data::CircuitConfig;
     use crate::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
@@ -187,7 +179,7 @@ mod tests {
         let cap_height = 1;
         let leaves = random_data::<F>(n, 7);
         let tree = MerkleTree::<F, <C as GenericConfig<D>>::Hasher>::new(leaves, cap_height);
-        let i: usize = OsRng.gen_range(0..n);
+        let i: usize = thread_rng().gen_range(0..n);
         let proof = tree.prove(i);
 
         let proof_t = MerkleProofTarget {

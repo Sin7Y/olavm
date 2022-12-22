@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use std::convert::TryInto;
 
 use crate::types::Field;
 

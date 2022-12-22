@@ -7,10 +7,10 @@ use plonky2::plonk::config::{GenericConfig, Hasher};
 use plonky2::plonk::plonk_common::reduce_with_powers;
 
 use crate::all_stark::{AllStark, Table};
+use crate::builtins::builtin_stark::BuiltinStark;
 use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::builtins::builtin_stark::BuiltinStark;
 use crate::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
 use crate::memory::MemoryStark;
 use crate::permutation::PermutationCheckVars;
@@ -69,9 +69,9 @@ where
     )?;
     verify_stark_proof_with_challenges(
         builtin_stark,
-        &all_proof.stark_proofs[Table::Logic as usize],
-        &stark_challenges[Table::Logic as usize],
-        &ctl_vars_per_table[Table::Logic as usize],
+        &all_proof.stark_proofs[Table::Builtin as usize],
+        &stark_challenges[Table::Builtin as usize],
+        &ctl_vars_per_table[Table::Builtin as usize],
         config,
     )?;
 

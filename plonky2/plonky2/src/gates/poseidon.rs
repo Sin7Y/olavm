@@ -1,11 +1,8 @@
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec::Vec;
-use alloc::{format, vec};
-use core::marker::PhantomData;
+use std::marker::PhantomData;
 
-use crate::field::extension::Extendable;
-use crate::field::types::Field;
+use plonky2_field::extension::Extendable;
+use plonky2_field::types::Field;
+
 use crate::gates::gate::Gate;
 use crate::gates::poseidon_mds::PoseidonMdsGate;
 use crate::gates::util::StridedConstraintConsumer;
@@ -17,7 +14,7 @@ use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
 use crate::iop::target::Target;
 use crate::iop::wire::Wire;
-use crate::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
@@ -26,12 +23,16 @@ use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 /// This also has some extra features to make it suitable for efficiently verifying Merkle proofs.
 /// It has a flag which can be used to swap the first four inputs with the next four, for ordering
 /// sibling digests.
-#[derive(Debug, Default)]
-pub struct PoseidonGate<F: RichField + Extendable<D>, const D: usize>(PhantomData<F>);
+#[derive(Debug)]
+pub struct PoseidonGate<F: RichField + Extendable<D>, const D: usize> {
+    _phantom: PhantomData<F>,
+}
 
 impl<F: RichField + Extendable<D>, const D: usize> PoseidonGate<F, D> {
     pub fn new() -> Self {
-        Self(PhantomData)
+        PoseidonGate {
+            _phantom: PhantomData,
+        }
     }
 
     /// The wire index for the `i`th input to the permutation.
@@ -97,7 +98,7 @@ impl<F: RichField + Extendable<D>, const D: usize> PoseidonGate<F, D> {
 
 impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for PoseidonGate<F, D> {
     fn id(&self) -> String {
-        format!("{self:?}<WIDTH={SPONGE_WIDTH}>")
+        format!("{:?}<WIDTH={}>", self, SPONGE_WIDTH)
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -505,16 +506,16 @@ impl<F: RichField + Extendable<D> + Poseidon, const D: usize> SimpleGenerator<F>
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use plonky2_field::goldilocks_field::GoldilocksField;
+    use plonky2_field::types::Field;
 
-    use crate::field::goldilocks_field::GoldilocksField;
-    use crate::field::types::Field;
     use crate::gates::gate_testing::{test_eval_fns, test_low_degree};
     use crate::gates::poseidon::PoseidonGate;
     use crate::hash::hashing::SPONGE_WIDTH;
     use crate::hash::poseidon::Poseidon;
     use crate::iop::generator::generate_partial_witness;
     use crate::iop::wire::Wire;
-    use crate::iop::witness::{PartialWitness, Witness, WitnessWrite};
+    use crate::iop::witness::{PartialWitness, Witness};
     use crate::plonk::circuit_builder::CircuitBuilder;
     use crate::plonk::circuit_data::CircuitConfig;
     use crate::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};

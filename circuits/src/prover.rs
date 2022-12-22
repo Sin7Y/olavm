@@ -18,13 +18,13 @@ use plonky2::util::transpose;
 use plonky2_util::{log2_ceil, log2_strict};
 
 use crate::all_stark::{AllStark, Table, NUM_TABLES};
+use crate::builtins::builtin_stark::BuiltinStark;
 use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
-use crate::cpu_proof::cpu_stark::CpuStark;
+use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{cross_table_lookup_data, CtlCheckVars, CtlData};
 use crate::generation::{generate_traces, GenerationInputs};
-use crate::memory_proof::MemoryStark;
-use crate::builtins::builtin_stark::BuiltinStark;
+use crate::memory::MemoryStark;
 use crate::permutation::PermutationCheckVars;
 use crate::permutation::{
     compute_permutation_z_polys, get_n_grand_product_challenge_sets, GrandProductChallengeSet,
@@ -40,19 +40,19 @@ pub fn prove<F, C, const D: usize>(
     config: &StarkConfig,
     inputs: GenerationInputs,
     timing: &mut TimingTree,
-) -> Result<AllProof<F, C, D>>
+    // TODO:
+)
+// ) -> Result<AllProof<F, C, D>>
 where
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
     [(); C::Hasher::HASH_SIZE]:,
     [(); CpuStark::<F, D>::COLUMNS]:,
-    [(); KeccakStark::<F, D>::COLUMNS]:,
-    [(); KeccakMemoryStark::<F, D>::COLUMNS]:,
-    [(); LogicStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
+    [(); BuiltinStark::<F, D>::COLUMNS]:,
 {
-    let (traces, public_values) = generate_traces(all_stark, inputs, config, timing);
-    prove_with_traces(all_stark, config, traces, public_values, timing)
+    // let (traces, public_values) = generate_traces(all_stark, inputs, config, timing);
+    // prove_with_traces(all_stark, config, traces, public_values, timing)
 }
 
 /// Compute all STARK proofs.
@@ -68,10 +68,8 @@ where
     C: GenericConfig<D, F = F>,
     [(); C::Hasher::HASH_SIZE]:,
     [(); CpuStark::<F, D>::COLUMNS]:,
-    [(); KeccakStark::<F, D>::COLUMNS]:,
-    [(); KeccakMemoryStark::<F, D>::COLUMNS]:,
-    [(); LogicStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
+    [(); BuiltinStark::<F, D>::COLUMNS]:,
 {
     let rate_bits = config.fri_config.rate_bits;
     let cap_height = config.fri_config.cap_height;
@@ -121,33 +119,6 @@ where
         &mut challenger,
         timing,
     )?;
-    let keccak_proof = prove_single_table(
-        &all_stark.keccak_stark,
-        config,
-        &trace_poly_values[Table::Keccak as usize],
-        &trace_commitments[Table::Keccak as usize],
-        &ctl_data_per_table[Table::Keccak as usize],
-        &mut challenger,
-        timing,
-    )?;
-    let keccak_memory_proof = prove_single_table(
-        &all_stark.keccak_memory_stark,
-        config,
-        &trace_poly_values[Table::KeccakMemory as usize],
-        &trace_commitments[Table::KeccakMemory as usize],
-        &ctl_data_per_table[Table::KeccakMemory as usize],
-        &mut challenger,
-        timing,
-    )?;
-    let logic_proof = prove_single_table(
-        &all_stark.logic_stark,
-        config,
-        &trace_poly_values[Table::Logic as usize],
-        &trace_commitments[Table::Logic as usize],
-        &ctl_data_per_table[Table::Logic as usize],
-        &mut challenger,
-        timing,
-    )?;
     let memory_proof = prove_single_table(
         &all_stark.memory_stark,
         config,
@@ -157,14 +128,17 @@ where
         &mut challenger,
         timing,
     )?;
+    let builtin_proof = prove_single_table(
+        &all_stark.builtin_stark,
+        config,
+        &trace_poly_values[Table::Builtin as usize],
+        &trace_commitments[Table::Builtin as usize],
+        &ctl_data_per_table[Table::Builtin as usize],
+        &mut challenger,
+        timing,
+    )?;
 
-    let stark_proofs = [
-        cpu_proof,
-        keccak_proof,
-        keccak_memory_proof,
-        logic_proof,
-        memory_proof,
-    ];
+    let stark_proofs = [cpu_proof, memory_proof, builtin_proof];
 
     Ok(AllProof {
         stark_proofs,
