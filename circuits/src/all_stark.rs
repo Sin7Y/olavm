@@ -8,13 +8,12 @@ use crate::config::StarkConfig;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::stark::Stark;
 
-
-use crate::memory;
-use crate::memory::MemoryStark;
-use crate::cpu::cpu_stark;
-use crate::cpu::cpu_stark::CpuStark;
 use crate::builtins::builtin_stark;
 use crate::builtins::builtin_stark::BuiltinStark;
+use crate::cpu::cpu_stark;
+use crate::cpu::cpu_stark::CpuStark;
+use crate::memory;
+use crate::memory::MemoryStark;
 
 #[derive(Clone)]
 pub struct AllStark<F: RichField + Extendable<D>, const D: usize> {
@@ -42,7 +41,7 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
         //     self.memory_stark.num_permutation_batches(config),
         //     self.builtin_stark.num_permutation_batches(config),
         // ]
-        [0,0,0]
+        [0, 0, 0]
     }
 
     pub(crate) fn permutation_batch_sizes(&self) -> [usize; NUM_TABLES] {
@@ -51,7 +50,7 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
         //     self.memory_stark.permutation_batch_size(),
         //     self.builtin_stark.permutation_batch_size(),
         // ]
-        [0,0,0]
+        [0, 0, 0]
     }
 }
 
