@@ -15,19 +15,19 @@ use std::marker::PhantomData;
 use std::ops::Range;
 
 #[derive(Copy, Clone, Default)]
-pub struct AndOrXorStark<F, const D: usize> {
+pub struct BitwiseStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
 
 
-impl<F: RichField, const D: usize> AndOrXorStark<F, D> {
+impl<F: RichField, const D: usize> BitwiseStark<F, D> {
 
     const BASE: usize = 1 << 8;
 
 }
 
 
-impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for AndOrXorStark<F, D> {
+impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<F, D> {
 
     const COLUMNS: usize = COL_NUM_BITWISE;
 

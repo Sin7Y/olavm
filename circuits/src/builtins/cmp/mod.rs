@@ -1,2 +1,2 @@
-pub mod gte;
+pub mod cmp_stark;
 pub mod columns;

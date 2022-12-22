@@ -7,7 +7,9 @@ use plonky2::plonk::config::{GenericConfig, Hasher};
 use plonky2::plonk::plonk_common::reduce_with_powers;
 
 use crate::all_stark::{AllStark, Table};
-use crate::builtins::builtin_stark::BuiltinStark;
+use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
+use crate::builtins::cmp::cmp_stark::CmpStark;
+use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
@@ -29,7 +31,9 @@ pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, co
 where
     [(); CpuStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
-    [(); BuiltinStark::<F, D>::COLUMNS]:,
+    [(); BitwiseStark::<F, D>::COLUMNS]:,
+    [(); CmpStark::<F, D>::COLUMNS]:,
+    [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); C::Hasher::HASH_SIZE]:,
 {
     let AllProofChallenges {
@@ -42,7 +46,9 @@ where
     let AllStark {
         cpu_stark,
         memory_stark,
-        builtin_stark,
+        bitwise_stark,
+        cmp_stark,
+        rangecheck_stark,
         cross_table_lookups,
     } = all_stark;
 
@@ -68,12 +74,29 @@ where
         config,
     )?;
     verify_stark_proof_with_challenges(
-        builtin_stark,
-        &all_proof.stark_proofs[Table::Builtin as usize],
-        &stark_challenges[Table::Builtin as usize],
-        &ctl_vars_per_table[Table::Builtin as usize],
+        bitwise_stark,
+        &all_proof.stark_proofs[Table::Bitwise as usize],
+        &stark_challenges[Table::Bitwise as usize],
+        &ctl_vars_per_table[Table::Bitwise as usize],
         config,
     )?;
+
+    verify_stark_proof_with_challenges(
+        cmp_stark,
+        &all_proof.stark_proofs[Table::Cmp as usize],
+        &stark_challenges[Table::Cmp as usize],
+        &ctl_vars_per_table[Table::Cmp as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        rangecheck_stark,
+        &all_proof.stark_proofs[Table::RangeCheck as usize],
+        &stark_challenges[Table::RangeCheck as usize],
+        &ctl_vars_per_table[Table::RangeCheck as usize],
+        config,
+    )?;
+
 
     let degrees_bits =
         std::array::from_fn(|i| all_proof.stark_proofs[i].recover_degree_bits(config));
