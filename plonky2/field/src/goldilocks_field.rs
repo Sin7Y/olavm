@@ -1,14 +1,15 @@
-use core::fmt::{self, Debug, Display, Formatter};
-use core::hash::{Hash, Hasher};
-use core::iter::{Product, Sum};
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::fmt;
+use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hash, Hasher};
+use std::iter::{Product, Sum};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use num::{BigUint, Integer};
 use plonky2_util::{assume, branch_hint};
 use serde::{Deserialize, Serialize};
 
 use crate::inversion::try_inverse_u64;
-use crate::types::{Field, Field64, PrimeField, PrimeField64, Sample};
+use crate::types::{Field, Field64, PrimeField, PrimeField64};
 
 const EPSILON: u64 = (1 << 32) - 1;
 
@@ -53,17 +54,6 @@ impl Display for GoldilocksField {
 impl Debug for GoldilocksField {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Debug::fmt(&self.0, f)
-    }
-}
-
-impl Sample for GoldilocksField {
-    #[inline]
-    fn sample<R>(rng: &mut R) -> Self
-    where
-        R: rand::RngCore + ?Sized,
-    {
-        use rand::Rng;
-        Self::from_canonical_u64(rng.gen_range(0..Self::ORDER))
     }
 }
 
@@ -112,6 +102,11 @@ impl Field for GoldilocksField {
 
     fn from_noncanonical_u128(n: u128) -> Self {
         reduce128(n)
+    }
+
+    #[cfg(feature = "rand")]
+    fn rand_from_rng<R: rand::Rng>(rng: &mut R) -> Self {
+        Self::from_canonical_u64(rng.gen_range(0..Self::ORDER))
     }
 
     #[inline]
@@ -305,9 +300,10 @@ impl DivAssign for GoldilocksField {
 #[inline(always)]
 #[cfg(target_arch = "x86_64")]
 unsafe fn add_no_canonicalize_trashing_input(x: u64, y: u64) -> u64 {
+    use std::arch::asm;
     let res_wrapped: u64;
     let adjustment: u64;
-    core::arch::asm!(
+    asm!(
         "add {0}, {1}",
         // Trick. The carry flag is set iff the addition overflowed.
         // sbb x, y does x := x - y - CF. In our case, x and y are both {1:e}, so it simply does

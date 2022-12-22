@@ -4,18 +4,15 @@
 #![allow(clippy::len_without_is_empty)]
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::return_self_not_must_use)]
-#![no_std]
 
-extern crate alloc;
-
-use alloc::vec::Vec;
-use core::hint::unreachable_unchecked;
-use core::mem::size_of;
-use core::ptr::{swap, swap_nonoverlapping};
-
-use crate::transpose_util::transpose_in_place_square;
+use std::arch::asm;
+use std::hint::unreachable_unchecked;
+use std::mem::size_of;
+use std::ptr::{swap, swap_nonoverlapping};
 
 mod transpose_util;
+
+use crate::transpose_util::transpose_in_place_square;
 
 pub fn bits_u64(n: u64) -> usize {
     (64 - n.leading_zeros()) as usize
@@ -34,7 +31,7 @@ pub fn log2_ceil(n: usize) -> usize {
 /// Computes `log_2(n)`, panicking if `n` is not a power of two.
 pub fn log2_strict(n: usize) -> usize {
     let res = n.trailing_zeros();
-    assert!(n.wrapping_shr(res) == 1, "Not a power of two: {n}");
+    assert!(n.wrapping_shr(res) == 1, "Not a power of two: {}", n);
     // Tell the optimizer about the semantics of `log2_strict`. i.e. it can replace `n` with
     // `1 << res` and vice versa.
     assume(n == 1 << res);
@@ -270,70 +267,14 @@ pub fn assume(p: bool) {
 /// This function has no semantics. It is a hint only.
 #[inline(always)]
 pub fn branch_hint() {
-    // NOTE: These are the currently supported assembly architectures. See the
-    // [nightly reference](https://doc.rust-lang.org/nightly/reference/inline-assembly.html) for
-    // the most up-to-date list.
-    #[cfg(any(
-        target_arch = "aarch64",
-        target_arch = "arm",
-        target_arch = "riscv32",
-        target_arch = "riscv64",
-        target_arch = "x86",
-        target_arch = "x86_64",
-    ))]
     unsafe {
-        core::arch::asm!("", options(nomem, nostack, preserves_flags));
+        asm!("", options(nomem, nostack, preserves_flags));
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec;
-    use alloc::vec::Vec;
-
-    use rand::rngs::OsRng;
-    use rand::Rng;
-
     use crate::{log2_ceil, log2_strict};
-
-    #[test]
-    fn test_reverse_index_bits() {
-        let lengths = [32, 128, 1 << 16];
-        let mut rng = OsRng;
-        for _ in 0..32 {
-            for length in lengths {
-                let mut rand_list: Vec<u32> = Vec::with_capacity(length);
-                rand_list.resize_with(length, || rng.gen());
-
-                let out = super::reverse_index_bits(&rand_list);
-                let expect = reverse_index_bits_naive(&rand_list);
-
-                for (out, expect) in out.iter().zip(&expect) {
-                    assert_eq!(out, expect);
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn test_reverse_index_bits_in_place() {
-        let lengths = [32, 128, 1 << 16];
-        let mut rng = OsRng;
-        for _ in 0..32 {
-            for length in lengths {
-                let mut rand_list: Vec<u32> = Vec::with_capacity(length);
-                rand_list.resize_with(length, || rng.gen());
-
-                let expect = reverse_index_bits_naive(&rand_list);
-
-                super::reverse_index_bits_in_place(&mut rand_list);
-
-                for (got, expect) in rand_list.iter().zip(&expect) {
-                    assert_eq!(got, expect);
-                }
-            }
-        }
-    }
 
     #[test]
     fn test_log2_strict() {
@@ -384,18 +325,5 @@ mod tests {
         );
         assert_eq!(log2_ceil(usize::MAX - 1), usize::BITS as usize);
         assert_eq!(log2_ceil(usize::MAX), usize::BITS as usize);
-    }
-
-    fn reverse_index_bits_naive<T: Copy>(arr: &[T]) -> Vec<T> {
-        let n = arr.len();
-        let n_power = log2_strict(n);
-
-        let mut out = vec![None; n];
-        for (i, v) in arr.iter().enumerate() {
-            let dst = i.reverse_bits() >> (64 - n_power);
-            out[dst] = Some(*v);
-        }
-
-        out.into_iter().map(|x| x.unwrap()).collect()
     }
 }

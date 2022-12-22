@@ -1,5 +1,4 @@
-use alloc::vec::Vec;
-use core::ops::Range;
+use std::ops::Range;
 
 use crate::plonk::circuit_data::CircuitConfig;
 

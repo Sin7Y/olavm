@@ -51,14 +51,14 @@ fn add_mul_decode() {
     //mov r2 3
     //add r3 r0 r1
     //mul r4 r3 r2
-    let program_src = "0x24000000
+    let program_src = "0x4000000840000000
         0x8
-        0x24400000
+        0x4000001040000000
         0x2
-        0x24800000
+        0x4000002040000000
         0x3
-        0x08c04000
-        0x110c8000
+        0x0020204400000000
+        0x0100408200000000
         ";
 
     let instructions = program_src.split('\n');
@@ -78,7 +78,7 @@ fn add_mul_decode() {
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    let mut file = File::create("fibo_trace.txt").unwrap();
+    let mut file = File::create("mul_trace.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
@@ -96,24 +96,24 @@ fn fibo_use_loop_decode() {
     // mov r4 1
     // sub r0 r0 r4
     // jmp 8
-    let program_src = "0x24000000
+    let program_src = "0x4000000840000000
         0x8
-        0x24400000
+        0x4000001040000000
         0x1
-        0x24800000
+        0x4000002040000000
         0x1
-        0x24c00000
+        0x4000004040000000
         0x0
-        0x180c0000
-        0x34000000
+        0x0020800100000000
+        0x4000000010000000
         0x13
-        0x09048000
-        0x20480000
-        0x20900000
-        0x25000000
+        0x0040408400000000
+        0x0000401040000000
+        0x0001002040000000
+        0x4000008040000000
         0x1
-        0x98010000
-        0x2c000000
+        0x0021000800008000
+        0x4000000020000000
         0x8
         ";
 
@@ -142,17 +142,29 @@ fn fibo_use_loop_decode() {
 fn memory_test() {
     // mov r0 8
     // mstore  0x100 r0
+    // mov r1 2
+    // mstore  0x200 r1
     // mov r0 20
     // mload r1 0x100
+    // mload r2 0x200
+    // mload r3 0x200
     // add r0 r1 r1
     let program_src = "0x4000000840000000
                             0x8
                             0x4000100001000000
                             0x100
+                            0x4000001040000000
+                            0x2
+                            0x4000200001000000
+                            0x200
                             0x4000000840000000
                             0x14
                             0x4000001002000000
                             0x100
+                            0x4000002002000000
+                            0x200
+                            0x4000004002000000
+                            0x200
                             0x0040200c00000000
                             ";
 
@@ -178,45 +190,6 @@ fn memory_test() {
 }
 
 #[test]
-fn call_test() {
-    let program_src = "JMP 7
-                             MUL r4 [1] 100
-                             MUL r5 [2] 20
-                             ADD r6 r4 r5
-                             MOV [3] r6
-                             MOV r31 [3]
-                             RET
-                             ADD r7 [1] [2]
-                             MUL r8 r7 2
-                             MOV [3] r8
-                             MOV [257] [3]
-                             MOV [258] [1]
-                             ADD r15 r15 256
-                             CALL 1
-                             ";
-
-    let instructions = program_src.split('\n');
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-    debug!("instructions:{:?}", program.instructions);
-
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.clone().parse().unwrap());
-    }
-
-    let mut process = Process::new();
-    process.execute(&mut program, false);
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("call_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
-}
-
-#[test]
 fn range_check_test() {
     //mov r0 8
     //mov r1 2
@@ -224,6 +197,7 @@ fn range_check_test() {
     //add r3 r0 r1
     //mul r4 r3 r2
     //range_check r4
+    //end
     let program_src = "0x4000000840000000
         0x8
         0x4000001040000000
@@ -253,7 +227,7 @@ fn range_check_test() {
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    let mut file = File::create("fibo_trace.txt").unwrap();
+    let mut file = File::create("range_check_trace.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
@@ -265,15 +239,15 @@ fn bitwise_test() {
     //add r3 r0 r1
     //mul r4 r3 r2
     //and r5 r4 r3
-    let program_src = "0x24000000
+    let program_src = "0x4000000840000000
         0x8
-        0x24400000
+        0x4000001040000000
         0x2
-        0x24800000
+        0x4000002040000000
         0x3
-        0x08c04000
-        0x110c8000
-        0x6950c000
+        0x0020204400000000
+        0x0100408200000000
+        0x0200810000200000
         ";
 
     let instructions = program_src.split('\n');
@@ -293,7 +267,7 @@ fn bitwise_test() {
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    let mut file = File::create("fibo_trace.txt").unwrap();
+    let mut file = File::create("bitwise_trace.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
@@ -304,16 +278,16 @@ fn comparison_test() {
     //mov r2 3
     //add r3 r0 r1
     //mul r4 r3 r2
-    //gte r4 r3 0x910c0000
-    let program_src = "0x24000000
+    //gte r4 r3
+    let program_src = "0x4000000840000000
         0x8
-        0x24400000
+        0x4000001040000000
         0x2
-        0x24800000
+        0x4000002040000000
         0x3
-        0x08c04000
-        0x110c8000
-        0x90d00000
+        0x0020204400000000
+        0x0100408200000000
+        0x0200800000010000
         ";
 
     let instructions = program_src.split('\n');
@@ -333,6 +307,6 @@ fn comparison_test() {
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    let mut file = File::create("fibo_trace.txt").unwrap();
+    let mut file = File::create("comparison_trace.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }

@@ -1,18 +1,18 @@
-use alloc::vec;
-use alloc::vec::Vec;
-use core::borrow::Borrow;
+use std::borrow::Borrow;
 
-use crate::field::extension::{Extendable, FieldExtension, OEF};
-use crate::field::types::{Field, Field64};
+use plonky2_field::extension::FieldExtension;
+use plonky2_field::extension::{Extendable, OEF};
+use plonky2_field::types::{Field, Field64};
+use plonky2_util::bits_u64;
+
 use crate::gates::arithmetic_extension::ArithmeticExtensionGate;
 use crate::gates::multiplication_extension::MulExtensionGate;
 use crate::hash::hash_types::RichField;
 use crate::iop::ext_target::{ExtensionAlgebraTarget, ExtensionTarget};
 use crate::iop::generator::{GeneratedValues, SimpleGenerator};
 use crate::iop::target::Target;
-use crate::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
-use crate::util::bits_u64;
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     pub fn arithmetic_extension(
@@ -569,11 +569,11 @@ pub(crate) struct ExtensionArithmeticOperation<F: Field64 + Extendable<D>, const
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use plonky2_field::extension::algebra::ExtensionAlgebra;
+    use plonky2_field::types::Field;
 
-    use crate::field::extension::algebra::ExtensionAlgebra;
-    use crate::field::types::Sample;
     use crate::iop::ext_target::ExtensionAlgebraTarget;
-    use crate::iop::witness::{PartialWitness, WitnessWrite};
+    use crate::iop::witness::{PartialWitness, Witness};
     use crate::plonk::circuit_builder::CircuitBuilder;
     use crate::plonk::circuit_data::CircuitConfig;
     use crate::plonk::config::{GenericConfig, KeccakGoldilocksConfig, PoseidonGoldilocksConfig};
@@ -588,7 +588,7 @@ mod tests {
 
         let config = CircuitConfig::standard_recursion_config();
 
-        let mut pw = PartialWitness::<F>::new();
+        let mut pw = PartialWitness::new();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
         let vs = FF::rand_vec(3);
@@ -665,8 +665,8 @@ mod tests {
             builder.connect_extension(zt.0[i], comp_zt.0[i]);
         }
 
-        let x = ExtensionAlgebra::<FF, D>(FF::rand_array());
-        let y = ExtensionAlgebra::<FF, D>(FF::rand_array());
+        let x = ExtensionAlgebra::<FF, D>(FF::rand_arr());
+        let y = ExtensionAlgebra::<FF, D>(FF::rand_arr());
         let z = x * y;
         for i in 0..D {
             pw.set_extension_target(xt.0[i], x.0[i]);

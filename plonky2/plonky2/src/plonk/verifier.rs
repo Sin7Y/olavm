@@ -1,7 +1,7 @@
 use anyhow::{ensure, Result};
+use plonky2_field::extension::Extendable;
+use plonky2_field::types::Field;
 
-use crate::field::extension::Extendable;
-use crate::field::types::Field;
 use crate::fri::verifier::verify_fri_proof;
 use crate::hash::hash_types::RichField;
 use crate::plonk::circuit_data::{CommonCircuitData, VerifierOnlyCircuitData};
@@ -15,8 +15,11 @@ use crate::plonk::vars::EvaluationVars;
 pub(crate) fn verify<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     proof_with_pis: ProofWithPublicInputs<F, C, D>,
     verifier_data: &VerifierOnlyCircuitData<C, D>,
-    common_data: &CommonCircuitData<F, D>,
-) -> Result<()> {
+    common_data: &CommonCircuitData<F, C, D>,
+) -> Result<()>
+where
+    [(); C::Hasher::HASH_SIZE]:,
+{
     validate_proof_with_pis_shape(&proof_with_pis, common_data)?;
 
     let public_inputs_hash = proof_with_pis.get_public_inputs_hash();
@@ -44,8 +47,11 @@ pub(crate) fn verify_with_challenges<
     public_inputs_hash: <<C as GenericConfig<D>>::InnerHasher as Hasher<F>>::Hash,
     challenges: ProofChallenges<F, D>,
     verifier_data: &VerifierOnlyCircuitData<C, D>,
-    common_data: &CommonCircuitData<F, D>,
-) -> Result<()> {
+    common_data: &CommonCircuitData<F, C, D>,
+) -> Result<()>
+where
+    [(); C::Hasher::HASH_SIZE]:,
+{
     let local_constants = &proof.openings.constants;
     let local_wires = &proof.openings.wires;
     let vars = EvaluationVars {
@@ -59,7 +65,7 @@ pub(crate) fn verify_with_challenges<
     let partial_products = &proof.openings.partial_products;
 
     // Evaluate the vanishing polynomial at our challenge point, zeta.
-    let vanishing_polys_zeta = eval_vanishing_poly::<F, C, D>(
+    let vanishing_polys_zeta = eval_vanishing_poly(
         common_data,
         challenges.plonk_zeta,
         vars,

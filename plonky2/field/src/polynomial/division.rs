@@ -1,6 +1,3 @@
-use alloc::vec;
-use alloc::vec::Vec;
-
 use plonky2_util::log2_ceil;
 
 use crate::polynomial::PolynomialCoeffs;
@@ -71,7 +68,7 @@ impl<F: Field> PolynomialCoeffs<F> {
     }
 
     /// Let `self=p(X)`, this returns `(p(X)-p(z))/(X-z)`.
-    /// See <https://en.wikipedia.org/wiki/Horner%27s_method>
+    /// See https://en.wikipedia.org/wiki/Horner%27s_method
     pub fn divide_by_linear(&self, z: F) -> PolynomialCoeffs<F> {
         let mut bs = self
             .coeffs
@@ -134,18 +131,17 @@ impl<F: Field> PolynomialCoeffs<F> {
 
 #[cfg(test)]
 mod tests {
-    use rand::rngs::OsRng;
-    use rand::Rng;
+    use rand::{thread_rng, Rng};
 
     use crate::extension::quartic::QuarticExtension;
     use crate::goldilocks_field::GoldilocksField;
     use crate::polynomial::PolynomialCoeffs;
-    use crate::types::{Field, Sample};
+    use crate::types::Field;
 
     #[test]
     fn test_division_by_linear() {
         type F = QuarticExtension<GoldilocksField>;
-        let n = OsRng.gen_range(1..1000);
+        let n = thread_rng().gen_range(1..1000);
         let poly = PolynomialCoeffs::new(F::rand_vec(n));
         let z = F::rand();
         let ev = poly.eval(z);

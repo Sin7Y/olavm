@@ -3,8 +3,8 @@ use std::ops::Range;
 // TODO: we define REGISTER_NUM here for now, need to import it from core.
 pub const REGISTER_NUM: usize = 9;
 
-// The Olavm trace for starky:
-// There are two kinds of traces, one for main trace, one for sub-table.
+// The Olavm trace for AIR:
+// There are 3 kinds of traces, one for main trace, one for memory trace, one for builtin.
 
 // 1. Main(CPU) trace.
 // There are 68 columns in main trace.
@@ -106,3 +106,6 @@ pub(crate) const COL_F_RC: usize = COL_DIFF_ADDR_P + 1;
 pub(crate) const COL_F_MAIN: usize = COL_F_RC + 1;
 
 pub(crate) const NUM_RAM_COLS: usize = COL_F_MAIN + 1;
+
+// 3. Builtin Trace.
+pub(crate) const NUM_BUILTIN_COLS: usize = 0;

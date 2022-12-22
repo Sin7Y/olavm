@@ -1,11 +1,9 @@
-use alloc::vec;
-use alloc::vec::Vec;
+use plonky2_field::extension::Extendable;
 
-use crate::field::extension::Extendable;
 use crate::hash::hash_types::RichField;
 use crate::iop::generator::{GeneratedValues, SimpleGenerator};
 use crate::iop::target::{BoolTarget, Target};
-use crate::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {

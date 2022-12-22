@@ -8,9 +8,9 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
-use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use starky::vars::{StarkEvaluationTargets, StarkEvaluationVars};
-use starky::stark::Stark;
+use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::stark::Stark;
 use std::marker::PhantomData;
 use std::ops::Range;
 
@@ -27,15 +27,13 @@ impl<F: RichField, const D: usize> RcStark<F, D> {
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RcStark<F, D> {
 
     const COLUMNS: usize = COL_NUM_RC;
-    
-    const PUBLIC_INPUTS: usize = 0;
 
     // Split U32 into 2 16bit limbs
     // Sumcheck between Val and limbs
     // RC for limbs
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
-        vars: StarkEvaluationVars<FE, P, { COL_NUM_RC }, { 0 }>,
+        vars: StarkEvaluationVars<FE, P, { COL_NUM_RC }>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
@@ -56,7 +54,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RcStark<F, D>
     fn eval_ext_circuit(
             &self,
             builder: &mut CircuitBuilder<F, D>,
-            vars: StarkEvaluationTargets<D, { COL_NUM_RC }, { 0 }>,
+            vars: StarkEvaluationTargets<D, { COL_NUM_RC }>,
             yield_constr: &mut RecursiveConstraintConsumer<F, D>,
         ) {
         
