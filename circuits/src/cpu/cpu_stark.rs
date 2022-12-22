@@ -6,13 +6,13 @@ use {
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
     crate::stark::Stark,
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
+    core::program::REGISTER_NUM,
     itertools::izip,
     plonky2::field::extension::{Extendable, FieldExtension},
     plonky2::field::packed::PackedField,
     plonky2::hash::hash_types::RichField,
     plonky2::plonk::circuit_builder::CircuitBuilder,
     std::marker::PhantomData,
-    core::program::REGISTER_NUM,
 };
 
 #[derive(Copy, Clone, Default)]
@@ -171,10 +171,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr.constraint(sum_s_op0 * (lv[COL_OP0] - op0_sum));
 
         let op1_sum: P = s_op1s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint(sum_s_op1 * (lv[COL_OP0] - op1_sum));
+        yield_constr.constraint(sum_s_op1 * (lv[COL_OP1] - op1_sum));
 
         let dst_sum: P = s_dsts.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint(sum_s_dst * (lv[COL_OP0] - dst_sum));
+        yield_constr.constraint(sum_s_dst * (lv[COL_DST] - dst_sum));
 
         // When oprand exists, op1 is imm.
         yield_constr.constraint(lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL]));

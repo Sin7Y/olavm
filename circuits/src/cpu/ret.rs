@@ -7,5 +7,15 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     nv: &[P; NUM_CPU_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    todo!();
+    // op0 + 1 - fp = 0
+    // op1 - pc = 0
+    // dst + 2 - fp = 0
+    // aux0 - fp = 0
+    yield_constr.constraint(
+        lv[COL_S_RET]
+            * ((lv[COL_OP0] + P::ONES - lv[COL_REGS.end - 1])
+                + (lv[COL_OP1] - lv[COL_PC])
+                + (lv[COL_DST] + P::ONES + P::ONES - lv[COL_REGS.end - 1])
+                + (lv[COL_AUX0] - lv[COL_REGS.end - 1])),
+    );
 }

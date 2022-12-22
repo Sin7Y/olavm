@@ -1,5 +1,5 @@
-use std::ops::Range;
 use core::program::REGISTER_NUM;
+use std::ops::Range;
 
 // The Olavm trace for AIR:
 // There are 3 kinds of traces, one for main trace, one for memory trace, one for builtin.
