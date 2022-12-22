@@ -64,21 +64,29 @@ pub(crate) const NUM_TABLES: usize = Table::Builtin as usize + 1;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
-    vec![]
+    vec![ctl_memory(), ctl_builtin()]
 }
 
-// fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
-//     CrossTableLookup::new(
-//         vec![TableWithColumns::new(
-//             Table::Cpu,
-//             [],
-//             None,
-//         )],
-//         TableWithColumns::new(Table::Memory, logic::ctl_data(), Some(logic::ctl_filter())),
-//         None,
-//     )
-// }
+fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_memory(),
+            Some(cpu_stark::ctl_filter_memory()),
+        )],
+        TableWithColumns::new(Table::Memory, memory::ctl_data(), Some(memory::ctl_filter())),
+        None,
+    )
+}
 
-// fn ctl_builtin<F: Field>() -> CrossTableLookup<F> {
-//     CrossTableLookup::new(TableWithColumns::new(Table, columns, filter_column), looked_table, None)
-// }
+fn ctl_builtin<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu, 
+            cpu_stark::ctl_data_builtin(), 
+            Some(cpu_stark::ctl_filter_builtin()),
+        )],
+        TableWithColumns::new(Table::Builtin, builtin_stark::ctl_data(), Some(builtin_stark::ctl_filter())),
+        None,
+    )
+}
