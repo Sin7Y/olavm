@@ -1,2 +1,2 @@
-mod rangecheck;
-mod columns;
+pub mod rangecheck;
+pub mod columns;
