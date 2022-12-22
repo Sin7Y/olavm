@@ -15,16 +15,16 @@ use std::marker::PhantomData;
 use std::ops::Range;
 
 #[derive(Copy, Clone, Default)]
-pub struct RcStark<F, const D: usize> {
+pub struct RangeCheckStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
 
-impl<F: RichField, const D: usize> RcStark<F, D> {
+impl<F: RichField, const D: usize> RangeCheckStark<F, D> {
     
     const BASE: usize = 1 << 16;
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RcStark<F, D> {
+impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckStark<F, D> {
 
     const COLUMNS: usize = COL_NUM_RC;
 
