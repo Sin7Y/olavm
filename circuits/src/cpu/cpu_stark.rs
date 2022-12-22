@@ -1,5 +1,3 @@
-use core::program::instruction;
-
 use {
     super::*,
     crate::columns::*,

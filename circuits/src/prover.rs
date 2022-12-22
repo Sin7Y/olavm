@@ -23,7 +23,6 @@ use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{cross_table_lookup_data, CtlCheckVars, CtlData};
-use crate::generation::{generate_traces, GenerationInputs};
 use crate::memory::MemoryStark;
 use crate::permutation::PermutationCheckVars;
 use crate::permutation::{
@@ -33,12 +32,15 @@ use crate::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
 use crate::stark::Stark;
 use crate::vanishing_poly::eval_vanishing_poly;
 use crate::vars::StarkEvaluationVars;
+use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
+use core::trace::trace::Trace;
+use crate::columns::NUM_CPU_COLS;
 
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(
     all_stark: &AllStark<F, D>,
     config: &StarkConfig,
-    inputs: GenerationInputs,
+    trace: &Trace,
     timing: &mut TimingTree,
     // TODO:
 )
@@ -51,8 +53,15 @@ where
     [(); MemoryStark::<F, D>::COLUMNS]:,
     [(); BuiltinStark::<F, D>::COLUMNS]:,
 {
-    // let (traces, public_values) = generate_traces(all_stark, inputs, config, timing);
-    // prove_with_traces(all_stark, config, traces, public_values, timing)
+    let cpu_trace: Vec<[F; NUM_CPU_COLS]> = generate_cpu_trace(&trace.exec);
+    let cpu_trace = trace_rows_to_poly_values(cpu_trace);
+
+    // TODO: memory, builtin trace
+    // let ram_trace: Vec<[F; NUM_RAM_COLS]> = generate_ram_trace(&trace.memory);
+    // let ram_trace = trace_rows_to_poly_values(ram_trace);
+
+    // let mut trace_poly_values: [Vec<PolynomialValues<F>>; NUM_TABLES] = [cpu_trace, ram_trace, builtin_trace];
+    // prove_with_traces(all_stark, config, trace_poly_values, PublicValues::default(), timing);
 }
 
 /// Compute all STARK proofs.

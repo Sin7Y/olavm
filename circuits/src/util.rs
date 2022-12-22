@@ -15,8 +15,7 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::util::transpose;
 
 pub(crate) fn generate_cpu_trace<F: RichField>(
-    steps: &Vec<Step>,
-    memory: &Vec<MemoryTraceCell>,
+    steps: &Vec<Step>
 ) -> Vec<[F; NUM_CPU_COLS]> {
     let trace: Vec<[F; NUM_CPU_COLS]> = steps
         .iter()
