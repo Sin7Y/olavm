@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 use crate::types::PrimeField64;
 
 /// Generates a series of non-negative integers less than `modulus` which cover a range of
@@ -70,7 +68,7 @@ where
 macro_rules! test_prime_field_arithmetic {
     ($field:ty) => {
         mod prime_field_arithmetic {
-            use core::ops::{Add, Mul, Neg, Sub};
+            use std::ops::{Add, Mul, Neg, Sub};
 
             use $crate::ops::Square;
             use $crate::types::{Field, Field64};

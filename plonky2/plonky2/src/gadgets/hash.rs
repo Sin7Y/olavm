@@ -1,4 +1,5 @@
-use crate::field::extension::Extendable;
+use plonky2_field::extension::Extendable;
+
 use crate::hash::hash_types::RichField;
 use crate::hash::hashing::SPONGE_WIDTH;
 use crate::iop::target::{BoolTarget, Target};

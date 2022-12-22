@@ -13,7 +13,7 @@ use core::trace::trace::{
 use core::trace::trace::{FilterLockForMain, MemoryCell, MemoryOperation, MemoryType};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
+use plonky2::field::types::{Field, Field64};
 use std::collections::{BTreeMap, HashMap};
 
 mod decode;
@@ -26,6 +26,7 @@ mod tests;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 8;
+const REGION_SPAN: u64 = 2 ^ 32 - 1;
 
 #[derive(Debug, Default)]
 pub struct Process {
@@ -690,17 +691,106 @@ impl Process {
     }
 
     pub fn gen_memory_table(&mut self, program: &mut Program) {
+        let mut origin_addr = 0;
+        let mut origin_clk = 0;
+        let mut diff_addr = GoldilocksField::ZERO;
+        let mut diff_addr_inv = GoldilocksField::ZERO;
+        let mut diff_clk = GoldilocksField::ZERO;
+        let mut diff_addr_cond = GoldilocksField::ZERO;
+        let mut first_row_flag = true;
+
         for (addr, mut cells) in self.memory.trace.iter() {
+            let mut new_addr_flag = true;
             for cell in cells {
-                println!("addr:{}, cell:{:?}", addr, cell);
-                // let trace_cell = MemoryTraceCell {
-                //     addr: *addr,
-                //     clk: cell.clk,
-                //     op: cell.op.clone(),
-                //     value: cell.value.clone(),
-                // };
-                // program.trace.memory.push(trace_cell);
+                debug!("addr:{}, cell:{:?}", addr, cell);
+                if cell.region_prophet.is_one() {
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
+                        - GoldilocksField::from_canonical_u64(*addr);
+                } else if cell.region_poseidon.is_one() {
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
+                        - GoldilocksField::from_canonical_u64(REGION_SPAN)
+                        - GoldilocksField::from_canonical_u64(*addr);
+                } else if cell.region_ecdsa.is_one() {
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
+                        - GoldilocksField::from_canonical_u64(2 * REGION_SPAN)
+                        - GoldilocksField::from_canonical_u64(*addr);
+                } else {
+                    diff_addr_cond = GoldilocksField::ZERO;
+                }
+                if first_row_flag {
+                    let trace_cell = MemoryTraceCell {
+                        addr: GoldilocksField::from_canonical_u64(*addr),
+                        clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
+                        is_rw: cell.is_rw,
+                        op: cell.op.clone(),
+                        is_write: cell.is_write,
+                        diff_addr: GoldilocksField::from_canonical_u64(0 as u64),
+                        diff_addr_inv: GoldilocksField::from_canonical_u64(0 as u64),
+                        diff_clk: GoldilocksField::from_canonical_u64(0 as u64),
+                        diff_addr_cond,
+                        filter_looked_for_main: cell.filter_looked_for_main,
+                        rw_addr_unchanged: GoldilocksField::from_canonical_u64(0 as u64),
+                        region_prophet: cell.region_prophet,
+                        region_poseidon: cell.region_poseidon,
+                        region_ecdsa: cell.region_ecdsa,
+                        value: cell.value.clone(),
+                    };
+                    program.trace.memory.push(trace_cell);
+                    first_row_flag = false;
+                    new_addr_flag = false;
+                } else if new_addr_flag == true {
+                    diff_addr = GoldilocksField::from_canonical_u64(addr - origin_addr);
+                    diff_addr_inv = diff_addr.inverse();
+                    diff_clk = GoldilocksField::ZERO;
+                    let trace_cell = MemoryTraceCell {
+                        addr: GoldilocksField::from_canonical_u64(*addr),
+                        clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
+                        is_rw: cell.is_rw,
+                        op: cell.op.clone(),
+                        is_write: cell.is_write,
+                        diff_addr,
+                        diff_addr_inv,
+                        diff_clk,
+                        diff_addr_cond,
+                        filter_looked_for_main: cell.filter_looked_for_main,
+                        rw_addr_unchanged: GoldilocksField::from_canonical_u64(0 as u64),
+                        region_prophet: cell.region_prophet,
+                        region_poseidon: cell.region_poseidon,
+                        region_ecdsa: cell.region_ecdsa,
+                        value: cell.value.clone(),
+                    };
+                    program.trace.memory.push(trace_cell);
+                    new_addr_flag = false;
+                } else {
+                    diff_addr = GoldilocksField::ZERO;
+                    diff_addr_inv = GoldilocksField::ZERO;
+                    diff_clk = GoldilocksField::from_canonical_u64(cell.clk as u64 - origin_clk);
+                    let mut rw_addr_unchanged = GoldilocksField::ONE;
+                    if cell.is_rw == GoldilocksField::ZERO {
+                        rw_addr_unchanged = GoldilocksField::ZERO;
+                    }
+                    let trace_cell = MemoryTraceCell {
+                        addr: GoldilocksField::from_canonical_u64(*addr),
+                        clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
+                        is_rw: cell.is_rw,
+                        op: cell.op.clone(),
+                        is_write: cell.is_write,
+                        diff_addr,
+                        diff_addr_inv,
+                        diff_clk,
+                        diff_addr_cond,
+                        filter_looked_for_main: cell.filter_looked_for_main,
+                        rw_addr_unchanged,
+                        region_prophet: cell.region_prophet,
+                        region_poseidon: cell.region_poseidon,
+                        region_ecdsa: cell.region_ecdsa,
+                        value: cell.value.clone(),
+                    };
+                    program.trace.memory.push(trace_cell);
+                }
+                origin_clk = cell.clk as u64;
             }
+            origin_addr = *addr;
         }
     }
 }
