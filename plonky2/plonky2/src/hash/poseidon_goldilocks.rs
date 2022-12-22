@@ -4,7 +4,8 @@
 //! `poseidon_constants.sage` script in the `mir-protocol/hash-constants`
 //! repository.
 
-use crate::field::goldilocks_field::GoldilocksField;
+use plonky2_field::goldilocks_field::GoldilocksField;
+
 use crate::hash::poseidon::{Poseidon, N_PARTIAL_ROUNDS};
 
 #[rustfmt::skip]
@@ -270,8 +271,10 @@ impl Poseidon for GoldilocksField {
 
 #[cfg(test)]
 mod tests {
-    use crate::field::goldilocks_field::GoldilocksField as F;
-    use crate::field::types::{Field, PrimeField64};
+    use plonky2_field::goldilocks_field::GoldilocksField as F;
+    use plonky2_field::types::Field;
+    use plonky2_field::types::PrimeField64;
+
     use crate::hash::poseidon::test_helpers::{check_consistency, check_test_vectors};
 
     #[test]

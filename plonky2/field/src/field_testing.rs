@@ -1,17 +1,15 @@
-use crate::extension::{Extendable, Frobenius};
+use crate::extension::Extendable;
+use crate::extension::Frobenius;
 use crate::ops::Square;
-use crate::types::{Field, Sample};
+use crate::types::Field;
 
 #[macro_export]
 macro_rules! test_field_arithmetic {
     ($field:ty) => {
         mod field_arithmetic {
-            use alloc::vec::Vec;
-
             use num::bigint::BigUint;
-            use rand::rngs::OsRng;
             use rand::Rng;
-            use $crate::types::{Field, Sample};
+            use $crate::types::Field;
 
             #[test]
             fn batch_inversion() {
@@ -74,7 +72,7 @@ macro_rules! test_field_arithmetic {
             fn exponentiation_large() {
                 type F = $field;
 
-                let mut rng = OsRng;
+                let mut rng = rand::thread_rng();
 
                 let base = F::rand();
                 let pow = BigUint::from(rng.gen::<u64>());

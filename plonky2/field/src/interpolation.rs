@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 use plonky2_util::log2_ceil;
 
 use crate::fft::ifft;
@@ -81,7 +79,7 @@ mod tests {
     use crate::extension::quartic::QuarticExtension;
     use crate::goldilocks_field::GoldilocksField;
     use crate::polynomial::PolynomialCoeffs;
-    use crate::types::{Field, Sample};
+    use crate::types::Field;
 
     #[test]
     fn interpolant_random() {

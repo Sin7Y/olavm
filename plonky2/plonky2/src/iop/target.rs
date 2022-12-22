@@ -1,5 +1,4 @@
-use alloc::vec::Vec;
-use core::ops::Range;
+use std::ops::Range;
 
 use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::wire::Wire;

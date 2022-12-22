@@ -1,10 +1,9 @@
-use alloc::vec::Vec;
-
 use anyhow::{ensure, Result};
+use plonky2_field::extension::{flatten, Extendable, FieldExtension};
+use plonky2_field::interpolation::{barycentric_weights, interpolate};
+use plonky2_field::types::Field;
+use plonky2_util::{log2_strict, reverse_index_bits_in_place};
 
-use crate::field::extension::{flatten, Extendable, FieldExtension};
-use crate::field::interpolation::{barycentric_weights, interpolate};
-use crate::field::types::Field;
 use crate::fri::proof::{FriChallenges, FriInitialTreeProof, FriProof, FriQueryRound};
 use crate::fri::structure::{FriBatchInfo, FriInstanceInfo, FriOpenings};
 use crate::fri::validate_shape::validate_fri_proof_shape;
@@ -14,7 +13,7 @@ use crate::hash::merkle_proofs::verify_merkle_proof_to_cap;
 use crate::hash::merkle_tree::MerkleCap;
 use crate::plonk::config::{GenericConfig, Hasher};
 use crate::util::reducing::ReducingFactor;
-use crate::util::{log2_strict, reverse_bits, reverse_index_bits_in_place};
+use crate::util::reverse_bits;
 
 /// Computes P'(x^arity) from {P(x*g^i)}_(i=0..arity), where g is a `arity`-th root of unity
 /// and P' is the FRI reduced polynomial.
@@ -58,18 +57,17 @@ pub(crate) fn fri_verify_proof_of_work<F: RichField + Extendable<D>, const D: us
     Ok(())
 }
 
-pub fn verify_fri_proof<
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
-    const D: usize,
->(
+pub fn verify_fri_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     instance: &FriInstanceInfo<F, D>,
     openings: &FriOpenings<F, D>,
     challenges: &FriChallenges<F, D>,
     initial_merkle_caps: &[MerkleCap<F, C::Hasher>],
     proof: &FriProof<F, C::Hasher, D>,
     params: &FriParams,
-) -> Result<()> {
+) -> Result<()>
+where
+    [(); C::Hasher::HASH_SIZE]:,
+{
     validate_fri_proof_shape::<F, C, D>(proof, instance, params)?;
 
     // Size of the LDE domain.
@@ -111,7 +109,10 @@ fn fri_verify_initial_proof<F: RichField, H: Hasher<F>>(
     x_index: usize,
     proof: &FriInitialTreeProof<F, H>,
     initial_merkle_caps: &[MerkleCap<F, H>],
-) -> Result<()> {
+) -> Result<()>
+where
+    [(); H::HASH_SIZE]:,
+{
     for ((evals, merkle_proof), cap) in proof.evals_proofs.iter().zip(initial_merkle_caps) {
         verify_merkle_proof_to_cap::<F, H>(evals.clone(), x_index, cap, merkle_proof)?;
     }
@@ -176,7 +177,10 @@ fn fri_verifier_query_round<
     n: usize,
     round_proof: &FriQueryRound<F, C::Hasher, D>,
     params: &FriParams,
-) -> Result<()> {
+) -> Result<()>
+where
+    [(); C::Hasher::HASH_SIZE]:,
+{
     fri_verify_initial_proof::<F, C::Hasher>(
         x_index,
         &round_proof.initial_trees_proof,

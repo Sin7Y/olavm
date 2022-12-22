@@ -6,16 +6,10 @@
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::return_self_not_must_use)]
 #![feature(generic_const_exprs)]
-#![feature(stdsimd)]
 #![feature(specialization)]
-#![cfg_attr(not(test), no_std)]
-
-extern crate alloc;
-
-mod inversion;
+#![feature(stdsimd)]
 
 pub(crate) mod arch;
-
 pub mod batch_util;
 pub mod cosets;
 pub mod extension;
@@ -23,6 +17,7 @@ pub mod fft;
 pub mod goldilocks_extensions;
 pub mod goldilocks_field;
 pub mod interpolation;
+mod inversion;
 pub mod ops;
 pub mod packable;
 pub mod packed;
@@ -34,6 +29,5 @@ pub mod zero_poly_coset;
 
 #[cfg(test)]
 mod field_testing;
-
 #[cfg(test)]
 mod prime_field_testing;
