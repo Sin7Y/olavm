@@ -18,13 +18,13 @@ use plonky2::util::transpose;
 use plonky2_util::{log2_ceil, log2_strict};
 
 use crate::all_stark::{AllStark, Table, NUM_TABLES};
+use crate::builtins::builtin_stark::BuiltinStark;
 use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{cross_table_lookup_data, CtlCheckVars, CtlData};
 use crate::generation::{generate_traces, GenerationInputs};
 use crate::memory::MemoryStark;
-use crate::builtins::builtin_stark::BuiltinStark;
 use crate::permutation::PermutationCheckVars;
 use crate::permutation::{
     compute_permutation_z_polys, get_n_grand_product_challenge_sets, GrandProductChallengeSet,
@@ -40,7 +40,7 @@ pub fn prove<F, C, const D: usize>(
     config: &StarkConfig,
     inputs: GenerationInputs,
     timing: &mut TimingTree,
-// TODO:
+    // TODO:
 )
 // ) -> Result<AllProof<F, C, D>>
 where
@@ -138,11 +138,7 @@ where
         timing,
     )?;
 
-    let stark_proofs = [
-        cpu_proof,
-        memory_proof,
-        builtin_proof,
-    ];
+    let stark_proofs = [cpu_proof, memory_proof, builtin_proof];
 
     Ok(AllProof {
         stark_proofs,

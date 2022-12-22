@@ -7,10 +7,10 @@ use plonky2::plonk::config::{GenericConfig, Hasher};
 use plonky2::plonk::plonk_common::reduce_with_powers;
 
 use crate::all_stark::{AllStark, Table};
+use crate::builtins::builtin_stark::BuiltinStark;
 use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::builtins::builtin_stark::BuiltinStark;
 use crate::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
 use crate::memory::MemoryStark;
 use crate::permutation::PermutationCheckVars;
