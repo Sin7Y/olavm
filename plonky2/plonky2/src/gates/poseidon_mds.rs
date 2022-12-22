@@ -1,13 +1,11 @@
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec::Vec;
-use alloc::{format, vec};
-use core::marker::PhantomData;
-use core::ops::Range;
+use std::marker::PhantomData;
+use std::ops::Range;
 
-use crate::field::extension::algebra::ExtensionAlgebra;
-use crate::field::extension::{Extendable, FieldExtension};
-use crate::field::types::Field;
+use plonky2_field::extension::algebra::ExtensionAlgebra;
+use plonky2_field::extension::Extendable;
+use plonky2_field::extension::FieldExtension;
+use plonky2_field::types::Field;
+
 use crate::gates::gate::Gate;
 use crate::gates::util::StridedConstraintConsumer;
 use crate::hash::hash_types::RichField;
@@ -16,17 +14,20 @@ use crate::hash::poseidon::Poseidon;
 use crate::iop::ext_target::{ExtensionAlgebraTarget, ExtensionTarget};
 use crate::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
 use crate::iop::target::Target;
-use crate::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
-/// Poseidon MDS Gate
-#[derive(Debug, Default)]
-pub struct PoseidonMdsGate<F: RichField + Extendable<D> + Poseidon, const D: usize>(PhantomData<F>);
+#[derive(Debug)]
+pub struct PoseidonMdsGate<F: RichField + Extendable<D> + Poseidon, const D: usize> {
+    _phantom: PhantomData<F>,
+}
 
 impl<F: RichField + Extendable<D> + Poseidon, const D: usize> PoseidonMdsGate<F, D> {
     pub fn new() -> Self {
-        Self(PhantomData)
+        PoseidonMdsGate {
+            _phantom: PhantomData,
+        }
     }
 
     pub fn wires_input(i: usize) -> Range<usize> {
@@ -116,7 +117,7 @@ impl<F: RichField + Extendable<D> + Poseidon, const D: usize> PoseidonMdsGate<F,
 
 impl<F: RichField + Extendable<D> + Poseidon, const D: usize> Gate<F, D> for PoseidonMdsGate<F, D> {
     fn id(&self) -> String {
-        format!("{self:?}<WIDTH={SPONGE_WIDTH}>")
+        format!("{:?}<WIDTH={}>", self, SPONGE_WIDTH)
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {

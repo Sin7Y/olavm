@@ -2,8 +2,8 @@
 
 #![allow(clippy::needless_range_loop)]
 
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field64;
+use plonky2_field::goldilocks_field::GoldilocksField;
+use plonky2_field::types::Field64;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
@@ -21,7 +21,7 @@ pub(crate) fn main() {
     // Print the constants in the format we prefer in our code.
     for chunk in constants.chunks(4) {
         for (i, c) in chunk.iter().enumerate() {
-            print!("{c:#018x},");
+            print!("{:#018x},", c);
             if i != chunk.len() - 1 {
                 print!(" ");
             }

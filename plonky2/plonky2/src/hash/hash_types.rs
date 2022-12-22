@@ -1,10 +1,7 @@
-use alloc::vec::Vec;
-
-use anyhow::ensure;
+use plonky2_field::goldilocks_field::GoldilocksField;
+use plonky2_field::types::{Field, PrimeField64};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::field::goldilocks_field::GoldilocksField;
-use crate::field::types::{Field, PrimeField64, Sample};
 use crate::hash::poseidon::Poseidon;
 use crate::iop::target::Target;
 use crate::plonk::config::GenericHashOut;
@@ -26,7 +23,6 @@ impl<F: Field> HashOut<F> {
         elements: [F::ZERO; 4],
     };
 
-    // TODO: Switch to a TryFrom impl.
     pub fn from_vec(elements: Vec<F>) -> Self {
         debug_assert!(elements.len() == 4);
         Self {
@@ -39,41 +35,22 @@ impl<F: Field> HashOut<F> {
         elements[0..elements_in.len()].copy_from_slice(elements_in);
         Self { elements }
     }
-}
 
-impl<F: Field> From<[F; 4]> for HashOut<F> {
-    fn from(elements: [F; 4]) -> Self {
-        Self { elements }
-    }
-}
-
-impl<F: Field> TryFrom<&[F]> for HashOut<F> {
-    type Error = anyhow::Error;
-
-    fn try_from(elements: &[F]) -> Result<Self, Self::Error> {
-        ensure!(elements.len() == 4);
-        Ok(Self {
-            elements: elements.try_into().unwrap(),
-        })
-    }
-}
-
-impl<F> Sample for HashOut<F>
-where
-    F: Field,
-{
-    #[inline]
-    fn sample<R>(rng: &mut R) -> Self
-    where
-        R: rand::RngCore + ?Sized,
-    {
+    #[cfg(feature = "parallel")]
+    pub fn rand_from_rng<R: rand::Rng>(rng: &mut R) -> Self {
         Self {
             elements: [
-                F::sample(rng),
-                F::sample(rng),
-                F::sample(rng),
-                F::sample(rng),
+                F::rand_from_rng(rng),
+                F::rand_from_rng(rng),
+                F::rand_from_rng(rng),
+                F::rand_from_rng(rng),
             ],
+        }
+    }
+
+    pub fn rand() -> Self {
+        Self {
+            elements: [F::rand(), F::rand(), F::rand(), F::rand()],
         }
     }
 }
@@ -116,7 +93,6 @@ pub struct HashOutTarget {
 }
 
 impl HashOutTarget {
-    // TODO: Switch to a TryFrom impl.
     pub fn from_vec(elements: Vec<Target>) -> Self {
         debug_assert!(elements.len() == 4);
         Self {
@@ -131,23 +107,6 @@ impl HashOutTarget {
     }
 }
 
-impl From<[Target; 4]> for HashOutTarget {
-    fn from(elements: [Target; 4]) -> Self {
-        Self { elements }
-    }
-}
-
-impl TryFrom<&[Target]> for HashOutTarget {
-    type Error = anyhow::Error;
-
-    fn try_from(elements: &[Target]) -> Result<Self, Self::Error> {
-        ensure!(elements.len() == 4);
-        Ok(Self {
-            elements: elements.try_into().unwrap(),
-        })
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct MerkleCapTarget(pub Vec<HashOutTarget>);
 
@@ -155,15 +114,17 @@ pub struct MerkleCapTarget(pub Vec<HashOutTarget>);
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct BytesHash<const N: usize>(pub [u8; N]);
 
-impl<const N: usize> Sample for BytesHash<N> {
-    #[inline]
-    fn sample<R>(rng: &mut R) -> Self
-    where
-        R: rand::RngCore + ?Sized,
-    {
+impl<const N: usize> BytesHash<N> {
+    #[cfg(feature = "rand")]
+    pub fn rand_from_rng<R: rand::Rng>(rng: &mut R) -> Self {
         let mut buf = [0; N];
         rng.fill_bytes(&mut buf);
         Self(buf)
+    }
+
+    #[cfg(feature = "rand")]
+    pub fn rand() -> Self {
+        Self::rand_from_rng(&mut rand::thread_rng())
     }
 }
 

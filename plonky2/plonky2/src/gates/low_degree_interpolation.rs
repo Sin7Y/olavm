@@ -1,15 +1,12 @@
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec::Vec;
-use alloc::{format, vec};
-use core::marker::PhantomData;
-use core::ops::Range;
+use std::marker::PhantomData;
+use std::ops::Range;
 
-use crate::field::extension::algebra::PolynomialCoeffsAlgebra;
-use crate::field::extension::{Extendable, FieldExtension};
-use crate::field::interpolation::interpolant;
-use crate::field::polynomial::PolynomialCoeffs;
-use crate::field::types::Field;
+use plonky2_field::extension::algebra::PolynomialCoeffsAlgebra;
+use plonky2_field::extension::{Extendable, FieldExtension};
+use plonky2_field::interpolation::interpolant;
+use plonky2_field::polynomial::PolynomialCoeffs;
+use plonky2_field::types::Field;
+
 use crate::gadgets::polynomial::PolynomialCoeffsExtAlgebraTarget;
 use crate::gates::gate::Gate;
 use crate::gates::interpolation::InterpolationGate;
@@ -19,7 +16,7 @@ use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
 use crate::iop::target::Target;
 use crate::iop::wire::Wire;
-use crate::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
@@ -83,7 +80,7 @@ impl<F: RichField + Extendable<D>, const D: usize> LowDegreeInterpolationGate<F,
 
 impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for LowDegreeInterpolationGate<F, D> {
     fn id(&self) -> String {
-        format!("{self:?}<D={D}>")
+        format!("{:?}<D={}>", self, D)
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -386,11 +383,11 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use plonky2_field::extension::quadratic::QuadraticExtension;
+    use plonky2_field::goldilocks_field::GoldilocksField;
+    use plonky2_field::polynomial::PolynomialCoeffs;
+    use plonky2_field::types::Field;
 
-    use crate::field::extension::quadratic::QuadraticExtension;
-    use crate::field::goldilocks_field::GoldilocksField;
-    use crate::field::polynomial::PolynomialCoeffs;
-    use crate::field::types::{Field, Sample};
     use crate::gates::gate::Gate;
     use crate::gates::gate_testing::{test_eval_fns, test_low_degree};
     use crate::gates::interpolation::InterpolationGate;
