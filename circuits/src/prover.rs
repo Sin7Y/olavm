@@ -18,7 +18,9 @@ use plonky2::util::transpose;
 use plonky2_util::{log2_ceil, log2_strict};
 
 use crate::all_stark::{AllStark, Table, NUM_TABLES};
-use crate::builtins::builtin_stark::BuiltinStark;
+use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
+use crate::builtins::cmp::cmp_stark::CmpStark;
+use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
@@ -49,7 +51,9 @@ where
     [(); C::Hasher::HASH_SIZE]:,
     [(); CpuStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
-    [(); BuiltinStark::<F, D>::COLUMNS]:,
+    [(); BitwiseStark::<F, D>::COLUMNS]:,
+    [(); CmpStark::<F, D>::COLUMNS]:,
+    [(); RangeCheckStark::<F, D>::COLUMNS]:,
 {
     // let (traces, public_values) = generate_traces(all_stark, inputs, config, timing);
     // prove_with_traces(all_stark, config, traces, public_values, timing)
@@ -69,7 +73,9 @@ where
     [(); C::Hasher::HASH_SIZE]:,
     [(); CpuStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
-    [(); BuiltinStark::<F, D>::COLUMNS]:,
+    [(); BitwiseStark::<F, D>::COLUMNS]:,
+    [(); CmpStark::<F, D>::COLUMNS]:,
+    [(); RangeCheckStark::<F, D>::COLUMNS]:,
 {
     let rate_bits = config.fri_config.rate_bits;
     let cap_height = config.fri_config.cap_height;
@@ -128,17 +134,35 @@ where
         &mut challenger,
         timing,
     )?;
-    let builtin_proof = prove_single_table(
-        &all_stark.builtin_stark,
+    let bitwise_proof = prove_single_table(
+        &all_stark.bitwise_stark,
         config,
-        &trace_poly_values[Table::Builtin as usize],
-        &trace_commitments[Table::Builtin as usize],
-        &ctl_data_per_table[Table::Builtin as usize],
+        &trace_poly_values[Table::Bitwise as usize],
+        &trace_commitments[Table::Bitwise as usize],
+        &ctl_data_per_table[Table::Bitwise as usize],
+        &mut challenger,
+        timing,
+    )?;
+    let cmp_proof = prove_single_table(
+        &all_stark.cmp_stark,
+        config,
+        &trace_poly_values[Table::Cmp as usize],
+        &trace_commitments[Table::Cmp as usize],
+        &ctl_data_per_table[Table::Cmp as usize],
+        &mut challenger,
+        timing,
+    )?;
+    let rangecheck_proof = prove_single_table(
+        &all_stark.rangecheck_stark,
+        config,
+        &trace_poly_values[Table::RangeCheck as usize],
+        &trace_commitments[Table::RangeCheck as usize],
+        &ctl_data_per_table[Table::RangeCheck as usize],
         &mut challenger,
         timing,
     )?;
 
-    let stark_proofs = [cpu_proof, memory_proof, builtin_proof];
+    let stark_proofs = [cpu_proof, memory_proof, bitwise_proof, cmp_proof, rangecheck_proof];
 
     Ok(AllProof {
         stark_proofs,

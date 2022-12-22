@@ -1,4 +1,4 @@
-use crate::builtins::columns::{COLUMNS_RANGE_CHECK_U32, PUBLIC_INPUTS_RANGE_CHECK_U32};
+use crate::builtins::rangecheck_small_limbs::columns::*;
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
@@ -94,6 +94,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
     }
 }
 
+#[cfg(test)]
 mod tests {
     use crate::builtins::range_check_u32::RangeCheckU32Stark;
     use plonky2::field::goldilocks_field::GoldilocksField;
@@ -162,7 +163,7 @@ mod tests {
 
         let trace_rows = vec![row; 8];
         let trace = trace_rows_to_poly_values(trace_rows);
-        let proof = prove::<F, C, S, D>(stark, &config, trace, [], &mut TimingTree::default())?;
+        let proof = prove::<F, C, S, D>(stark, &config, trace, &mut TimingTree::default())?;
 
         // verify_stark_proof(stark, proof, &config)
     }
