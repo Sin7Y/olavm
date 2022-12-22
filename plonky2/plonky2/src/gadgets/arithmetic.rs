@@ -1,15 +1,14 @@
-use alloc::vec;
-use alloc::vec::Vec;
-use core::borrow::Borrow;
+use std::borrow::Borrow;
 
-use crate::field::extension::Extendable;
-use crate::field::types::Field64;
+use plonky2_field::extension::Extendable;
+use plonky2_field::types::Field64;
+
 use crate::gates::arithmetic_base::ArithmeticGate;
 use crate::gates::exponentiation::ExponentiationGate;
 use crate::hash::hash_types::RichField;
 use crate::iop::generator::{GeneratedValues, SimpleGenerator};
 use crate::iop::target::{BoolTarget, Target};
-use crate::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
@@ -346,7 +345,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     pub fn is_equal(&mut self, x: Target, y: Target) -> BoolTarget {
         let zero = self.zero();
 
-        let equal = self.add_virtual_bool_target_unsafe();
+        let equal = self.add_virtual_bool_target();
         let not_equal = self.not(equal);
         let inv = self.add_virtual_target();
         self.add_simple_generator(EqualityGenerator { x, y, equal, inv });

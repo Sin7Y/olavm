@@ -1,6 +1,3 @@
-use alloc::vec;
-use alloc::vec::Vec;
-#[cfg(feature = "timing")]
 use std::time::Instant;
 
 use log::debug;
@@ -35,6 +32,7 @@ impl FriReductionStrategy {
     ) -> Vec<usize> {
         match self {
             FriReductionStrategy::Fixed(reduction_arity_bits) => reduction_arity_bits.to_vec(),
+
             &FriReductionStrategy::ConstantArityBits(arity_bits, final_poly_bits) => {
                 let mut result = Vec::new();
                 while degree_bits > final_poly_bits
@@ -47,6 +45,7 @@ impl FriReductionStrategy {
                 result.shrink_to_fit();
                 result
             }
+
             FriReductionStrategy::MinSize(opt_max_arity_bits) => {
                 min_size_arity_bits(degree_bits, rate_bits, num_queries, *opt_max_arity_bits)
             }
@@ -64,13 +63,11 @@ fn min_size_arity_bits(
     // in an optimal sequence, we would need a really massive polynomial.
     let max_arity_bits = opt_max_arity_bits.unwrap_or(4);
 
-    #[cfg(feature = "timing")]
     let start = Instant::now();
     let (mut arity_bits, fri_proof_size) =
         min_size_arity_bits_helper(degree_bits, rate_bits, num_queries, max_arity_bits, vec![]);
     arity_bits.shrink_to_fit();
 
-    #[cfg(feature = "timing")]
     debug!(
         "min_size_arity_bits took {:.3}s",
         start.elapsed().as_secs_f32()

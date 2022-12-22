@@ -1,6 +1,6 @@
-use core::fmt::{self, Debug, Display, Formatter};
-use core::iter::{Product, Sum};
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::fmt::{Debug, Display, Formatter};
+use std::iter::{Product, Sum};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use num::bigint::BigUint;
 use num::traits::Pow;
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::extension::{Extendable, FieldExtension, Frobenius, OEF};
 use crate::ops::Square;
-use crate::types::{Field, Sample};
+use crate::types::Field;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[serde(bound = "")]
@@ -46,22 +46,6 @@ impl<F: Extendable<5>> FieldExtension<5> for QuinticExtension<F> {
 impl<F: Extendable<5>> From<F> for QuinticExtension<F> {
     fn from(x: F) -> Self {
         Self([x, F::ZERO, F::ZERO, F::ZERO, F::ZERO])
-    }
-}
-
-impl<F: Extendable<5>> Sample for QuinticExtension<F> {
-    #[inline]
-    fn sample<R>(rng: &mut R) -> Self
-    where
-        R: rand::RngCore + ?Sized,
-    {
-        Self::from_basefield_array([
-            F::sample(rng),
-            F::sample(rng),
-            F::sample(rng),
-            F::sample(rng),
-            F::sample(rng),
-        ])
     }
 }
 
@@ -126,10 +110,21 @@ impl<F: Extendable<5>> Field for QuinticExtension<F> {
     fn from_noncanonical_u128(n: u128) -> Self {
         F::from_noncanonical_u128(n).into()
     }
+
+    #[cfg(feature = "rand")]
+    fn rand_from_rng<R: rand::Rng>(rng: &mut R) -> Self {
+        Self::from_basefield_array([
+            F::rand_from_rng(rng),
+            F::rand_from_rng(rng),
+            F::rand_from_rng(rng),
+            F::rand_from_rng(rng),
+            F::rand_from_rng(rng),
+        ])
+    }
 }
 
 impl<F: Extendable<5>> Display for QuinticExtension<F> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{} + {}*a + {}*a^2 + {}*a^3 + {}*a^4",
@@ -139,7 +134,7 @@ impl<F: Extendable<5>> Display for QuinticExtension<F> {
 }
 
 impl<F: Extendable<5>> Debug for QuinticExtension<F> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Display::fmt(self, f)
     }
 }

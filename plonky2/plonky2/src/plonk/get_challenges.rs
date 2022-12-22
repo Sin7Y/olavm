@@ -1,10 +1,8 @@
-use alloc::vec;
-use alloc::vec::Vec;
+use std::collections::HashSet;
 
-use hashbrown::HashSet;
+use plonky2_field::extension::Extendable;
+use plonky2_field::polynomial::PolynomialCoeffs;
 
-use crate::field::extension::Extendable;
-use crate::field::polynomial::PolynomialCoeffs;
 use crate::fri::proof::{CompressedFriProof, FriChallenges, FriProof, FriProofTarget};
 use crate::fri::verifier::{compute_evaluation, fri_combine_initial, PrecomputedReducedOpenings};
 use crate::gadgets::polynomial::PolynomialCoeffsExtTarget;
@@ -32,7 +30,7 @@ fn get_challenges<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, cons
     final_poly: &PolynomialCoeffs<F::Extension>,
     pow_witness: F,
     circuit_digest: &<<C as GenericConfig<D>>::Hasher as Hasher<C::F>>::Hash,
-    common_data: &CommonCircuitData<F, D>,
+    common_data: &CommonCircuitData<F, C, D>,
 ) -> anyhow::Result<ProofChallenges<F, D>> {
     let config = &common_data.config;
     let num_challenges = config.num_challenges;
@@ -76,7 +74,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     pub(crate) fn fri_query_indices(
         &self,
         circuit_digest: &<<C as GenericConfig<D>>::Hasher as Hasher<C::F>>::Hash,
-        common_data: &CommonCircuitData<F, D>,
+        common_data: &CommonCircuitData<F, C, D>,
     ) -> anyhow::Result<Vec<usize>> {
         Ok(self
             .get_challenges(self.get_public_inputs_hash(), circuit_digest, common_data)?
@@ -89,7 +87,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         &self,
         public_inputs_hash: <<C as GenericConfig<D>>::InnerHasher as Hasher<F>>::Hash,
         circuit_digest: &<<C as GenericConfig<D>>::Hasher as Hasher<C::F>>::Hash,
-        common_data: &CommonCircuitData<F, D>,
+        common_data: &CommonCircuitData<F, C, D>,
     ) -> anyhow::Result<ProofChallenges<F, D>> {
         let Proof {
             wires_cap,
@@ -105,7 +103,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
                 },
         } = &self.proof;
 
-        get_challenges::<F, C, D>(
+        get_challenges(
             public_inputs_hash,
             wires_cap,
             plonk_zs_partial_products_cap,
@@ -128,7 +126,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         &self,
         public_inputs_hash: <<C as GenericConfig<D>>::InnerHasher as Hasher<F>>::Hash,
         circuit_digest: &<<C as GenericConfig<D>>::Hasher as Hasher<C::F>>::Hash,
-        common_data: &CommonCircuitData<F, D>,
+        common_data: &CommonCircuitData<F, C, D>,
     ) -> anyhow::Result<ProofChallenges<F, D>> {
         let CompressedProof {
             wires_cap,
@@ -144,7 +142,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
                 },
         } = &self.proof;
 
-        get_challenges::<F, C, D>(
+        get_challenges(
             public_inputs_hash,
             wires_cap,
             plonk_zs_partial_products_cap,
@@ -162,7 +160,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     pub(crate) fn get_inferred_elements(
         &self,
         challenges: &ProofChallenges<F, D>,
-        common_data: &CommonCircuitData<F, D>,
+        common_data: &CommonCircuitData<F, C, D>,
     ) -> FriInferredElements<F, D> {
         let ProofChallenges {
             plonk_zeta,
@@ -246,7 +244,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         final_poly: &PolynomialCoeffsExtTarget<D>,
         pow_witness: Target,
         inner_circuit_digest: HashOutTarget,
-        inner_common_data: &CommonCircuitData<F, D>,
+        inner_common_data: &CommonCircuitData<F, C, D>,
     ) -> ProofChallengesTarget<D>
     where
         C::Hasher: AlgebraicHasher<F>,
@@ -294,7 +292,7 @@ impl<const D: usize> ProofWithPublicInputsTarget<D> {
         builder: &mut CircuitBuilder<F, D>,
         public_inputs_hash: HashOutTarget,
         inner_circuit_digest: HashOutTarget,
-        inner_common_data: &CommonCircuitData<F, D>,
+        inner_common_data: &CommonCircuitData<F, C, D>,
     ) -> ProofChallengesTarget<D>
     where
         C::Hasher: AlgebraicHasher<F>,
@@ -313,7 +311,7 @@ impl<const D: usize> ProofWithPublicInputsTarget<D> {
                 },
         } = &self.proof;
 
-        builder.get_challenges::<C>(
+        builder.get_challenges(
             public_inputs_hash,
             wires_cap,
             plonk_zs_partial_products_cap,
