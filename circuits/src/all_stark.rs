@@ -48,7 +48,9 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
         [
             self.cpu_stark.num_permutation_batches(config),
             self.memory_stark.num_permutation_batches(config),
-            self.builtin_stark.num_permutation_batches(config),
+            self.bitwise_stark.num_permutation_batches(config),
+            self.cmp_stark.num_permutation_batches(config),
+            self.rangecheck_stark.num_permutation_batches(config),
         ]
     }
 
@@ -56,7 +58,9 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
         [
             self.cpu_stark.permutation_batch_size(),
             self.memory_stark.permutation_batch_size(),
-            self.builtin_stark.permutation_batch_size(),
+            self.bitwise_stark.permutation_batch_size(),
+            self.cmp_stark.permutation_batch_size(),
+            self.rangecheck_stark.permutation_batch_size(),
         ]
     }
 }
@@ -74,7 +78,8 @@ pub(crate) const NUM_TABLES: usize = Table::RangeCheck as usize + 1;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
-    vec![ctl_memory(), ctl_builtin()]
+    // TODO:
+    vec![ctl_memory()]
 }
 
 fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
@@ -85,18 +90,6 @@ fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
             Some(cpu_stark::ctl_filter_memory()),
         )],
         TableWithColumns::new(Table::Memory, memory::ctl_data(), Some(memory::ctl_filter())),
-        None,
-    )
-}
-
-fn ctl_builtin<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::Cpu, 
-            cpu_stark::ctl_data_builtin(), 
-            Some(cpu_stark::ctl_filter_builtin()),
-        )],
-        TableWithColumns::new(Table::Builtin, builtin_stark::ctl_data(), Some(builtin_stark::ctl_filter())),
         None,
     )
 }
