@@ -1,25 +1,39 @@
 
-use crate::bitwise::columns;
-
+use crate::builtins::bitwise::columns::*;
+//use crate::var::{StarkEvaluationTargets, StarkEvaluationVars};
+use plonky2::field::extension::{Extendable, FieldExtension};
+use plonky2::field::packed::PackedField;
+use plonky2::field::types::Field;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::ext_target::ExtensionTarget;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
+use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::stark::Stark;
+use std::marker::PhantomData;
+use std::ops::Range;
 
 #[derive(Copy, Clone, Default)]
-pub struct AndOrXorStark<F, const D: usize> {
+pub struct BitwiseStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
 
 
-impl<F: RichField, const D: usize> AndOrXorStark<F, D> {
+impl<F: RichField, const D: usize> BitwiseStark<F, D> {
 
     const BASE: usize = 1 << 8;
 
 }
 
 
-impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for AndOrXorStark<F, D> {
+impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<F, D> {
+
+    const COLUMNS: usize = COL_NUM_BITWISE;
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
-        vars: StarkEvaluationVars<FE, P, { columns.COL_NUM_AND }>,
+        vars: StarkEvaluationVars<FE, P, { COL_NUM_BITWISE }>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
@@ -47,4 +61,18 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for AndOrXorStark
 
     }
 
+    fn eval_ext_circuit(
+            &self,
+            builder: &mut CircuitBuilder<F, D>,
+            vars: StarkEvaluationTargets<D, { COL_NUM_BITWISE }>,
+            yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        ) {
+        
+    }
+
+    fn constraint_degree(&self) -> usize {
+        1
+    }
+
 }
+

@@ -14,11 +14,9 @@ use crate::config::StarkConfig;
 use crate::proof::{BlockMetadata, PublicValues, TrieRoots};
 use crate::util::trace_rows_to_poly_values;
 
-
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 /// Inputs needed for trace generation.
-pub struct GenerationInputs {
-}
+pub struct GenerationInputs {}
 
 pub(crate) fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     all_stark: &AllStark<F, D>,

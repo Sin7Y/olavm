@@ -7,14 +7,14 @@ use crate::cross_table_lookup::Column;
 use {
     super::*,
     crate::columns::*,
+    crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    crate::stark::Stark,
+    crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     itertools::izip,
     plonky2::field::extension::{Extendable, FieldExtension},
     plonky2::field::packed::PackedField,
     plonky2::hash::hash_types::RichField,
     plonky2::plonk::circuit_builder::CircuitBuilder,
-    crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
-    crate::stark::Stark,
-    crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     std::marker::PhantomData,
 };
 

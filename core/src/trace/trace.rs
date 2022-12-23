@@ -31,14 +31,14 @@ pub const BUILTIN_NUM: usize = BUILTIN_RANGE_SEL_INDEX + 1;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum FilterLockForMain {
-    True,
     False,
+    True,
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum MemoryType {
-    ReadWrite,
     WriteOnce,
+    ReadWrite,
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
