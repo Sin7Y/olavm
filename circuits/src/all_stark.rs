@@ -8,19 +8,23 @@ use crate::config::StarkConfig;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::stark::Stark;
 
-
-use crate::memory;
-use crate::memory::MemoryStark;
+use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
+use crate::builtins::cmp::cmp_stark::CmpStark;
+use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::builtins::builtin_stark;
-use crate::builtins::builtin_stark::BuiltinStark;
+use crate::memory;
+use crate::memory::MemoryStark;
 
 #[derive(Clone)]
 pub struct AllStark<F: RichField + Extendable<D>, const D: usize> {
     pub cpu_stark: CpuStark<F, D>,
     pub memory_stark: MemoryStark<F, D>,
-    pub builtin_stark: BuiltinStark<F, D>,
+    // builtins
+    pub bitwise_stark: BitwiseStark<F,D>,
+    pub cmp_stark: CmpStark<F,D>,
+    pub rangecheck_stark: RangeCheckStark<F, D>,
+
     pub cross_table_lookups: Vec<CrossTableLookup<F>>,
 }
 
@@ -29,7 +33,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for AllStark<F, D> {
         Self {
             cpu_stark: CpuStark::default(),
             memory_stark: MemoryStark::default(),
-            builtin_stark: BuiltinStark::default(),
+            // builtins
+            bitwise_stark: BitwiseStark::default(),
+            cmp_stark: CmpStark::default(),
+            rangecheck_stark: RangeCheckStark::default(),
+
             cross_table_lookups: all_cross_table_lookups(),
         }
     }
@@ -57,10 +65,12 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
 pub enum Table {
     Cpu = 0,
     Memory = 1,
-    Builtin = 2,
+    Bitwise = 2,
+    Cmp = 3,
+    RangeCheck = 4,
 }
 
-pub(crate) const NUM_TABLES: usize = Table::Builtin as usize + 1;
+pub(crate) const NUM_TABLES: usize = Table::RangeCheck as usize + 1;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {

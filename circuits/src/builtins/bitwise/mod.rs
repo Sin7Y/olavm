@@ -1,2 +1,2 @@
-mod and;
-mod columns;
+pub mod bitwise_stark;
+pub mod columns;
