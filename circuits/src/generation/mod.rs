@@ -23,6 +23,18 @@ pub(crate) fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     inputs: GenerationInputs,
     config: &StarkConfig,
     timing: &mut TimingTree,
-) {
+) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     // TODO:
+    let cpu_rows: Vec<[F; 1]> = vec![];
+    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+    let memory_rows: Vec<[F; 1]> = vec![];
+    let memory_trace = trace_rows_to_poly_values(memory_rows);
+    let bitwise_rows: Vec<[F; 1]> = vec![];
+    let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+    let cmp_rows: Vec<[F; 1]> = vec![];
+    let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+    let rangecheck_rows: Vec<[F; 1]> = vec![];
+    let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+    let public_values = PublicValues{};
+    ([cpu_trace, memory_trace, bitwise_trace, cmp_trace, rangecheck_trace], public_values)
 }

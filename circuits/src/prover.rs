@@ -42,9 +42,7 @@ pub fn prove<F, C, const D: usize>(
     config: &StarkConfig,
     inputs: GenerationInputs,
     timing: &mut TimingTree,
-    // TODO:
-)
-// ) -> Result<AllProof<F, C, D>>
+) -> Result<AllProof<F, C, D>>
 where
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
@@ -55,8 +53,8 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
 {
-    // let (traces, public_values) = generate_traces(all_stark, inputs, config, timing);
-    // prove_with_traces(all_stark, config, traces, public_values, timing)
+    let (traces, public_values) = generate_traces(all_stark, inputs, config, timing);
+    prove_with_traces(all_stark, config, traces, public_values, timing)
 }
 
 /// Compute all STARK proofs.
