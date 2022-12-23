@@ -87,26 +87,6 @@ pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
 pub(crate) const NUM_CPU_COLS: usize = COL_S_ECDSA + 1;
 
 // 2. Memory Trace.
-// ┌─────────────┬───────────────┬──────┬───────┬───────┬──────────┬───────┬───────────┬──────────┬─────────────┬──────┬───────┬
-// │ end_rw_diff │ is_write_once │ addr │  clk  │   op  │ is_write | value | diff_addr │ diff_clk | diff_addr_p | f_rc │ f_main│
-// ├─────────────┼───────────────┼──────┼───────┼───────┼──────────┼───────┼───────────┼──────────┼─────────────|──────┼───────┼
-// │      0      │       0       │  0   │   0   │   0   │     0    │   0   │     0     │     0    │      0      |   0  │   0   │
-// └─────────────┴───────────────┴──────┴───────┴───────┴──────────┴───────┴───────────┴──────────┴─────────────┴──────┴───────┴
-pub(crate) const COL_END_RW_DIFF: usize = 0;
-pub(crate) const COL_IS_WRITE_ONCE: usize = COL_END_RW_DIFF + 1;
-pub(crate) const COL_ADDR: usize = COL_IS_WRITE_ONCE + 1;
-pub(crate) const COL_RAM_CLK: usize = COL_ADDR + 1;
-pub(crate) const COL_RAM_OP: usize = COL_RAM_CLK + 1;
-pub(crate) const COL_IS_WRITE: usize = COL_RAM_OP + 1;
-pub(crate) const COL_VALUE: usize = COL_IS_WRITE + 1;
-pub(crate) const COL_DIFF_ADDR: usize = COL_VALUE + 1;
-pub(crate) const COL_DIFF_CLK: usize = COL_DIFF_ADDR + 1;
-pub(crate) const COL_DIFF_ADDR_P: usize = COL_DIFF_CLK + 1;
-pub(crate) const COL_F_RC: usize = COL_DIFF_ADDR_P + 1;
-pub(crate) const COL_F_MAIN: usize = COL_F_RC + 1;
-
-pub(crate) const NUM_RAM_COLS: usize = COL_F_MAIN + 1;
-
 // ┌───────┬──────┬─────┬────┬──────────┬───────┬───────────┬───────────────┬──────────┬────────────────┬────────────────────────┬───────────────────┬────────────────┬─────────────────┬──────────────┐
 // │ is_rw │ addr │ clk │ op │ is_write │ value │ diff_addr │ diff_addr_inv │ diff_clk │ diff_addr_cond │ filter_looked_for_main │ rw_addr_unchanged │ region_prophet │ region_poseidon │ region_ecdsa │
 // └───────┴──────┴─────┴────┴──────────┴───────┴───────────┴───────────────┴──────────┴────────────────┴────────────────────────┴───────────────────┴────────────────┴─────────────────┴──────────────┘

@@ -55,7 +55,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let region_ecdsa = lv[COL_MEM_REGION_ECDSA];
         let nv_region_prophet = nv[COL_MEM_REGION_PROPHET];
         let nv_region_poseidon = nv[COL_MEM_REGION_POSEIDON];
-        let is_write = lv[COL_IS_WRITE];
+        let is_write = lv[COL_MEM_IS_WRITE];
         let nv_is_write = nv[COL_MEM_IS_WRITE];
         let filter_looked_for_main = lv[COL_MEM_FILTER_LOOKED_FOR_MAIN];
         let addr = lv[COL_MEM_ADDR];
@@ -157,7 +157,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let region_ecdsa = lv[COL_MEM_REGION_ECDSA];
         let nv_region_prophet = nv[COL_MEM_REGION_PROPHET];
         let nv_region_poseidon = nv[COL_MEM_REGION_POSEIDON];
-        let is_write = lv[COL_IS_WRITE];
+        let is_write = lv[COL_MEM_IS_WRITE];
         let nv_is_write = nv[COL_MEM_IS_WRITE];
         let filter_looked_for_main = lv[COL_MEM_FILTER_LOOKED_FOR_MAIN];
         let addr = lv[COL_MEM_ADDR];
