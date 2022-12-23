@@ -1,3 +1,7 @@
+use plonky2::field::types::Field;
+
+use crate::cross_table_lookup::Column;
+
 use {
     super::*,
     crate::columns::*,
@@ -11,6 +15,16 @@ use {
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     std::marker::PhantomData,
 };
+
+pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
+    // TODO:
+    vec![Column::single(0)]
+}
+
+pub fn ctl_filter<F: Field>() -> Column<F> {
+    // TODO:
+    Column::single(0)
+}
 
 #[derive(Copy, Clone, Default)]
 pub struct BuiltinStark<F, const D: usize> {
