@@ -1,5 +1,7 @@
 
 use crate::builtins::rangecheck::columns::*;
+use crate::columns::*;
+use itertools::Itertools;
 //use crate::var::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
@@ -11,6 +13,7 @@ use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_ci
 use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use crate::stark::Stark;
+use crate::cross_table_lookup::Column;
 use std::marker::PhantomData;
 use std::ops::Range;
 
@@ -64,4 +67,42 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
         1
     }
 
+}
+
+// Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
+pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles([VAL]).collect_vec();
+    res
+}
+
+pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
+
+    Column::single(TAG)
+    
+}
+
+// Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
+pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles([VAL]).collect_vec();
+    res
+}
+
+pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
+
+    Column::single(TAG)
+
+}
+
+// Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
+pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles([LIMB_LO, LIMB_HI]).collect_vec();
+    res
+}
+
+pub fn ctl_filter_with_rangecheck_fixed<F: Field>() -> Column<F> {
+
+    Column::one()
 }
