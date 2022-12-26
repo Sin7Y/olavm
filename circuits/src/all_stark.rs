@@ -93,3 +93,57 @@ fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
         None,
     )
 }
+
+
+// add bitwise rangecheck instance
+// Cpu table
+// +-----+-----+-----+---------+--------+---------+-----+-----+-----+-----+----
+// | clk | ins | ... | sel_and | sel_or | sel_xor | ... | op0 | op1 | dst | ...
+// +-----+-----+-----+---------+--------+---------+-----+-----+----+----+----
+// 
+// Bitwise table
+// +-----+-----+-----+-----+------------+------------+-----------+------------+---
+// | tag | op0 | op1 | res | op0_limb_0 | op0_limb_1 |res_limb_2 | op0_limb_3 |...
+// +-----+-----+-----+-----+------------+------------+-----------+------------+---
+//
+// Filter bitwise from CPU Table
+// 1. (sel_add + sel_or + sel_xor) * (op0, op1, dst) = looking_table
+// Filter bitwise from Bitwsie Table
+// 1. (op0, op1, res) = looked_table
+
+// Cross_Lookup_Table(looking_table, looked_table)
+fn ctl_bitwise<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_bitwise(),
+            Some(cpu_stark::ctl_filter_bitwise()),
+        )],
+        TableWithColumns::new(Table::Bitwise, memory::ctl_data(), Some(memory::ctl_filter())),
+        None,
+    )
+}
+
+fn ctl_cmp<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_memory(),
+            Some(cpu_stark::ctl_filter_memory()),
+        )],
+        TableWithColumns::new(Table::Cmp, memory::ctl_data(), Some(memory::ctl_filter())),
+        None,
+    )
+}
+
+fn ctl_rangecheck<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_memory(),
+            Some(cpu_stark::ctl_filter_memory()),
+        )],
+        TableWithColumns::new(Table::RangeCheck, memory::ctl_data(), Some(memory::ctl_filter())),
+        None,
+    )
+}

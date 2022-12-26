@@ -18,7 +18,7 @@ use {
     std::marker::PhantomData,
 };
 
-pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_bitwise<F: Field>() -> Vec<Column<F>> {
     // TODO:
     vec![Column::single(0)]
 }

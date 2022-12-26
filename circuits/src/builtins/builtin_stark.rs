@@ -5,6 +5,9 @@ use crate::cross_table_lookup::Column;
 use {
     super::*,
     crate::columns::*,
+    crate::builtins::bitwise::bitwise_stark::BitwiseStark,
+    crate::builtins::cmp::cmp_stark::CmpStark,
+    crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark,
     itertools::izip,
     plonky2::field::extension::{Extendable, FieldExtension},
     plonky2::field::packed::PackedField,
@@ -18,7 +21,8 @@ use {
 
 pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
     // TODO:
-    vec![Column::single(0)]
+    let mut res = Column::singles([OP0, OP1, RES]).collect_vec();
+    res
 }
 
 pub fn ctl_filter<F: Field>() -> Column<F> {
