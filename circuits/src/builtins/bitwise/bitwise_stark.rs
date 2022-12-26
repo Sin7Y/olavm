@@ -1,5 +1,6 @@
 
 use crate::builtins::bitwise::columns::*;
+use itertools::Itertools;
 //use crate::var::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
@@ -11,8 +12,9 @@ use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_ci
 use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use crate::stark::Stark;
+use crate::cross_table_lookup::Column;
 use std::marker::PhantomData;
-use std::ops::Range;
+use std::ops::{Range, Add};
 
 #[derive(Copy, Clone, Default)]
 pub struct BitwiseStark<F, const D: usize> {
@@ -74,5 +76,50 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
         1
     }
 
+}
+
+// Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
+pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles([OP0, OP1, RES]).collect_vec();
+    res
+}
+
+pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
+
+    Column::one()
+}
+
+
+// Get the column info for Cross_Lookup<Rangecheck_Fixed_table, Bitwise_table>
+pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles(OP0_LIMBS).collect_vec();
+    res.extend(Column::singles(OP1_LIMBS).collect_vec());
+    res.extend(Column::singles(RES_LIMBS).collect_vec());
+
+    res
+}
+
+pub fn ctl_filter_with_rangecheck_fixed<F: Field>() -> Column<F> {
+
+    Column::one()
+}
+
+// Get the column info for Cross_Lookup<Bitwise_Fixed_table, Bitwise_table>
+pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles([OP0_LIMBS.start, OP1_LIMBS.start, RES_LIMBS.start]).collect_vec();
+    res.extend(Column::singles([OP0_LIMBS.start.add(1), OP1_LIMBS.start.add(1), RES_LIMBS.start.add(1)]).collect_vec());
+    res.extend(Column::singles([OP0_LIMBS.start.add(2), OP1_LIMBS.start.add(2), RES_LIMBS.start.add(2)]).collect_vec());
+    res.extend(Column::singles([OP0_LIMBS.end, OP1_LIMBS.end, RES_LIMBS.end]).collect_vec());
+    res.extend(Column::singles([TAG]));
+
+    res
+}
+
+pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
+
+    Column::one()
 }
 

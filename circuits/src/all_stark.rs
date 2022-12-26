@@ -8,9 +8,11 @@ use crate::config::StarkConfig;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::stark::Stark;
 
-use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
-use crate::builtins::cmp::cmp_stark::CmpStark;
-use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
+use crate::builtins::bitwise::bitwise_stark::{BitwiseStark, self};
+use crate::builtins::cmp::cmp_stark::{CmpStark, self};
+use crate::builtins::rangecheck::rangecheck_stark::{RangeCheckStark, self};
+use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{BitwiseFixedStark, self};
+use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{RangecheckFixedStark, self};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory;
@@ -72,6 +74,8 @@ pub enum Table {
     Bitwise = 2,
     Cmp = 3,
     RangeCheck = 4,
+    BitwiseFixed = 5,
+    RangecheckFixed = 6,
 }
 
 pub(crate) const NUM_TABLES: usize = Table::RangeCheck as usize + 1;
@@ -112,38 +116,124 @@ fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
 // 1. (op0, op1, res) = looked_table
 
 // Cross_Lookup_Table(looking_table, looked_table)
-fn ctl_bitwise<F: Field>() -> CrossTableLookup<F> {
+fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
-            cpu_stark::ctl_data_bitwise(),
-            Some(cpu_stark::ctl_filter_bitwise()),
+            cpu_stark::ctl_data_with_bitwise(),
+            Some(cpu_stark::ctl_filter_with_bitwise_and()),
+        ),
+        TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_bitwise(),
+            Some(cpu_stark::ctl_filter_with_bitwise_or()),
+        ),
+        TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_bitwise(),
+            Some(cpu_stark::ctl_filter_with_bitwise_xor()),
         )],
-        TableWithColumns::new(Table::Bitwise, memory::ctl_data(), Some(memory::ctl_filter())),
+        TableWithColumns::new(
+            Table::Bitwise, 
+            bitwise_stark::ctl_data_with_bitwise_fixed(), 
+            Some(bitwise_stark::ctl_filter_with_bitwise_fixed())),
         None,
     )
 }
 
-fn ctl_cmp<F: Field>() -> CrossTableLookup<F> {
+
+// Cross_Lookup_Table(looking_table, looked_table)
+fn ctl_bitwise_rangecheck<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
-            Table::Cpu,
-            cpu_stark::ctl_data_memory(),
-            Some(cpu_stark::ctl_filter_memory()),
+            Table::RangecheckFixed,
+            rangecheck_fixed_stark::ctl_data_with_bitwise(),
+            Some(rangecheck_fixed_stark::ctl_filter_with_bitwise()),
         )],
-        TableWithColumns::new(Table::Cmp, memory::ctl_data(), Some(memory::ctl_filter())),
+        TableWithColumns::new(
+            Table::Bitwise, 
+            bitwise_stark::ctl_data_with_rangecheck_fixed(), 
+            Some(bitwise_stark::ctl_filter_with_rangecheck_fixed())),
         None,
     )
 }
 
-fn ctl_rangecheck<F: Field>() -> CrossTableLookup<F> {
+// Cross_Lookup_Table(looking_table, looked_table)
+fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::BitwiseFixed,
+            bitwise_fixed_stark::ctl_data_with_bitwise(),
+            Some(bitwise_fixed_stark::ctl_filter_with_bitwise()),
+        )],
+        TableWithColumns::new(
+            Table::Bitwise, 
+            bitwise_stark::ctl_data_with_bitwise_fixed(), 
+            Some(bitwise_stark::ctl_filter_with_bitwise_fixed())),
+        None,
+    )
+}
+
+
+// add CMP cross lookup instance
+fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
-            cpu_stark::ctl_data_memory(),
-            Some(cpu_stark::ctl_filter_memory()),
+            cpu_stark::ctl_data_with_cmp(),
+            Some(cpu_stark::ctl_filter_with_cmp()),
         )],
-        TableWithColumns::new(Table::RangeCheck, memory::ctl_data(), Some(memory::ctl_filter())),
+        TableWithColumns::new(
+            Table::Cmp, 
+            cmp_stark::ctl_data_with_cpu(),
+            Some(cmp_stark::ctl_filter_with_cpu())),
+        None,
+    )
+}
+
+fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::RangeCheck,
+            rangecheck_stark::ctl_data_with_cmp(),
+            Some(rangecheck_stark::ctl_filter_with_cmp()),
+        )],
+        TableWithColumns::new(
+            Table::Cmp, 
+            cmp_stark::ctl_data_with_rangecheck(),
+            Some(cmp_stark::ctl_filter_with_rangecheck())),
+        None,
+    )
+}
+
+
+// add Rangecheck cross lookup instance
+fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_rangecheck(),
+            Some(cpu_stark::ctl_filter_with_rangecheck()),
+        )],
+        TableWithColumns::new(
+            Table::RangeCheck, 
+            rangecheck_stark::ctl_data_with_cpu(),
+            Some(rangecheck_stark::ctl_filter_with_cpu())),
+        None,
+    )
+}
+
+fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::RangecheckFixed,
+            rangecheck_fixed_stark::ctl_data_with_rangecheck(),
+            Some(rangecheck_fixed_stark::ctl_filter_with_rangecheck()),
+        )],
+        TableWithColumns::new(
+            Table::RangeCheck, 
+            rangecheck_stark::ctl_data_with_rangecheck_fixed(), 
+            Some(rangecheck_stark::ctl_filter_with_rangecheck_fixed())),
         None,
     )
 }
