@@ -94,7 +94,7 @@ fn fibo_use_loop_decode() {
     // mov r1 r2
     // mov r2 r4
     // mov r4 1
-    // sub r0 r0 r4
+    // add r3 r3 r4
     // jmp 8
     let program_src = "0x4000000840000000
         0x8
@@ -112,7 +112,7 @@ fn fibo_use_loop_decode() {
         0x0001002040000000
         0x4000008040000000
         0x1
-        0x0021000800008000
+        0x0101004400000000
         0x4000000020000000
         0x8
         ";
