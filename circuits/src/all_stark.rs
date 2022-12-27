@@ -7,7 +7,6 @@ use plonky2::hash::hash_types::RichField;
 use crate::config::StarkConfig;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::stark::Stark;
-
 use crate::builtins::bitwise::bitwise_stark::{BitwiseStark, self};
 use crate::builtins::cmp::cmp_stark::{CmpStark, self};
 use crate::builtins::rangecheck::rangecheck_stark::{RangeCheckStark, self};
@@ -16,8 +15,7 @@ use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{RangecheckFix
 use crate::program::program_stark::{ProgramStark, self};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::memory;
-use crate::memory::MemoryStark;
+use crate::memory::{MemoryStark, ctl_data as mem_ctl_data, ctl_filter as mem_ctl_filter};
 
 #[derive(Clone)]
 pub struct AllStark<F: RichField + Extendable<D>, const D: usize> {
@@ -99,7 +97,7 @@ fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
             cpu_stark::ctl_data_memory(),
             Some(cpu_stark::ctl_filter_memory()),
         )],
-        TableWithColumns::new(Table::Memory, memory::ctl_data(), Some(memory::ctl_filter())),
+        TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter())),
         None,
     )
 }
