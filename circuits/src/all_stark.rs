@@ -13,6 +13,7 @@ use crate::builtins::cmp::cmp_stark::{CmpStark, self};
 use crate::builtins::rangecheck::rangecheck_stark::{RangeCheckStark, self};
 use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{BitwiseFixedStark, self};
 use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{RangecheckFixedStark, self};
+use crate::program::program_stark::{ProgramStark, self};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory;
@@ -71,11 +72,15 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
 pub enum Table {
     Cpu = 0,
     Memory = 1,
+    // builtins
     Bitwise = 2,
     Cmp = 3,
     RangeCheck = 4,
+    // fixed table
     BitwiseFixed = 5,
     RangecheckFixed = 6,
+    // program table
+    Program = 7,
 }
 
 pub(crate) const NUM_TABLES: usize = Table::RangeCheck as usize + 1;
@@ -87,6 +92,7 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
 }
 
 fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
+
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
@@ -117,6 +123,7 @@ fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
 
 // Cross_Lookup_Table(looking_table, looked_table)
 fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
+
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
@@ -144,6 +151,7 @@ fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
 
 // Cross_Lookup_Table(looking_table, looked_table)
 fn ctl_bitwise_rangecheck<F: Field>() -> CrossTableLookup<F> {
+
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::RangecheckFixed,
@@ -160,6 +168,7 @@ fn ctl_bitwise_rangecheck<F: Field>() -> CrossTableLookup<F> {
 
 // Cross_Lookup_Table(looking_table, looked_table)
 fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
+
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::BitwiseFixed,
@@ -177,6 +186,7 @@ fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
 
 // add CMP cross lookup instance
 fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
+
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
@@ -192,6 +202,7 @@ fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
 }
 
 fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
+
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::RangeCheck,
@@ -209,6 +220,7 @@ fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
 
 // add Rangecheck cross lookup instance
 fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
+
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
@@ -224,6 +236,7 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
 }
 
 fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
+
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::RangecheckFixed,
@@ -236,4 +249,52 @@ fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
             Some(rangecheck_stark::ctl_filter_with_rangecheck_fixed())),
         None,
     )
+}
+
+// check the correct program with lookup
+
+// Program table
+// +-----+--------------+-------+----------+
+// | PC  |      INS     |  IMM  | COMPRESS | 
+// +-----+--------------+-------+----------+
+// +-----+--------------+-------+----------+
+// |  1  |  0x********  |  U32  |   Field  | 
+// +-----+--------------+-------+----------+
+// +-----+--------------+-------+----------+
+// |  2  |  0x********  |  U32  |   Field  | 
+// +-----+--------------+-------+----------++
+// +-----+--------------+-------+----------+
+// |  3  |  0x********  |  U32  |   Field  | 
+// +-----+--------------+-------+----------+
+
+// CPU table
+// +-----+-----+--------------+-------+----------+
+// | ... | PC  |      INS     |  IMM  | COMPRESS | 
+// +-----+-----+--------------+-------+----------+
+// +-----+-----+--------------+-------+----------+
+// | ... |  1  |  0x********  |  U32  |   Field  | 
+// +-----+-----+--------------+-------+----------+
+// +-----+-----+--------------+-------+----------+
+// | ... |  2  |  0x********  |  U32  |   Field  | 
+// +-----+-----+--------------+-------+----------++
+// +-----+-----+--------------+-------+----------+
+// | ... |  3  |  0x********  |  U32  |   Field  | 
+// +-----+-----+--------------+-------+----------+
+
+// Note that COMPRESS will be computed by vector lookup argument protocol
+fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F>{
+
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_program(),
+            Some(cpu_stark::ctl_filter_with_program()),
+        )],
+        TableWithColumns::new(
+            Table::Program, 
+            program_stark::ctl_data_with_cpu(), 
+            Some(program_stark::ctl_filter_with_cpu())),
+        None,
+    )
+
 }
