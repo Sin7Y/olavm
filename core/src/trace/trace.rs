@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::program::instruction::{Instruction, Opcode};
 use crate::program::REGISTER_NUM;
 use crate::utils::split_limbs_from_field;
@@ -226,7 +227,7 @@ pub struct ComparisonRow {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
-    pub raw_instructions: Vec<Instruction>,
+    pub raw_instructions: HashMap<u64, Instruction>,
     pub raw_binary_instructions: Vec<(String, Option<String>)>,
     // todo need limit the trace size
     pub exec: Vec<Step>,
