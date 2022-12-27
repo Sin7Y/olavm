@@ -35,6 +35,15 @@ pub(crate) fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let cmp_trace = trace_rows_to_poly_values(cmp_rows);
     let rangecheck_rows: Vec<[F; 1]> = vec![];
     let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-    let public_values = PublicValues{};
-    ([cpu_trace, memory_trace, bitwise_trace, cmp_trace, rangecheck_trace], public_values)
+    let public_values = PublicValues {};
+    (
+        [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ],
+        public_values,
+    )
 }
