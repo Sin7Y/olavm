@@ -20,3 +20,4 @@ pub mod vars;
 pub mod verifier;
 pub mod builtins;
 pub mod fixed_table;
+pub mod program;
