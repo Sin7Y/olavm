@@ -1,8 +1,11 @@
-
 use crate::builtins::rangecheck::columns::*;
 use crate::columns::*;
 use itertools::Itertools;
 //use crate::var::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::cross_table_lookup::Column;
+use crate::stark::Stark;
+use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
@@ -10,10 +13,6 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
-use crate::stark::Stark;
-use crate::cross_table_lookup::Column;
 use std::marker::PhantomData;
 use std::ops::Range;
 
@@ -23,12 +22,10 @@ pub struct RangeCheckStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> RangeCheckStark<F, D> {
-    
     const BASE: usize = 1 << 16;
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckStark<F, D> {
-
     const COLUMNS: usize = COL_NUM_RC;
 
     // Split U32 into 2 16bit limbs
@@ -51,58 +48,47 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
         let sum = limb_lo.add(limb_hi.mul(base));
 
         yield_constr.constraint(val - sum);
-
     }
 
     fn eval_ext_circuit(
-            &self,
-            builder: &mut CircuitBuilder<F, D>,
-            vars: StarkEvaluationTargets<D, { COL_NUM_RC }>,
-            yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-        ) {
-        
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+        vars: StarkEvaluationTargets<D, { COL_NUM_RC }>,
+        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+    ) {
     }
 
     fn constraint_degree(&self) -> usize {
         1
     }
-
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
-
     let mut res = Column::singles([VAL]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
-
     Column::single(TAG)
-    
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
-
     let mut res = Column::singles([VAL]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-
     Column::single(TAG)
-
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
-
     let mut res = Column::singles([LIMB_LO, LIMB_HI]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_rangecheck_fixed<F: Field>() -> Column<F> {
-
     Column::one()
 }
