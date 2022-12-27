@@ -14,6 +14,7 @@ use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{self, BitwiseFixedStark};
 use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{self, RangecheckFixedStark};
 use crate::memory::{ctl_data as mem_ctl_data, ctl_filter as mem_ctl_filter, MemoryStark};
+use crate::program::program_stark::{self, ProgramStark};
 use crate::stark::Stark;
 
 #[derive(Clone)]
@@ -69,11 +70,15 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
 pub enum Table {
     Cpu = 0,
     Memory = 1,
+    // builtins
     Bitwise = 2,
     Cmp = 3,
     RangeCheck = 4,
+    // fixed table
     BitwiseFixed = 5,
     RangecheckFixed = 6,
+    // program table
+    Program = 7,
 }
 
 pub(crate) const NUM_TABLES: usize = Table::RangeCheck as usize + 1;
@@ -236,6 +241,53 @@ fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
             Table::RangeCheck,
             rangecheck_stark::ctl_data_with_rangecheck_fixed(),
             Some(rangecheck_stark::ctl_filter_with_rangecheck_fixed()),
+        ),
+        None,
+    )
+}
+
+// check the correct program with lookup
+
+// Program table
+// +-----+--------------+-------+----------+
+// | PC  |      INS     |  IMM  | COMPRESS |
+// +-----+--------------+-------+----------+
+// +-----+--------------+-------+----------+
+// |  1  |  0x********  |  U32  |   Field  |
+// +-----+--------------+-------+----------+
+// +-----+--------------+-------+----------+
+// |  2  |  0x********  |  U32  |   Field  |
+// +-----+--------------+-------+----------++
+// +-----+--------------+-------+----------+
+// |  3  |  0x********  |  U32  |   Field  |
+// +-----+--------------+-------+----------+
+
+// CPU table
+// +-----+-----+--------------+-------+----------+
+// | ... | PC  |      INS     |  IMM  | COMPRESS |
+// +-----+-----+--------------+-------+----------+
+// +-----+-----+--------------+-------+----------+
+// | ... |  1  |  0x********  |  U32  |   Field  |
+// +-----+-----+--------------+-------+----------+
+// +-----+-----+--------------+-------+----------+
+// | ... |  2  |  0x********  |  U32  |   Field  |
+// +-----+-----+--------------+-------+----------++
+// +-----+-----+--------------+-------+----------+
+// | ... |  3  |  0x********  |  U32  |   Field  |
+// +-----+-----+--------------+-------+----------+
+
+// Note that COMPRESS will be computed by vector lookup argument protocol
+fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_program(),
+            Some(cpu_stark::ctl_filter_with_program()),
+        )],
+        TableWithColumns::new(
+            Table::Program,
+            program_stark::ctl_data_with_cpu(),
+            Some(program_stark::ctl_filter_with_cpu()),
         ),
         None,
     )

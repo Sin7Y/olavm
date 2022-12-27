@@ -68,6 +68,16 @@ pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
     Column::single(COL_S_RC)
 }
 
+// get the data source for Rangecheck in Cpu table
+pub fn ctl_data_with_program<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles([COL_PC, COL_INST, COL_IMM_VAL]).collect_vec();
+    res
+}
+
+pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
+    Column::one()
+}
+
 #[derive(Copy, Clone, Default)]
 pub struct CpuStark<F, const D: usize> {
     pub f: PhantomData<F>,
