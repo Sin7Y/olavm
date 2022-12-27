@@ -13,6 +13,7 @@ mod get_challenges;
 pub mod lookup;
 pub mod memory;
 pub mod permutation;
+pub mod program;
 pub mod proof;
 pub mod prover;
 pub mod stark;
