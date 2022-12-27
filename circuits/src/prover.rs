@@ -21,10 +21,12 @@ use crate::all_stark::{AllStark, Table, NUM_TABLES};
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
+use crate::columns::NUM_CPU_COLS;
 use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{cross_table_lookup_data, CtlCheckVars, CtlData};
+use crate::generation::{generate_traces, GenerationInputs};
 use crate::memory::MemoryStark;
 use crate::permutation::PermutationCheckVars;
 use crate::permutation::{
@@ -34,9 +36,7 @@ use crate::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
 use crate::stark::Stark;
 use crate::vanishing_poly::eval_vanishing_poly;
 use crate::vars::StarkEvaluationVars;
-use crate::generation::{generate_traces, GenerationInputs};
 use core::trace::trace::Trace;
-use crate::columns::NUM_CPU_COLS;
 
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(
@@ -162,7 +162,13 @@ where
         timing,
     )?;
 
-    let stark_proofs = [cpu_proof, memory_proof, bitwise_proof, cmp_proof, rangecheck_proof];
+    let stark_proofs = [
+        cpu_proof,
+        memory_proof,
+        bitwise_proof,
+        cmp_proof,
+        rangecheck_proof,
+    ];
 
     Ok(AllProof {
         stark_proofs,

@@ -1,4 +1,7 @@
 use crate::builtins::rangecheck_small_limbs::columns::*;
+use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::stark::Stark;
+use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
@@ -6,9 +9,6 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::stark::Stark;
-use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use std::marker::PhantomData;
 use std::ops::Range;
 
@@ -97,21 +97,21 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
 #[cfg(test)]
 mod tests {
     use crate::builtins::range_check_u32::RangeCheckU32Stark;
+    use crate::config::StarkConfig;
+    use crate::prover::prove;
+    use crate::util::trace_rows_to_poly_values;
+    use crate::verifier::verify_proof;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::fri::reduction_strategies::FriReductionStrategy;
     use plonky2::fri::FriConfig;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
-    use crate::config::StarkConfig;
-    use crate::prover::prove;
-    use crate::util::trace_rows_to_poly_values;
-    use crate::verifier::verify_proof;
 
     #[test]
-    fn test_range_check_u32_stark() 
+    fn test_range_check_u32_stark()
     // TODO:
     {
-    // -> anyhow::Result<()> {
+        // -> anyhow::Result<()> {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;

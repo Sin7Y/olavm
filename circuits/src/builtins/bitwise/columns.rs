@@ -1,4 +1,3 @@
-
 use std::ops::Range;
 // 2022-12-15: written by xb
 
@@ -23,25 +22,25 @@ Constraints as follows:
 // 1 => AND TABLE
 // 2 => OR  TABLE
 // 3 => XOR TABLE
-pub(crate) const TAG: usize  = 0;
+pub(crate) const TAG: usize = 0;
 
-pub(crate) const OP0: usize  = TAG + 1;
-pub(crate) const OP1: usize  = OP0 + 1;
-pub(crate) const RES: usize  = OP1 + 1;
+pub(crate) const OP0: usize = TAG + 1;
+pub(crate) const OP1: usize = OP0 + 1;
+pub(crate) const RES: usize = OP1 + 1;
 
-pub(crate) const OP0_LIMBS: Range<usize>  = RES..RES + 4;
+pub(crate) const OP0_LIMBS: Range<usize> = RES..RES + 4;
 //pub(crate) const OP0_LIMB_1: usize  = OP0_LIMB_0 + 1;
 //pub(crate) const OP0_LIMB_2: usize  = OP0_LIMB_1 + 1;
 //pub(crate) const OP0_LIMB_3: usize  = OP0_LIMB_2 + 1;
 
-pub(crate) const OP1_LIMBS: Range<usize>  = OP0_LIMBS.end..OP0_LIMBS.end + 4;
+pub(crate) const OP1_LIMBS: Range<usize> = OP0_LIMBS.end..OP0_LIMBS.end + 4;
 //pub(crate) const OP1_LIMB_1: usize  = OP1_LIMB_0 + 1;
 //pub(crate) const OP1_LIMB_2: usize  = OP1_LIMB_1 + 1;
 //pub(crate) const OP1_LIMB_3: usize  = OP1_LIMB_2 + 1;
 
-pub(crate) const RES_LIMBS: Range<usize>  = OP1_LIMBS.end..OP1_LIMBS.end + 4;
+pub(crate) const RES_LIMBS: Range<usize> = OP1_LIMBS.end..OP1_LIMBS.end + 4;
 ///pub(crate) const RES_LIMB_1: usize  = RES_LIMB_0 + 1;
 //pub(crate) const RES_LIMB_2: usize  = RES_LIMB_1 + 1;
 //pub(crate) const RES_LIMB_3: usize  = RES_LIMB_2 + 1;
 
-pub(crate) const COL_NUM_BITWISE: usize  = RES_LIMBS.end + 1; // 3 + 3 * 4 = 15
+pub(crate) const COL_NUM_BITWISE: usize = RES_LIMBS.end + 1; // 3 + 3 * 4 = 15

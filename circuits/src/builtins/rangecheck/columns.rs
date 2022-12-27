@@ -22,10 +22,10 @@ Constraints as follows:
 //Identify different Rangecheck TABLE
 // 0 => Main TABLE
 // 1 => GTE  TABLE
-pub(crate) const TAG: usize  = 0;
+pub(crate) const TAG: usize = 0;
 
-pub(crate) const VAL: usize  = TAG + 1;
-pub(crate) const LIMB_LO: usize  = VAL + 1;
-pub(crate) const LIMB_HI: usize  = LIMB_LO + 1;
+pub(crate) const VAL: usize = TAG + 1;
+pub(crate) const LIMB_LO: usize = VAL + 1;
+pub(crate) const LIMB_HI: usize = LIMB_LO + 1;
 
-pub(crate) const COL_NUM_RC: usize  = LIMB_HI + 1; //4
+pub(crate) const COL_NUM_RC: usize = LIMB_HI + 1; //4

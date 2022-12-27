@@ -1,7 +1,10 @@
-
 use crate::builtins::bitwise::columns::*;
 use itertools::Itertools;
 //use crate::var::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::cross_table_lookup::Column;
+use crate::stark::Stark;
+use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
@@ -9,28 +12,19 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
-use crate::stark::Stark;
-use crate::cross_table_lookup::Column;
 use std::marker::PhantomData;
-use std::ops::{Range, Add};
+use std::ops::{Add, Range};
 
 #[derive(Copy, Clone, Default)]
 pub struct BitwiseStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
 
-
 impl<F: RichField, const D: usize> BitwiseStark<F, D> {
-
     const BASE: usize = 1 << 8;
-
 }
 
-
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<F, D> {
-
     const COLUMNS: usize = COL_NUM_BITWISE;
 
     fn eval_packed_generic<FE, P, const D2: usize>(
@@ -48,52 +42,48 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
         // sumcheck for op0, op1, res
         // op0 = Sum(op0_limbs_i * 2^(8*i))
         let op0_limbs: Vec<_> = vars.local_values[OP0_LIMBS].to_vec();
-        let computed_sum = reduce_with_powers(&op0_limbs, P::Scalar::from_canonical_usize(Self::BASE));
+        let computed_sum =
+            reduce_with_powers(&op0_limbs, P::Scalar::from_canonical_usize(Self::BASE));
         yield_constr.constraint(computed_sum - op0);
 
-        // op1 = Sum(op1_limbs_i * 2^(8*i))       
+        // op1 = Sum(op1_limbs_i * 2^(8*i))
         let op1_limbs: Vec<_> = vars.local_values[OP1_LIMBS].to_vec();
-        let computed_sum = reduce_with_powers(&op1_limbs, P::Scalar::from_canonical_usize(Self::BASE));
+        let computed_sum =
+            reduce_with_powers(&op1_limbs, P::Scalar::from_canonical_usize(Self::BASE));
         yield_constr.constraint(computed_sum - op1);
 
         // res = Sum(res_limbs_i * 2^(8*i))
         let res_limbs: Vec<_> = vars.local_values[RES_LIMBS].to_vec();
-        let computed_sum = reduce_with_powers(&res_limbs, P::Scalar::from_canonical_usize(Self::BASE));
+        let computed_sum =
+            reduce_with_powers(&res_limbs, P::Scalar::from_canonical_usize(Self::BASE));
         yield_constr.constraint(computed_sum - res);
-
     }
 
     fn eval_ext_circuit(
-            &self,
-            builder: &mut CircuitBuilder<F, D>,
-            vars: StarkEvaluationTargets<D, { COL_NUM_BITWISE }>,
-            yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-        ) {
-        
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+        vars: StarkEvaluationTargets<D, { COL_NUM_BITWISE }>,
+        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+    ) {
     }
 
     fn constraint_degree(&self) -> usize {
         1
     }
-
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
-
     let mut res = Column::singles([OP0, OP1, RES]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-
     Column::one()
 }
 
-
 // Get the column info for Cross_Lookup<Rangecheck_Fixed_table, Bitwise_table>
 pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
-
     let mut res = Column::singles(OP0_LIMBS).collect_vec();
     res.extend(Column::singles(OP1_LIMBS).collect_vec());
     res.extend(Column::singles(RES_LIMBS).collect_vec());
@@ -102,16 +92,29 @@ pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_rangecheck_fixed<F: Field>() -> Column<F> {
-
     Column::one()
 }
 
 // Get the column info for Cross_Lookup<Bitwise_Fixed_table, Bitwise_table>
 pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
-
-    let mut res = Column::singles([OP0_LIMBS.start, OP1_LIMBS.start, RES_LIMBS.start]).collect_vec();
-    res.extend(Column::singles([OP0_LIMBS.start.add(1), OP1_LIMBS.start.add(1), RES_LIMBS.start.add(1)]).collect_vec());
-    res.extend(Column::singles([OP0_LIMBS.start.add(2), OP1_LIMBS.start.add(2), RES_LIMBS.start.add(2)]).collect_vec());
+    let mut res =
+        Column::singles([OP0_LIMBS.start, OP1_LIMBS.start, RES_LIMBS.start]).collect_vec();
+    res.extend(
+        Column::singles([
+            OP0_LIMBS.start.add(1),
+            OP1_LIMBS.start.add(1),
+            RES_LIMBS.start.add(1),
+        ])
+        .collect_vec(),
+    );
+    res.extend(
+        Column::singles([
+            OP0_LIMBS.start.add(2),
+            OP1_LIMBS.start.add(2),
+            RES_LIMBS.start.add(2),
+        ])
+        .collect_vec(),
+    );
     res.extend(Column::singles([OP0_LIMBS.end, OP1_LIMBS.end, RES_LIMBS.end]).collect_vec());
     res.extend(Column::singles([TAG]));
 
@@ -119,7 +122,5 @@ pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
-
     Column::one()
 }
-

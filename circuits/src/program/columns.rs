@@ -2,23 +2,23 @@
 
 /* Program Table construction as follows:
 // +-----+--------------+-------+----------+
-// | PC  |      INS     |  IMM  | COMPRESS | 
+// | PC  |      INS     |  IMM  | COMPRESS |
 // +-----+--------------+-------+----------+
 // +-----+--------------+-------+----------+
-// |  1  |  0x********  |  U32  |   Field  | 
+// |  1  |  0x********  |  U32  |   Field  |
 // +-----+--------------+-------+----------+
 // +-----+--------------+-------+----------+
-// |  2  |  0x********  |  U32  |   Field  | 
+// |  2  |  0x********  |  U32  |   Field  |
 // +-----+--------------+-------+----------++
 // +-----+--------------+-------+----------+
-// |  3  |  0x********  |  U32  |   Field  | 
+// |  3  |  0x********  |  U32  |   Field  |
 // +-----+--------------+-------+----------+
 */
 
-pub(crate) const PC: usize  = 0;
+pub(crate) const PC: usize = 0;
 
-pub(crate) const INS: usize  = PC + 1;
+pub(crate) const INS: usize = PC + 1;
 
-pub(crate) const IMM: usize  = INS + 1; 
+pub(crate) const IMM: usize = INS + 1;
 
-pub(crate) const COL_NUM: usize  = IMM + 1; // 3
+pub(crate) const COL_NUM: usize = IMM + 1; // 3
