@@ -1,3 +1,7 @@
+#![allow(unused)]
+#![allow(incomplete_features)]
+#![feature(generic_const_exprs)] 
+
 use crate::builtins::poseidon::columns::*;
 use crate::columns::*;
 use itertools::Itertools;
@@ -99,7 +103,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
-        P: PackedField<Scalar = FE>,
+        P: PackedField<Scalar = FE> + plonky2::hash::poseidon::Poseidon,
+        [(); Self::SPONGE_WIDTH]: Sized,
     {
         // Assert that `swap` is binary.
         let swap = vars.local_values[SWAP];
@@ -115,7 +120,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
         }
 
         // Compute the possibly-swapped input layer.
-        let mut state = [F::ZERO; Self::SPONGE_WIDTH];
+        let mut state = [P::ZEROS; Self::SPONGE_WIDTH];
         for i in 0..4 {
             let delta_i = vars.local_values[Self::wire_delta(i)];
             let input_lhs = Self::wire_input(i);
@@ -131,7 +136,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
 
         // First set of full rounds.
         for r in 0..Self::HALF_N_FULL_ROUNDS {
-            <F::Scalar as Poseidon>::constant_layer(&mut state, round_ctr);
+            Poseidon::constant_layer(&mut state, round_ctr);
             if r != 0 {
                 for i in 0..Self::SPONGE_WIDTH {
                     let sbox_in = vars.local_values[Self::wire_full_sbox_0(r, i)];
@@ -139,37 +144,37 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
                     state[i] = sbox_in;
                 }
             }
-            <F as Poseidon>::sbox_layer(&mut state);
-            state = <F as Poseidon>::mds_layer(&state);
+            Poseidon::sbox_layer(&mut state);
+            state = Poseidon::mds_layer(&state);
             round_ctr += 1;
         }
 
         // Partial rounds.
-        <F as Poseidon>::partial_first_constant_layer(&mut state);
-        state = <F as Poseidon>::mds_partial_layer_init(&state);
+        Poseidon::partial_first_constant_layer(&mut state);
+        state = Poseidon::mds_partial_layer_init(&state);
         for r in 0..(Self::N_PARTIAL_ROUNDS - 1) {
             let sbox_in = vars.local_values[Self::wire_partial_sbox(r)];
             yield_constr.constraint(state[0] - sbox_in);
-            state[0] = <F as Poseidon>::sbox_monomial(sbox_in);
-            state[0] += F::from_canonical_u64(wire_partial_sbox(r));
-            state = <F as Poseidon>::mds_partial_layer_fast(&state, r);
+            state[0] = Poseidon::sbox_monomial(sbox_in);
+            state[0] += P::from_canonical_usize(Self::wire_partial_sbox(r));
+            state = Poseidon::mds_partial_layer_fast(&state, r);
         }
         let sbox_in = vars.local_values[Self::wire_partial_sbox(Self::N_PARTIAL_ROUNDS - 1)];
         yield_constr.constraint(state[0] - sbox_in);
-        state[0] = <F as Poseidon>::sbox_monomial(sbox_in);
-        state = <F as Poseidon>::mds_partial_layer_fast(&state, Self::N_PARTIAL_ROUNDS - 1);
+        state[0] = Poseidon::sbox_monomial(sbox_in);
+        state = Poseidon::mds_partial_layer_fast(&state, Self::N_PARTIAL_ROUNDS - 1);
         round_ctr += Self::N_PARTIAL_ROUNDS;
 
         // Second set of full rounds.
         for r in 0..Self::HALF_N_FULL_ROUNDS {
-            <F as Poseidon>::constant_layer(&mut state, round_ctr);
+            Poseidon::constant_layer(&mut state, round_ctr);
             for i in 0..Self::SPONGE_WIDTH {
                 let sbox_in = vars.local_values[Self::wire_full_sbox_1(r, i)];
                 yield_constr.constraint(state[i] - sbox_in);
                 state[i] = sbox_in;
             }
-            <F as Poseidon>::sbox_layer(&mut state);
-            state = <F as Poseidon>::mds_layer(&state);
+            Poseidon::sbox_layer(&mut state);
+            state = Poseidon::mds_layer(&state);
             round_ctr += 1;
         }
 
@@ -192,35 +197,5 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
 
 }
 
-
-// Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([VAL]).collect_vec();
-    res
-}
-
-pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
-    Column::single(TAG)
-}
-
-// Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([VAL]).collect_vec();
-    res
-}
-
-pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::single(TAG)
-}
-
-// Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([LIMB_LO, LIMB_HI]).collect_vec();
-    res
-}
-
-pub fn ctl_filter_with_rangecheck_fixed<F: Field>() -> Column<F> {
-    Column::one()
-}
 
 
