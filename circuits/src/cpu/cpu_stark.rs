@@ -1,3 +1,10 @@
+use core::program::instruction;
+
+use itertools::Itertools;
+use plonky2::field::types::Field;
+
+use crate::cross_table_lookup::Column;
+
 use {
     super::*,
     crate::columns::*,
@@ -12,6 +19,70 @@ use {
     plonky2::plonk::circuit_builder::CircuitBuilder,
     std::marker::PhantomData,
 };
+
+pub fn ctl_data_memory<F: Field>() -> Vec<Column<F>> {
+    // TODO:
+    [].to_vec()
+}
+
+pub fn ctl_filter_memory<F: Field>() -> Column<F> {
+    // TODO:
+    Column::single(0)
+}
+
+
+// get the data source for bitwise in Cpu table
+pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec();
+    res
+}
+
+
+pub fn ctl_filter_with_bitwise_and<F: Field>() -> Column<F> {
+    
+    Column::single(COL_S_AND)
+}
+
+
+pub fn ctl_filter_with_bitwise_or<F: Field>() -> Column<F> {
+    
+    Column::single(COL_S_OR)
+}
+
+
+pub fn ctl_filter_with_bitwise_xor<F: Field>() -> Column<F> {
+    
+    Column::single(COL_S_XOR)
+}
+
+// get the data source for CMP in Cpu table
+pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec();
+    res
+}
+
+
+pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
+    
+    Column::single(COL_S_GTE)
+
+}
+
+
+// get the data source for Rangecheck in Cpu table
+pub fn ctl_data_with_rangecheck<F: Field>() -> Vec<Column<F>> {
+
+    let mut res = Column::singles([COL_OP1]).collect_vec();
+    res
+}
+
+
+pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
+    
+   Column::single(COL_S_RC)
+}
 
 #[derive(Copy, Clone, Default)]
 pub struct CpuStark<F, const D: usize> {

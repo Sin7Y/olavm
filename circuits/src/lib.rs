@@ -19,3 +19,5 @@ pub mod util;
 pub mod vanishing_poly;
 pub mod vars;
 pub mod verifier;
+pub mod builtins;
+pub mod fixed_table;
