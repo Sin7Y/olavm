@@ -25,7 +25,6 @@ use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{cross_table_lookup_data, CtlCheckVars, CtlData};
-use crate::generation::{generate_traces, GenerationInputs};
 use crate::memory::MemoryStark;
 use crate::permutation::PermutationCheckVars;
 use crate::permutation::{
@@ -35,12 +34,15 @@ use crate::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
 use crate::stark::Stark;
 use crate::vanishing_poly::eval_vanishing_poly;
 use crate::vars::StarkEvaluationVars;
+use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
+use core::trace::trace::Trace;
+use crate::columns::NUM_CPU_COLS;
 
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(
     all_stark: &AllStark<F, D>,
     config: &StarkConfig,
-    inputs: GenerationInputs,
+    trace: &Trace,
     timing: &mut TimingTree,
 ) -> Result<AllProof<F, C, D>>
 where

@@ -7,7 +7,6 @@ use plonky2::hash::hash_types::RichField;
 use crate::config::StarkConfig;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::stark::Stark;
-
 use crate::builtins::bitwise::bitwise_stark::{BitwiseStark, self};
 use crate::builtins::cmp::cmp_stark::{CmpStark, self};
 use crate::builtins::rangecheck::rangecheck_stark::{RangeCheckStark, self};
@@ -15,7 +14,6 @@ use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{BitwiseFixedStark, 
 use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{RangecheckFixedStark, self};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::memory;
 use crate::memory::MemoryStark;
 
 #[derive(Clone)]
