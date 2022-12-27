@@ -258,12 +258,12 @@ impl Process {
                 }
 
                 let instruction = self.decode_instruction(txt_instruction);
-                program.trace.raw_instructions.push(instruction);
+                program.trace.raw_instructions.insert(pc, instruction);
                 pc += step;
             } else {
                 break;
             }
-            if pc >= (program.instructions.len() as u64 - 1) {
+            if pc > (program.instructions.len() as u64 - 1) {
                 break;
             }
         }
