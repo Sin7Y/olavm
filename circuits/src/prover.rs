@@ -34,7 +34,7 @@ use crate::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
 use crate::stark::Stark;
 use crate::vanishing_poly::eval_vanishing_poly;
 use crate::vars::StarkEvaluationVars;
-use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
+use crate::generation::{generate_traces, GenerationInputs};
 use core::trace::trace::Trace;
 use crate::columns::NUM_CPU_COLS;
 
@@ -42,7 +42,7 @@ use crate::columns::NUM_CPU_COLS;
 pub fn prove<F, C, const D: usize>(
     all_stark: &AllStark<F, D>,
     config: &StarkConfig,
-    trace: &Trace,
+    inputs: GenerationInputs,
     timing: &mut TimingTree,
 ) -> Result<AllProof<F, C, D>>
 where
