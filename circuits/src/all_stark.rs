@@ -14,7 +14,7 @@ use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{BitwiseFixedStark, 
 use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{RangecheckFixedStark, self};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::memory::MemoryStark;
+use crate::memory::{MemoryStark, ctl_data as mem_ctl_data, ctl_filter as mem_ctl_filter};
 
 #[derive(Clone)]
 pub struct AllStark<F: RichField + Extendable<D>, const D: usize> {
@@ -91,7 +91,7 @@ fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
             cpu_stark::ctl_data_memory(),
             Some(cpu_stark::ctl_filter_memory()),
         )],
-        TableWithColumns::new(Table::Memory, memory::ctl_data(), Some(memory::ctl_filter())),
+        TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter())),
         None,
     )
 }
