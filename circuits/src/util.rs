@@ -52,65 +52,65 @@ pub(crate) fn generate_cpu_trace<F: RichField>(
 
             // Selectors of opcode related columns.
             match s.opcode.0 {
-                o if u64::from(1_u8 << Opcode::ADD as u8) == o => {
+                o if u64::from(1_u64 << Opcode::ADD as u8) == o => {
                     row[COL_S_ADD] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::MUL as u8) == o => {
+                o if u64::from(1_u64 << Opcode::MUL as u8) == o => {
                     row[COL_S_MUL] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::EQ as u8) == o => {
+                o if u64::from(1_u64 << Opcode::EQ as u8) == o => {
                     row[COL_S_EQ] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::ASSERT as u8) == o => {
+                o if u64::from(1_u64 << Opcode::ASSERT as u8) == o => {
                     row[COL_S_ASSERT] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::MOV as u8) == o => {
+                o if u64::from(1_u64 << Opcode::MOV as u8) == o => {
                     row[COL_S_MOV] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::JMP as u8) == o => {
+                o if u64::from(1_u64 << Opcode::JMP as u8) == o => {
                     row[COL_S_JMP] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::CJMP as u8) == o => {
+                o if u64::from(1_u64 << Opcode::CJMP as u8) == o => {
                     row[COL_S_CJMP] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::CALL as u8) == o => {
+                o if u64::from(1_u64 << Opcode::CALL as u8) == o => {
                     row[COL_S_CALL] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::RET as u8) == o => {
+                o if u64::from(1_u64 << Opcode::RET as u8) == o => {
                     row[COL_S_RET] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::MLOAD as u8) == o => {
+                o if u64::from(1_u64 << Opcode::MLOAD as u8) == o => {
                     row[COL_S_MLOAD] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::MSTORE as u8) == o => {
+                o if u64::from(1_u64 << Opcode::MSTORE as u8) == o => {
                     row[COL_S_MSTORE] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::END as u8) == o => {
+                o if u64::from(1_u64 << Opcode::END as u8) == o => {
                     row[COL_S_END] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::RANGE_CHECK as u8) == o => {
+                o if u64::from(1_u64 << Opcode::RANGE_CHECK as u8) == o => {
                     row[COL_S_RC] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::AND as u8) == o => {
+                o if u64::from(1_u64 << Opcode::AND as u8) == o => {
                     row[COL_S_AND] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::OR as u8) == o => {
+                o if u64::from(1_u64 << Opcode::OR as u8) == o => {
                     row[COL_S_OR] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::XOR as u8) == o => {
+                o if u64::from(1_u64 << Opcode::XOR as u8) == o => {
                     row[COL_S_XOR] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::NOT as u8) == o => {
+                o if u64::from(1_u64 << Opcode::NOT as u8) == o => {
                     row[COL_S_NOT] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::NEQ as u8) == o => {
+                o if u64::from(1_u64 << Opcode::NEQ as u8) == o => {
                     row[COL_S_NEQ] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u8 << Opcode::GTE as u8) == o => {
+                o if u64::from(1_u64 << Opcode::GTE as u8) == o => {
                     row[COL_S_GTE] = F::from_canonical_u64(1)
                 }
-                // o if u64::from(1_u8 << Opcode::PSDN as u8) == o => row[COL_S_PSDN] = F::from_canonical_u64(1),
-                // o if u64::from(1_u8 << Opcode::ECDSA as u8) == o => row[COL_S_ECDSA] = F::from_canonical_u64(1),
+                // o if u64::from(1_u64 << Opcode::PSDN as u8) == o => row[COL_S_PSDN] = F::from_canonical_u64(1),
+                // o if u64::from(1_u64 << Opcode::ECDSA as u8) == o => row[COL_S_ECDSA] = F::from_canonical_u64(1),
                 _ => panic!("unspported opcode!"),
             }
             row
