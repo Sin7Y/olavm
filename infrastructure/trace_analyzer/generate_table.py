@@ -14,8 +14,8 @@ class JsonMainTraceColumnType(Enum):
     OP1_IMM = 'op1_imm'
     OPCODE = 'opcode'
     IMM_VALUE = 'immediate_data'
+    ASM = 'asm'
     REG_SELECTOR = 'register_selector'
-
 
 class MainTraceColumnType(Enum):
     CLK = 'clk'
@@ -35,6 +35,7 @@ class MainTraceColumnType(Enum):
     OP1_IMM = 'op1_imm'
     OPCODE = 'opcode'
     IMM_VALUE = 'imm_val'
+    ASM = 'asm'
 
     OP0 = 'op0'
     OP1 = 'op1'
@@ -120,7 +121,7 @@ def main():
 
     worksheet = workbook.add_worksheet("MainTrace")
 
-    print(trace_json["exec"][1]["regs"])
+    # print(trace_json["exec"][1]["regs"])
 
     # MainTrace
     col = 0
@@ -160,8 +161,12 @@ def main():
                 for reg in sel_dst_regs:
                     worksheet.write(row_index, col, reg)
                     col += 1
+            elif data.value == 'asm':
+                # print(trace_json["raw_instructions"]['{0}'.format(row["pc"])])
+                worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
+                col += 1
             else:
-                if data.value == "instruction" or data.value == "opcode":
+                if data.value == "instruction" or data.value == "opcode" or data.value == "aux0":
                     worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}/2^32,8),DEC2HEX(MOD({0},2^32),8))'.format(row[data.value]))
                 else:
                     worksheet.write(row_index, col, row[data.value])
