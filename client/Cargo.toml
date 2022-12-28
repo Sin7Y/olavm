@@ -24,10 +24,8 @@ executor = { package = "executor", path = "../executor", version = "0.1.0", defa
 circuits = { package = "circuits", path = "../circuits", version = "0.1.0", default-features = false }
 serde = {version = "1.0.117", optional = true }
 serde_derive = {version = "1.0.117", optional = true }
-# serde_json = {version = "1.0.59", optional = true }
-serde_json = "1"
+serde_json = {version = "1.0.59", optional = true }
 core = { package = "core", path = "../core", version = "0.1.0", default-features = false }
-plonky2 = { path = "../plonky2/plonky2"}
 
 [dev-dependencies]
 sha2 = "0.10.2"
