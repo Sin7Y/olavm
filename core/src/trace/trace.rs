@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::program::instruction::{Instruction, Opcode};
 use crate::program::REGISTER_NUM;
 use crate::utils::split_limbs_from_field;
@@ -6,6 +5,7 @@ use crate::utils::split_u16_limbs_from_field;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub const OPCODE_END_SEL_INDEX: usize = 0;
 pub const OPCODE_MSTORE_SEL_INDEX: usize = OPCODE_END_SEL_INDEX + 1;
