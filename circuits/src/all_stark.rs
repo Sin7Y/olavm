@@ -86,7 +86,7 @@ pub(crate) const NUM_TABLES: usize = Table::RangeCheck as usize + 1;
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     // TODO:
-    vec![ctl_memory()]
+    vec![]
 }
 
 fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
@@ -291,4 +291,215 @@ fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
         ),
         None,
     )
+}
+
+mod tests {
+    use std::borrow::BorrowMut;
+
+    use anyhow::Result;
+    use ethereum_types::U256;
+    use itertools::Itertools;
+    // use crate::cross_table_lookup::testutils::check_ctls;
+    use crate::verifier::verify_proof;
+    use plonky2::field::polynomial::PolynomialValues;
+    use plonky2::field::types::{Field, PrimeField64};
+    use plonky2::iop::witness::PartialWitness;
+    use plonky2::plonk::circuit_builder::CircuitBuilder;
+    use plonky2::plonk::circuit_data::{CircuitConfig, VerifierCircuitData};
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::util::timing::TimingTree;
+    use rand::{thread_rng, Rng};
+    use executor::Process;
+    use core::program::Program;
+    use core::trace::trace::Trace;
+    use log::debug;
+    // use serde_json::Value;
+    use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
+    use crate::all_stark::{AllStark, NUM_TABLES};
+    use crate::proof::{AllProof, PublicValues};
+    use crate::config::StarkConfig;
+    use crate::cpu::cpu_stark::CpuStark;
+    use crate::prover::prove_with_traces;
+
+    const D: usize = 2;
+    type C = PoseidonGoldilocksConfig;
+    type F = <C as GenericConfig<D>>::F;
+
+    fn fibo_use_loop() -> Vec<PolynomialValues<F>> {
+        let program_src = "mov r0 8
+            mov r1 1
+            mov r2 1
+            mov r3 0
+            EQ r0 r3
+            cjmp 12
+            add r4 r1 r2
+            mov r1 r2
+            mov r2 r4
+            mov r4 1
+            sub r0 r0 r4
+            jmp 4
+            end
+            ";
+    
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
+    
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+    
+        let mut process = Process::new();
+        process.execute(&mut program, false);
+    
+        println!("vm trace: {:?}", program.trace);
+    
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        
+        println!("cpu rows: {:?}", cpu_rows);
+
+        trace_rows_to_poly_values(cpu_rows)
+        
+    }
+    
+    fn add_mul_decode() -> Vec<PolynomialValues<F>> {
+        //mov r0 8
+        //mov r1 2
+        //mov r2 3
+        //add r3 r0 r1
+        //mul r4 r3 r2
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x2
+            0x4000002040000000
+            0x3
+            0x0020204400000000
+            0x0100408200000000
+            ";
+    
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
+    
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+    
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+    
+        println!("vm trace: {:?}", program.trace);
+        
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        
+        println!("cpu rows: {:?}", cpu_rows);
+        trace_rows_to_poly_values(cpu_rows)
+    }
+
+    fn make_cpu_trace() -> Vec<PolynomialValues<F>> {
+        // add_mul_decode()
+        fibo_use_loop()
+    }
+
+    fn get_proof(config: &StarkConfig) -> Result<(AllStark<F, D>, AllProof<F, C, D>)> {
+        let all_stark = AllStark::default();
+        let cpu_trace = make_cpu_trace();
+        let memory_rows: Vec<[F; 1]> = vec![];
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows: Vec<[F; 1]> = vec![];
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows: Vec<[F; 1]> = vec![];
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows: Vec<[F; 1]> = vec![];
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        let traces = [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ];
+        // check_ctls(&traces, &all_stark.cross_table_lookups);
+
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+
+        Ok((all_stark, proof))
+    }
+
+    #[test]
+    #[ignore] // Ignoring but not deleting so the test can serve as an API usage example
+    fn test_all_stark() -> Result<()> {
+        let config = StarkConfig::standard_fast_config();
+        let (all_stark, proof) = get_proof(&config)?;
+        verify_proof(all_stark, proof, &config)
+    }
+
+    // #[test]
+    // #[ignore] // Ignoring but not deleting so the test can serve as an API usage example
+    // fn test_all_stark_recursive_verifier() -> Result<()> {
+    //     init_logger();
+
+    //     let config = StarkConfig::standard_fast_config();
+    //     let (all_stark, proof) = get_proof(&config)?;
+    //     verify_proof(all_stark.clone(), proof.clone(), &config)?;
+
+    //     recursive_proof(all_stark, proof, &config)
+    // }
+
+    // fn recursive_proof(
+    //     inner_all_stark: AllStark<F, D>,
+    //     inner_proof: AllProof<F, C, D>,
+    //     inner_config: &StarkConfig,
+    // ) -> Result<()> {
+    //     let circuit_config = CircuitConfig::standard_recursion_config();
+    //     let recursive_all_proof = recursively_verify_all_proof(
+    //         &inner_all_stark,
+    //         &inner_proof,
+    //         inner_config,
+    //         &circuit_config,
+    //     )?;
+
+    //     let verifier_data: [VerifierCircuitData<F, C, D>; NUM_TABLES] =
+    //         all_verifier_data_recursive_stark_proof(
+    //             &inner_all_stark,
+    //             inner_proof.degree_bits(inner_config),
+    //             inner_config,
+    //             &circuit_config,
+    //         );
+    //     let circuit_config = CircuitConfig::standard_recursion_config();
+    //     let mut builder = CircuitBuilder::<F, D>::new(circuit_config);
+    //     let mut pw = PartialWitness::new();
+    //     let recursive_all_proof_target =
+    //         add_virtual_recursive_all_proof(&mut builder, &verifier_data);
+    //     set_recursive_all_proof_target(&mut pw, &recursive_all_proof_target, &recursive_all_proof);
+    //     RecursiveAllProof::verify_circuit(
+    //         &mut builder,
+    //         recursive_all_proof_target,
+    //         &verifier_data,
+    //         inner_all_stark.cross_table_lookups,
+    //         inner_config,
+    //     );
+
+    //     let data = builder.build::<C>();
+    //     let proof = data.prove(pw)?;
+    //     data.verify(proof)
+    // }
+
+    fn init_logger() {
+        let _ = env_logger::builder().format_timestamp(None).try_init();
+    }
 }
