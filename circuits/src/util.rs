@@ -15,7 +15,7 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::util::transpose;
 
 pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_CPU_COLS]> {
-    let trace: Vec<[F; NUM_CPU_COLS]> = steps
+    let mut trace: Vec<[F; NUM_CPU_COLS]> = steps
         .iter()
         .map(|s| {
             let mut row: [F; NUM_CPU_COLS] = [F::default(); NUM_CPU_COLS];
@@ -114,6 +114,13 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_CPU_CO
             row
         })
         .collect();
+    
+    let mut row_len = trace.len();
+    if !row_len.is_power_of_two() {
+        row_len = row_len.next_power_of_two();
+        trace.resize(row_len, [F::default(); NUM_CPU_COLS]);
+    }
+
     trace
 }
 
