@@ -18,10 +18,9 @@ fn fibo_use_loop() {
         mov r1 r2
         mov r2 r4
         mov r4 1
-        sub r0 r0 r4
+        add r3 r3 r4
         jmp 4
-        end
-        ";
+        end";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -51,6 +50,7 @@ fn add_mul_decode() {
     //mov r2 3
     //add r3 r0 r1
     //mul r4 r3 r2
+    //end
     let program_src = "0x4000000840000000
         0x8
         0x4000001040000000
@@ -59,7 +59,7 @@ fn add_mul_decode() {
         0x3
         0x0020204400000000
         0x0100408200000000
-        ";
+        0x0000000000800000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -96,6 +96,7 @@ fn fibo_use_loop_decode() {
     // mov r4 1
     // add r3 r3 r4
     // jmp 8
+    // end
     let program_src = "0x4000000840000000
         0x8
         0x4000001040000000
@@ -115,7 +116,7 @@ fn fibo_use_loop_decode() {
         0x0101004400000000
         0x4000000020000000
         0x8
-        ";
+        0x0000000000800000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -149,6 +150,7 @@ fn memory_test() {
     // mload r2 0x200
     // mload r3 0x200
     // add r0 r1 r1
+    // end
     let program_src = "0x4000000840000000
                             0x8
                             0x4000100001000000
@@ -166,7 +168,7 @@ fn memory_test() {
                             0x4000004002000000
                             0x200
                             0x0040200c00000000
-                            ";
+                            0x0000000000800000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -207,8 +209,7 @@ fn range_check_test() {
         0x0020204400000000
         0x0100408200000000
         0x0001000000400000
-        0x0000000000800000
-        ";
+        0x0000000000800000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -239,6 +240,7 @@ fn bitwise_test() {
     //add r3 r0 r1
     //mul r4 r3 r2
     //and r5 r4 r3
+    //end
     let program_src = "0x4000000840000000
         0x8
         0x4000001040000000
@@ -248,7 +250,7 @@ fn bitwise_test() {
         0x0020204400000000
         0x0100408200000000
         0x0200810000200000
-        ";
+        0x0000000000800000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -279,6 +281,7 @@ fn comparison_test() {
     //add r3 r0 r1
     //mul r4 r3 r2
     //gte r4 r3
+    //end
     let program_src = "0x4000000840000000
         0x8
         0x4000001040000000
@@ -288,7 +291,7 @@ fn comparison_test() {
         0x0020204400000000
         0x0100408200000000
         0x0200800000010000
-        ";
+        0x0000000000800000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
