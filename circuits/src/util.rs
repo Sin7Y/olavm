@@ -10,7 +10,7 @@ use itertools::Itertools;
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
 use plonky2::field::polynomial::PolynomialValues;
-use plonky2::field::types::Field;
+use plonky2::field::types::{Field, PrimeField64};
 use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::util::transpose;
 
@@ -130,6 +130,38 @@ pub fn print_cpu_trace<F: RichField>(trace: &Vec<[F; NUM_CPU_COLS]>) {
     for (_, t) in trace.iter().enumerate() {
         println!("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", t[COL_CLK],t[COL_PC],t[COL_FLAG],t[COL_REGS.start+8],t[COL_REGS.start+7],t[COL_REGS.start+6],t[COL_REGS.start+5],t[COL_REGS.start+4],t[COL_REGS.start+3],t[COL_REGS.start+2],t[COL_REGS.start+1],t[COL_REGS.start],t[COL_INST],t[COL_OP1_IMM],t[COL_OPCODE],t[COL_IMM_VAL],t[COL_OP0],t[COL_OP1],t[COL_DST],t[COL_AUX0],t[COL_S_OP0_START],t[COL_S_OP0_START+1],t[COL_S_OP0_START+2],t[COL_S_OP0_START+3],t[COL_S_OP0_START+4],t[COL_S_OP0_START+5],t[COL_S_OP0_START+6],t[COL_S_OP0_START+7],t[COL_S_OP0_START+8],t[COL_S_OP1_START],t[COL_S_OP1_START+1],t[COL_S_OP1_START+2],t[COL_S_OP1_START+3],t[COL_S_OP1_START+4],t[COL_S_OP1_START+5],t[COL_S_OP1_START+6],t[COL_S_OP1_START+7],t[COL_S_OP1_START+8],t[COL_S_DST_START],t[COL_S_DST_START+1],t[COL_S_DST_START+2],t[COL_S_DST_START+3],t[COL_S_DST_START+4],t[COL_S_DST_START+5],t[COL_S_DST_START+6],t[COL_S_DST_START+7],t[COL_S_DST_START+8],t[COL_S_ADD],t[COL_S_MUL],t[COL_S_EQ],t[COL_S_ASSERT],t[COL_S_MOV],t[COL_S_JMP],t[COL_S_CJMP],t[COL_S_CALL],t[COL_S_RET],t[COL_S_MLOAD],t[COL_S_MSTORE],t[COL_S_END]);
     }
+}
+
+pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<[F; NUM_MEM_COLS]> {
+    let mut trace: Vec<[F; NUM_MEM_COLS]> = cells
+        .iter()
+        .map(|c| {
+            let mut row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
+            F::from_canonical_u64(c.is_rw.to_canonical_u64());
+            row[COL_MEM_IS_RW] = F::from_canonical_u64(c.is_rw.to_canonical_u64());
+            row[COL_MEM_ADDR] = F::from_canonical_u64(c.addr.to_canonical_u64());
+            row[COL_MEM_CLK] = F::from_canonical_u64(c.clk.to_canonical_u64());
+            row[COL_MEM_OP] = F::from_canonical_u64(c.op.to_canonical_u64());
+            row[COL_MEM_IS_WRITE] = F::from_canonical_u64(c.is_write.to_canonical_u64());
+            row[COL_MEM_VALUE] = F::from_canonical_u64(c.value.to_canonical_u64());
+            row[COL_MEM_DIFF_ADDR] = F::from_canonical_u64(c.diff_addr.to_canonical_u64());
+            row[COL_MEM_DIFF_ADDR_INV] = F::from_canonical_u64(c.diff_addr_inv.to_canonical_u64());
+            row[COL_MEM_DIFF_CLK] = F::from_canonical_u64(c.diff_clk.to_canonical_u64());
+            row[COL_MEM_DIFF_ADDR_COND] =
+                F::from_canonical_u64(c.diff_addr_cond.to_canonical_u64());
+            row[COL_MEM_FILTER_LOOKED_FOR_MAIN] =
+                F::from_canonical_u64(c.filter_looked_for_main.to_canonical_u64());
+            row[COL_MEM_RW_ADDR_UNCHANGED] =
+                F::from_canonical_u64(c.rw_addr_unchanged.to_canonical_u64());
+            row[COL_MEM_REGION_PROPHET] =
+                F::from_canonical_u64(c.region_prophet.to_canonical_u64());
+            row[COL_MEM_REGION_POSEIDON] =
+                F::from_canonical_u64(c.region_poseidon.to_canonical_u64());
+            row[COL_MEM_REGION_ECDSA] = F::from_canonical_u64(c.region_ecdsa.to_canonical_u64());
+            row
+        })
+        .collect();
+    trace
 }
 
 /// Construct an integer from its constituent bits (in little-endian order)
