@@ -63,6 +63,14 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
     }
 }
 
+pub fn ctl_data_rc<F: Field>() -> Vec<Column<F>> {
+    Column::singles([VAL]).collect_vec()
+}
+
+pub fn ctl_filter_rc<F: Field>() -> Column<F> {
+    Column::single(TAG)
+}
+
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles([VAL]).collect_vec();
