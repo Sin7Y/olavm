@@ -289,6 +289,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 }
 
 mod tests {
+    use super::*;
     use crate::config::StarkConfig;
     use crate::memory::MemoryStark;
     use crate::prover::prove;
@@ -549,6 +550,7 @@ mod tests {
         ];
 
         let p = GoldilocksField::order();
+        let p = GoldilocksField::from_noncanonical_biguint(p);
         let span = GoldilocksField::from_canonical_u64(2_u64.pow(32).sub(1));
         let prophet_row0: [F; 15] = [
             zero,
@@ -656,9 +658,24 @@ mod tests {
             prophet_row4,
         ];
 
-        let trace = trace_rows_to_poly_values(trace_rows);
-        // let proof = prove::<F, C, S, D>(stark, &config, trace, [], &mut TimingTree::default())?;
-        //
-        // verify_stark_proof(stark, proof, &config)
+        for i in 0..trace_rows.len() - 1 {
+            println!("row index: {}", i);
+            let vars = StarkEvaluationVars {
+                local_values: &trace_rows[i],
+                next_values: &trace_rows[i + 1],
+            };
+
+            let mut constraint_consumer = ConstraintConsumer::new(
+                vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
+                GoldilocksField::ONE,
+                GoldilocksField::ONE,
+                GoldilocksField::ONE,
+            );
+            stark.eval_packed_generic(vars, &mut constraint_consumer);
+
+            for &acc in &constraint_consumer.constraint_accs {
+                assert_eq!(acc, GoldilocksField::ZERO);
+            }
+        }
     }
 }
