@@ -16,14 +16,44 @@ use {
     std::marker::PhantomData,
 };
 
+pub fn ctl_data_mem_rc_diff_cond<F: Field>() -> Vec<Column<F>> {
+    vec![Column::single(COL_MEM_DIFF_ADDR_COND)]
+}
+
+pub fn ctl_filter_mem_rc_diff_cond<F: Field>() -> Column<F> {
+    Column::sum([
+        COL_MEM_REGION_PROPHET,
+        COL_MEM_REGION_POSEIDON,
+        COL_MEM_REGION_ECDSA,
+    ])
+}
+
+pub fn ctl_data_mem_rc_diff_addr<F: Field>() -> Vec<Column<F>> {
+    vec![Column::single(COL_MEM_DIFF_ADDR)]
+}
+
+pub fn ctl_filter_mem_rc_diff_addr<F: Field>() -> Column<F> {
+    Column::single(COL_MEM_IS_RW)
+}
+
+pub fn ctl_data_mem_rc_diff_clk<F: Field>() -> Vec<Column<F>> {
+    vec![Column::single(COL_MEM_DIFF_CLK)]
+}
+
+pub fn ctl_filter_mem_rc_diff_clk<F: Field>() -> Column<F> {
+    Column::single(COL_MEM_RW_ADDR_UNCHANGED)
+}
+
+// todo ctl for poseidon and ecdsa
+
 pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
-    // TODO:
-    vec![Column::single(0)]
+    let mut cols: Vec<_> =
+        Column::singles([COL_MEM_CLK, COL_MEM_OP, COL_MEM_ADDR, COL_MEM_VALUE]).collect();
+    cols
 }
 
 pub fn ctl_filter<F: Field>() -> Column<F> {
-    // TODO:
-    Column::single(0)
+    Column::single(COL_MEM_FILTER_LOOKED_FOR_MAIN)
 }
 
 #[derive(Copy, Clone, Default)]
