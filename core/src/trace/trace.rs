@@ -99,6 +99,7 @@ pub struct RegisterSelector {
     pub op1: GoldilocksField,
     pub dst: GoldilocksField,
     pub aux0: GoldilocksField,
+    pub aux1: GoldilocksField,
     pub op0_reg_sel: [GoldilocksField; REGISTER_NUM],
     pub op1_reg_sel: [GoldilocksField; REGISTER_NUM],
     pub dst_reg_sel: [GoldilocksField; REGISTER_NUM],
