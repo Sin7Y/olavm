@@ -96,7 +96,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
 
 #[cfg(test)]
 mod tests {
-    use crate::builtins::range_check_u32::RangeCheckU32Stark;
+    use super::*;
     use crate::config::StarkConfig;
     use crate::prover::prove;
     use crate::util::trace_rows_to_poly_values;
@@ -162,9 +162,23 @@ mod tests {
         ];
 
         let trace_rows = vec![row; 8];
-        let trace = trace_rows_to_poly_values(trace_rows);
-        let proof = prove::<F, C, S, D>(stark, &config, trace, &mut TimingTree::default())?;
+        for i in 0..trace_rows.len() - 1 {
+            let vars = StarkEvaluationVars {
+                local_values: &trace_rows[i],
+                next_values: &trace_rows[i + 1],
+            };
 
-        // verify_stark_proof(stark, proof, &config)
+            let mut constraint_consumer = ConstraintConsumer::new(
+                vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
+                GoldilocksField::ONE,
+                GoldilocksField::ONE,
+                GoldilocksField::ONE,
+            );
+            stark.eval_packed_generic(vars, &mut constraint_consumer);
+
+            for &acc in &constraint_consumer.constraint_accs {
+                assert_eq!(acc, GoldilocksField::ZERO);
+            }
+        }
     }
 }
