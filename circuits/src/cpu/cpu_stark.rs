@@ -2,18 +2,18 @@ use {
     super::*,
     crate::columns::*,
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    crate::cross_table_lookup::Column,
     crate::stark::Stark,
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
-    crate::cross_table_lookup::Column,
     core::program::REGISTER_NUM,
     itertools::izip,
+    itertools::Itertools,
     plonky2::field::extension::{Extendable, FieldExtension},
     plonky2::field::packed::PackedField,
+    plonky2::field::types::Field,
     plonky2::hash::hash_types::RichField,
     plonky2::plonk::circuit_builder::CircuitBuilder,
-    plonky2::field::types::Field,
     std::marker::PhantomData,
-    itertools::Itertools,
 };
 
 pub fn ctl_data_memory<F: Field>() -> Vec<Column<F>> {
@@ -192,23 +192,26 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let op1_imm_shift = P::Scalar::from_canonical_u64(2_u64.pow(62));
         let mut instruction = lv[COL_OP1_IMM] * op1_imm_shift;
 
-        // The order of COL_S_OP0, COL_S_OP1, COL_S_DST is r8, r7, .. r0.
+        // The order of COL_S_OP0', COL_S_OP1', COL_S_DST' is r8, r7, .. r0.
         let op0_start_shift = 2_u64.pow(61);
-        for (index, s) in s_op0s.iter().rev().enumerate() {
+        let n_s_op0s: [P; REGISTER_NUM] = nv[COL_S_OP0].try_into().unwrap();
+        for (index, s) in n_s_op0s.iter().rev().enumerate() {
             let shift = op0_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
             instruction += *s * shift;
         }
 
         let op1_start_shift = 2_u64.pow(52);
-        for (index, s) in s_op1s.iter().rev().enumerate() {
+        let n_s_op1s: [P; REGISTER_NUM] = nv[COL_S_OP1].try_into().unwrap();
+        for (index, s) in n_s_op1s.iter().rev().enumerate() {
             let shift = op1_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
             instruction += *s * shift;
         }
 
         let dst_start_shift = 2_u64.pow(43);
-        for (index, s) in s_dsts.iter().rev().enumerate() {
+        let n_s_dsts: [P; REGISTER_NUM] = nv[COL_S_DST].try_into().unwrap();
+        for (index, s) in n_s_dsts.iter().rev().enumerate() {
             let shift = dst_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
             instruction += *s * shift;
@@ -218,31 +221,31 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr.constraint(lv[COL_INST] - instruction);
 
         // Only one register used for op0.
-        let sum_s_op0: P = s_op0s.clone().into_iter().sum();
+        let sum_s_op0: P = n_s_op0s.clone().into_iter().sum();
         yield_constr.constraint(sum_s_op0 * (P::ONES - sum_s_op0));
 
         // Only one register used for op1.
-        let sum_s_op1: P = s_op1s.clone().into_iter().sum();
+        let sum_s_op1: P = n_s_op1s.clone().into_iter().sum();
         yield_constr.constraint(sum_s_op1 * (P::ONES - sum_s_op1));
 
         // Only one register used for dst.
-        let sum_s_dst: P = s_dsts.clone().into_iter().sum();
+        let sum_s_dst: P = n_s_dsts.clone().into_iter().sum();
         yield_constr.constraint(sum_s_dst * (P::ONES - sum_s_dst));
 
         // Op and register permutation.
         // Register should be next line.
         let regs: [P; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
-        let op0_sum: P = s_op0s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint(sum_s_op0 * (lv[COL_OP0] - op0_sum));
+        let op0_sum: P = n_s_op0s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
+        yield_constr.constraint(sum_s_op0 * (nv[COL_OP0] - op0_sum));
 
-        let op1_sum: P = s_op1s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint(sum_s_op1 * (lv[COL_OP1] - op1_sum));
+        let op1_sum: P = n_s_op1s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
+        yield_constr.constraint(sum_s_op1 * (nv[COL_OP1] - op1_sum));
 
-        let dst_sum: P = s_dsts.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint(sum_s_dst * (lv[COL_DST] - dst_sum));
+        let dst_sum: P = n_s_dsts.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
+        yield_constr.constraint(sum_s_dst * (nv[COL_DST] - dst_sum));
 
         // When oprand exists, op1 is imm.
-        yield_constr.constraint(lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL]));
+        yield_constr.constraint(lv[COL_OP1_IMM] * (nv[COL_OP1] - lv[COL_IMM_VAL]));
 
         // Only one opcode selector enabled.
         let sum_s_op = lv[COL_S_ADD]
@@ -274,9 +277,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // flag
         yield_constr.constraint(lv[COL_FLAG] * (P::ONES - lv[COL_FLAG]));
-        let s_cmp = lv[COL_S_EQ] + lv[COL_S_NEQ] + lv[COL_S_GTE];
+        let s_cmp = lv[COL_S_EQ] + lv[COL_S_NEQ] + lv[COL_S_GTE] + lv[COL_S_CJMP];
         yield_constr.constraint((P::ONES - s_cmp) * (nv[COL_FLAG] - lv[COL_FLAG]));
-        println!("s_cmp: {:?}, l_flag: {:?}, n_flag: {:?}, n_eq: {:?}", s_cmp, lv[COL_FLAG], nv[COL_FLAG], nv[COL_S_EQ]);
+        println!("l_flag: {:?}, n_flag: {:?}", lv[COL_FLAG], nv[COL_FLAG]);
 
         // reg
         let n_regs: [P; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
@@ -298,12 +301,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         // pc
         let pc_incr = (P::ONES - (lv[COL_S_JMP] + lv[COL_S_CJMP] + lv[COL_S_CALL] + lv[COL_S_RET]))
             * (lv[COL_PC] + P::ONES + lv[COL_OP1_IMM]);
-        let pc_jmp = lv[COL_S_JMP] * lv[COL_OP1];
+        let pc_jmp = lv[COL_S_JMP] * nv[COL_OP1];
         let pc_cjmp = lv[COL_S_CJMP]
             * ((P::ONES - lv[COL_FLAG]) * (lv[COL_PC] + P::ONES + lv[COL_OP1_IMM])
-                + lv[COL_FLAG] * lv[COL_OP1]);
-        let pc_call = lv[COL_S_CALL] * lv[COL_OP1];
-        let pc_ret = lv[COL_S_RET] * lv[COL_OP1];
+                + lv[COL_FLAG] * nv[COL_OP1]);
+        let pc_call = lv[COL_S_CALL] * nv[COL_OP1];
+        let pc_ret = lv[COL_S_RET] * nv[COL_OP1];
         yield_constr.constraint(nv[COL_PC] - (pc_incr + pc_jmp + pc_cjmp + pc_call + pc_ret));
 
         // opcode
@@ -337,16 +340,16 @@ mod tests {
     use num::bigint::BigUint;
     use num::ToPrimitive;
 
+    use crate::util::{generate_cpu_trace, print_cpu_trace};
+    use core::program::instruction::Opcode;
+    use core::program::Program;
+    use executor::Process;
+    use log::debug;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::{
         field::types::Field64,
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
-    use core::program::Program;
-    use log::debug;
-    use executor::Process;
-    use crate::util::{generate_cpu_trace, print_cpu_trace};
-    use core::program::instruction::Opcode;
     use serde_json::Value;
     use std::fs::File;
     use std::io::Write;
@@ -398,25 +401,17 @@ mod tests {
         let mut file = File::create("fibo_use_loop.txt").unwrap();
         file.write_all(trace_json_format.as_ref()).unwrap();
 
-        for i in 0..program.trace.exec.len()-1 {
-            assert_eq!(program.trace.exec[i].clk + 1, program.trace.exec[i+1].clk);
-        }
-
-        for i in 0..program.trace.exec.len()-1 {
-            println!("index: {}, flag: {:?}, jmp: {}, eq: {}", i, program.trace.exec[i].flag, program.trace.exec[i].opcode.0 >> Opcode::JMP as u8, program.trace.exec[i].opcode.0 >> Opcode::EQ as u8);
-        }
-        
         let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-        print_cpu_trace(&cpu_rows);
+        // print_cpu_trace(&cpu_rows);
         let stark = S::default();
 
-        for i in 0..cpu_rows.len()-1 {
+        for i in 0..cpu_rows.len() - 1 {
             println!("row index: {}", i);
             let vars = StarkEvaluationVars {
                 local_values: &cpu_rows[i],
-                next_values: &cpu_rows[i+1],
+                next_values: &cpu_rows[i + 1],
             };
-    
+
             let mut constraint_consumer = ConstraintConsumer::new(
                 vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
                 GoldilocksField::ONE,
@@ -424,7 +419,7 @@ mod tests {
                 GoldilocksField::ONE,
             );
             stark.eval_packed_generic(vars, &mut constraint_consumer);
-    
+
             for &acc in &constraint_consumer.constraint_accs {
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
