@@ -274,7 +274,6 @@ impl Process {
         );
 
         loop {
-            let mut register_selector_cur: RegisterSelector = self.register_selector.clone();
             self.register_selector = Default::default();
             let registers_status = self.registers.clone();
             let flag_status = self.flag.clone();
@@ -327,16 +326,18 @@ impl Process {
                     assert!(ops.len() == 3, "mov params len is 2");
                     let dst_index = self.get_reg_index(&ops[1]);
                     let value = self.get_index_value(&ops[2]);
-                    self.registers[dst_index] = value.0;
-                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MOV as u8);
-                    self.register_selector.dst = value.0;
                     self.register_selector.op1 = value.0;
-                    self.register_selector.dst_reg_sel[dst_index] =
-                        GoldilocksField::from_canonical_u64(1);
                     if let ImmediateOrRegName::RegName(op1_index) = value.1 {
                         self.register_selector.op1_reg_sel[op1_index] =
                             GoldilocksField::from_canonical_u64(1);
                     }
+
+                    self.registers[dst_index] = value.0;
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MOV as u8);
+                    self.register_selector.dst = value.0;
+                    self.register_selector.dst_reg_sel[dst_index] =
+                        GoldilocksField::from_canonical_u64(1);
+
                     self.pc += step;
                 }
                 "eq" => {
@@ -345,8 +346,7 @@ impl Process {
                     let op0_index = self.get_reg_index(&ops[1]);
                     // let src_index = self.get_reg_index(&ops[2]);
                     let value = self.get_index_value(&ops[2]);
-                    self.flag = self.registers[op0_index] == value.0;
-                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::EQ as u8);
+
                     self.register_selector.op0 = self.registers[op0_index];
                     self.register_selector.op1 = value.0;
                     self.register_selector.op0_reg_sel[op0_index] =
@@ -360,6 +360,9 @@ impl Process {
                     if self.register_selector.aux0.is_nonzero() {
                         self.register_selector.aux0 = self.register_selector.aux0.inverse();
                     }
+
+                    self.flag = self.registers[op0_index] == value.0;
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::EQ as u8);
                     self.pc += step;
                 }
                 "cjmp" => {
@@ -399,6 +402,16 @@ impl Process {
                     let op0_index = self.get_reg_index(&ops[2]);
                     let op1_value = self.get_index_value(&ops[3]);
 
+                    self.register_selector.op0 = self.registers[op0_index];
+                    self.register_selector.op1 = op1_value.0;
+
+                    self.register_selector.op0_reg_sel[op0_index] =
+                        GoldilocksField::from_canonical_u64(1);
+                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
+
                     let inst = match opcode.as_str() {
                         "add" => {
                             self.registers[dst_index] = self.registers[op0_index] + op1_value.0;
@@ -419,17 +432,9 @@ impl Process {
                     };
 
                     self.register_selector.dst = self.registers[dst_index];
-                    self.register_selector.op0 = self.registers[op0_index];
-                    self.register_selector.op1 = op1_value.0;
-
                     self.register_selector.dst_reg_sel[dst_index] =
                         GoldilocksField::from_canonical_u64(1);
-                    self.register_selector.op0_reg_sel[op0_index] =
-                        GoldilocksField::from_canonical_u64(1);
-                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-                    }
+
                     self.pc += step;
                 }
                 "call" => {
@@ -486,6 +491,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(0 as u64),
                         GoldilocksField::from_canonical_u64(0 as u64),
                     );
+
                     self.register_selector.op0 =
                         self.registers[FP_REG_INDEX] - GoldilocksField::ONE;
                     self.register_selector.op1 = GoldilocksField::from_canonical_u64(self.pc);
@@ -498,6 +504,10 @@ impl Process {
                     assert!(ops.len() == 3, "mstore params len is 2");
                     let dst_value = self.get_index_value(&ops[1]);
                     let op1_index = self.get_reg_index(&ops[2]);
+                    self.register_selector.op1 = self.registers[op1_index];
+                    self.register_selector.op1_reg_sel[op1_index] =
+                        GoldilocksField::from_canonical_u64(1);
+
                     self.memory.write(
                         dst_value.0 .0,
                         self.clk,
@@ -513,9 +523,6 @@ impl Process {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u8);
 
                     self.register_selector.dst = dst_value.0;
-                    self.register_selector.op1 = self.registers[op1_index];
-                    self.register_selector.op1_reg_sel[op1_index] =
-                        GoldilocksField::from_canonical_u64(1);
                     if let ImmediateOrRegName::RegName(dst_index) = dst_value.1 {
                         self.register_selector.dst_reg_sel[dst_index] =
                             GoldilocksField::from_canonical_u64(1);
@@ -527,6 +534,12 @@ impl Process {
                     assert!(ops.len() == 3, "mload params len is 2");
                     let dst_index = self.get_reg_index(&ops[1]);
                     let op1_value = self.get_index_value(&ops[2]);
+                    self.register_selector.op1 = op1_value.0;
+                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
+
                     self.registers[dst_index] = self.memory.read(
                         op1_value.0 .0,
                         self.clk,
@@ -541,14 +554,9 @@ impl Process {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u8);
 
                     self.register_selector.dst = self.registers[dst_index];
-                    self.register_selector.op1 = op1_value.0;
-
                     self.register_selector.dst_reg_sel[dst_index] =
                         GoldilocksField::from_canonical_u64(1);
-                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-                    }
+
                     self.pc += step;
                 }
                 "range" => {
@@ -570,6 +578,15 @@ impl Process {
                     let dst_index = self.get_reg_index(&ops[1]);
                     let op0_index = self.get_reg_index(&ops[2]);
                     let op1_value = self.get_index_value(&ops[3]);
+
+                    self.register_selector.op0 = self.registers[op0_index];
+                    self.register_selector.op1 = op1_value.0;
+                    self.register_selector.op0_reg_sel[op0_index] =
+                        GoldilocksField::from_canonical_u64(1);
+                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
 
                     let op_type = match opcode.as_str() {
                         "and" => {
@@ -597,17 +614,8 @@ impl Process {
                     };
 
                     self.register_selector.dst = self.registers[dst_index];
-                    self.register_selector.op0 = self.registers[op0_index];
-                    self.register_selector.op1 = op1_value.0;
-
                     self.register_selector.dst_reg_sel[dst_index] =
                         GoldilocksField::from_canonical_u64(1);
-                    self.register_selector.op0_reg_sel[op0_index] =
-                        GoldilocksField::from_canonical_u64(1);
-                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-                    }
 
                     let target = GoldilocksField(
                         self.registers[op0_index].0 * 2_u64.pow(16)
@@ -634,6 +642,20 @@ impl Process {
                     let op0_index = self.get_reg_index(&ops[1]);
                     let value = self.get_index_value(&ops[2]);
 
+                    self.register_selector.op0 = self.registers[op0_index];
+                    self.register_selector.op1 = value.0;
+                    self.register_selector.op0_reg_sel[op0_index] =
+                        GoldilocksField::from_canonical_u64(1);
+                    if let ImmediateOrRegName::RegName(op1_index) = value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
+                    self.register_selector.aux0 =
+                        self.register_selector.op0 - self.register_selector.op1;
+                    if self.register_selector.aux0.is_nonzero() {
+                        self.register_selector.aux0 = self.register_selector.aux0.inverse();
+                    }
+
                     let op_type = match opcode.as_str() {
                         "neq" => {
                             self.flag = self.registers[op0_index] != value.0;
@@ -649,20 +671,6 @@ impl Process {
                         }
                         _ => panic!("not match opcode:{}", opcode),
                     };
-
-                    self.register_selector.op0 = self.registers[op0_index];
-                    self.register_selector.op1 = value.0;
-                    self.register_selector.op0_reg_sel[op0_index] =
-                        GoldilocksField::from_canonical_u64(1);
-                    if let ImmediateOrRegName::RegName(op1_index) = value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-                    }
-                    self.register_selector.aux0 =
-                        self.register_selector.op0 - self.register_selector.op1;
-                    if self.register_selector.aux0.is_nonzero() {
-                        self.register_selector.aux0 = self.register_selector.aux0.inverse();
-                    }
 
                     program.trace.insert_range_check(self.registers[op0_index]);
                     program.trace.insert_range_check(value.0);
@@ -687,7 +695,7 @@ impl Process {
                         self.opcode,
                         registers_status,
                         flag_status,
-                        register_selector_cur,
+                        self.register_selector.clone(),
                     );
                     break;
                 }
@@ -702,7 +710,7 @@ impl Process {
                 self.opcode,
                 registers_status,
                 flag_status,
-                register_selector_cur,
+                self.register_selector.clone(),
             );
             if self.pc > (program.instructions.len() as u64 - 1) {
                 break;
