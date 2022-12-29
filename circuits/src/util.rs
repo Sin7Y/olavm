@@ -114,12 +114,20 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_CPU_CO
             row
         })
         .collect();
+    
+    // Pad trace to power of two.
+    let row_len = trace.len();
+    if !row_len.is_power_of_two() {
+        let new_row_len = row_len.next_power_of_two();
+        let end_row = trace[row_len - 1];
+        for i in 0..new_row_len - row_len {
+            let mut new_row = end_row;
+            new_row[COL_CLK] = end_row[COL_CLK] + F::from_canonical_usize(i+1);
+            new_row[COL_PC] = end_row[COL_PC] + F::from_canonical_usize(i+1);
 
-    // let mut row_len = trace.len();
-    // if !row_len.is_power_of_two() {
-    //     row_len = row_len.next_power_of_two();
-    //     trace.resize(row_len, [F::default(); NUM_CPU_COLS]);
-    // }
+            trace.push(new_row);
+        }
+    }
 
     trace
 }
