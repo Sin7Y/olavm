@@ -301,6 +301,10 @@ mod tests {
     use itertools::Itertools;
     // use crate::cross_table_lookup::testutils::check_ctls;
     use crate::verifier::verify_proof;
+    use core::program::Program;
+    use core::trace::trace::Trace;
+    use executor::Process;
+    use log::debug;
     use plonky2::field::polynomial::PolynomialValues;
     use plonky2::field::types::{Field, PrimeField64};
     use plonky2::iop::witness::PartialWitness;
@@ -309,17 +313,13 @@ mod tests {
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
     use rand::{thread_rng, Rng};
-    use executor::Process;
-    use core::program::Program;
-    use core::trace::trace::Trace;
-    use log::debug;
     // use serde_json::Value;
-    use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
     use crate::all_stark::{AllStark, NUM_TABLES};
-    use crate::proof::{AllProof, PublicValues};
     use crate::config::StarkConfig;
     use crate::cpu::cpu_stark::CpuStark;
+    use crate::proof::{AllProof, PublicValues};
     use crate::prover::prove_with_traces;
+    use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -340,31 +340,30 @@ mod tests {
             jmp 4
             end
             ";
-    
+
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
         debug!("instructions:{:?}", program.instructions);
-    
+
         for inst in instructions.into_iter() {
             program.instructions.push(inst.clone().parse().unwrap());
         }
-    
+
         let mut process = Process::new();
         process.execute(&mut program, false);
-    
+
         println!("vm trace: {:?}", program.trace);
-    
+
         let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-        
+
         println!("cpu rows: {:?}", cpu_rows);
 
         trace_rows_to_poly_values(cpu_rows)
-        
     }
-    
+
     fn add_mul_decode() -> Vec<PolynomialValues<F>> {
         //mov r0 8
         //mov r1 2
@@ -380,25 +379,25 @@ mod tests {
             0x0020204400000000
             0x0100408200000000
             ";
-    
+
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
         debug!("instructions:{:?}", program.instructions);
-    
+
         for inst in instructions.into_iter() {
             program.instructions.push(inst.clone().parse().unwrap());
         }
-    
+
         let mut process = Process::new();
         process.execute(&mut program, true);
-    
+
         println!("vm trace: {:?}", program.trace);
-        
+
         let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-        
+
         println!("cpu rows: {:?}", cpu_rows);
         trace_rows_to_poly_values(cpu_rows)
     }
