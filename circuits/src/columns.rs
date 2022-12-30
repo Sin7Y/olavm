@@ -2,10 +2,10 @@ use core::program::REGISTER_NUM;
 use std::ops::Range;
 
 // The Olavm trace for AIR:
-// There are 3 kinds of traces, one for main trace, one for memory trace, one for builtin.
+// There are 3 kinds of traces, one for cpu trace, one for memory trace, one for builtin trace.
 
 // 1. Main(CPU) trace.
-// There are 68 columns in main trace.
+// There are 69 columns in cpu trace.
 //
 // Context related columns(12):
 // ┌───────┬───────┬──────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬
@@ -30,12 +30,17 @@ pub(crate) const COL_OP1_IMM: usize = COL_INST + 1;
 pub(crate) const COL_OPCODE: usize = COL_OP1_IMM + 1;
 pub(crate) const COL_IMM_VAL: usize = COL_OPCODE + 1;
 
-// Selectors of register related columns(31):
-// ┬───────┬───────┬───────┬───────┬──────────┬──────────┬─────┬──────────┬──────────┬──────────┬─────┬──────────┬──────────┬──────────┬─────┬──────────┬
-// │  op0  │  op1  │  dst  │  aux0 │ s_op0_r0 │ s_op0_r1 │ ... │ s_op0_r8 │ s_op1_r0 │ s_op1_r1 │ ... │ s_op1_r8 │ s_dst_r0 │ s_dst_r1 │ ... │ s_dst_r8 │
-// ┼───────┼───────┼───────┼───────┼──────────┼──────────┼─────┼──────────┼──────────┼──────────┼─────┼──────────┼──────────┼──────────┼─────┼──────────┼
-// │  10   │  123  │   0   │   0   │     1    │     0    │     │    0     │     0    │     1    │  0  │     0    │     1    │     0    │  0  │     0    │
-// ┴───────┴───────┴───────┴───────┴──────────┴──────────┴─────┴──────────┴──────────┴──────────┴─────┴──────────┴──────────┴──────────┴─────┴──────────┴
+// Selectors of register related columns(32):
+// ┬───────┬───────┬───────┬───────┬───────┬──────────┬──────────┬─────┬──────────┬──────────┬
+// │  op0  │  op1  │  dst  │  aux0 │  aux1 │ s_op0_r0 │ s_op0_r1 │ ... │ s_op0_r8 │ s_op1_r0 │
+// ┼───────┼───────┼───────┼───────┼───────┼──────────┼──────────┼─────┼──────────┼──────────┼
+// │  10   │  123  │   0   │   0   │   0   │     1    │     0    │     │    0     │     0    │
+// ┴───────┴───────┴───────┴───────┴───────┴──────────┴──────────┴─────┴──────────┴──────────┴
+// ┬──────────┬─────┬──────────┬──────────┬──────────┬─────┬──────────┬
+// │ s_op1_r1 │ ... │ s_op1_r8 │ s_dst_r0 │ s_dst_r1 │ ... │ s_dst_r8 │
+// ┼──────────┼─────┼──────────┼──────────┼──────────┼─────┼──────────┼
+// │     1    │  0  │     0    │     1    │     0    │  0  │     0    │
+// ┴──────────┴─────┴──────────┴──────────┴──────────┴─────┴──────────┴
 pub(crate) const COL_OP0: usize = COL_IMM_VAL + 1;
 pub(crate) const COL_OP1: usize = COL_OP0 + 1;
 pub(crate) const COL_DST: usize = COL_OP1 + 1;
@@ -86,9 +91,12 @@ pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
 pub(crate) const NUM_CPU_COLS: usize = COL_S_ECDSA + 1;
 
 // 2. Memory Trace.
-// ┌───────┬──────┬─────┬────┬──────────┬───────┬───────────┬───────────────┬──────────┬────────────────┬────────────────────────┬───────────────────┬────────────────┬─────────────────┬──────────────┐
-// │ is_rw │ addr │ clk │ op │ is_write │ value │ diff_addr │ diff_addr_inv │ diff_clk │ diff_addr_cond │ filter_looked_for_main │ rw_addr_unchanged │ region_prophet │ region_poseidon │ region_ecdsa │
-// └───────┴──────┴─────┴────┴──────────┴───────┴───────────┴───────────────┴──────────┴────────────────┴────────────────────────┴───────────────────┴────────────────┴─────────────────┴──────────────┘
+// ┌───────┬──────┬─────┬────┬──────────┬───────┬───────────┬───────────────┬──────────┬────────────────┬
+// │ is_rw │ addr │ clk │ op │ is_write │ value │ diff_addr │ diff_addr_inv │ diff_clk │ diff_addr_cond │
+// └───────┴──────┴─────┴────┴──────────┴───────┴───────────┴───────────────┴──────────┴────────────────┴
+// ┬────────────────────────┬───────────────────┬────────────────┬─────────────────┬──────────────┐
+// │ filter_looked_for_main │ rw_addr_unchanged │ region_prophet │ region_poseidon │ region_ecdsa │
+// ┴────────────────────────┴───────────────────┴────────────────┴─────────────────┴──────────────┘
 pub(crate) const COL_MEM_IS_RW: usize = 0;
 pub(crate) const COL_MEM_ADDR: usize = COL_MEM_IS_RW + 1;
 pub(crate) const COL_MEM_CLK: usize = COL_MEM_ADDR + 1;
