@@ -6,14 +6,20 @@ use plonky2::hash::hash_types::RichField;
 
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
-use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
+use crate::builtins::rangecheck::rangecheck_stark::{
+    self, ctl_data_rc, ctl_filter_rc, RangeCheckStark,
+};
 use crate::config::StarkConfig;
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{self, BitwiseFixedStark};
 use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{self, RangecheckFixedStark};
-use crate::memory::{ctl_data as mem_ctl_data, ctl_filter as mem_ctl_filter, MemoryStark};
+use crate::memory::{
+    ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_addr, ctl_data_mem_rc_diff_clk,
+    ctl_data_mem_rc_diff_cond, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_addr,
+    ctl_filter_mem_rc_diff_clk, ctl_filter_mem_rc_diff_cond, MemoryStark,
+};
 use crate::program::program_stark::{self, ProgramStark};
 use crate::stark::Stark;
 
@@ -89,16 +95,46 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     vec![]
 }
 
-fn ctl_memory<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::Cpu,
-            cpu_stark::ctl_data_memory(),
-            Some(cpu_stark::ctl_filter_memory()),
-        )],
-        TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter())),
-        None,
-    )
+fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
+    let cpu_mem_load_store = TableWithColumns::new(
+        Table::Cpu,
+        cpu_stark::ctl_data_cpu_mem_load_store(),
+        Some(cpu_stark::ctl_filter_cpu_mem_load_store()),
+    );
+    let cpu_mem_call_ret_pc = TableWithColumns::new(
+        Table::Cpu,
+        cpu_stark::ctl_data_cpu_mem_call_ret_pc(),
+        Some(cpu_stark::ctl_filter_cpu_mem_call_ret()),
+    );
+    let cpu_mem_call_ret_fp = TableWithColumns::new(
+        Table::Cpu,
+        cpu_stark::ctl_data_cpu_mem_call_ret_fp(),
+        Some(cpu_stark::ctl_filter_cpu_mem_call_ret()),
+    );
+    let all_cpu_lookers = vec![cpu_mem_load_store, cpu_mem_call_ret_pc, cpu_mem_call_ret_fp];
+    let memory_looked =
+        TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter()));
+    CrossTableLookup::new(all_cpu_lookers, memory_looked, None)
+}
+fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
+    let mem_rc_diff_cond = TableWithColumns::new(
+        Table::Memory,
+        ctl_data_mem_rc_diff_cond(),
+        Some(ctl_filter_mem_rc_diff_cond()),
+    );
+    let mem_rc_diff_addr = TableWithColumns::new(
+        Table::Memory,
+        ctl_data_mem_rc_diff_addr(),
+        Some(ctl_filter_mem_rc_diff_addr()),
+    );
+    let mem_rc_diff_clk = TableWithColumns::new(
+        Table::Memory,
+        ctl_data_mem_rc_diff_clk(),
+        Some(ctl_filter_mem_rc_diff_clk()),
+    );
+    let all_mem_rc_lookers = vec![mem_rc_diff_cond, mem_rc_diff_addr, mem_rc_diff_clk];
+    let rc_looked = TableWithColumns::new(Table::RangeCheck, ctl_data_rc(), Some(ctl_filter_rc()));
+    CrossTableLookup::new(all_mem_rc_lookers, rc_looked, None)
 }
 
 // add bitwise rangecheck instance
@@ -301,9 +337,14 @@ mod tests {
     use itertools::Itertools;
     use plonky2::fri::oracle::PolynomialBatch;
     use plonky2::iop::challenger::Challenger;
+    use crate::cross_table_lookup::testutils::check_ctls;
     use crate::stark::Stark;
     // use crate::cross_table_lookup::testutils::check_ctls;
     use crate::verifier::verify_proof;
+    use core::program::Program;
+    use core::trace::trace::Trace;
+    use executor::Process;
+    use log::debug;
     use plonky2::field::polynomial::PolynomialValues;
     use plonky2::field::types::{Field, PrimeField64};
     use plonky2::iop::witness::PartialWitness;
@@ -312,17 +353,13 @@ mod tests {
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig, Hasher};
     use plonky2::util::timing::TimingTree;
     use rand::{thread_rng, Rng};
-    use executor::Process;
-    use core::program::Program;
-    use core::trace::trace::Trace;
-    use log::debug;
     // use serde_json::Value;
-    use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
     use crate::all_stark::{AllStark, NUM_TABLES};
     use crate::proof::{AllProof, PublicValues, StarkProof};
     use crate::config::StarkConfig;
     use crate::cpu::cpu_stark::CpuStark;
     use crate::prover::{prove_single_table, prove_with_traces};
+    use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -343,31 +380,30 @@ mod tests {
             add r3 r3 r4
             jmp 4
             end";
-    
+
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
         debug!("instructions:{:?}", program.instructions);
-    
+
         for inst in instructions.into_iter() {
             program.instructions.push(inst.clone().parse().unwrap());
         }
-    
+
         let mut process = Process::new();
         process.execute(&mut program, false);
-    
+
         println!("vm trace: {:?}", program.trace);
-    
+
         let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-        
+
         println!("cpu rows: {:?}", cpu_rows);
 
         trace_rows_to_poly_values(cpu_rows)
-        
     }
-    
+
     fn add_mul_decode() -> Vec<PolynomialValues<F>> {
         //mov r0 8
         //mov r1 2
@@ -383,25 +419,25 @@ mod tests {
             0x0020204400000000
             0x0100408200000000
             ";
-    
+
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
         debug!("instructions:{:?}", program.instructions);
-    
+
         for inst in instructions.into_iter() {
             program.instructions.push(inst.clone().parse().unwrap());
         }
-    
+
         let mut process = Process::new();
         process.execute(&mut program, true);
-    
+
         println!("vm trace: {:?}", program.trace);
-        
+
         let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-        
+
         println!("cpu rows: {:?}", cpu_rows);
         trace_rows_to_poly_values(cpu_rows)
     }
