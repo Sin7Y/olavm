@@ -1,12 +1,16 @@
 use crate::columns::*;
 use core::program::{instruction::Opcode, REGISTER_NUM};
-use core::trace::trace::{MemoryOperation, MemoryTraceCell, Step};
+use core::trace::trace::*;
 
 use plonky2::hash::hash_types::RichField;
 use std::mem::{size_of, transmute_copy, ManuallyDrop};
+use std::ops::Sub;
 
+use crate::builtins::bitwise::columns as bitwise;
+use crate::builtins::cmp::columns as cmp;
+use crate::builtins::rangecheck::columns as rangecheck;
 use ethereum_types::{H160, H256, U256};
-use itertools::Itertools;
+use itertools::{Diff, Itertools};
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
 use plonky2::field::polynomial::PolynomialValues;
@@ -145,7 +149,6 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
         .iter()
         .map(|c| {
             let mut row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
-            F::from_canonical_u64(c.is_rw.to_canonical_u64());
             row[COL_MEM_IS_RW] = F::from_canonical_u64(c.is_rw.to_canonical_u64());
             row[COL_MEM_ADDR] = F::from_canonical_u64(c.addr.to_canonical_u64());
             row[COL_MEM_CLK] = F::from_canonical_u64(c.clk.to_canonical_u64());
@@ -166,6 +169,114 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             row[COL_MEM_REGION_POSEIDON] =
                 F::from_canonical_u64(c.region_poseidon.to_canonical_u64());
             row[COL_MEM_REGION_ECDSA] = F::from_canonical_u64(c.region_ecdsa.to_canonical_u64());
+            row
+        })
+        .collect();
+
+    // Pad trace to power of two.
+    let num_filled_row_len = trace.len();
+    if !num_filled_row_len.is_power_of_two() {
+        let filled_last_row = trace[num_filled_row_len - 1];
+        let filled_end_up_in_rw = filled_last_row[COL_MEM_IS_RW].eq(&F::ONE);
+        let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
+        let mut addr: F = if filled_end_up_in_rw {
+            let span = F::from_canonical_u64(2_u64.pow(32).sub(1));
+            p - span
+        } else {
+            filled_last_row[COL_MEM_ADDR] + F::ONE
+        };
+        let num_padded_rows = num_filled_row_len.next_power_of_two();
+        for _ in num_filled_row_len..num_padded_rows {
+            let mut padded_row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
+            padded_row[COL_MEM_IS_RW] = F::ZERO;
+            padded_row[COL_MEM_ADDR] = addr;
+            padded_row[COL_MEM_CLK] = F::ZERO;
+            padded_row[COL_MEM_OP] = F::ZERO;
+            padded_row[COL_MEM_IS_WRITE] = F::ONE;
+            padded_row[COL_MEM_VALUE] = F::ZERO;
+            padded_row[COL_MEM_DIFF_ADDR] = F::ZERO;
+            padded_row[COL_MEM_DIFF_ADDR_INV] = F::ZERO;
+            padded_row[COL_MEM_DIFF_CLK] = F::ZERO;
+            padded_row[COL_MEM_DIFF_ADDR_COND] = p - addr;
+            padded_row[COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
+            padded_row[COL_MEM_RW_ADDR_UNCHANGED] = F::ZERO;
+            padded_row[COL_MEM_REGION_PROPHET] = F::ONE;
+            padded_row[COL_MEM_REGION_POSEIDON] = F::ZERO;
+            padded_row[COL_MEM_REGION_ECDSA] = F::ZERO;
+
+            trace.push(padded_row);
+            addr += F::ONE
+        }
+    }
+
+    trace
+}
+
+pub fn generate_builtins_bitwise_trace<F: RichField>(
+    cells: &Vec<BitwiseCombinedRow>,
+) -> Vec<[F; bitwise::COL_NUM_BITWISE]> {
+    let mut trace: Vec<[F; bitwise::COL_NUM_BITWISE]> = cells
+        .iter()
+        .map(|c| {
+            let mut row: [F; bitwise::COL_NUM_BITWISE] = [F::default(); bitwise::COL_NUM_BITWISE];
+
+            row[bitwise::TAG] = F::from_canonical_u32(c.bitwise_tag);
+            row[bitwise::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
+            row[bitwise::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
+            row[bitwise::RES] = F::from_canonical_u64(c.res.to_canonical_u64());
+
+            row[bitwise::OP0_LIMBS.start] = F::from_canonical_u64(c.op0_0.to_canonical_u64());
+            row[bitwise::OP0_LIMBS.start + 1] = F::from_canonical_u64(c.op0_1.to_canonical_u64());
+            row[bitwise::OP0_LIMBS.start + 2] = F::from_canonical_u64(c.op0_2.to_canonical_u64());
+            row[bitwise::OP0_LIMBS.end] = F::from_canonical_u64(c.op0_3.to_canonical_u64());
+
+            row[bitwise::OP1_LIMBS.start] = F::from_canonical_u64(c.op1_0.to_canonical_u64());
+            row[bitwise::OP1_LIMBS.start + 1] = F::from_canonical_u64(c.op1_1.to_canonical_u64());
+            row[bitwise::OP1_LIMBS.start + 2] = F::from_canonical_u64(c.op1_2.to_canonical_u64());
+            row[bitwise::OP1_LIMBS.end] = F::from_canonical_u64(c.op1_3.to_canonical_u64());
+
+            row[bitwise::RES_LIMBS.start] = F::from_canonical_u64(c.res_0.to_canonical_u64());
+            row[bitwise::RES_LIMBS.start + 1] = F::from_canonical_u64(c.res_1.to_canonical_u64());
+            row[bitwise::RES_LIMBS.start + 2] = F::from_canonical_u64(c.res_2.to_canonical_u64());
+            row[bitwise::RES_LIMBS.end] = F::from_canonical_u64(c.res_3.to_canonical_u64());
+
+            row
+        })
+        .collect();
+    trace
+}
+
+pub fn generate_builtins_cmp_trace<F: RichField>(
+    cells: &Vec<CmpRow>,
+) -> Vec<[F; cmp::COL_NUM_CMP]> {
+    let mut trace: Vec<[F; cmp::COL_NUM_CMP]> = cells
+        .iter()
+        .map(|c| {
+            let mut row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
+
+            row[cmp::TAG] = F::from_canonical_u32(c.tag);
+            row[cmp::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
+            row[cmp::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
+            row[cmp::DIFF] = F::from_canonical_u64(c.diff.to_canonical_u64());
+
+            row
+        })
+        .collect();
+    trace
+}
+
+pub fn generate_builtins_rangecheck_trace<F: RichField>(
+    cells: &Vec<RangeCheckRow>,
+) -> Vec<[F; rangecheck::COL_NUM_RC]> {
+    let mut trace: Vec<[F; rangecheck::COL_NUM_RC]> = cells
+        .iter()
+        .map(|c| {
+            let mut row: [F; rangecheck::COL_NUM_RC] = [F::default(); rangecheck::COL_NUM_RC];
+            row[rangecheck::TAG] = F::from_canonical_u32(c.tag);
+            row[rangecheck::VAL] = F::from_canonical_u64(c.val.to_canonical_u64());
+            row[rangecheck::LIMB_LO] = F::from_canonical_u64(c.limb_lo.to_canonical_u64());
+            row[rangecheck::LIMB_HI] = F::from_canonical_u64(c.limb_hi.to_canonical_u64());
+
             row
         })
         .collect();

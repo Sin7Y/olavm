@@ -99,6 +99,7 @@ pub struct RegisterSelector {
     pub op1: GoldilocksField,
     pub dst: GoldilocksField,
     pub aux0: GoldilocksField,
+    pub aux1: GoldilocksField,
     pub op0_reg_sel: [GoldilocksField; REGISTER_NUM],
     pub op1_reg_sel: [GoldilocksField; REGISTER_NUM],
     pub dst_reg_sel: [GoldilocksField; REGISTER_NUM],
@@ -139,6 +140,7 @@ pub struct RangeRow {
 // Added by xb-2022-12-19
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RangeCheckRow {
+    pub tag: u32,
     pub val: GoldilocksField,
     pub limb_lo: GoldilocksField,
     pub limb_hi: GoldilocksField,
@@ -379,9 +381,10 @@ impl Trace {
     }
 
     // added by xb
-    pub fn insert_rangecheck(&mut self, input: GoldilocksField) {
+    pub fn insert_rangecheck(&mut self, tag: u32, input: GoldilocksField) {
         let split_limbs = split_u16_limbs_from_field(&input);
         self.builtin_rangecheck.push(RangeCheckRow {
+            tag: tag,
             val: input,
             limb_lo: GoldilocksField(split_limbs.0),
             limb_hi: GoldilocksField(split_limbs.1),

@@ -41,6 +41,7 @@ class MainTraceColumnType(Enum):
     OP1 = 'op1'
     DST = 'dst'
     AUX0 = 'aux0'
+    AUX1 = 'aux1'
 
     SEL_OP0_R0 = 'sel_op0_r0'
     SEL_OP0_R1 = 'sel_op0_r1'
@@ -148,6 +149,8 @@ def main():
                 worksheet.write(row_index, col, row[data.value]["dst"])
                 col += 1
                 worksheet.write(row_index, col, row[data.value]["aux0"])
+                col += 1
+                worksheet.write(row_index, col, row[data.value]["aux1"])
                 col += 1
                 sel_op0_regs = row[data.value]["op0_reg_sel"]
                 for reg in sel_op0_regs:
