@@ -313,3 +313,63 @@ fn comparison_test() {
     let mut file = File::create("comparison_trace.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
+
+#[test]
+fn call_test() {
+    //JMP 7
+    //MUL r4 r0 10
+    //ADD r4 r4 r1
+    //MOV r0 r4
+    //RET
+    //MOV r0 8
+    //MOV r1 2
+    //mov r8 0x100010000
+    //add r7 r8 -2
+    //mov r6 0x100000000
+    //mstore r7 r6
+    //CALL 2
+    //ADD r0 r0 r1
+    //END
+    let program_src = "0x4000000020000000
+                             0x7
+                            0x4020008200000000
+                            0xa
+                            0x0200208400000000
+                            0x0001000840000000
+                            0x0000000004000000
+                            0x4000000840000000
+                            0x8
+                            0x4000001040000000
+                            0x2
+                            0x4000080040000000
+                            0x100010000
+                            0x6000040400000000
+                            0xfffffffeffffffff
+                            0x4000020040000000
+                            0x100000000
+                            0x0004040001000000
+                            0x4000000008000000
+                            0x2
+                            0x0020200c00000000
+                            0x0000000000800000";
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program, true);
+    process.gen_memory_table(&mut program);
+
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("call_trace.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}

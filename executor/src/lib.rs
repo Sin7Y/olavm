@@ -456,14 +456,29 @@ impl Process {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::CALL as u8);
                     self.register_selector.op0 =
                         self.registers[FP_REG_INDEX] - GoldilocksField::ONE;
-                    self.register_selector.op1 =
+                    self.register_selector.dst =
                         GoldilocksField::from_canonical_u64(self.pc + step);
-                    self.pc = call_addr.0 .0;
+                    self.register_selector.op1 = call_addr.0;
+                    // fixme: not need aux0 and aux1
+                    self.register_selector.aux0 = self.registers[FP_REG_INDEX] - GoldilocksField::TWO;
+                    self.register_selector.aux1 = self
+                        .memory
+                        .read(
+                            self.registers[FP_REG_INDEX].0 - 2,
+                            self.clk,
+                            GoldilocksField::from_canonical_u64(1 << Opcode::CALL as u64),
+                            GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                            GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
+                            GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+                            GoldilocksField::from_canonical_u64(0 as u64),
+                            GoldilocksField::from_canonical_u64(0 as u64),
+                            GoldilocksField::from_canonical_u64(0 as u64),
+                        );
+                    self.pc = call_addr.0.0;
                 }
                 "ret" => {
                     debug!("opcode: ret");
-                    assert!(ops.len() == 2, "ret params len is 1");
-                    let dst_index = self.get_reg_index(&ops[1]);
+                    assert!(ops.len() == 1, "ret params len is 0");
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RET as u8);
 
                     self.pc = self
@@ -494,10 +509,10 @@ impl Process {
 
                     self.register_selector.op0 =
                         self.registers[FP_REG_INDEX] - GoldilocksField::ONE;
-                    self.register_selector.op1 = GoldilocksField::from_canonical_u64(self.pc);
-                    self.register_selector.dst =
+                    self.register_selector.dst = GoldilocksField::from_canonical_u64(self.pc);
+                    self.register_selector.aux0 =
                         self.registers[FP_REG_INDEX] - GoldilocksField::TWO;
-                    self.register_selector.aux0 = self.registers[FP_REG_INDEX];
+                    self.register_selector.aux1 = self.registers[FP_REG_INDEX];
                 }
                 "mstore" => {
                     debug!("opcode: mstore");
