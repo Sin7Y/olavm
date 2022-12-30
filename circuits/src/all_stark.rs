@@ -296,9 +296,12 @@ fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
 mod tests {
     use std::borrow::BorrowMut;
 
-    use anyhow::Result;
+    use anyhow::{Result, Ok};
     use ethereum_types::U256;
     use itertools::Itertools;
+    use plonky2::fri::oracle::PolynomialBatch;
+    use plonky2::iop::challenger::Challenger;
+    use crate::stark::Stark;
     // use crate::cross_table_lookup::testutils::check_ctls;
     use crate::verifier::verify_proof;
     use plonky2::field::polynomial::PolynomialValues;
@@ -306,7 +309,7 @@ mod tests {
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::{CircuitConfig, VerifierCircuitData};
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig, Hasher};
     use plonky2::util::timing::TimingTree;
     use rand::{thread_rng, Rng};
     use executor::Process;
@@ -316,14 +319,15 @@ mod tests {
     // use serde_json::Value;
     use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
     use crate::all_stark::{AllStark, NUM_TABLES};
-    use crate::proof::{AllProof, PublicValues};
+    use crate::proof::{AllProof, PublicValues, StarkProof};
     use crate::config::StarkConfig;
     use crate::cpu::cpu_stark::CpuStark;
-    use crate::prover::prove_with_traces;
+    use crate::prover::{prove_single_table, prove_with_traces};
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
+    type S = dyn Stark<F, D>;
 
     fn fibo_use_loop() -> Vec<PolynomialValues<F>> {
         let program_src = "mov r0 8
@@ -336,10 +340,9 @@ mod tests {
             mov r1 r2
             mov r2 r4
             mov r4 1
-            sub r0 r0 r4
+            add r3 r3 r4
             jmp 4
-            end
-            ";
+            end";
     
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
@@ -411,13 +414,13 @@ mod tests {
     fn get_proof(config: &StarkConfig) -> Result<(AllStark<F, D>, AllProof<F, C, D>)> {
         let all_stark = AllStark::default();
         let cpu_trace = make_cpu_trace();
-        let memory_rows: Vec<[F; 1]> = vec![];
+        let memory_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows: Vec<[F; 1]> = vec![];
+        let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows: Vec<[F; 1]> = vec![];
+        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![];
+        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         let traces = [
             cpu_trace,
@@ -426,7 +429,7 @@ mod tests {
             cmp_trace,
             rangecheck_trace,
         ];
-        // check_ctls(&traces, &all_stark.cross_table_lookups);
+        check_ctls(&traces, &all_stark.cross_table_lookups);
 
         let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
