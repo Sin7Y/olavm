@@ -1,33 +1,39 @@
-use core::program::instruction;
-
-use itertools::Itertools;
-use plonky2::field::types::Field;
-
-use crate::cross_table_lookup::Column;
-
 use {
     super::*,
     crate::columns::*,
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    crate::cross_table_lookup::Column,
     crate::stark::Stark,
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     core::program::REGISTER_NUM,
     itertools::izip,
+    itertools::Itertools,
     plonky2::field::extension::{Extendable, FieldExtension},
     plonky2::field::packed::PackedField,
+    plonky2::field::types::Field,
     plonky2::hash::hash_types::RichField,
     plonky2::plonk::circuit_builder::CircuitBuilder,
     std::marker::PhantomData,
 };
 
-pub fn ctl_data_memory<F: Field>() -> Vec<Column<F>> {
-    // TODO:
-    [].to_vec()
+pub fn ctl_data_cpu_mem_load_store<F: Field>() -> Vec<Column<F>> {
+    Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_DST]).collect_vec()
 }
 
-pub fn ctl_filter_memory<F: Field>() -> Column<F> {
-    // TODO:
-    Column::single(0)
+pub fn ctl_filter_cpu_mem_load_store<F: Field>() -> Column<F> {
+    Column::sum([COL_S_MLOAD, COL_S_MSTORE])
+}
+
+pub fn ctl_data_cpu_mem_call_ret_pc<F: Field>() -> Vec<Column<F>> {
+    Column::singles([COL_CLK, COL_OPCODE, COL_OP0, COL_DST]).collect_vec()
+}
+
+pub fn ctl_data_cpu_mem_call_ret_fp<F: Field>() -> Vec<Column<F>> {
+    Column::singles([COL_CLK, COL_OPCODE, COL_AUX0, COL_AUX1]).collect_vec()
+}
+
+pub fn ctl_filter_cpu_mem_call_ret<F: Field>() -> Column<F> {
+    Column::sum([COL_S_CALL, COL_S_RET])
 }
 
 // get the data source for bitwise in Cpu table
@@ -96,6 +102,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     {
         let lv = vars.local_values;
         let nv = vars.next_values;
+
+        // Only for debug
+        println!("l_clk: {:?}, s_add: {:?}, s_mul: {:?}, s_eq: {:?}, s_assert: {:?}, s_mov: {:?}, s_jmp: {:?}, s_cjmp: {:?}, s_call: {:?}, s_ret: {:?}, s_mload: {:?}, s_mstore: {:?}, s_end: {:?}", lv[COL_CLK], lv
+        [COL_S_ADD], lv[COL_S_MUL], lv[COL_S_EQ], lv[COL_S_ASSERT], lv[COL_S_MOV], lv[COL_S_JMP], lv[COL_S_CJMP], lv[COL_S_CALL], lv[COL_S_RET], lv[COL_S_MLOAD], lv[COL_S_MSTORE], lv[COL_S_END]);
 
         // 1. Constrain instruction decoding.
         // op_imm should be binary.
@@ -192,22 +202,23 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let op1_imm_shift = P::Scalar::from_canonical_u64(2_u64.pow(62));
         let mut instruction = lv[COL_OP1_IMM] * op1_imm_shift;
 
+        // The order of COL_S_OP0, COL_S_OP1, COL_S_DST is r8, r7, .. r0.
         let op0_start_shift = 2_u64.pow(61);
-        for (index, s) in s_op0s.iter().enumerate() {
+        for (index, s) in s_op0s.iter().rev().enumerate() {
             let shift = op0_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
             instruction += *s * shift;
         }
 
         let op1_start_shift = 2_u64.pow(52);
-        for (index, s) in s_op1s.iter().enumerate() {
+        for (index, s) in s_op1s.iter().rev().enumerate() {
             let shift = op1_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
             instruction += *s * shift;
         }
 
         let dst_start_shift = 2_u64.pow(43);
-        for (index, s) in s_dsts.iter().enumerate() {
+        for (index, s) in s_dsts.iter().rev().enumerate() {
             let shift = dst_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
             instruction += *s * shift;
@@ -229,6 +240,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr.constraint(sum_s_dst * (P::ONES - sum_s_dst));
 
         // Op and register permutation.
+        // Register should be next line.
         let regs: [P; REGISTER_NUM] = lv[COL_REGS].try_into().unwrap();
         let op0_sum: P = s_op0s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
         yield_constr.constraint(sum_s_op0 * (lv[COL_OP0] - op0_sum));
@@ -236,7 +248,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let op1_sum: P = s_op1s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
         yield_constr.constraint(sum_s_op1 * (lv[COL_OP1] - op1_sum));
 
-        let dst_sum: P = s_dsts.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
+        let n_regs: [P; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
+        let dst_sum: P = s_dsts.iter().zip(n_regs.iter()).map(|(s, r)| *s * *r).sum();
         yield_constr.constraint(sum_s_dst * (lv[COL_DST] - dst_sum));
 
         // When oprand exists, op1 is imm.
@@ -268,15 +281,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // 2. Constrain state changing.
         // clk
-        yield_constr.constraint(nv[COL_CLK] - lv[COL_CLK] - P::ONES);
+        yield_constr.constraint(nv[COL_CLK] - (lv[COL_CLK] + P::ONES));
 
         // flag
         yield_constr.constraint(lv[COL_FLAG] * (P::ONES - lv[COL_FLAG]));
-        let s_cmp = lv[COL_S_EQ] + lv[COL_S_NEQ] + lv[COL_S_GTE];
+        let s_cmp = lv[COL_S_EQ] + lv[COL_S_NEQ] + lv[COL_S_GTE] + lv[COL_S_CJMP];
         yield_constr.constraint((P::ONES - s_cmp) * (nv[COL_FLAG] - lv[COL_FLAG]));
+        println!("l_flag: {:?}, n_flag: {:?}", lv[COL_FLAG], nv[COL_FLAG]);
 
         // reg
-        let n_regs: [P; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
         for (dst, l_r, n_r) in izip!(
             &s_dsts[..REGISTER_NUM - 1],
             &regs[..REGISTER_NUM - 1],
@@ -319,13 +332,93 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, NUM_CPU_COLS>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, NUM_CPU_COLS>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
     }
 
     fn constraint_degree(&self) -> usize {
         3
+    }
+}
+
+mod tests {
+    use num::bigint::BigUint;
+    use num::ToPrimitive;
+
+    use super::*;
+    use crate::util::{generate_cpu_trace, print_cpu_trace};
+    use core::program::{instruction::Opcode, Program};
+    use executor::Process;
+    use plonky2::{
+        field::{goldilocks_field::GoldilocksField, types::Field64},
+        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    };
+
+    #[test]
+    fn test_cpu_stark_fibo_use_loop() {
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = CpuStark<F, D>;
+        let stark = S::default();
+
+        let program_src = "0x4000000840000000
+        0x8
+        0x4000001040000000
+        0x1
+        0x4000002040000000
+        0x1
+        0x4000004040000000
+        0x0
+        0x0020800100000000
+        0x4000000010000000
+        0x13
+        0x0040408400000000
+        0x0000401040000000
+        0x0001002040000000
+        0x4000008040000000
+        0x1
+        0x0101004400000000
+        0x4000000020000000
+        0x8
+        0x0000000000800000";
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        let _ = process.execute(&mut program, true);
+
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        // print_cpu_trace(&cpu_rows);
+
+        for i in 0..cpu_rows.len() - 1 {
+            println!("row index: {}", i);
+            let vars = StarkEvaluationVars {
+                local_values: &cpu_rows[i],
+                next_values: &cpu_rows[i + 1],
+            };
+
+            let mut constraint_consumer = ConstraintConsumer::new(
+                vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
+                GoldilocksField::ONE,
+                GoldilocksField::ONE,
+                GoldilocksField::ONE,
+            );
+            stark.eval_packed_generic(vars, &mut constraint_consumer);
+
+            for &acc in &constraint_consumer.constraint_accs {
+                assert_eq!(acc, GoldilocksField::ZERO);
+            }
+        }
     }
 }

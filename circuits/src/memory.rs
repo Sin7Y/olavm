@@ -16,14 +16,44 @@ use {
     std::marker::PhantomData,
 };
 
+pub fn ctl_data_mem_rc_diff_cond<F: Field>() -> Vec<Column<F>> {
+    vec![Column::single(COL_MEM_DIFF_ADDR_COND)]
+}
+
+pub fn ctl_filter_mem_rc_diff_cond<F: Field>() -> Column<F> {
+    Column::sum([
+        COL_MEM_REGION_PROPHET,
+        COL_MEM_REGION_POSEIDON,
+        COL_MEM_REGION_ECDSA,
+    ])
+}
+
+pub fn ctl_data_mem_rc_diff_addr<F: Field>() -> Vec<Column<F>> {
+    vec![Column::single(COL_MEM_DIFF_ADDR)]
+}
+
+pub fn ctl_filter_mem_rc_diff_addr<F: Field>() -> Column<F> {
+    Column::single(COL_MEM_IS_RW)
+}
+
+pub fn ctl_data_mem_rc_diff_clk<F: Field>() -> Vec<Column<F>> {
+    vec![Column::single(COL_MEM_DIFF_CLK)]
+}
+
+pub fn ctl_filter_mem_rc_diff_clk<F: Field>() -> Column<F> {
+    Column::single(COL_MEM_RW_ADDR_UNCHANGED)
+}
+
+// todo ctl for poseidon and ecdsa
+
 pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
-    // TODO:
-    vec![Column::single(0)]
+    let mut cols: Vec<_> =
+        Column::singles([COL_MEM_CLK, COL_MEM_OP, COL_MEM_ADDR, COL_MEM_VALUE]).collect();
+    cols
 }
 
 pub fn ctl_filter<F: Field>() -> Column<F> {
-    // TODO:
-    Column::single(0)
+    Column::single(COL_MEM_FILTER_LOOKED_FOR_MAIN)
 }
 
 #[derive(Copy, Clone, Default)]
@@ -289,6 +319,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 }
 
 mod tests {
+    use super::*;
     use crate::config::StarkConfig;
     use crate::memory::MemoryStark;
     use crate::prover::prove;
@@ -549,6 +580,7 @@ mod tests {
         ];
 
         let p = GoldilocksField::order();
+        let p = GoldilocksField::from_noncanonical_biguint(p);
         let span = GoldilocksField::from_canonical_u64(2_u64.pow(32).sub(1));
         let prophet_row0: [F; 15] = [
             zero,
@@ -656,9 +688,24 @@ mod tests {
             prophet_row4,
         ];
 
-        let trace = trace_rows_to_poly_values(trace_rows);
-        // let proof = prove::<F, C, S, D>(stark, &config, trace, [], &mut TimingTree::default())?;
-        //
-        // verify_stark_proof(stark, proof, &config)
+        for i in 0..trace_rows.len() - 1 {
+            println!("row index: {}", i);
+            let vars = StarkEvaluationVars {
+                local_values: &trace_rows[i],
+                next_values: &trace_rows[i + 1],
+            };
+
+            let mut constraint_consumer = ConstraintConsumer::new(
+                vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
+                GoldilocksField::ONE,
+                GoldilocksField::ONE,
+                GoldilocksField::ONE,
+            );
+            stark.eval_packed_generic(vars, &mut constraint_consumer);
+
+            for &acc in &constraint_consumer.constraint_accs {
+                assert_eq!(acc, GoldilocksField::ZERO);
+            }
+        }
     }
 }
