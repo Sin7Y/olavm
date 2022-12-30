@@ -6,14 +6,20 @@ use plonky2::hash::hash_types::RichField;
 
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
-use crate::builtins::rangecheck::rangecheck_stark::{self, ctl_data_rc, ctl_filter_rc, RangeCheckStark};
+use crate::builtins::rangecheck::rangecheck_stark::{
+    self, ctl_data_rc, ctl_filter_rc, RangeCheckStark,
+};
 use crate::config::StarkConfig;
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{self, BitwiseFixedStark};
 use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{self, RangecheckFixedStark};
-use crate::memory::{ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_addr, ctl_data_mem_rc_diff_clk, ctl_data_mem_rc_diff_cond, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_addr, ctl_filter_mem_rc_diff_clk, ctl_filter_mem_rc_diff_cond, MemoryStark};
+use crate::memory::{
+    ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_addr, ctl_data_mem_rc_diff_clk,
+    ctl_data_mem_rc_diff_cond, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_addr,
+    ctl_filter_mem_rc_diff_clk, ctl_filter_mem_rc_diff_cond, MemoryStark,
+};
 use crate::program::program_stark::{self, ProgramStark};
 use crate::stark::Stark;
 
@@ -105,15 +111,10 @@ fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
         cpu_stark::ctl_data_cpu_mem_call_ret_fp(),
         Some(cpu_stark::ctl_filter_cpu_mem_call_ret()),
     );
-    let all_cpu_lookers = vec![
-        cpu_mem_load_store,
-        cpu_mem_call_ret_pc,
-        cpu_mem_call_ret_fp,
-    ];
+    let all_cpu_lookers = vec![cpu_mem_load_store, cpu_mem_call_ret_pc, cpu_mem_call_ret_fp];
     let memory_looked =
         TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter()));
-     CrossTableLookup::new(all_cpu_lookers, memory_looked, None)
-
+    CrossTableLookup::new(all_cpu_lookers, memory_looked, None)
 }
 fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
     let mem_rc_diff_cond = TableWithColumns::new(
@@ -131,15 +132,10 @@ fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
         ctl_data_mem_rc_diff_clk(),
         Some(ctl_filter_mem_rc_diff_clk()),
     );
-    let all_mem_rc_lookers = vec![
-        mem_rc_diff_cond,
-        mem_rc_diff_addr,
-        mem_rc_diff_clk
-    ];
+    let all_mem_rc_lookers = vec![mem_rc_diff_cond, mem_rc_diff_addr, mem_rc_diff_clk];
     let rc_looked = TableWithColumns::new(Table::RangeCheck, ctl_data_rc(), Some(ctl_filter_rc()));
     CrossTableLookup::new(all_mem_rc_lookers, rc_looked, None)
 }
-
 
 // add bitwise rangecheck instance
 // Cpu table
