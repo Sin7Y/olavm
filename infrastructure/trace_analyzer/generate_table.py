@@ -192,6 +192,7 @@ def main():
         col = 0
         for data in MemoryTraceColumnType:
             if data.value == "addr" or data.value == "op" or data.value == "diff_addr_inv" or data.value == "value" or data.value == "diff_addr_cond":
+                print("{0}:{1}:{2}".format(data.value, row[data.value], '=CONCATENATE("0x",DEC2HEX({0}/2^32,8),DEC2HEX(MOD({0},2^32),8))'.format(row[data.value])))
                 worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}/2^32,8),DEC2HEX(MOD({0},2^32),8))'.format(row[data.value]))
             else:
                 worksheet.write(row_index, col, row[data.value])
