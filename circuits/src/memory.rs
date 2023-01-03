@@ -93,6 +93,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let nv_addr = nv[COL_MEM_ADDR];
         let nv_diff_addr = nv[COL_MEM_DIFF_ADDR];
         let rw_addr_unchanged = lv[COL_MEM_RW_ADDR_UNCHANGED];
+        let nv_rw_addr_unchanged = nv[COL_MEM_RW_ADDR_UNCHANGED];
         let diff_addr_cond = lv[COL_MEM_DIFF_ADDR_COND];
         let value = lv[COL_MEM_VALUE];
         let nv_value = lv[COL_MEM_VALUE];
@@ -123,7 +124,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         // for rw_addr_unchanged
         yield_constr.constraint_first_row(rw_addr_unchanged);
         yield_constr.constraint_transition(
-            is_rw * (P::ONES - rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
+            is_rw * (P::ONES - nv_rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
         );
 
         // for region division: 1. one of four region is selected; 2. binary constraints; 3. diff_addr_cond in different region.
