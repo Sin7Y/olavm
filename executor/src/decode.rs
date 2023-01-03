@@ -129,12 +129,12 @@ pub fn decode_raw_instruction(
                     instruction += &imm.to_string();
                     step = IMM_INSTRUCTION_LEN;
                 } else {
-                    let reg0_name = format!("r{}", reg0);
-                    instruction += &reg0_name;
+                    let reg2_name = format!("r{}", reg2);
+                    instruction += &reg2_name;
                 }
                 instruction += " ";
-                let reg2_name = format!("r{}", reg2);
-                instruction += &reg2_name;
+                let reg1_name = format!("r{}", reg1);
+                instruction += &reg1_name;
             }
             Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RANGE_CHECK => {
                 instruction += &op_code.to_string();
