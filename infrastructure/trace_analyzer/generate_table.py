@@ -17,6 +17,7 @@ class JsonMainTraceColumnType(Enum):
     ASM = 'asm'
     REG_SELECTOR = 'register_selector'
 
+
 class MainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
@@ -52,7 +53,7 @@ class MainTraceColumnType(Enum):
     SEL_OP0_R6 = 'sel_op0_r6'
     SEL_OP0_R7 = 'sel_op0_r7'
     SEL_OP0_R8 = 'sel_op0_r8'
-       
+
     SEL_OP1_R0 = 'sel_op1_r0'
     SEL_OP1_R1 = 'sel_op1_r1'
     SEL_OP1_R2 = 'sel_op1_r2'
@@ -62,7 +63,7 @@ class MainTraceColumnType(Enum):
     SEL_OP1_R6 = 'sel_op1_r6'
     SEL_OP1_R7 = 'sel_op1_r7'
     SEL_OP1_R8 = 'sel_op1_r8'
-    
+
     SEL_DST_R0 = 'sel_dst_r0'
     SEL_DST_R1 = 'sel_dst_r1'
     SEL_DST_R2 = 'sel_dst_r2'
@@ -170,8 +171,12 @@ def main():
                 col += 1
             else:
                 if data.value == "instruction" or data.value == "opcode" or data.value == "aux0":
-                    print('{0}'.format(row[data.value]))
-                    worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}/2^32,8),DEC2HEX(MOD({0},2^32),8))'.format(row[data.value]))
+                    print("{0}:{1}:{2}".format(data.value, row[data.value],
+                                               '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                                   row[data.value] // (2 ** 32), row[data.value] % (2 ** 32))))
+                    worksheet.write(row_index, col,
+                                    '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                        row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
                 else:
                     worksheet.write(row_index, col, row[data.value])
                 col += 1
@@ -192,14 +197,16 @@ def main():
         col = 0
         for data in MemoryTraceColumnType:
             if data.value == "addr" or data.value == "op" or data.value == "diff_addr_inv" or data.value == "value" or data.value == "diff_addr_cond":
-                print("{0}:{1}:{2}".format(data.value, row[data.value], '=CONCATENATE("0x",DEC2HEX({0}/2^32,8),DEC2HEX(MOD({0},2^32),8))'.format(row[data.value])))
-                worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}/2^32,8),DEC2HEX(MOD({0},2^32),8))'.format(row[data.value]))
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
             else:
                 worksheet.write(row_index, col, row[data.value])
             col += 1
         row_index += 1
     workbook.close()
     print(MemoryTraceColumnType['IS_WRITE'].value)
+
 
 if __name__ == '__main__':
     main()
