@@ -187,8 +187,8 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             padded_row[COL_MEM_OP] = F::ZERO;
             padded_row[COL_MEM_IS_WRITE] = F::ONE;
             padded_row[COL_MEM_VALUE] = F::ZERO;
-            padded_row[COL_MEM_DIFF_ADDR] = F::ZERO;
-            padded_row[COL_MEM_DIFF_ADDR_INV] = F::ZERO;
+            padded_row[COL_MEM_DIFF_ADDR] = addr - filled_last_row[COL_MEM_ADDR];
+            padded_row[COL_MEM_DIFF_ADDR_INV] = padded_row[COL_MEM_DIFF_ADDR].inverse();
             padded_row[COL_MEM_DIFF_CLK] = F::ZERO;
             padded_row[COL_MEM_DIFF_ADDR_COND] = p - addr;
             padded_row[COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
