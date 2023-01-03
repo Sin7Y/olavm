@@ -250,7 +250,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         let n_regs: [P; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
         let dst_sum: P = s_dsts.iter().zip(n_regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint(sum_s_dst * (lv[COL_DST] - dst_sum));
+        yield_constr.constraint_transition(sum_s_dst * (lv[COL_DST] - dst_sum));
+
+        // Last row's 'next row' (AKA first row) regs should be all zeros.
+        let _ = n_regs
+            .iter()
+            .map(|nr| yield_constr.constraint_last_row(*nr))
+            .collect::<()>();
 
         // When oprand exists, op1 is imm.
         yield_constr.constraint(lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL]));
@@ -287,7 +293,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // flag
         yield_constr.constraint(lv[COL_FLAG] * (P::ONES - lv[COL_FLAG]));
-        let s_cmp = lv[COL_S_EQ] + lv[COL_S_NEQ] + lv[COL_S_GTE] + lv[COL_S_CJMP];
+        let s_cmp = lv[COL_S_EQ] + lv[COL_S_NEQ] + lv[COL_S_GTE] + lv[COL_S_CJMP] + lv[COL_S_END];
         yield_constr.constraint((P::ONES - s_cmp) * (nv[COL_FLAG] - lv[COL_FLAG]));
         println!("l_flag: {:?}, n_flag: {:?}", lv[COL_FLAG], nv[COL_FLAG]);
 
@@ -297,10 +303,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             &regs[..REGISTER_NUM - 1],
             &n_regs[..REGISTER_NUM - 1]
         ) {
-            yield_constr.constraint((P::ONES - *dst) * (*n_r - *l_r));
+            yield_constr.constraint_transition((P::ONES - *dst) * (*n_r - *l_r));
         }
         // fp
-        yield_constr.constraint(
+        yield_constr.constraint_transition(
             lv[COL_S_RET] * (n_regs[REGISTER_NUM - 1] - lv[COL_AUX0])
                 + (P::ONES - lv[COL_S_RET])
                     * (P::ONES - s_dsts[REGISTER_NUM - 1])
@@ -334,6 +340,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         ret::eval_packed_generic(lv, nv, yield_constr);
         mload::eval_packed_generic(lv, nv, yield_constr);
         mstore::eval_packed_generic(lv, nv, yield_constr);
+
+        // Last row must be `END`
+        yield_constr.constraint_last_row(lv[COL_S_END] - P::ONES);
     }
 
     fn eval_ext_circuit(
@@ -361,6 +370,7 @@ mod tests {
         field::{goldilocks_field::GoldilocksField, types::Field64},
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
+    use plonky2_util::log2_strict;
 
     fn test_cpu_stark(program_src: &str) {
         const D: usize = 2;
@@ -385,18 +395,30 @@ mod tests {
         let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
         // print_cpu_trace(&cpu_rows);
 
-        for i in 0..cpu_rows.len() - 1 {
+        let len = cpu_rows.len();
+        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
+        let subgroup =
+            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
+        for i in 0..len {
             println!("row index: {}", i);
             let vars = StarkEvaluationVars {
-                local_values: &cpu_rows[i],
-                next_values: &cpu_rows[i + 1],
+                local_values: &cpu_rows[i % len],
+                next_values: &cpu_rows[(i + 1) % len],
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(
-                vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
-                GoldilocksField::ONE,
-                GoldilocksField::ONE,
-                GoldilocksField::ONE,
+                vec![F::rand()],
+                subgroup[i] - last,
+                if i == 0 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+                if i == len - 1 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
             );
             stark.eval_packed_generic(vars, &mut constraint_consumer);
 
