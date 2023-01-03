@@ -89,8 +89,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let nv_is_write = nv[COL_MEM_IS_WRITE];
         let filter_looked_for_main = lv[COL_MEM_FILTER_LOOKED_FOR_MAIN];
         let addr = lv[COL_MEM_ADDR];
-        let diff_addr = nv[COL_MEM_DIFF_ADDR];
-        let diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
+        let nv_diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
         let nv_addr = nv[COL_MEM_ADDR];
         let nv_diff_addr = nv[COL_MEM_DIFF_ADDR];
         let rw_addr_unchanged = lv[COL_MEM_RW_ADDR_UNCHANGED];
@@ -120,10 +119,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         yield_constr.constraint(op * (P::ONES - filter_looked_for_main));
 
         // addr'-addr-diff_addr'= 0
-        yield_constr.constraint(nv_addr - addr - nv_diff_addr);
+        yield_constr.constraint_transition(nv_addr - addr - nv_diff_addr);
         // for rw_addr_unchanged
         yield_constr.constraint_first_row(rw_addr_unchanged);
-        yield_constr.constraint(is_rw * (P::ONES - rw_addr_unchanged - diff_addr * diff_addr_inv));
+        yield_constr.constraint_transition(
+            is_rw * (P::ONES - rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
+        );
 
         // for region division: 1. one of four region is selected; 2. binary constraints; 3. diff_addr_cond in different region.
         yield_constr.constraint(is_rw + region_prophet + region_poseidon + region_ecdsa - P::ONES);
@@ -140,14 +141,14 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         // for write once:
         // 1. addr doesn't change or increase by 1 when not cross region;
         // 2. when addr not increase, must be read.
-        yield_constr.constraint(
+        yield_constr.constraint_transition(
             (P::ONES - is_rw)
                 * (P::ONES - nv_region_prophet + region_prophet)
                 * (P::ONES - nv_region_poseidon + region_poseidon)
                 * (nv_addr - addr)
                 * (P::ONES - nv_addr + addr),
         );
-        yield_constr.constraint(
+        yield_constr.constraint_transition(
             (P::ONES - is_rw)
                 * (P::ONES - nv_region_prophet + region_prophet)
                 * (P::ONES - nv_region_poseidon + region_poseidon)
@@ -159,8 +160,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         // 1. first operation for each addr must be write;
         // 2. next value does not change if it is read.
         yield_constr.constraint_first_row(P::ONES - is_write);
-        yield_constr.constraint((nv_addr - addr) * (P::ONES - nv_is_write));
-        yield_constr.constraint((P::ONES - nv_is_write) * (nv_value - value));
+        yield_constr.constraint_transition((nv_addr - addr) * (P::ONES - nv_is_write));
+        yield_constr.constraint_transition((P::ONES - nv_is_write) * (nv_value - value));
     }
 
     fn eval_ext_circuit(

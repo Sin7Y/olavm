@@ -362,34 +362,12 @@ mod tests {
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
 
-    #[test]
-    fn test_cpu_stark_fibo_use_loop() {
+    fn test_cpu_stark(program_src: &str) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = CpuStark<F, D>;
         let stark = S::default();
-
-        let program_src = "0x4000000840000000
-        0x8
-        0x4000001040000000
-        0x1
-        0x4000002040000000
-        0x1
-        0x4000004040000000
-        0x0
-        0x0020800100000000
-        0x4000000010000000
-        0x13
-        0x0040408400000000
-        0x0000401040000000
-        0x0001002040000000
-        0x4000008040000000
-        0x1
-        0x0101004400000000
-        0x4000000020000000
-        0x8
-        0x0000000000800000";
 
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
@@ -426,5 +404,55 @@ mod tests {
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
         }
+    }
+
+    #[test]
+    fn test_fibo_use_loop() {
+        let program_src = "0x4000000840000000
+        0x8
+        0x4000001040000000
+        0x1
+        0x4000002040000000
+        0x1
+        0x4000004040000000
+        0x0
+        0x0020800100000000
+        0x4000000010000000
+        0x13
+        0x0040408400000000
+        0x0000401040000000
+        0x0001002040000000
+        0x4000008040000000
+        0x1
+        0x0101004400000000
+        0x4000000020000000
+        0x8
+        0x0000000000800000";
+
+        test_cpu_stark(program_src);
+    }
+
+    #[test]
+    fn test_memory() {
+        let program_src = "0x4000000840000000
+        0x8
+        0x4020000001000000
+        0x100
+        0x4000001040000000
+        0x2
+        0x4040000001000000
+        0x200
+        0x4000000840000000
+        0x14
+        0x4000001002000000
+        0x100
+        0x4000002002000000
+        0x200
+        0x4000004002000000
+        0x200
+        0x0040200c00000000
+        0x0000000000800000";
+
+        test_cpu_stark(program_src);
     }
 }
