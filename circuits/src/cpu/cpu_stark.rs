@@ -281,7 +281,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // 2. Constrain state changing.
         // clk
-        yield_constr.constraint(nv[COL_CLK] - (lv[COL_CLK] + P::ONES));
+        // if instruction is end, we don't need to contrain clk.
+        yield_constr
+            .constraint((P::ONES - lv[COL_S_END]) * (nv[COL_CLK] - (lv[COL_CLK] + P::ONES)));
 
         // flag
         yield_constr.constraint(lv[COL_FLAG] * (P::ONES - lv[COL_FLAG]));
@@ -306,6 +308,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         );
 
         // pc
+        // if instruction is end, we don't need to constrain pc.
         let pc_incr = (P::ONES - (lv[COL_S_JMP] + lv[COL_S_CJMP] + lv[COL_S_CALL] + lv[COL_S_RET]))
             * (lv[COL_PC] + P::ONES + lv[COL_OP1_IMM]);
         let pc_jmp = lv[COL_S_JMP] * lv[COL_OP1];
@@ -314,7 +317,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
                 + lv[COL_FLAG] * lv[COL_OP1]);
         let pc_call = lv[COL_S_CALL] * lv[COL_OP1];
         let pc_ret = lv[COL_S_RET] * lv[COL_OP1];
-        yield_constr.constraint(nv[COL_PC] - (pc_incr + pc_jmp + pc_cjmp + pc_call + pc_ret));
+        yield_constr.constraint(
+            (P::ONES - lv[COL_S_END])
+                * (nv[COL_PC] - (pc_incr + pc_jmp + pc_cjmp + pc_call + pc_ret)),
+        );
 
         // opcode
         add::eval_packed_generic(lv, nv, yield_constr);
