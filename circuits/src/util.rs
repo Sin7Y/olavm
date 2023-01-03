@@ -237,16 +237,16 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         })
         .collect();
 
-        // Pad trace to power of two.
-        let row_len = trace.len();
-        if !row_len.is_power_of_two() {
-            let new_row_len = row_len.next_power_of_two();
-            let end_row = trace[row_len - 1];
-            for i in 0..new_row_len - row_len {
-                let mut new_row = end_row;
-                trace.push(new_row);
-            }
+    // Pad trace to power of two.
+    let row_len = trace.len();
+    if !row_len.is_power_of_two() {
+        let new_row_len = row_len.next_power_of_two();
+        let end_row = trace[row_len - 1];
+        for i in 0..new_row_len - row_len {
+            let mut new_row = end_row;
+            trace.push(new_row);
         }
+    }
 
     trace
 }
@@ -267,16 +267,16 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
             row
         })
         .collect();
-        // Pad trace to power of two.
-        let row_len = trace.len();
-        if !row_len.is_power_of_two() {
-            let new_row_len = row_len.next_power_of_two();
-            let end_row = trace[row_len - 1];
-            for i in 0..new_row_len - row_len {
-                let mut new_row = end_row;
-                trace.push(new_row);
-            }
+    // Pad trace to power of two.
+    let row_len = trace.len();
+    if !row_len.is_power_of_two() {
+        let new_row_len = row_len.next_power_of_two();
+        let end_row = trace[row_len - 1];
+        for i in 0..new_row_len - row_len {
+            let mut new_row = end_row;
+            trace.push(new_row);
         }
+    }
     trace
 }
 
@@ -295,16 +295,16 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
             row
         })
         .collect();
-        // Pad trace to power of two.
-        let row_len = trace.len();
-        if !row_len.is_power_of_two() {
-            let new_row_len = row_len.next_power_of_two();
-            let end_row = trace[row_len - 1];
-            for i in 0..new_row_len - row_len {
-                let mut new_row = end_row;
-                trace.push(new_row);
-            }
+    // Pad trace to power of two.
+    let row_len = trace.len();
+    if !row_len.is_power_of_two() {
+        let new_row_len = row_len.next_power_of_two();
+        let end_row = trace[row_len - 1];
+        for i in 0..new_row_len - row_len {
+            let mut new_row = end_row;
+            trace.push(new_row);
         }
+    }
     trace
 }
 
