@@ -4,7 +4,6 @@ from enum import Enum
 
 import xlsxwriter
 
-
 class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
@@ -17,6 +16,26 @@ class JsonMainTraceColumnType(Enum):
     ASM = 'asm'
     REG_SELECTOR = 'register_selector'
 
+    SEL_ADD = 'sel_add'
+    SEL_MUL = 'sel_mul'
+    SEL_EQ = 'sel_eq'
+    SEL_ASSERT = 'sel_assert'
+    SEL_MOV = 'sel_mov'
+    SEL_JMP = 'sel_jmp'
+    SEL_CJMP = 'sel_cjmp'
+    SEL_CALL = 'sel_call'
+    SEL_RET = 'sel_ret'
+    SEL_MLOAD = 'sel_mload'
+    SEL_MSTORE = 'sel_mstore'
+    SEL_END = 'sel_end'
+
+    SEL_RANGE_CHECK = 'sel_range_check'
+    SEL_AND = 'sel_and'
+    SEL_OR = 'sel_or'
+    SEL_XOR = 'sel_xor'
+    SEL_NOT = 'sel_not'
+    SEL_NEQ = 'sel_neq'
+    SEL_GTE = 'sel_gte'
 
 class MainTraceColumnType(Enum):
     CLK = 'clk'
@@ -114,27 +133,33 @@ class MemoryTraceColumnType(Enum):
     REGION_ECDSA = 'region_ecdsa'
 
 
+def generate_columns_of_title(worksheet, trace_column_title):
+    col = 0
+    title_row = 0
+    for data in trace_column_title:
+        # print(data.name)
+        worksheet.write(title_row, col, data.value)
+        col += 1
+
+
 def main():
     import sys
     trace_input = open(sys.argv[1], 'r').read()
     trace_json = json.loads(trace_input)
 
-    workbook = xlsxwriter.Workbook('trace.xlsx')
+    # trace_output = sys.argv[2]
+    # workbook = xlsxwriter.Workbook(trace_output)
+    workbook = xlsxwriter.Workbook("trace.xlsx")
 
     worksheet = workbook.add_worksheet("MainTrace")
 
     # print(trace_json["exec"][1]["regs"])
 
     # MainTrace
-    col = 0
-    title_row = 0
-    for data in MainTraceColumnType:
-        worksheet.write(title_row, col, data.value)
-        col += 1
-        print('{:15} = {}'.format(data.name, data.value))
+    generate_columns_of_title(worksheet, MainTraceColumnType)
 
+    # generate main trace table
     row_index = 1
-
     for row in trace_json["exec"]:
         col = 0
         for data in JsonMainTraceColumnType:
@@ -171,12 +196,24 @@ def main():
                 col += 1
             else:
                 if data.value == "instruction" or data.value == "opcode" or data.value == "aux0":
-                    print("{0}:{1}:{2}".format(data.value, row[data.value],
-                                               '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
-                                                   row[data.value] // (2 ** 32), row[data.value] % (2 ** 32))))
+                    # print("{0}:{1}:{2}".format(data.value, row[data.value],
+                    #                            '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                    #                                row[data.value] // (2 ** 32), row[data.value] % (2 ** 32))))
                     worksheet.write(row_index, col,
                                     '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                                         row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+                elif data.value == "sel_add" or data.value == "sel_mul" or data.value == "sel_eq" \
+                  or data.value == "sel_assert" or data.value == "sel_mov" or data.value == "sel_jmp" \
+                  or data.value == "sel_cjmp" or data.value == "sel_call" or data.value == "sel_ret" \
+                  or data.value == "sel_mload" or data.value == "sel_mstore" or data.value == "sel_end" \
+                  or data.value == "sel_range_check" or data.value == "sel_and" or data.value == "sel_or" \
+                  or data.value == "sel_xor" or data.value == "sel_not" or data.value == "sel_neq" \
+                  or data.value == "sel_gte"  \
+                  :
+                    if row["opcode"] == 0x1:
+                        worksheet.write(row_index, col, 1)
+                    else:
+                        worksheet.write(row_index, col, 0)
                 else:
                     worksheet.write(row_index, col, row[data.value])
                 col += 1
@@ -184,15 +221,10 @@ def main():
 
     # Memory Trace
     worksheet = workbook.add_worksheet("MemoryTrace")
-    col = 0
-    title_row = 0
-    for data in MemoryTraceColumnType:
-        worksheet.write(title_row, col, data.value)
-        col += 1
-        print('{:15} = {}'.format(data.name, data.value))
+    generate_columns_of_title(worksheet, MemoryTraceColumnType)
 
+    # generate memory trace table
     row_index = 1
-
     for row in trace_json["memory"]:
         col = 0
         for data in MemoryTraceColumnType:
