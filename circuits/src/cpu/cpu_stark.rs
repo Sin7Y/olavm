@@ -16,12 +16,20 @@ use {
     std::marker::PhantomData,
 };
 
-pub fn ctl_data_cpu_mem_load_store<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_cpu_mem_mstore<F: Field>() -> Vec<Column<F>> {
     Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_OP0]).collect_vec()
 }
 
-pub fn ctl_filter_cpu_mem_load_store<F: Field>() -> Column<F> {
-    Column::sum([COL_S_MLOAD, COL_S_MSTORE])
+pub fn ctl_filter_cpu_mem_mstore<F: Field>() -> Column<F> {
+    Column::single(COL_S_MSTORE)
+}
+
+pub fn ctl_data_cpu_mem_mload<F: Field>() -> Vec<Column<F>> {
+    Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_DST]).collect_vec()
+}
+
+pub fn ctl_filter_cpu_mem_mload<F: Field>() -> Column<F> {
+    Column::single(COL_S_MLOAD)
 }
 
 pub fn ctl_data_cpu_mem_call_ret_pc<F: Field>() -> Vec<Column<F>> {
