@@ -315,10 +315,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         }
         // fp
         yield_constr.constraint_transition(
-            lv[COL_S_RET] * (n_regs[REGISTER_NUM - 1] - lv[COL_AUX0])
-                + (P::ONES - lv[COL_S_RET])
+            (lv[COL_S_RET] * (n_regs[REGISTER_NUM - 1] - lv[COL_AUX1]))
+                + ((P::ONES - lv[COL_S_RET])
                     * (P::ONES - s_dsts[REGISTER_NUM - 1])
-                    * (n_regs[REGISTER_NUM - 1] - regs[REGISTER_NUM - 1]),
+                    * (n_regs[REGISTER_NUM - 1] - regs[REGISTER_NUM - 1])),
         );
 
         // pc
@@ -330,7 +330,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             * ((P::ONES - lv[COL_FLAG]) * (lv[COL_PC] + P::ONES + lv[COL_OP1_IMM])
                 + lv[COL_FLAG] * lv[COL_OP1]);
         let pc_call = lv[COL_S_CALL] * lv[COL_OP1];
-        let pc_ret = lv[COL_S_RET] * lv[COL_OP1];
+        let pc_ret = lv[COL_S_RET] * lv[COL_DST];
         yield_constr.constraint(
             (P::ONES - lv[COL_S_END])
                 * (nv[COL_PC] - (pc_incr + pc_jmp + pc_cjmp + pc_call + pc_ret)),
@@ -480,6 +480,34 @@ mod tests {
         0x200
         0x0040200c00000000
         0x0000000000800000";
+
+        test_cpu_stark(program_src);
+    }
+
+    #[test]
+    fn test_call() {
+        let program_src = "0x4000000020000000
+        0x7
+       0x4020008200000000
+       0xa
+       0x0200208400000000
+       0x0001000840000000
+       0x0000000004000000
+       0x4000000840000000
+       0x8
+       0x4000001040000000
+       0x2
+       0x4000080040000000
+       0x100010000
+       0x6000040400000000
+       0xfffffffeffffffff
+       0x4000020040000000
+       0x100000000
+       0x0808040001000000
+       0x4000000008000000
+       0x2
+       0x0020200c00000000
+       0x0000000000800000";
 
         test_cpu_stark(program_src);
     }
