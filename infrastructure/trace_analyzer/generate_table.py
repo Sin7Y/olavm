@@ -5,6 +5,7 @@ from enum import Enum
 import xlsxwriter
 import argparse
 
+
 class OpcodeValue(Enum):
     SEL_ADD = 2 ** 34
     SEL_MUL = 2 ** 33
@@ -170,17 +171,18 @@ def generate_columns_of_title(worksheet, trace_column_title):
 def main():
     import sys
     parser = argparse.ArgumentParser()
-    parser.add_argument('--format', choices=['hex', 'dec'],default=['dec'])
+    parser.add_argument('--format', choices=['hex', 'dec'], default=['dec'])
     parser.add_argument('--input', required=True)
+    parser.add_argument('--output', default="trace.xlsx")
+
     args = parser.parse_args()
 
     trace_input = open(args.input, 'r').read()
     trace_json = json.loads(trace_input)
 
-    print(args.format)
-    # trace_output = sys.argv[2]
-    # workbook = xlsxwriter.Workbook(trace_output)
-    workbook = xlsxwriter.Workbook("trace.xlsx")
+    # print(args.format)
+    # print(args.output)
+    workbook = xlsxwriter.Workbook(args.output)
 
     worksheet = workbook.add_worksheet("MainTrace")
 
@@ -284,7 +286,8 @@ def main():
     for row in trace_json["memory"]:
         col = 0
         for data in MemoryTraceColumnType:
-            if (data.value == "addr" or data.value == "op" or data.value == "diff_addr_inv" or data.value == "value" or data.value == "diff_addr_cond") \
+            if (
+                    data.value == "addr" or data.value == "op" or data.value == "diff_addr_inv" or data.value == "value" or data.value == "diff_addr_cond") \
                     and args.format == 'hex':
                 worksheet.write(row_index, col,
                                 '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
