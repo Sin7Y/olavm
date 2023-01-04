@@ -3,28 +3,30 @@ import json
 from enum import Enum
 
 import xlsxwriter
+import argparse
 
 class OpcodeValue(Enum):
-    SEL_ADD = 2**34
-    SEL_MUL = 2**33
-    SEL_EQ = 2**32
-    SEL_ASSERT = 2**31
-    SEL_MOV = 2**30
-    SEL_JMP = 2**29
-    SEL_CJMP = 2**28
-    SEL_CALL = 2**27
-    SEL_RET = 2**26
-    SEL_MLOAD = 2**25
-    SEL_MSTORE = 2**24
-    SEL_END = 2**23
+    SEL_ADD = 2 ** 34
+    SEL_MUL = 2 ** 33
+    SEL_EQ = 2 ** 32
+    SEL_ASSERT = 2 ** 31
+    SEL_MOV = 2 ** 30
+    SEL_JMP = 2 ** 29
+    SEL_CJMP = 2 ** 28
+    SEL_CALL = 2 ** 27
+    SEL_RET = 2 ** 26
+    SEL_MLOAD = 2 ** 25
+    SEL_MSTORE = 2 ** 24
+    SEL_END = 2 ** 23
 
-    SEL_RANGE_CHECK = 2**22
-    SEL_AND = 2**21
-    SEL_OR = 2**20
-    SEL_XOR = 2**19
-    SEL_NOT = 2**18
-    SEL_NEQ = 2**17
-    SEL_GTE = 2**16
+    SEL_RANGE_CHECK = 2 ** 22
+    SEL_AND = 2 ** 21
+    SEL_OR = 2 ** 20
+    SEL_XOR = 2 ** 19
+    SEL_NOT = 2 ** 18
+    SEL_NEQ = 2 ** 17
+    SEL_GTE = 2 ** 16
+
 
 class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
@@ -58,6 +60,7 @@ class JsonMainTraceColumnType(Enum):
     SEL_NOT = 'sel_not'
     SEL_NEQ = 'sel_neq'
     SEL_GTE = 'sel_gte'
+
 
 class MainTraceColumnType(Enum):
     CLK = 'clk'
@@ -166,9 +169,15 @@ def generate_columns_of_title(worksheet, trace_column_title):
 
 def main():
     import sys
-    trace_input = open(sys.argv[1], 'r').read()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--format', choices=['hex', 'dec'],default=['dec'])
+    parser.add_argument('--input', required=True)
+    args = parser.parse_args()
+
+    trace_input = open(args.input, 'r').read()
     trace_json = json.loads(trace_input)
 
+    print(args.format)
     # trace_output = sys.argv[2]
     # workbook = xlsxwriter.Workbook(trace_output)
     workbook = xlsxwriter.Workbook("trace.xlsx")
@@ -187,18 +196,42 @@ def main():
         for data in JsonMainTraceColumnType:
             if data.value == "regs":
                 for i in range(0, 9):
-                    worksheet.write(row_index, col, row[data.value][i])
+                    if args.format == 'hex':
+                        worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                            row[data.value][i] // (2 ** 32), row[data.value][i] % (2 ** 32)))
+                    else:
+                        worksheet.write(row_index, col, row[data.value][i])
                     col += 1
             elif data.value == 'register_selector':
-                worksheet.write(row_index, col, row[data.value]["op0"])
+                if args.format == 'hex':
+                    worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                        row[data.value]["op0"] // (2 ** 32), row[data.value]["op0"] % (2 ** 32)))
+                else:
+                    worksheet.write(row_index, col, row[data.value]["op0"])
                 col += 1
-                worksheet.write(row_index, col, row[data.value]["op1"])
+                if args.format == 'hex':
+                    worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                        row[data.value]["op1"] // (2 ** 32), row[data.value]["op1"] % (2 ** 32)))
+                else:
+                    worksheet.write(row_index, col, row[data.value]["op1"])
                 col += 1
-                worksheet.write(row_index, col, row[data.value]["dst"])
+                if args.format == 'hex':
+                    worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                        row[data.value]["dst"] // (2 ** 32), row[data.value]["dst"] % (2 ** 32)))
+                else:
+                    worksheet.write(row_index, col, row[data.value]["dst"])
                 col += 1
-                worksheet.write(row_index, col, row[data.value]["aux0"])
+                if args.format == 'hex':
+                    worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                        row[data.value]["aux0"] // (2 ** 32), row[data.value]["aux0"] % (2 ** 32)))
+                else:
+                    worksheet.write(row_index, col, row[data.value]["aux0"])
                 col += 1
-                worksheet.write(row_index, col, row[data.value]["aux1"])
+                if args.format == 'hex':
+                    worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                        row[data.value]["aux1"] // (2 ** 32), row[data.value]["aux1"] % (2 ** 32)))
+                else:
+                    worksheet.write(row_index, col, row[data.value]["aux1"])
                 col += 1
                 sel_op0_regs = row[data.value]["op0_reg_sel"]
                 for reg in sel_op0_regs:
@@ -217,7 +250,7 @@ def main():
                 worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
                 col += 1
             else:
-                if data.value == "instruction" or data.value == "opcode" or data.value == "aux0":
+                if (data.value == "instruction" or data.value == "opcode"):
                     # print("{0}:{1}:{2}".format(data.value, row[data.value],
                     #                            '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                     #                                row[data.value] // (2 ** 32), row[data.value] % (2 ** 32))))
@@ -225,13 +258,13 @@ def main():
                                     '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                                         row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
                 elif data.value == "sel_add" or data.value == "sel_mul" or data.value == "sel_eq" \
-                  or data.value == "sel_assert" or data.value == "sel_mov" or data.value == "sel_jmp" \
-                  or data.value == "sel_cjmp" or data.value == "sel_call" or data.value == "sel_ret" \
-                  or data.value == "sel_mload" or data.value == "sel_mstore" or data.value == "sel_end" \
-                  or data.value == "sel_range_check" or data.value == "sel_and" or data.value == "sel_or" \
-                  or data.value == "sel_xor" or data.value == "sel_not" or data.value == "sel_neq" \
-                  or data.value == "sel_gte"  \
-                  :
+                        or data.value == "sel_assert" or data.value == "sel_mov" or data.value == "sel_jmp" \
+                        or data.value == "sel_cjmp" or data.value == "sel_call" or data.value == "sel_ret" \
+                        or data.value == "sel_mload" or data.value == "sel_mstore" or data.value == "sel_end" \
+                        or data.value == "sel_range_check" or data.value == "sel_and" or data.value == "sel_or" \
+                        or data.value == "sel_xor" or data.value == "sel_not" or data.value == "sel_neq" \
+                        or data.value == "sel_gte" \
+                        :
                     # print("sel:{0}:{1}".format(row["opcode"], OpcodeValue[data.name].value))
                     if row["opcode"] == OpcodeValue[data.name].value:
                         worksheet.write(row_index, col, 1)
@@ -251,7 +284,8 @@ def main():
     for row in trace_json["memory"]:
         col = 0
         for data in MemoryTraceColumnType:
-            if data.value == "addr" or data.value == "op" or data.value == "diff_addr_inv" or data.value == "value" or data.value == "diff_addr_cond":
+            if (data.value == "addr" or data.value == "op" or data.value == "diff_addr_inv" or data.value == "value" or data.value == "diff_addr_cond") \
+                    and args.format == 'hex':
                 worksheet.write(row_index, col,
                                 '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                                     row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
