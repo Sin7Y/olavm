@@ -112,7 +112,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let nv = vars.next_values;
 
         // Only for debug
-        println!("l_clk: {:?}, s_add: {:?}, s_mul: {:?}, s_eq: {:?}, s_assert: {:?}, s_mov: {:?}, s_jmp: {:?}, s_cjmp: {:?}, s_call: {:?}, s_ret: {:?}, s_mload: {:?}, s_mstore: {:?}, s_end: {:?}", lv[COL_CLK], lv
+        println!("l_clk: {:?}: s_add: {:?}, s_mul: {:?}, s_eq: {:?}, s_assert: {:?}, s_mov: {:?}, s_jmp: {:?}, s_cjmp: {:?}, s_call: {:?}, s_ret: {:?}, s_mload: {:?}, s_mstore: {:?}, s_end: {:?}", lv[COL_CLK], lv
         [COL_S_ADD], lv[COL_S_MUL], lv[COL_S_EQ], lv[COL_S_ASSERT], lv[COL_S_MOV], lv[COL_S_JMP], lv[COL_S_CJMP], lv[COL_S_CALL], lv[COL_S_RET], lv[COL_S_MLOAD], lv[COL_S_MSTORE], lv[COL_S_END]);
 
         // 1. Constrain instruction decoding.
@@ -303,7 +303,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr.constraint(lv[COL_FLAG] * (P::ONES - lv[COL_FLAG]));
         let s_cmp = lv[COL_S_EQ] + lv[COL_S_NEQ] + lv[COL_S_GTE] + lv[COL_S_CJMP] + lv[COL_S_END];
         yield_constr.constraint((P::ONES - s_cmp) * (nv[COL_FLAG] - lv[COL_FLAG]));
-        println!("l_flag: {:?}, n_flag: {:?}", lv[COL_FLAG], nv[COL_FLAG]);
 
         // reg
         for (dst, l_r, n_r) in izip!(
@@ -487,27 +486,27 @@ mod tests {
     #[test]
     fn test_call() {
         let program_src = "0x4000000020000000
-        0x7
-       0x4020008200000000
-       0xa
-       0x0200208400000000
-       0x0001000840000000
-       0x0000000004000000
-       0x4000000840000000
-       0x8
-       0x4000001040000000
-       0x2
-       0x4000080040000000
-       0x100010000
-       0x6000040400000000
-       0xfffffffeffffffff
-       0x4000020040000000
-       0x100000000
-       0x0808040001000000
-       0x4000000008000000
-       0x2
-       0x0020200c00000000
-       0x0000000000800000";
+                             0x7
+                            0x4020008200000000
+                            0xa
+                            0x0200208400000000
+                            0x0001000840000000
+                            0x0000000004000000
+                            0x4000000840000000
+                            0x8
+                            0x4000001040000000
+                            0x2
+                            0x4000080040000000
+                            0x100010000
+                            0x6000040400000000
+                            0xfffffffeffffffff
+                            0x4000020040000000
+                            0x100000000
+                            0x0808000001000000
+                            0x4000000008000000
+                            0x2
+                            0x0020200c00000000
+                            0x0000000000800000";
 
         test_cpu_stark(program_src);
     }
