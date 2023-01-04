@@ -346,8 +346,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         cjmp::eval_packed_generic(lv, nv, yield_constr);
         call::eval_packed_generic(lv, nv, yield_constr);
         ret::eval_packed_generic(lv, nv, yield_constr);
-        mload::eval_packed_generic(lv, nv, yield_constr);
-        mstore::eval_packed_generic(lv, nv, yield_constr);
 
         // Last row must be `END`
         yield_constr.constraint_last_row(lv[COL_S_END] - P::ONES);
