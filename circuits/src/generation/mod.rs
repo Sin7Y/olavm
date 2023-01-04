@@ -40,9 +40,9 @@ pub(crate) fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         [
             cpu_trace,
             memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
+            // bitwise_trace,
+            // cmp_trace,
+            // rangecheck_trace,
         ],
         public_values,
     )
