@@ -4,6 +4,28 @@ from enum import Enum
 
 import xlsxwriter
 
+class OpcodeValue(Enum):
+    SEL_ADD = 2**34
+    SEL_MUL = 2**33
+    SEL_EQ = 2**32
+    SEL_ASSERT = 2**31
+    SEL_MOV = 2**30
+    SEL_JMP = 2**29
+    SEL_CJMP = 2**28
+    SEL_CALL = 2**27
+    SEL_RET = 2**26
+    SEL_MLOAD = 2**25
+    SEL_MSTORE = 2**24
+    SEL_END = 2**23
+
+    SEL_RANGE_CHECK = 2**22
+    SEL_AND = 2**21
+    SEL_OR = 2**20
+    SEL_XOR = 2**19
+    SEL_NOT = 2**18
+    SEL_NEQ = 2**17
+    SEL_GTE = 2**16
+
 class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
@@ -210,7 +232,8 @@ def main():
                   or data.value == "sel_xor" or data.value == "sel_not" or data.value == "sel_neq" \
                   or data.value == "sel_gte"  \
                   :
-                    if row["opcode"] == 0x1:
+                    # print("sel:{0}:{1}".format(row["opcode"], OpcodeValue[data.name].value))
+                    if row["opcode"] == OpcodeValue[data.name].value:
                         worksheet.write(row_index, col, 1)
                     else:
                         worksheet.write(row_index, col, 0)
