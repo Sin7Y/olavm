@@ -5,8 +5,6 @@ mod cjmp;
 mod cmp;
 pub mod cpu_stark;
 mod jmp;
-mod mload;
 mod mov;
-mod mstore;
 mod mul;
 mod ret;
