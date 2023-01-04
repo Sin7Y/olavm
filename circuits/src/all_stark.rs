@@ -55,9 +55,9 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
         [
             self.cpu_stark.num_permutation_batches(config),
             self.memory_stark.num_permutation_batches(config),
-            self.bitwise_stark.num_permutation_batches(config),
-            self.cmp_stark.num_permutation_batches(config),
-            self.rangecheck_stark.num_permutation_batches(config),
+            // self.bitwise_stark.num_permutation_batches(config),
+            // self.cmp_stark.num_permutation_batches(config),
+            // self.rangecheck_stark.num_permutation_batches(config),
         ]
     }
 
@@ -65,9 +65,9 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
         [
             self.cpu_stark.permutation_batch_size(),
             self.memory_stark.permutation_batch_size(),
-            self.bitwise_stark.permutation_batch_size(),
-            self.cmp_stark.permutation_batch_size(),
-            self.rangecheck_stark.permutation_batch_size(),
+            // self.bitwise_stark.permutation_batch_size(),
+            // self.cmp_stark.permutation_batch_size(),
+            // self.rangecheck_stark.permutation_batch_size(),
         ]
     }
 }
@@ -87,12 +87,12 @@ pub enum Table {
     Program = 7,
 }
 
-pub(crate) const NUM_TABLES: usize = Table::RangeCheck as usize + 1;
+pub(crate) const NUM_TABLES: usize = 2;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     // TODO:
-    vec![]
+    vec![ctl_cpu_memory()]
 }
 
 fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
@@ -369,14 +369,14 @@ mod tests {
     use crate::config::StarkConfig;
     use crate::cpu::cpu_stark::CpuStark;
     use crate::prover::{prove_single_table, prove_with_traces};
-    use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
+    use crate::util::{generate_cpu_trace, generate_memory_trace, trace_rows_to_poly_values};
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
     type S = dyn Stark<F, D>;
 
-    fn fibo_use_loop() -> Vec<PolynomialValues<F>> {
+    fn fibo_use_loop() -> [Vec<PolynomialValues<F>>; 2] {
         let program_src = "mov r0 8
             mov r1 1
             mov r2 1
@@ -390,36 +390,50 @@ mod tests {
             add r3 r3 r4
             jmp 4
             end";
-
-        let instructions = program_src.split('\n');
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
-        }
-
-        let mut process = Process::new();
-        process.execute(&mut program, false);
-
-        println!("vm trace: {:?}", program.trace);
-
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-
-        println!("cpu rows: {:?}", cpu_rows);
-
-        trace_rows_to_poly_values(cpu_rows)
+    
+            let instructions = program_src.split('\n');
+            let mut program: Program = Program {
+                instructions: Vec::new(),
+                trace: Default::default(),
+            };
+            debug!("instructions:{:?}", program.instructions);
+    
+            for inst in instructions.into_iter() {
+                program.instructions.push(inst.clone().parse().unwrap());
+            }
+    
+            let mut process = Process::new();
+            process.execute(&mut program, true);
+            process.gen_memory_table(&mut program);
+    
+            println!("vm trace: {:?}", program.trace);
+    
+            let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+            let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+            let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+            let memory_trace = trace_rows_to_poly_values(memory_rows);
+            let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+            let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+            let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+            [
+                cpu_trace,
+                memory_trace,
+                // bitwise_trace,
+                // cmp_trace,
+                // rangecheck_trace,
+            ]
     }
 
-    fn add_mul_decode() -> Vec<PolynomialValues<F>> {
+    fn add_mul_decode() -> [Vec<PolynomialValues<F>>; 2] {
         //mov r0 8
         //mov r1 2
         //mov r2 3
         //add r3 r0 r1
         //mul r4 r3 r2
+        //end
         let program_src = "0x4000000840000000
             0x8
             0x4000001040000000
@@ -428,7 +442,144 @@ mod tests {
             0x3
             0x0020204400000000
             0x0100408200000000
-            ";
+            0x0000000000800000";
+    
+            let instructions = program_src.split('\n');
+            let mut program: Program = Program {
+                instructions: Vec::new(),
+                trace: Default::default(),
+            };
+            debug!("instructions:{:?}", program.instructions);
+    
+            for inst in instructions.into_iter() {
+                program.instructions.push(inst.clone().parse().unwrap());
+            }
+    
+            let mut process = Process::new();
+            process.execute(&mut program, true);
+            process.gen_memory_table(&mut program);
+    
+            println!("vm trace: {:?}", program.trace);
+    
+            let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+            let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+            let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+            let memory_trace = trace_rows_to_poly_values(memory_rows);
+            let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+            let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+            let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+            [
+                cpu_trace,
+                memory_trace,
+                // bitwise_trace,
+                // cmp_trace,
+                // rangecheck_trace,
+            ]
+    }
+
+    fn fibo_use_loop_decode() -> [Vec<PolynomialValues<F>>; 2] {
+        // mov r0 8
+        // mov r1 1
+        // mov r2 1
+        // mov r3 0
+        // EQ r0 r3
+        // cjmp 19
+        // add r4 r1 r2
+        // mov r1 r2
+        // mov r2 r4
+        // mov r4 1
+        // add r3 r3 r4
+        // jmp 8
+        // end
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x1
+            0x4000002040000000
+            0x1
+            0x4000004040000000
+            0x0
+            0x0020800100000000
+            0x4000000010000000
+            0x13
+            0x0040408400000000
+            0x0000401040000000
+            0x0001002040000000
+            0x4000008040000000
+            0x1
+            0x0101004400000000
+            0x4000000020000000
+            0x8
+            0x0000000000800000";
+    
+            let instructions = program_src.split('\n');
+            let mut program: Program = Program {
+                instructions: Vec::new(),
+                trace: Default::default(),
+            };
+            debug!("instructions:{:?}", program.instructions);
+    
+            for inst in instructions.into_iter() {
+                program.instructions.push(inst.clone().parse().unwrap());
+            }
+    
+            let mut process = Process::new();
+            process.execute(&mut program, true);
+            process.gen_memory_table(&mut program);
+    
+            println!("vm trace: {:?}", program.trace);
+    
+            let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+            let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+            let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+            let memory_trace = trace_rows_to_poly_values(memory_rows);
+            let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+            let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+            let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+            [
+                cpu_trace,
+                memory_trace,
+                // bitwise_trace,
+                // cmp_trace,
+                // rangecheck_trace,
+            ]
+    }
+
+    fn memory_test() -> [Vec<PolynomialValues<F>>; 2] {
+        // mov r0 8
+        // mstore  0x100 r0
+        // mov r1 2
+        // mstore  0x200 r1
+        // mov r0 20
+        // mload r1 0x100
+        // mload r2 0x200
+        // mload r3 0x200
+        // add r0 r1 r1
+        // end
+        let program_src = "0x4000000840000000
+                            0x8
+                            0x4020000001000000
+                            0x100
+                            0x4000001040000000
+                            0x2
+                            0x4040000001000000
+                            0x200
+                            0x4000000840000000
+                            0x14
+                            0x4000001002000000
+                            0x100
+                            0x4000002002000000
+                            0x200
+                            0x4000004002000000
+                            0x200
+                            0x0040200c00000000
+                            0x0000000000800000";
 
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
@@ -443,24 +594,13 @@ mod tests {
 
         let mut process = Process::new();
         process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
 
         println!("vm trace: {:?}", program.trace);
 
         let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-
-        println!("cpu rows: {:?}", cpu_rows);
-        trace_rows_to_poly_values(cpu_rows)
-    }
-
-    fn make_cpu_trace() -> Vec<PolynomialValues<F>> {
-        // add_mul_decode()
-        fibo_use_loop()
-    }
-
-    fn get_proof(config: &StarkConfig) -> Result<(AllStark<F, D>, AllProof<F, C, D>)> {
-        let all_stark = AllStark::default();
-        let cpu_trace = make_cpu_trace();
-        let memory_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
         let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
@@ -468,14 +608,269 @@ mod tests {
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
+        [
             cpu_trace,
             memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-        check_ctls(&traces, &all_stark.cross_table_lookups);
+            // bitwise_trace,
+            // cmp_trace,
+            // rangecheck_trace,
+        ]
+    }
+
+    fn call_test() -> [Vec<PolynomialValues<F>>; 2] {
+        //JMP 7
+    //MUL r4 r0 10
+    //ADD r4 r4 r1
+    //MOV r0 r4
+    //RET
+    //MOV r0 8
+    //MOV r1 2
+    //mov r8 0x100010000
+    //add r7 r8 -2
+    //mov r6 0x100000000
+    //mstore r7 r6
+    //CALL 2
+    //ADD r0 r0 r1
+    //END
+    let program_src = "0x4000000020000000
+                                0x7
+                            0x4020008200000000
+                            0xa
+                            0x0200208400000000
+                            0x0001000840000000
+                            0x0000000004000000
+                            0x4000000840000000
+                            0x8
+                            0x4000001040000000
+                            0x2
+                            0x4000080040000000
+                            0x100010000
+                            0x6000040400000000
+                            0xfffffffeffffffff
+                            0x4000020040000000
+                            0x100000000
+                            0x0808000001000000
+                            0x4000000008000000
+                            0x2
+                            0x0020200c00000000
+                            0x0000000000800000";
+        
+                            let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
+
+        println!("vm trace: {:?}", program.trace);
+
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        [
+            cpu_trace,
+            memory_trace,
+            // bitwise_trace,
+            // cmp_trace,
+            // rangecheck_trace,
+        ]
+    }
+
+    fn range_check_test() -> [Vec<PolynomialValues<F>>; 2] {
+        //mov r0 8
+        //mov r1 2
+        //mov r2 3
+        //add r3 r0 r1
+        //mul r4 r3 r2
+        //range_check r4
+        //end
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x2
+            0x4000002040000000
+            0x3
+            0x0020204400000000
+            0x0100408200000000
+            0x0001000000400000
+            0x0000000000800000";
+    
+            let instructions = program_src.split('\n');
+            let mut program: Program = Program {
+                instructions: Vec::new(),
+                trace: Default::default(),
+            };
+            debug!("instructions:{:?}", program.instructions);
+    
+            for inst in instructions.into_iter() {
+                program.instructions.push(inst.clone().parse().unwrap());
+            }
+    
+            let mut process = Process::new();
+            process.execute(&mut program, true);
+            process.gen_memory_table(&mut program);
+    
+            println!("vm trace: {:?}", program.trace);
+    
+            let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+            let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+            let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+            let memory_trace = trace_rows_to_poly_values(memory_rows);
+            let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+            let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+            let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+            [
+                cpu_trace,
+                memory_trace,
+                // bitwise_trace,
+                // cmp_trace,
+                // rangecheck_trace,
+            ]
+    }
+    
+    fn bitwise_test() -> [Vec<PolynomialValues<F>>; 2] {
+        //mov r0 8
+        //mov r1 2
+        //mov r2 3
+        //add r3 r0 r1
+        //mul r4 r3 r2
+        //and r5 r4 r3
+        //end
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x2
+            0x4000002040000000
+            0x3
+            0x0020204400000000
+            0x0100408200000000
+            0x0200810000200000
+            0x0000000000800000";
+    
+            let instructions = program_src.split('\n');
+            let mut program: Program = Program {
+                instructions: Vec::new(),
+                trace: Default::default(),
+            };
+            debug!("instructions:{:?}", program.instructions);
+    
+            for inst in instructions.into_iter() {
+                program.instructions.push(inst.clone().parse().unwrap());
+            }
+    
+            let mut process = Process::new();
+            process.execute(&mut program, true);
+            process.gen_memory_table(&mut program);
+    
+            println!("vm trace: {:?}", program.trace);
+    
+            let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+            let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+            let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+            let memory_trace = trace_rows_to_poly_values(memory_rows);
+            let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+            let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+            let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+            [
+                cpu_trace,
+                memory_trace,
+                // bitwise_trace,
+                // cmp_trace,
+                // rangecheck_trace,
+            ]
+    }
+    
+    fn comparison_test() -> [Vec<PolynomialValues<F>>; 2] {
+        //mov r0 8
+        //mov r1 2
+        //mov r2 3
+        //add r3 r0 r1
+        //mul r4 r3 r2
+        //gte r4 r3
+        //end
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x2
+            0x4000002040000000
+            0x3
+            0x0020204400000000
+            0x0100408200000000
+            0x0200800000010000
+            0x0000000000800000";
+    
+            let instructions = program_src.split('\n');
+            let mut program: Program = Program {
+                instructions: Vec::new(),
+                trace: Default::default(),
+            };
+            debug!("instructions:{:?}", program.instructions);
+    
+            for inst in instructions.into_iter() {
+                program.instructions.push(inst.clone().parse().unwrap());
+            }
+    
+            let mut process = Process::new();
+            process.execute(&mut program, true);
+            process.gen_memory_table(&mut program);
+    
+            println!("vm trace: {:?}", program.trace);
+    
+            let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+            let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+            let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+            let memory_trace = trace_rows_to_poly_values(memory_rows);
+            let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+            let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+            let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+            let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+            [
+                cpu_trace,
+                memory_trace,
+                // bitwise_trace,
+                // cmp_trace,
+                // rangecheck_trace,
+            ]
+    }
+
+    fn make_traces() -> [Vec<PolynomialValues<F>>; 2] {
+        // fibo_use_loop() // no
+        // add_mul_decode() // no
+        fibo_use_loop_decode() // no
+        // memory_test() // yes
+        // call_test() // yes
+        // range_check_test() // no
+        // bitwise_test() // no
+        // comparison_test() // no
+    }
+
+    fn get_proof(config: &StarkConfig) -> Result<(AllStark<F, D>, AllProof<F, C, D>)> {
+        let all_stark = AllStark::default();
+        let traces = make_traces();
+        // check_ctls(&traces, &all_stark.cross_table_lookups);
 
         let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
@@ -497,58 +892,4 @@ mod tests {
         verify_proof(all_stark, proof, &config)
     }
 
-    // #[test]
-    // #[ignore] // Ignoring but not deleting so the test can serve as an API usage example
-    // fn test_all_stark_recursive_verifier() -> Result<()> {
-    //     init_logger();
-
-    //     let config = StarkConfig::standard_fast_config();
-    //     let (all_stark, proof) = get_proof(&config)?;
-    //     verify_proof(all_stark.clone(), proof.clone(), &config)?;
-
-    //     recursive_proof(all_stark, proof, &config)
-    // }
-
-    // fn recursive_proof(
-    //     inner_all_stark: AllStark<F, D>,
-    //     inner_proof: AllProof<F, C, D>,
-    //     inner_config: &StarkConfig,
-    // ) -> Result<()> {
-    //     let circuit_config = CircuitConfig::standard_recursion_config();
-    //     let recursive_all_proof = recursively_verify_all_proof(
-    //         &inner_all_stark,
-    //         &inner_proof,
-    //         inner_config,
-    //         &circuit_config,
-    //     )?;
-
-    //     let verifier_data: [VerifierCircuitData<F, C, D>; NUM_TABLES] =
-    //         all_verifier_data_recursive_stark_proof(
-    //             &inner_all_stark,
-    //             inner_proof.degree_bits(inner_config),
-    //             inner_config,
-    //             &circuit_config,
-    //         );
-    //     let circuit_config = CircuitConfig::standard_recursion_config();
-    //     let mut builder = CircuitBuilder::<F, D>::new(circuit_config);
-    //     let mut pw = PartialWitness::new();
-    //     let recursive_all_proof_target =
-    //         add_virtual_recursive_all_proof(&mut builder, &verifier_data);
-    //     set_recursive_all_proof_target(&mut pw, &recursive_all_proof_target, &recursive_all_proof);
-    //     RecursiveAllProof::verify_circuit(
-    //         &mut builder,
-    //         recursive_all_proof_target,
-    //         &verifier_data,
-    //         inner_all_stark.cross_table_lookups,
-    //         inner_config,
-    //     );
-
-    //     let data = builder.build::<C>();
-    //     let proof = data.prove(pw)?;
-    //     data.verify(proof)
-    // }
-
-    fn init_logger() {
-        let _ = env_logger::builder().format_timestamp(None).try_init();
-    }
 }
