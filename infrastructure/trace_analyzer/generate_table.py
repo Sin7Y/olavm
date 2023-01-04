@@ -4,7 +4,6 @@ from enum import Enum
 
 import xlsxwriter
 
-
 class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
@@ -17,6 +16,26 @@ class JsonMainTraceColumnType(Enum):
     ASM = 'asm'
     REG_SELECTOR = 'register_selector'
 
+    SEL_ADD = 'sel_add'
+    SEL_MUL = 'sel_mul'
+    SEL_EQ = 'sel_eq'
+    SEL_ASSERT = 'sel_assert'
+    SEL_MOV = 'sel_mov'
+    SEL_JMP = 'sel_jmp'
+    SEL_CJMP = 'sel_cjmp'
+    SEL_CALL = 'sel_call'
+    SEL_RET = 'sel_ret'
+    SEL_MLOAD = 'sel_mload'
+    SEL_MSTORE = 'sel_mstore'
+    SEL_END = 'sel_end'
+
+    SEL_RANGE_CHECK = 'sel_range_check'
+    SEL_AND = 'sel_and'
+    SEL_OR = 'sel_or'
+    SEL_XOR = 'sel_xor'
+    SEL_NOT = 'sel_not'
+    SEL_NEQ = 'sel_neq'
+    SEL_GTE = 'sel_gte'
 
 class MainTraceColumnType(Enum):
     CLK = 'clk'
@@ -118,6 +137,7 @@ def generate_columns_of_title(worksheet, trace_column_title):
     col = 0
     title_row = 0
     for data in trace_column_title:
+        # print(data.name)
         worksheet.write(title_row, col, data.value)
         col += 1
 
@@ -127,8 +147,10 @@ def main():
     trace_input = open(sys.argv[1], 'r').read()
     trace_json = json.loads(trace_input)
 
-    trace_output = sys.argv[2]
-    workbook = xlsxwriter.Workbook(trace_output)
+    # trace_output = sys.argv[2]
+    # workbook = xlsxwriter.Workbook(trace_output)
+    workbook = xlsxwriter.Workbook("trace.xlsx")
+
     worksheet = workbook.add_worksheet("MainTrace")
 
     # print(trace_json["exec"][1]["regs"])
@@ -180,6 +202,18 @@ def main():
                     worksheet.write(row_index, col,
                                     '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                                         row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+                elif data.value == "sel_add" or data.value == "sel_mul" or data.value == "sel_eq" \
+                  or data.value == "sel_assert" or data.value == "sel_mov" or data.value == "sel_jmp" \
+                  or data.value == "sel_cjmp" or data.value == "sel_call" or data.value == "sel_ret" \
+                  or data.value == "sel_mload" or data.value == "sel_mstore" or data.value == "sel_end" \
+                  or data.value == "sel_range_check" or data.value == "sel_and" or data.value == "sel_or" \
+                  or data.value == "sel_xor" or data.value == "sel_not" or data.value == "sel_neq" \
+                  or data.value == "sel_gte"  \
+                  :
+                    if row["opcode"] == 0x1:
+                        worksheet.write(row_index, col, 1)
+                    else:
+                        worksheet.write(row_index, col, 0)
                 else:
                     worksheet.write(row_index, col, row[data.value])
                 col += 1
