@@ -17,7 +17,7 @@ use {
 };
 
 pub fn ctl_data_cpu_mem_load_store<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_DST]).collect_vec()
+    Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_OP0]).collect_vec()
 }
 
 pub fn ctl_filter_cpu_mem_load_store<F: Field>() -> Column<F> {
