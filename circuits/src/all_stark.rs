@@ -376,7 +376,7 @@ mod tests {
     type F = <C as GenericConfig<D>>::F;
     type S = dyn Stark<F, D>;
 
-    fn fibo_use_loop() -> [Vec<PolynomialValues<F>>; 2] {
+    fn fibo_use_loop() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         let program_src = "mov r0 8
             mov r1 1
             mov r2 1
@@ -427,7 +427,7 @@ mod tests {
             ]
     }
 
-    fn add_mul_decode() -> [Vec<PolynomialValues<F>>; 2] {
+    fn add_mul_decode() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         //mov r0 8
         //mov r1 2
         //mov r2 3
@@ -480,7 +480,7 @@ mod tests {
             ]
     }
 
-    fn fibo_use_loop_decode() -> [Vec<PolynomialValues<F>>; 2] {
+    fn fibo_use_loop_decode() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         // mov r0 8
         // mov r1 1
         // mov r2 1
@@ -551,7 +551,7 @@ mod tests {
             ]
     }
 
-    fn memory_test() -> [Vec<PolynomialValues<F>>; 2] {
+    fn memory_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         // mov r0 8
         // mstore  0x100 r0
         // mov r1 2
@@ -617,7 +617,7 @@ mod tests {
         ]
     }
 
-    fn call_test() -> [Vec<PolynomialValues<F>>; 2] {
+    fn call_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         //JMP 7
     //MUL r4 r0 10
     //ADD r4 r4 r1
@@ -856,7 +856,7 @@ mod tests {
             ]
     }
 
-    fn make_traces() -> [Vec<PolynomialValues<F>>; 2] {
+    fn make_traces() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         // fibo_use_loop() // no
         // add_mul_decode() // no
         fibo_use_loop_decode() // no
