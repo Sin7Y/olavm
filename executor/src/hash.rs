@@ -1,4 +1,1 @@
-
-pub fn poseidon() {
-
-}
+pub fn poseidon() {}
