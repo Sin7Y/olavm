@@ -43,6 +43,7 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_CPU_CO
             row[COL_OP1] = F::from_canonical_u64(s.register_selector.op1.0);
             row[COL_DST] = F::from_canonical_u64(s.register_selector.dst.0);
             row[COL_AUX0] = F::from_canonical_u64(s.register_selector.aux0.0);
+            row[COL_AUX1] = F::from_canonical_u64(s.register_selector.aux1.0);
             for i in 0..REGISTER_NUM {
                 row[COL_S_OP0_START + i] =
                     F::from_canonical_u64(s.register_selector.op0_reg_sel[i].0);
