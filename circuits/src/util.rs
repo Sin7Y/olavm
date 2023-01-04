@@ -179,6 +179,7 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             filled_last_row[COL_MEM_ADDR] + F::ONE
         };
         let num_padded_rows = num_filled_row_len.next_power_of_two();
+        let mut is_first_pad_row = true;
         for _ in num_filled_row_len..num_padded_rows {
             let mut padded_row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
             padded_row[COL_MEM_IS_RW] = F::ZERO;
@@ -187,8 +188,12 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             padded_row[COL_MEM_OP] = F::ZERO;
             padded_row[COL_MEM_IS_WRITE] = F::ONE;
             padded_row[COL_MEM_VALUE] = F::ZERO;
-            padded_row[COL_MEM_DIFF_ADDR] = F::ZERO;
-            padded_row[COL_MEM_DIFF_ADDR_INV] = F::ZERO;
+            padded_row[COL_MEM_DIFF_ADDR] = if is_first_pad_row {
+                addr - filled_last_row[COL_MEM_ADDR]
+            } else {
+                F::ONE
+            };
+            padded_row[COL_MEM_DIFF_ADDR_INV] = padded_row[COL_MEM_DIFF_ADDR].inverse();
             padded_row[COL_MEM_DIFF_CLK] = F::ZERO;
             padded_row[COL_MEM_DIFF_ADDR_COND] = p - addr;
             padded_row[COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
@@ -198,7 +203,8 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             padded_row[COL_MEM_REGION_ECDSA] = F::ZERO;
 
             trace.push(padded_row);
-            addr += F::ONE
+            addr += F::ONE;
+            is_first_pad_row = false
         }
     }
 
