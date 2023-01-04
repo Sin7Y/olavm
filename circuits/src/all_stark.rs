@@ -96,10 +96,15 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
 }
 
 fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
-    let cpu_mem_load_store = TableWithColumns::new(
+    let cpu_mem_mstore = TableWithColumns::new(
         Table::Cpu,
-        cpu_stark::ctl_data_cpu_mem_load_store(),
-        Some(cpu_stark::ctl_filter_cpu_mem_load_store()),
+        cpu_stark::ctl_data_cpu_mem_mstore(),
+        Some(cpu_stark::ctl_filter_cpu_mem_mstore()),
+    );
+    let cpu_mem_mload = TableWithColumns::new(
+        Table::Cpu,
+        cpu_stark::ctl_data_cpu_mem_mload(),
+        Some(cpu_stark::ctl_filter_cpu_mem_mload()),
     );
     let cpu_mem_call_ret_pc = TableWithColumns::new(
         Table::Cpu,
@@ -111,7 +116,12 @@ fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
         cpu_stark::ctl_data_cpu_mem_call_ret_fp(),
         Some(cpu_stark::ctl_filter_cpu_mem_call_ret()),
     );
-    let all_cpu_lookers = vec![cpu_mem_load_store, cpu_mem_call_ret_pc, cpu_mem_call_ret_fp];
+    let all_cpu_lookers = vec![
+        cpu_mem_mstore,
+        cpu_mem_mload,
+        cpu_mem_call_ret_pc,
+        cpu_mem_call_ret_fp,
+    ];
     let memory_looked =
         TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter()));
     CrossTableLookup::new(all_cpu_lookers, memory_looked, None)
