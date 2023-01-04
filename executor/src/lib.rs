@@ -479,7 +479,10 @@ impl Process {
                     debug!("opcode: ret");
                     assert!(ops.len() == 1, "ret params len is 0");
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RET as u8);
-
+                    self.register_selector.op0 =
+                        self.registers[FP_REG_INDEX] - GoldilocksField::ONE;
+                    self.register_selector.aux0 =
+                        self.registers[FP_REG_INDEX] - GoldilocksField::TWO;
                     self.pc = self
                         .memory
                         .read(
@@ -506,11 +509,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(0 as u64),
                     );
 
-                    self.register_selector.op0 =
-                        self.registers[FP_REG_INDEX] - GoldilocksField::ONE;
                     self.register_selector.dst = GoldilocksField::from_canonical_u64(self.pc);
-                    self.register_selector.aux0 =
-                        self.registers[FP_REG_INDEX] - GoldilocksField::TWO;
                     self.register_selector.aux1 = self.registers[FP_REG_INDEX];
                 }
                 "mstore" => {
