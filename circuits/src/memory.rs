@@ -72,6 +72,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
     {
+        dbg!(vars);
         let lv = vars.local_values;
         let nv = vars.next_values;
 
@@ -321,380 +322,44 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 }
 
 mod tests {
-    use super::*;
-    use crate::config::StarkConfig;
+    use crate::constraint_consumer::ConstraintConsumer;
     use crate::memory::MemoryStark;
-    use crate::prover::prove;
-    use crate::util::trace_rows_to_poly_values;
+    use crate::stark::Stark;
+    use crate::util::generate_memory_trace;
+    use crate::vars::StarkEvaluationVars;
+    use core::program::{instruction::Opcode, Program};
+    use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
-    use plonky2::fri::reduction_strategies::FriReductionStrategy;
-    use plonky2::fri::FriConfig;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use std::ops::{Add, Div, Sub};
 
-    #[test]
-    fn test_memory_stark() {
+    fn test_memory_stark(program_src: &str) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = MemoryStark<F, D>;
-
         let stark = S::default();
-        let config = StarkConfig {
-            security_bits: 100,
-            num_challenges: 2,
-            fri_config: FriConfig {
-                rate_bits: 2,
-                cap_height: 4,
-                proof_of_work_bits: 16,
-                reduction_strategy: FriReductionStrategy::ConstantArityBits(4, 5),
-                num_query_rounds: 84,
-            },
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
         };
-        let one = GoldilocksField::ONE;
-        let zero = GoldilocksField::ZERO;
-        let op_mload = GoldilocksField::from_canonical_u64(2_u64.pow(24));
-        let op_mstore = GoldilocksField::from_canonical_u64(2_u64.pow(24));
-        let op_call = GoldilocksField::from_canonical_u64(2_u64.pow(27));
-        let op_ret = GoldilocksField::from_canonical_u64(2_u64.pow(26));
 
-        let rw_row0: [F; 15] = [
-            one,
-            GoldilocksField(100),
-            GoldilocksField(5),
-            op_mstore,
-            one,
-            GoldilocksField(55),
-            zero,
-            zero,
-            zero,
-            zero,
-            one,
-            zero,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row1: [F; 15] = [
-            one,
-            GoldilocksField(100),
-            GoldilocksField(12),
-            op_mload,
-            zero,
-            GoldilocksField(55),
-            zero,
-            zero,
-            GoldilocksField(7),
-            zero,
-            one,
-            one,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row2: [F; 15] = [
-            one,
-            GoldilocksField(100),
-            GoldilocksField(17),
-            op_mstore,
-            one,
-            GoldilocksField(300),
-            zero,
-            zero,
-            GoldilocksField(5),
-            zero,
-            one,
-            one,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row3: [F; 15] = [
-            one,
-            GoldilocksField(100),
-            GoldilocksField(26),
-            op_mload,
-            zero,
-            GoldilocksField(300),
-            zero,
-            zero,
-            GoldilocksField(9),
-            zero,
-            one,
-            one,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row4: [F; 15] = [
-            one,
-            GoldilocksField(124),
-            GoldilocksField(36),
-            op_mstore,
-            one,
-            GoldilocksField(20000),
-            GoldilocksField(24),
-            one.div(GoldilocksField(24)),
-            zero,
-            zero,
-            one,
-            zero,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row5: [F; 15] = [
-            one,
-            GoldilocksField(124),
-            GoldilocksField(37),
-            op_call,
-            zero,
-            GoldilocksField(20000),
-            zero,
-            zero,
-            one,
-            zero,
-            one,
-            one,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row6: [F; 15] = [
-            one,
-            GoldilocksField(124),
-            GoldilocksField(50),
-            op_ret,
-            zero,
-            GoldilocksField(20000),
-            zero,
-            zero,
-            GoldilocksField(13),
-            zero,
-            one,
-            one,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row7: [F; 15] = [
-            one,
-            GoldilocksField(125),
-            GoldilocksField(37),
-            op_call,
-            one,
-            GoldilocksField(30000),
-            one,
-            one,
-            zero,
-            zero,
-            one,
-            zero,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row8: [F; 15] = [
-            one,
-            GoldilocksField(125),
-            GoldilocksField(50),
-            op_ret,
-            zero,
-            GoldilocksField(30000),
-            zero,
-            zero,
-            GoldilocksField(13),
-            zero,
-            one,
-            one,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row9: [F; 15] = [
-            one,
-            GoldilocksField(150),
-            GoldilocksField(20),
-            op_mstore,
-            one,
-            GoldilocksField(78),
-            GoldilocksField(25),
-            one.div(GoldilocksField(25)),
-            zero,
-            zero,
-            one,
-            zero,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row10: [F; 15] = [
-            one,
-            GoldilocksField(150),
-            GoldilocksField(23),
-            op_mload,
-            zero,
-            GoldilocksField(78),
-            zero,
-            zero,
-            GoldilocksField(3),
-            zero,
-            one,
-            one,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row11: [F; 15] = [
-            one,
-            GoldilocksField(200),
-            GoldilocksField(8),
-            op_mstore,
-            one,
-            GoldilocksField(99),
-            GoldilocksField(50),
-            one.div(GoldilocksField(50)),
-            zero,
-            zero,
-            one,
-            zero,
-            zero,
-            zero,
-            zero,
-        ];
-        let rw_row12: [F; 15] = [
-            one,
-            GoldilocksField(200),
-            GoldilocksField(15),
-            op_mload,
-            zero,
-            GoldilocksField(99),
-            zero,
-            zero,
-            GoldilocksField(7),
-            zero,
-            one,
-            one,
-            zero,
-            zero,
-            zero,
-        ];
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
 
-        let p = GoldilocksField::order();
-        let p = GoldilocksField::from_noncanonical_biguint(p);
-        let span = GoldilocksField::from_canonical_u64(2_u64.pow(32).sub(1));
-        let prophet_row0: [F; 15] = [
-            zero,
-            p.sub(span),
-            zero,
-            zero,
-            one,
-            GoldilocksField(123),
-            p.sub(span.add(GoldilocksField(200))),
-            zero,
-            zero,
-            p.sub(p.sub(span)),
-            zero,
-            zero,
-            one,
-            zero,
-            zero,
-        ];
-        let prophet_row1: [F; 15] = [
-            zero,
-            p.sub(span),
-            GoldilocksField(7),
-            op_mload,
-            zero,
-            GoldilocksField(123),
-            zero,
-            zero,
-            zero,
-            p.sub(p.sub(span)),
-            one,
-            zero,
-            one,
-            zero,
-            zero,
-        ];
-        let prophet_row2: [F; 15] = [
-            zero,
-            p.sub(span),
-            GoldilocksField(9),
-            op_mload,
-            zero,
-            GoldilocksField(123),
-            zero,
-            zero,
-            zero,
-            p.sub(p.sub(span)),
-            one,
-            zero,
-            one,
-            zero,
-            zero,
-        ];
-        let prophet_row3: [F; 15] = [
-            zero,
-            p.sub(span.sub(one)),
-            zero,
-            zero,
-            one,
-            GoldilocksField(456),
-            one,
-            zero,
-            zero,
-            p.sub(p.sub(span.sub(one))),
-            zero,
-            zero,
-            one,
-            zero,
-            zero,
-        ];
-        let prophet_row4: [F; 15] = [
-            zero,
-            p.sub(span.sub(one)),
-            GoldilocksField(27),
-            op_mload,
-            zero,
-            GoldilocksField(456),
-            zero,
-            zero,
-            zero,
-            p.sub(p.sub(span.sub(one))),
-            one,
-            zero,
-            one,
-            zero,
-            zero,
-        ];
-        let trace_rows = vec![
-            rw_row0,
-            rw_row1,
-            rw_row2,
-            rw_row3,
-            rw_row4,
-            rw_row5,
-            rw_row6,
-            rw_row7,
-            rw_row8,
-            rw_row9,
-            rw_row10,
-            rw_row11,
-            rw_row12,
-            prophet_row0,
-            prophet_row1,
-            prophet_row2,
-            prophet_row3,
-            prophet_row4,
-        ];
+        let mut process = Process::new();
+        let _ = process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
+        let rows = generate_memory_trace(&program.trace.memory);
 
-        for i in 0..trace_rows.len() - 1 {
+        for i in 0..rows.len() - 1 {
             println!("row index: {}", i);
             let vars = StarkEvaluationVars {
-                local_values: &trace_rows[i],
-                next_values: &trace_rows[i + 1],
+                local_values: &rows[i],
+                next_values: &rows[i + 1],
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(
@@ -709,5 +374,29 @@ mod tests {
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
         }
+    }
+
+    #[test]
+    fn test_memory_with_program() {
+        let program_src = "0x4000000840000000
+        0x8
+        0x4020000001000000
+        0x100
+        0x4000001040000000
+        0x2
+        0x4040000001000000
+        0x200
+        0x4000000840000000
+        0x14
+        0x4000001002000000
+        0x100
+        0x4000002002000000
+        0x200
+        0x4000004002000000
+        0x200
+        0x0040200c00000000
+        0x0000000000800000";
+
+        test_memory_stark(program_src);
     }
 }
