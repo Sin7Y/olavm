@@ -50,11 +50,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseFixedS
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
+/*pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles([TAG, OP0, OP1, RES]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_bitwise<F: Field>() -> Column<F> {
     Column::one()
-}
+}*/

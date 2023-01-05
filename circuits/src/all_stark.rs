@@ -185,15 +185,15 @@ fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
         ],
         TableWithColumns::new(
             Table::Bitwise,
-            bitwise_stark::ctl_data_with_bitwise_fixed(),
-            Some(bitwise_stark::ctl_filter_with_bitwise_fixed()),
+            bitwise_stark::ctl_data_with_cpu(),
+            Some(bitwise_stark::ctl_filter_with_cpu()),
         ),
         None,
     )
 }
 
 // Cross_Lookup_Table(looking_table, looked_table)
-fn ctl_bitwise_rangecheck<F: Field>() -> CrossTableLookup<F> {
+/*fn ctl_bitwise_rangecheck<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::RangecheckFixed,
@@ -207,10 +207,10 @@ fn ctl_bitwise_rangecheck<F: Field>() -> CrossTableLookup<F> {
         ),
         None,
     )
-}
+}*/
 
 // Cross_Lookup_Table(looking_table, looked_table)
-fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
+/*fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::BitwiseFixed,
@@ -224,7 +224,7 @@ fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
         ),
         None,
     )
-}
+}*/
 
 // add CMP cross lookup instance
 fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
@@ -243,7 +243,7 @@ fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
+/*fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::RangeCheck,
@@ -257,7 +257,7 @@ fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
         ),
         None,
     )
-}
+}*/
 
 // add Rangecheck cross lookup instance
 fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
@@ -276,7 +276,7 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
+/*fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::RangecheckFixed,
@@ -290,7 +290,7 @@ fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
         ),
         None,
     )
-}
+}*/
 
 // check the correct program with lookup
 

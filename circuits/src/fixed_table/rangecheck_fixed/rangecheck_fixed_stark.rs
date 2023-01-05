@@ -50,7 +50,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangecheckFix
 }
 
 // Get the column info for Cross_Lookup<Rangecheck_fixed_table, Bitwise_table>
-pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
+/*pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles([VAL]).collect_vec();
     res.extend(Column::singles([TAG]).collect_vec());
 
@@ -70,4 +70,4 @@ pub fn ctl_data_with_rangecheck<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
     Column::one()
-}
+}*/
