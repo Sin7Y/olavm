@@ -13,6 +13,7 @@ pub(crate) fn transpose_poly_values<F: Field>(polys: Vec<PolynomialValues<F>>) -
     transpose(&poly_values)
 }
 
+// l * w => w * l
 pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     let l = matrix.len();
     let w = matrix[0].len();

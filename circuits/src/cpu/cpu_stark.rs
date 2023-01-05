@@ -371,7 +371,7 @@ mod tests {
     use num::ToPrimitive;
 
     use super::*;
-    use crate::util::{generate_cpu_trace, print_cpu_trace};
+    use crate::util::{generate_cpu_trace};
     use core::program::{instruction::Opcode, Program};
     use executor::Process;
     use plonky2::{
