@@ -5,6 +5,8 @@ use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer
 use crate::cross_table_lookup::Column;
 use crate::stark::Stark;
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::permutation::*;
+use crate::lookup::*;
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
@@ -57,6 +59,24 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
         let computed_sum =
             reduce_with_powers(&res_limbs, P::Scalar::from_canonical_usize(Self::BASE));
         yield_constr.constraint(computed_sum - res);
+
+        eval_lookups(vars, yield_constr, OP0_LIMBS_PERMUTED.start, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, OP0_LIMBS_PERMUTED.start + 1, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, OP0_LIMBS_PERMUTED.start + 2, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, OP0_LIMBS_PERMUTED.start + 3, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, OP1_LIMBS_PERMUTED.start, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, OP1_LIMBS_PERMUTED.start + 1, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, OP1_LIMBS_PERMUTED.start + 2, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, OP1_LIMBS_PERMUTED.start + 3, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, RES_LIMBS_PERMUTED.start, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, RES_LIMBS_PERMUTED.start + 1, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, RES_LIMBS_PERMUTED.start + 2, FIX_RANGE_CHECK_U8_PERMUTED);
+        eval_lookups(vars, yield_constr, RES_LIMBS_PERMUTED.start + 3, FIX_RANGE_CHECK_U8_PERMUTED);
+
+        eval_lookups(vars, yield_constr, COMPRESS_LIMBS.start, COMPRESS_PERMUTED.start);
+        eval_lookups(vars, yield_constr, COMPRESS_LIMBS.start + 1, COMPRESS_PERMUTED.start + 1);
+        eval_lookups(vars, yield_constr, COMPRESS_LIMBS.start + 2, COMPRESS_PERMUTED.start + 2);
+        eval_lookups(vars, yield_constr, COMPRESS_LIMBS.start + 3, COMPRESS_PERMUTED.start + 3);
     }
 
     fn eval_ext_circuit(
@@ -70,6 +90,17 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
     fn constraint_degree(&self) -> usize {
         1
     }
+
+    fn permutation_pairs(&self) -> Vec<PermutationPair> {
+        vec![
+            PermutationPair::singletons(COMPRESS_LIMBS.start, COMPRESS_PERMUTED.start),
+            PermutationPair::singletons(COMPRESS_LIMBS.start + 1, COMPRESS_PERMUTED.start + 1),
+            PermutationPair::singletons(COMPRESS_LIMBS.start + 2, COMPRESS_PERMUTED.start + 2),
+            PermutationPair::singletons(COMPRESS_LIMBS.start + 3, COMPRESS_PERMUTED.start + 3),
+            PermutationPair::singletons(FIX_COMPRESS, FIX_COMPRESS_PERMUTED),
+        ]
+    }
+
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
@@ -83,7 +114,7 @@ pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
 }
 
 // Get the column info for Cross_Lookup<Rangecheck_Fixed_table, Bitwise_table>
-pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
+/*pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles(OP0_LIMBS).collect_vec();
     res.extend(Column::singles(OP1_LIMBS).collect_vec());
     res.extend(Column::singles(RES_LIMBS).collect_vec());
@@ -123,4 +154,4 @@ pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
     Column::one()
-}
+}*/

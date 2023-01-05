@@ -1,11 +1,13 @@
 use crate::builtins::rangecheck::columns::*;
 use crate::columns::*;
 use itertools::Itertools;
-//use crate::var::{StarkEvaluationTargets, StarkEvaluationVars};
+
 use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::cross_table_lookup::Column;
 use crate::stark::Stark;
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::permutation::*;
+use crate::lookup::*;
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
@@ -22,6 +24,7 @@ pub struct RangeCheckStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> RangeCheckStark<F, D> {
+    
     const BASE: usize = 1 << 16;
 }
 
@@ -48,6 +51,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
         let sum = limb_lo.add(limb_hi.mul(base));
 
         yield_constr.constraint(val - sum);
+
+        eval_lookups(vars, yield_constr, LIMB_LO_PERMUTED, FIX_RANGE_CHECK_U16_PERMUTED);
+        eval_lookups(vars, yield_constr, LIMB_HI_PERMUTED, FIX_RANGE_CHECK_U16_PERMUTED);
+   
     }
 
     fn eval_ext_circuit(
@@ -61,6 +68,14 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
     fn constraint_degree(&self) -> usize {
         1
     }
+
+    fn permutation_pairs(&self) -> Vec<PermutationPair> {
+        vec![
+            PermutationPair::singletons(LIMB_LO, LIMB_LO_PERMUTED),
+            PermutationPair::singletons(LIMB_HI, LIMB_HI_PERMUTED),
+            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED),
+        ]
+    }
 }
 
 pub fn ctl_data_rc<F: Field>() -> Vec<Column<F>> {
@@ -68,18 +83,18 @@ pub fn ctl_data_rc<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_rc<F: Field>() -> Column<F> {
-    Column::single(TAG)
+    Column::one()
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
+/*pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles([VAL]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
-    Column::single(TAG)
-}
+    Column::single(ONE)
+}*/
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
@@ -88,15 +103,15 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::single(TAG)
+    Column::one()
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
+/*pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles([LIMB_LO, LIMB_HI]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_rangecheck_fixed<F: Field>() -> Column<F> {
     Column::one()
-}
+}*/
