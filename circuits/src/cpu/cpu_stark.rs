@@ -348,6 +348,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // Last row must be `END`
         yield_constr.constraint_last_row(lv[COL_S_END] - P::ONES);
+        
+        // Padding row must be `END`
+        yield_constr.constraint_transition(lv[COL_S_END] * (nv[COL_S_END] - P::ONES));
     }
 
     fn eval_ext_circuit(
