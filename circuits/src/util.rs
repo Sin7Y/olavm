@@ -193,7 +193,7 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
 
     // Pad trace to power of two.
     let num_filled_row_len = trace.len();
-    if !num_filled_row_len.is_power_of_two() {
+    if !num_filled_row_len.is_power_of_two() || num_filled_row_len == 1 {
         let filled_last_row = trace[num_filled_row_len - 1];
         let filled_end_up_in_rw = filled_last_row[COL_MEM_IS_RW].eq(&F::ONE);
         let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
@@ -203,7 +203,12 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
         } else {
             filled_last_row[COL_MEM_ADDR] + F::ONE
         };
-        let num_padded_rows = num_filled_row_len.next_power_of_two();
+        let num_padded_rows = if num_filled_row_len == 1 {
+            2
+        } else {
+            num_filled_row_len.next_power_of_two()
+        };
+
         let mut is_first_pad_row = true;
         for _ in num_filled_row_len..num_padded_rows {
             let mut padded_row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
