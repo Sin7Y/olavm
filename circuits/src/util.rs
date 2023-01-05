@@ -206,6 +206,30 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
         }
     }
 
+    // add a dummy row when memory trace is empty.
+    if trace.len() == 0 {
+        let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
+        let span = F::from_canonical_u64(2_u64.pow(32).sub(1));
+        let addr = p - span;
+        let mut dummy_row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
+        dummy_row[COL_MEM_IS_RW] = F::ZERO;
+        dummy_row[COL_MEM_ADDR] = addr;
+        dummy_row[COL_MEM_CLK] = F::ZERO;
+        dummy_row[COL_MEM_OP] = F::ZERO;
+        dummy_row[COL_MEM_IS_WRITE] = F::ONE;
+        dummy_row[COL_MEM_VALUE] = F::ZERO;
+        dummy_row[COL_MEM_DIFF_ADDR] = F::ZERO;
+        dummy_row[COL_MEM_DIFF_ADDR_INV] = F::ZERO;
+        dummy_row[COL_MEM_DIFF_CLK] = F::ZERO;
+        dummy_row[COL_MEM_DIFF_ADDR_COND] = p - addr;
+        dummy_row[COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
+        dummy_row[COL_MEM_RW_ADDR_UNCHANGED] = F::ZERO;
+        dummy_row[COL_MEM_REGION_PROPHET] = F::ONE;
+        dummy_row[COL_MEM_REGION_POSEIDON] = F::ZERO;
+        dummy_row[COL_MEM_REGION_ECDSA] = F::ZERO;
+        trace.push(dummy_row);
+    };
+
     trace
 }
 
