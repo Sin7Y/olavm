@@ -166,7 +166,7 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
 
     // Pad trace to power of two.
     let num_filled_row_len = trace.len();
-    if !num_filled_row_len.is_power_of_two() {
+    if num_filled_row_len !=0 &&!num_filled_row_len.is_power_of_two() {
         let filled_last_row = trace[num_filled_row_len - 1];
         let filled_end_up_in_rw = filled_last_row[COL_MEM_IS_RW].eq(&F::ONE);
         let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
