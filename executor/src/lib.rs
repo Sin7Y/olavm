@@ -8,7 +8,7 @@ use core::program::instruction::{
 };
 use core::program::{Program, REGISTER_NUM};
 use core::trace::trace::{
-    BitwiseOperation, ComparisonOperation, MemoryTraceCell, RangeRow, RegisterSelector,
+    BitwiseOperation, ComparisonOperation, MemoryTraceCell, RegisterSelector,
 };
 use core::trace::trace::{FilterLockForMain, MemoryCell, MemoryOperation, MemoryType};
 use log::debug;
@@ -582,7 +582,7 @@ impl Process {
                     self.register_selector.op1 = self.registers[op1_index];
                     self.register_selector.op1_reg_sel[op1_index] =
                         GoldilocksField::from_canonical_u64(1);
-                    program.trace.insert_range_check(self.registers[op1_index]);
+                    program.trace.insert_rangecheck(self.registers[op1_index]);
 
                     self.pc += step;
                 }
@@ -637,16 +637,14 @@ impl Process {
                             + self.registers[dst_index].0,
                     );
 
-                    program.trace.insert_range_check(self.registers[op0_index]);
-                    program.trace.insert_range_check(op1_value.0);
+                    program.trace.insert_rangecheck(self.registers[op0_index]);
+                    program.trace.insert_rangecheck(op1_value.0);
 
-                    program.trace.insert_bitwise(
-                        self.clk,
+                    program.trace.insert_bitwise_combined(
                         op_type as u32,
                         self.registers[op0_index],
                         op1_value.0,
                         self.registers[dst_index],
-                        target,
                     );
                     self.pc += step;
                 }
@@ -686,15 +684,12 @@ impl Process {
                         _ => panic!("not match opcode:{}", opcode),
                     };
 
-                    program.trace.insert_range_check(self.registers[op0_index]);
-                    program.trace.insert_range_check(value.0);
+                    program.trace.insert_rangecheck(self.registers[op0_index]);
+                    program.trace.insert_rangecheck(value.0);
 
-                    program.trace.insert_comparison(
-                        self.clk,
-                        op_type as u32,
+                    program.trace.insert_cmp(
                         self.registers[op0_index],
                         value.0,
-                        self.flag,
                     );
                     self.pc += step;
                 }

@@ -32,8 +32,8 @@
 1 : [0, 2^8)
 1, 0 : [0, 2^16)
 */
-pub(crate) const TAG: usize = 0;
+//pub(crate) const TAG: usize = 0;
 
-pub(crate) const VAL: usize = TAG + 1;
+pub(crate) const VAL: usize = 0;
 
 pub(crate) const COL_NUM: usize = VAL + 1; //4
