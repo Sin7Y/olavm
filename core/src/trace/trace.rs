@@ -128,26 +128,26 @@ pub struct Step {
     pub register_selector: RegisterSelector,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RangeRow {
+//#[derive(Debug, Clone, Serialize, Deserialize)]
+/*pub struct RangeRow {
     pub input: GoldilocksField,
     pub limb0: GoldilocksField,
     pub limb1: GoldilocksField,
     pub limb2: GoldilocksField,
     pub limb3: GoldilocksField,
-}
+}*/
 
 // Added by xb-2022-12-19
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RangeCheckRow {
-    pub tag: u32,
+    //pub tag: u32,
     pub val: GoldilocksField,
     pub limb_lo: GoldilocksField,
     pub limb_hi: GoldilocksField,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BitwiseRow {
+//#[derive(Debug, Clone, Serialize, Deserialize)]
+/*pub struct BitwiseRow {
     pub clk: u32,
     pub sel: u32,
     pub op0: GoldilocksField,
@@ -175,6 +175,7 @@ pub struct BitwiseRow {
     pub target_2: GoldilocksField,
     pub target_3: GoldilocksField,
 }
+*/
 
 // Added by xb-2022-12-16
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -216,8 +217,8 @@ pub struct CmpRow {
     pub diff: GoldilocksField,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ComparisonRow {
+//#[derive(Debug, Clone, Serialize, Deserialize)]
+/*pub struct ComparisonRow {
     pub clk: u32,
     pub sel: u32,
     pub op0: GoldilocksField,
@@ -226,6 +227,7 @@ pub struct ComparisonRow {
     pub diff: GoldilocksField,
     pub diff_inv: GoldilocksField,
 }
+*/
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
@@ -234,9 +236,9 @@ pub struct Trace {
     // todo need limit the trace size
     pub exec: Vec<Step>,
     pub memory: Vec<MemoryTraceCell>,
-    pub builtin_range_check: Vec<RangeRow>,
-    pub builtin_bitwise: Vec<BitwiseRow>,
-    pub builtin_comparison: Vec<ComparisonRow>,
+    //pub builtin_range_check: Vec<RangeRow>,
+    //pub builtin_bitwise: Vec<BitwiseRow>,
+    //pub builtin_comparison: Vec<ComparisonRow>,
     // added by xb
     pub builtin_rangecheck: Vec<RangeCheckRow>,
     pub builtin_bitwise_combined: Vec<BitwiseCombinedRow>,
@@ -244,7 +246,8 @@ pub struct Trace {
 }
 
 impl Trace {
-    pub fn insert_comparison(
+
+    /*pub fn insert_comparison(
         &mut self,
         clk: u32,
         sel: u32,
@@ -276,7 +279,7 @@ impl Trace {
             diff,
             diff_inv,
         });
-    }
+    }*/
 
     // Added by xb 2022-12-19
     pub fn insert_cmp(&mut self, op0: GoldilocksField, op1: GoldilocksField) {
@@ -292,7 +295,7 @@ impl Trace {
         });
     }
 
-    pub fn insert_bitwise(
+    /*pub fn insert_bitwise(
         &mut self,
         clk: u32,
         sel: u32,
@@ -333,7 +336,7 @@ impl Trace {
             target_2: GoldilocksField(target_limbs.2),
             target_3: GoldilocksField(target_limbs.3),
         });
-    }
+    }*/
 
     // added by xb
     pub fn insert_bitwise_combined(
@@ -369,7 +372,7 @@ impl Trace {
         });
     }
 
-    pub fn insert_range_check(&mut self, input: GoldilocksField) {
+    /*pub fn insert_range_check(&mut self, input: GoldilocksField) {
         let split_limbs = split_limbs_from_field(&input);
         self.builtin_range_check.push(RangeRow {
             input,
@@ -378,13 +381,12 @@ impl Trace {
             limb2: GoldilocksField(split_limbs.2),
             limb3: GoldilocksField(split_limbs.3),
         });
-    }
+    }*/
 
     // added by xb
-    pub fn insert_rangecheck(&mut self, tag: u32, input: GoldilocksField) {
+    pub fn insert_rangecheck(&mut self, input: GoldilocksField) {
         let split_limbs = split_u16_limbs_from_field(&input);
         self.builtin_rangecheck.push(RangeCheckRow {
-            tag: tag,
             val: input,
             limb_lo: GoldilocksField(split_limbs.0),
             limb_hi: GoldilocksField(split_limbs.1),
