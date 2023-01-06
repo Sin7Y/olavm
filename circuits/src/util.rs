@@ -264,6 +264,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         .map(|c| {
             let mut row: [F; bitwise::COL_NUM_BITWISE] = [F::default(); bitwise::COL_NUM_BITWISE];
 
+            row[bitwise::FILTER] = F::from_canonical_usize(1);
             row[bitwise::TAG] = F::from_canonical_u32(c.bitwise_tag);
             row[bitwise::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
             row[bitwise::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
@@ -303,17 +304,14 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
             trace.push(new_row);
         }
     }
-    // add fix rangecheck info
-    //trace[bitwise::FIX_RANGE_CHECK_U8] = vec![F::ZERO; max_trace_len].try_into()
-    //.unwrap_or_else(|v: Vec<F>| panic!("Expected a Vec of length {} but it was {}", max_trace_len, v.len()));
-
-    (0..bitwise::RANGE_CHECK_U8_SIZE)
-        .map(|i| trace[i][bitwise::FIX_RANGE_CHECK_U8] = F::from_canonical_usize(i));
 
     // add fix bitwise info
     // for 2^8 case, the row is 2^15 + 2^7
     let mut index = 0;
     for op0 in 0..bitwise::RANGE_CHECK_U8_SIZE {
+        // add fix rangecheck info
+        trace[op0][bitwise::FIX_RANGE_CHECK_U8] = F::from_canonical_usize(op0);
+
         for op1 in op0..bitwise::RANGE_CHECK_U8_SIZE {
             // exe the AND OPE ration
             let res_and = op0 & op1;
@@ -406,40 +404,16 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
 
         trace_col_vecs[bitwise::RES_LIMBS_PERMUTED.start + i] = permuted_inputs;
         trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 8 + i] = permuted_table;
+
+        // permutation for bitwise
+        let (permuted_inputs, permuted_table) = permuted_cols(
+            &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + i],
+            &trace_col_vecs[bitwise::FIX_COMPRESS],
+        );
+
+        trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + i] = permuted_inputs;
+        trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + i] = permuted_table;
     }
-
-    // permutation for bitwise
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[bitwise::COMPRESS_LIMBS.start],
-        &trace_col_vecs[bitwise::FIX_COMPRESS],
-    );
-
-    trace_col_vecs[bitwise::COMPRESS_PERMUTED.start] = permuted_inputs;
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start] = permuted_table;
-
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 1],
-        &trace_col_vecs[bitwise::FIX_COMPRESS],
-    );
-
-    trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 1] = permuted_inputs;
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 1] = permuted_table;
-
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 2],
-        &trace_col_vecs[bitwise::FIX_COMPRESS],
-    );
-
-    trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 2] = permuted_inputs;
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 2] = permuted_table;
-
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 3],
-        &trace_col_vecs[bitwise::FIX_COMPRESS],
-    );
-
-    trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 3] = permuted_inputs;
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 3] = permuted_table;
 
     let final_trace = transpose(&trace_col_vecs);
 
@@ -454,6 +428,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
 pub fn vec_to_ary_bitwise<F: RichField>(input: Vec<F>) -> [F; bitwise::COL_NUM_BITWISE] {
     let mut ary = [F::ZEROS; bitwise::COL_NUM_BITWISE];
 
+    ary[bitwise::FILTER] = input[bitwise::FILTER];
     ary[bitwise::TAG] = input[bitwise::TAG];
     ary[bitwise::OP0] = input[bitwise::OP0];
     ary[bitwise::OP1] = input[bitwise::OP1];
@@ -559,13 +534,14 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         }
     }
 
-    // add fix rangecheck info
-    (0..cmp::RANGE_CHECK_U16_SIZE)
-        .map(|i| trace[i][cmp::FIX_RANGE_CHECK_U16] = F::from_canonical_usize(i));
-
     // Transpose to column-major form.
     let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
     let mut trace_col_vecs = transpose(&trace_row_vecs);
+
+    // add fix rangecheck info
+    trace_col_vecs[cmp::FIX_RANGE_CHECK_U16] = (0..cmp::RANGE_CHECK_U16_SIZE)
+        .map(|i| F::from_canonical_usize(i))
+        .collect();
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace_col_vecs[cmp::DIFF_LIMB_LO],
@@ -638,13 +614,14 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         }
     }
 
-    // add fix rangecheck info
-    (0..rangecheck::RANGE_CHECK_U16_SIZE)
-        .map(|i| trace[i][rangecheck::FIX_RANGE_CHECK_U16] = F::from_canonical_usize(i));
-
     // Transpose to column-major form.
     let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
     let mut trace_col_vecs = transpose(&trace_row_vecs);
+
+    // add fix rangecheck info
+    trace_col_vecs[rangecheck::FIX_RANGE_CHECK_U16] = (0..rangecheck::RANGE_CHECK_U16_SIZE)
+        .map(|i| F::from_canonical_usize(i))
+        .collect();
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace_col_vecs[rangecheck::LIMB_LO],
