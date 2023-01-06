@@ -119,5 +119,5 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::one()
+    Column::single(FILTER)
 }
