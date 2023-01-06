@@ -130,7 +130,6 @@ pub fn permuted_cols<F: PrimeField64>(inputs: &[F], table: &[F]) -> (Vec<F>, Vec
     (sorted_inputs, permuted_table)
 }
 
-
 // add by xb 2023-1-5
 // case 1:
 // looking_table:
@@ -150,31 +149,27 @@ pub fn permuted_cols<F: PrimeField64>(inputs: &[F], table: &[F]) -> (Vec<F>, Vec
 //      looking_table: <0,1,2,3,4,5,5,5,5,5,5,5,5,5,5,5>
 //      looked_table: <0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15>
 pub fn extend_to_power_of_2<F: PrimeField64>(inputs: &[F], table: &[F]) -> (Vec<F>, Vec<F>) {
-
     let looking_trace_len = inputs.len();
     let looked_trace_len = table.len();
 
     let expect_trace_len = looking_trace_len.max(looked_trace_len).next_power_of_two();
 
     let mut extend_input = Vec::with_capacity(expect_trace_len);
-    let mut extend_table= Vec::with_capacity(expect_trace_len);
+    let mut extend_table = Vec::with_capacity(expect_trace_len);
 
     for i in 0..expect_trace_len {
-
         if i < looking_trace_len {
             extend_input.push(inputs[i])
-        }else {
+        } else {
             extend_input.push(inputs[looking_trace_len - 1])
         }
 
         if i < looked_trace_len {
             extend_input.push(table[i])
-        }else {
+        } else {
             extend_input.push(table[looked_trace_len - 1])
         }
-
     }
 
     (extend_input, extend_table)
-
 }

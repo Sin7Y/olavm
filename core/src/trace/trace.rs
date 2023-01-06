@@ -246,7 +246,6 @@ pub struct Trace {
 }
 
 impl Trace {
-
     /*pub fn insert_comparison(
         &mut self,
         clk: u32,
