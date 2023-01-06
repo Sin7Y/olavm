@@ -22,7 +22,8 @@ Constraints as follows:
 // 1 => AND TABLE
 // 2 => OR  TABLE
 // 3 => XOR TABLE
-pub(crate) const TAG: usize = 0;
+pub(crate) const FILTER: usize = 0;
+pub(crate) const TAG: usize = FILTER + 1;
 
 pub(crate) const OP0: usize = TAG + 1;
 pub(crate) const OP1: usize = OP0 + 1;
@@ -59,15 +60,15 @@ pub(crate) const FIX_RANGE_CHECK_U8_PERMUTED: Range<usize> =
                                                      // 1 => AND TABLE
                                                      // 2 => OR  TABLE
                                                      // 3 => XOR TABLE
-pub(crate) const FIX_TAG: usize = FIX_RANGE_CHECK_U8_PERMUTED.end; //38
-pub(crate) const FIX_BITWSIE_OP0: usize = FIX_TAG + 1; //39
-pub(crate) const FIX_BITWSIE_OP1: usize = FIX_BITWSIE_OP0 + 1; //40
-pub(crate) const FIX_BITWSIE_RES: usize = FIX_BITWSIE_OP1 + 1; //41
+pub(crate) const FIX_TAG: usize = FIX_RANGE_CHECK_U8_PERMUTED.end; //49
+pub(crate) const FIX_BITWSIE_OP0: usize = FIX_TAG + 1; //50
+pub(crate) const FIX_BITWSIE_OP1: usize = FIX_BITWSIE_OP0 + 1; //51
+pub(crate) const FIX_BITWSIE_RES: usize = FIX_BITWSIE_OP1 + 1; //52
 
-pub(crate) const FIX_COMPRESS: usize = FIX_BITWSIE_RES + 1; //42
-pub(crate) const FIX_COMPRESS_PERMUTED: Range<usize> = FIX_COMPRESS + 1..FIX_COMPRESS + 5; //43,44,45,46
+pub(crate) const FIX_COMPRESS: usize = FIX_BITWSIE_RES + 1; //53
+pub(crate) const FIX_COMPRESS_PERMUTED: Range<usize> = FIX_COMPRESS + 1..FIX_COMPRESS + 5; //54~57
 
-pub(crate) const COL_NUM_BITWISE: usize = FIX_COMPRESS_PERMUTED.end; //47
+pub(crate) const COL_NUM_BITWISE: usize = FIX_COMPRESS_PERMUTED.end; //58
 
 pub(crate) const RANGE_CHECK_U8_SIZE: usize = 1 << 8;
 pub(crate) const BITWISE_U8_SIZE_PER: usize = (1 << 15) + (1 << 7);
