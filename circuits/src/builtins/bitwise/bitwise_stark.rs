@@ -64,73 +64,73 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
             vars,
             yield_constr,
             OP0_LIMBS_PERMUTED.start,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start,
         );
         eval_lookups(
             vars,
             yield_constr,
             OP0_LIMBS_PERMUTED.start + 1,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 1,
         );
         eval_lookups(
             vars,
             yield_constr,
             OP0_LIMBS_PERMUTED.start + 2,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 2,
         );
         eval_lookups(
             vars,
             yield_constr,
             OP0_LIMBS_PERMUTED.start + 3,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 3,
         );
         eval_lookups(
             vars,
             yield_constr,
             OP1_LIMBS_PERMUTED.start,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 4,
         );
         eval_lookups(
             vars,
             yield_constr,
             OP1_LIMBS_PERMUTED.start + 1,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 5,
         );
         eval_lookups(
             vars,
             yield_constr,
             OP1_LIMBS_PERMUTED.start + 2,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 6,
         );
         eval_lookups(
             vars,
             yield_constr,
             OP1_LIMBS_PERMUTED.start + 3,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 7,
         );
         eval_lookups(
             vars,
             yield_constr,
             RES_LIMBS_PERMUTED.start,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 8,
         );
         eval_lookups(
             vars,
             yield_constr,
             RES_LIMBS_PERMUTED.start + 1,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 9,
         );
         eval_lookups(
             vars,
             yield_constr,
             RES_LIMBS_PERMUTED.start + 2,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 10,
         );
         eval_lookups(
             vars,
             yield_constr,
             RES_LIMBS_PERMUTED.start + 3,
-            FIX_RANGE_CHECK_U8_PERMUTED,
+            FIX_RANGE_CHECK_U8_PERMUTED.start + 11,
         );
 
         eval_lookups(
