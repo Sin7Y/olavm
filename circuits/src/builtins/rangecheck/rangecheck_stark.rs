@@ -4,10 +4,10 @@ use itertools::Itertools;
 
 use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::cross_table_lookup::Column;
+use crate::lookup::*;
+use crate::permutation::*;
 use crate::stark::Stark;
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
-use crate::permutation::*;
-use crate::lookup::*;
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
@@ -24,7 +24,6 @@ pub struct RangeCheckStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> RangeCheckStark<F, D> {
-    
     const BASE: usize = 1 << 16;
 }
 
@@ -52,9 +51,18 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
 
         yield_constr.constraint(val - sum);
 
-        eval_lookups(vars, yield_constr, LIMB_LO_PERMUTED, FIX_RANGE_CHECK_U16_PERMUTED);
-        eval_lookups(vars, yield_constr, LIMB_HI_PERMUTED, FIX_RANGE_CHECK_U16_PERMUTED);
-   
+        eval_lookups(
+            vars,
+            yield_constr,
+            LIMB_LO_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED,
+        );
+        eval_lookups(
+            vars,
+            yield_constr,
+            LIMB_HI_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED,
+        );
     }
 
     fn eval_ext_circuit(

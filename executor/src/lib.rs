@@ -687,10 +687,7 @@ impl Process {
                     program.trace.insert_rangecheck(self.registers[op0_index]);
                     program.trace.insert_rangecheck(value.0);
 
-                    program.trace.insert_cmp(
-                        self.registers[op0_index],
-                        value.0,
-                    );
+                    program.trace.insert_cmp(self.registers[op0_index], value.0);
                     self.pc += step;
                 }
                 "end" => {

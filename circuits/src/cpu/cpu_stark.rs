@@ -348,7 +348,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // Last row must be `END`
         yield_constr.constraint_last_row(lv[COL_S_END] - P::ONES);
-        
+
         // Padding row must be `END`
         yield_constr.constraint_transition(lv[COL_S_END] * (nv[COL_S_END] - P::ONES));
     }
@@ -371,7 +371,7 @@ mod tests {
     use num::ToPrimitive;
 
     use super::*;
-    use crate::util::{generate_cpu_trace};
+    use crate::util::generate_cpu_trace;
     use core::program::{instruction::Opcode, Program};
     use executor::Process;
     use plonky2::{
