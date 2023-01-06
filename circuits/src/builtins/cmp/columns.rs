@@ -25,7 +25,8 @@ Constraints as follows:
 // 1 => GTE  TABLE
 //pub(crate) const TAG: usize = 0;
 
-pub(crate) const OP0: usize = 0;
+pub(crate) const FILTER: usize = 0;
+pub(crate) const OP0: usize = FILTER + 1;
 pub(crate) const OP1: usize = OP0 + 1;
 pub(crate) const DIFF: usize = OP1 + 1;
 pub(crate) const DIFF_LIMB_LO: usize = DIFF + 1;
