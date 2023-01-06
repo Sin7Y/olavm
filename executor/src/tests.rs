@@ -281,6 +281,9 @@ fn comparison_test() {
     //add r3 r0 r1
     //mul r4 r3 r2
     //gte r4 r3
+    //cjmp 11
+    //add r3 r0 r2
+    //mul r4 r3 r0
     //end
     let program_src = "0x4000000840000000
         0x8
@@ -291,6 +294,10 @@ fn comparison_test() {
         0x0020204400000000
         0x0100408200000000
         0x0200800000010000
+        0x4000000010000000
+        0xc
+        0x0020404400000000
+        0x0100108200000000
         0x0000000000800000";
 
     let instructions = program_src.split('\n');
