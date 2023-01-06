@@ -22,7 +22,8 @@ Constraints as follows:
 // 1 => AND TABLE
 // 2 => OR  TABLE
 // 3 => XOR TABLE
-pub(crate) const TAG: usize = 0;
+pub(crate) const FILTER: usize = 0;
+pub(crate) const TAG: usize = FILTER + 1;
 
 pub(crate) const OP0: usize = TAG + 1;
 pub(crate) const OP1: usize = OP0 + 1;
