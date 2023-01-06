@@ -28,7 +28,7 @@ pub(crate) const OP0: usize = TAG + 1;
 pub(crate) const OP1: usize = OP0 + 1;
 pub(crate) const RES: usize = OP1 + 1;
 
-pub(crate) const OP0_LIMBS: Range<usize> = RES..RES + 4;
+pub(crate) const OP0_LIMBS: Range<usize> = RES + 1..RES + 5;
 //pub(crate) const OP0_LIMB_1: usize  = OP0_LIMB_0 + 1;
 //pub(crate) const OP0_LIMB_2: usize  = OP0_LIMB_1 + 1;
 //pub(crate) const OP0_LIMB_3: usize  = OP0_LIMB_2 + 1;
@@ -69,5 +69,5 @@ pub(crate) const FIX_COMPRESS_PERMUTED: usize = FIX_COMPRESS + 1;
 pub(crate) const COL_NUM_BITWISE: usize = FIX_COMPRESS_PERMUTED + 1; //44
 
 pub(crate) const RANGE_CHECK_U8_SIZE: usize = 1 << 8;
-pub(crate) const BITWISE_U8_SIZE_PER: usize = 1 << 15 + 1 << 7;
+pub(crate) const BITWISE_U8_SIZE_PER: usize = (1 << 15) + (1 << 7);
 pub(crate) const BITWISE_U8_SIZE: usize = 3 * BITWISE_U8_SIZE_PER;
