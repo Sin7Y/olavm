@@ -22,6 +22,7 @@ mod hash;
 mod memory;
 #[cfg(test)]
 mod tests;
+mod poseidon_field;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 8;
