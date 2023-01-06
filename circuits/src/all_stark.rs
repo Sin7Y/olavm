@@ -55,7 +55,7 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
         [
             self.cpu_stark.num_permutation_batches(config),
             self.memory_stark.num_permutation_batches(config),
-            // self.bitwise_stark.num_permutation_batches(config),
+            self.bitwise_stark.num_permutation_batches(config),
             // self.cmp_stark.num_permutation_batches(config),
             // self.rangecheck_stark.num_permutation_batches(config),
         ]
@@ -65,7 +65,7 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
         [
             self.cpu_stark.permutation_batch_size(),
             self.memory_stark.permutation_batch_size(),
-            // self.bitwise_stark.permutation_batch_size(),
+            self.bitwise_stark.permutation_batch_size(),
             // self.cmp_stark.permutation_batch_size(),
             // self.rangecheck_stark.permutation_batch_size(),
         ]
@@ -87,7 +87,7 @@ pub enum Table {
     Program = 7,
 }
 
-pub(crate) const NUM_TABLES: usize = 2;
+pub(crate) const NUM_TABLES: usize = 3;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
@@ -341,6 +341,7 @@ fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
 
 mod tests {
     use std::borrow::BorrowMut;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     use crate::cross_table_lookup::testutils::check_ctls;
     use crate::stark::Stark;
@@ -417,7 +418,8 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
@@ -426,7 +428,7 @@ mod tests {
         [
             cpu_trace,
             memory_trace,
-            // bitwise_trace,
+            bitwise_trace,
             // cmp_trace,
             // rangecheck_trace,
         ]
@@ -488,7 +490,8 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
@@ -497,7 +500,7 @@ mod tests {
         [
             cpu_trace,
             memory_trace,
-            // bitwise_trace,
+            bitwise_trace,
             // cmp_trace,
             // rangecheck_trace,
         ]
@@ -554,7 +557,8 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
@@ -563,7 +567,7 @@ mod tests {
         [
             cpu_trace,
             memory_trace,
-            // bitwise_trace,
+            bitwise_trace,
             // cmp_trace,
             // rangecheck_trace,
         ]
@@ -628,7 +632,8 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
@@ -637,13 +642,13 @@ mod tests {
         [
             cpu_trace,
             memory_trace,
-            // bitwise_trace,
+            bitwise_trace,
             // cmp_trace,
             // rangecheck_trace,
         ]
     }
 
-    fn range_check_test() -> [Vec<PolynomialValues<F>>; 2] {
+    fn range_check_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         //mov r0 8
         //mov r1 2
         //mov r2 3
@@ -683,7 +688,8 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
@@ -692,13 +698,22 @@ mod tests {
         [
             cpu_trace,
             memory_trace,
-            // bitwise_trace,
+            bitwise_trace,
             // cmp_trace,
             // rangecheck_trace,
         ]
     }
 
-    fn bitwise_test() -> [Vec<PolynomialValues<F>>; 2] {
+    fn timestamp() -> i64 {
+        let start = SystemTime::now();
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        let ms = since_the_epoch.as_secs() as i64 * 1000i64 + (since_the_epoch.subsec_nanos() as f64 / 1_000_000.0) as i64;
+        ms
+    }
+
+    fn bitwise_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         //mov r0 8
         //mov r1 2
         //mov r2 3
@@ -738,10 +753,16 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        // let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        // TODO: dbg
+        let begin_time = timestamp();
+        println!("generate_builtins_bitwise_trace begin: {:?}", begin_time);
         let bitwise_rows =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let end_time = timestamp();
+        println!("generate_builtins_bitwise_trace end: {:?}", end_time);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let bitwise_poly_end_time = timestamp();
+        println!("bitwise_trace_poly end: {:?}", bitwise_poly_end_time);
         let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
@@ -749,13 +770,13 @@ mod tests {
         [
             cpu_trace,
             memory_trace,
-            // bitwise_trace,
+            bitwise_trace,
             // cmp_trace,
             // rangecheck_trace,
         ]
     }
 
-    fn comparison_test() -> [Vec<PolynomialValues<F>>; 2] {
+    fn comparison_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         //mov r0 8
         //mov r1 2
         //mov r2 3
@@ -795,7 +816,8 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
@@ -804,7 +826,7 @@ mod tests {
         [
             cpu_trace,
             memory_trace,
-            // bitwise_trace,
+            bitwise_trace,
             // cmp_trace,
             // rangecheck_trace,
         ]
