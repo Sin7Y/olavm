@@ -406,40 +406,16 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
 
         trace_col_vecs[bitwise::RES_LIMBS_PERMUTED.start + i] = permuted_inputs;
         trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 8 + i] = permuted_table;
+
+        // permutation for bitwise
+        let (permuted_inputs, permuted_table) = permuted_cols(
+            &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + i],
+            &trace_col_vecs[bitwise::FIX_COMPRESS],
+        );
+
+        trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + i] = permuted_inputs;
+        trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + i] = permuted_table;
     }
-
-    // permutation for bitwise
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[bitwise::COMPRESS_LIMBS.start],
-        &trace_col_vecs[bitwise::FIX_COMPRESS],
-    );
-
-    trace_col_vecs[bitwise::COMPRESS_PERMUTED.start] = permuted_inputs;
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start] = permuted_table;
-
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 1],
-        &trace_col_vecs[bitwise::FIX_COMPRESS],
-    );
-
-    trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 1] = permuted_inputs;
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 1] = permuted_table;
-
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 2],
-        &trace_col_vecs[bitwise::FIX_COMPRESS],
-    );
-
-    trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 2] = permuted_inputs;
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 2] = permuted_table;
-
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 3],
-        &trace_col_vecs[bitwise::FIX_COMPRESS],
-    );
-
-    trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 3] = permuted_inputs;
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 3] = permuted_table;
 
     let final_trace = transpose(&trace_col_vecs);
 
