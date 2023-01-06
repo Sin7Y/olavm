@@ -301,6 +301,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
+            new_row[i][bitwise::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
@@ -511,7 +512,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         .map(|c| {
             let mut row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
 
-            //row[cmp::TAG] = F::from_canonical_u32(c.tag);
+            row[cmp::FILTER] = F::from_canonical_usize(1);
             row[cmp::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
             row[cmp::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
             row[cmp::DIFF] = F::from_canonical_u64(c.diff.to_canonical_u64());
@@ -530,6 +531,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
+            new_row[i][cmp::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
@@ -571,6 +573,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
 pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
     let mut ary = [F::ZEROS; cmp::COL_NUM_CMP];
 
+    ary[bitwise::FILTER] = input[bitwise::FILTER];
     ary[cmp::OP0] = input[cmp::OP0];
     ary[cmp::OP1] = input[cmp::OP1];
     ary[cmp::DIFF] = input[cmp::DIFF];
@@ -591,7 +594,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         .iter()
         .map(|c| {
             let mut row: [F; rangecheck::COL_NUM_RC] = [F::default(); rangecheck::COL_NUM_RC];
-            //row[rangecheck::TAG] = F::from_canonical_u32(c.tag);
+            row[rangecheck::FILTER] = F::from_canonical_usize(1);
             row[rangecheck::VAL] = F::from_canonical_u64(c.val.to_canonical_u64());
             row[rangecheck::LIMB_LO] = F::from_canonical_u64(c.limb_lo.to_canonical_u64());
             row[rangecheck::LIMB_HI] = F::from_canonical_u64(c.limb_hi.to_canonical_u64());
@@ -610,6 +613,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
+            new_row[i][rangecheck::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
@@ -651,6 +655,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
 pub fn vec_to_ary_rc<F: RichField>(input: Vec<F>) -> [F; rangecheck::COL_NUM_RC] {
     let mut ary = [F::ZEROS; rangecheck::COL_NUM_RC];
 
+    ary[bitwise::FILTER] = input[bitwise::FILTER];
     ary[rangecheck::VAL] = input[rangecheck::VAL];
     ary[rangecheck::LIMB_LO] = input[rangecheck::LIMB_LO];
     ary[rangecheck::LIMB_HI] = input[rangecheck::LIMB_HI];
