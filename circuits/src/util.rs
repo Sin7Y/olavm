@@ -354,14 +354,17 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
             + trace[i][bitwise::OP0_LIMBS.start]
             + trace[i][bitwise::OP1_LIMBS.start]
             + trace[i][bitwise::RES_LIMBS.start];
+
         trace[i][bitwise::COMPRESS_LIMBS.start + 1] = trace[i][bitwise::TAG]
             + trace[i][bitwise::OP0_LIMBS.start + 1]
             + trace[i][bitwise::OP1_LIMBS.start + 1]
             + trace[i][bitwise::RES_LIMBS.start + 1];
+
         trace[i][bitwise::COMPRESS_LIMBS.start + 2] = trace[i][bitwise::TAG]
             + trace[i][bitwise::OP0_LIMBS.start + 2]
             + trace[i][bitwise::OP1_LIMBS.start + 2]
             + trace[i][bitwise::RES_LIMBS.start + 2];
+
         trace[i][bitwise::COMPRESS_LIMBS.start + 3] = trace[i][bitwise::TAG]
             + trace[i][bitwise::OP0_LIMBS.start + 3]
             + trace[i][bitwise::OP1_LIMBS.start + 3]
@@ -410,6 +413,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
     );
 
     trace_col_vecs[bitwise::COMPRESS_PERMUTED.start] = permuted_inputs;
+    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start] = permuted_table;
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 1],
@@ -417,6 +421,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
     );
 
     trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 1] = permuted_inputs;
+    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 1] = permuted_table;
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 2],
@@ -424,6 +429,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
     );
 
     trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 2] = permuted_inputs;
+    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 2] = permuted_table;
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + 3],
@@ -431,8 +437,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
     );
 
     trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + 3] = permuted_inputs;
-
-    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED] = permuted_table;
+    trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + 3] = permuted_table;
 
     let final_trace = transpose(&trace_col_vecs);
 
@@ -490,7 +495,10 @@ pub fn vec_to_ary_bitwise<F: RichField>(input: Vec<F>) -> [F; bitwise::COL_NUM_B
     ary[bitwise::FIX_BITWSIE_OP1] = input[bitwise::FIX_BITWSIE_OP1];
     ary[bitwise::FIX_BITWSIE_RES] = input[bitwise::FIX_BITWSIE_RES];
     ary[bitwise::FIX_COMPRESS] = input[bitwise::FIX_COMPRESS];
-    ary[bitwise::FIX_COMPRESS_PERMUTED] = input[bitwise::FIX_COMPRESS_PERMUTED];
+    ary[bitwise::FIX_COMPRESS_PERMUTED.start] = input[bitwise::FIX_COMPRESS_PERMUTED.start];
+    ary[bitwise::FIX_COMPRESS_PERMUTED.start + 1] = input[bitwise::FIX_COMPRESS_PERMUTED.start + 1];
+    ary[bitwise::FIX_COMPRESS_PERMUTED.start + 2] = input[bitwise::FIX_COMPRESS_PERMUTED.start + 2];
+    ary[bitwise::FIX_COMPRESS_PERMUTED.start + 3] = input[bitwise::FIX_COMPRESS_PERMUTED.start + 3];
 
     ary
 }
