@@ -389,6 +389,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         );
 
         trace_col_vecs[bitwise::OP0_LIMBS_PERMUTED.start + i] = permuted_inputs;
+        trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + i] = permuted_table;
 
         let (permuted_inputs, permuted_table) = permuted_cols(
             &trace_col_vecs[bitwise::OP1_LIMBS.start + i],
@@ -396,6 +397,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         );
 
         trace_col_vecs[bitwise::OP1_LIMBS_PERMUTED.start + i] = permuted_inputs;
+        trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 4 + i] = permuted_table;
 
         let (permuted_inputs, permuted_table) = permuted_cols(
             &trace_col_vecs[bitwise::RES_LIMBS.start + i],
@@ -403,7 +405,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         );
 
         trace_col_vecs[bitwise::RES_LIMBS_PERMUTED.start + i] = permuted_inputs;
-        trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED] = permuted_table;
+        trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 8 + i] = permuted_table;
     }
 
     // permutation for bitwise
@@ -489,7 +491,30 @@ pub fn vec_to_ary_bitwise<F: RichField>(input: Vec<F>) -> [F; bitwise::COL_NUM_B
     ary[bitwise::COMPRESS_PERMUTED.start + 2] = input[bitwise::COMPRESS_PERMUTED.start + 2];
     ary[bitwise::COMPRESS_PERMUTED.start + 3] = input[bitwise::COMPRESS_PERMUTED.start + 3];
     ary[bitwise::FIX_RANGE_CHECK_U8] = input[bitwise::FIX_RANGE_CHECK_U8];
-    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED] = input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 1] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 1];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 2] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 2];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 3] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 3];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 4] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 4];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 5] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 5];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 6] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 6];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 7] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 7];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 8] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 8];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 9] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 9];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 10] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 10];
+    ary[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 11] =
+        input[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 11];
     ary[bitwise::FIX_TAG] = input[bitwise::FIX_TAG];
     ary[bitwise::FIX_BITWSIE_OP0] = input[bitwise::FIX_BITWSIE_OP0];
     ary[bitwise::FIX_BITWSIE_OP1] = input[bitwise::FIX_BITWSIE_OP1];
