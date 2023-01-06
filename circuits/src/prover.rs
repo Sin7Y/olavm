@@ -73,7 +73,7 @@ where
     [(); C::Hasher::HASH_SIZE]:,
     [(); CpuStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
-    // [(); BitwiseStark::<F, D>::COLUMNS]:,
+    [(); BitwiseStark::<F, D>::COLUMNS]:,
     // [(); CmpStark::<F, D>::COLUMNS]:,
     // [(); RangeCheckStark::<F, D>::COLUMNS]:,
 {
@@ -134,15 +134,16 @@ where
         &mut challenger,
         timing,
     )?;
-    // let bitwise_proof = prove_single_table(
-    //     &all_stark.bitwise_stark,
-    //     config,
-    //     &trace_poly_values[Table::Bitwise as usize],
-    //     &trace_commitments[Table::Bitwise as usize],
-    //     &ctl_data_per_table[Table::Bitwise as usize],
-    //     &mut challenger,
-    //     timing,
-    // )?;
+    
+    let bitwise_proof = prove_single_table(
+        &all_stark.bitwise_stark,
+        config,
+        &trace_poly_values[Table::Bitwise as usize],
+        &trace_commitments[Table::Bitwise as usize],
+        &ctl_data_per_table[Table::Bitwise as usize],
+        &mut challenger,
+        timing,
+    )?;
     // let cmp_proof = prove_single_table(
     //     &all_stark.cmp_stark,
     //     config,
@@ -165,7 +166,7 @@ where
     let stark_proofs = [
         cpu_proof,
         memory_proof,
-        // bitwise_proof,
+        bitwise_proof,
         // cmp_proof,
         // rangecheck_proof,
     ];

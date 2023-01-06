@@ -73,13 +73,13 @@ where
         &ctl_vars_per_table[Table::Memory as usize],
         config,
     )?;
-    // verify_stark_proof_with_challenges(
-    //     bitwise_stark,
-    //     &all_proof.stark_proofs[Table::Bitwise as usize],
-    //     &stark_challenges[Table::Bitwise as usize],
-    //     &ctl_vars_per_table[Table::Bitwise as usize],
-    //     config,
-    // )?;
+    verify_stark_proof_with_challenges(
+        bitwise_stark,
+        &all_proof.stark_proofs[Table::Bitwise as usize],
+        &stark_challenges[Table::Bitwise as usize],
+        &ctl_vars_per_table[Table::Bitwise as usize],
+        config,
+    )?;
 
     // verify_stark_proof_with_challenges(
     //     cmp_stark,
