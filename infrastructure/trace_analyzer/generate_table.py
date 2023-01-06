@@ -159,6 +159,39 @@ class MemoryTraceColumnType(Enum):
     REGION_ECDSA = 'region_ecdsa'
 
 
+class RangeCheckTraceColumnType(Enum):
+    VAL = 'val'
+    LIMB_LO = 'limb_lo'
+    LIMB_HI = 'limb_hi'
+
+
+class BitwiseTraceColumnType(Enum):
+    BITWISE_TAG = 'bitwise_tag'
+    OP0 = 'op0'
+    OP1 = 'op1'
+    RES = 'res'
+    OP0_0 = 'op0_0'
+    OP0_1 = 'op0_1'
+    OP0_2 = 'op0_2'
+    OP0_3 = 'op0_3'
+    OP1_0 = 'op1_0'
+    OP1_1 = 'op1_1'
+    OP1_2 = 'op1_2'
+    OP1_3 = 'op1_3'
+    RES_0 = 'res_0'
+    RES_1 = 'res_1'
+    RES_2 = 'res_2'
+    RES_3 = 'res_3'
+
+
+class ComparisonTraceColumnType(Enum):
+    TAG = 'tag'
+    OP0 = 'op0'
+    OP1 = 'op1'
+    DIFF = 'diff'
+
+
+
 def generate_columns_of_title(worksheet, trace_column_title):
     col = 0
     title_row = 0
@@ -296,8 +329,63 @@ def main():
                 worksheet.write(row_index, col, row[data.value])
             col += 1
         row_index += 1
+    # print(MemoryTraceColumnType['IS_WRITE'].value)
+
+    # Builtin Range check Trace
+    worksheet = workbook.add_worksheet("RangeChkTrace")
+    generate_columns_of_title(worksheet, RangeCheckTraceColumnType)
+
+    # generate range check trace table
+    row_index = 1
+    for row in trace_json["builtin_rangecheck"]:
+        col = 0
+        for data in RangeCheckTraceColumnType:
+            if args.format == 'hex':
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
+    # Builtin bitwise Trace
+    worksheet = workbook.add_worksheet("BitwiseTrace")
+    generate_columns_of_title(worksheet, BitwiseTraceColumnType)
+
+    # generate bitwise trace table
+    row_index = 1
+    for row in trace_json["builtin_bitwise_combined"]:
+        col = 0
+        for data in BitwiseTraceColumnType:
+            if args.format == 'hex':
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
+    # Builtin Comparison Trace
+    worksheet = workbook.add_worksheet("ComparisonTrace")
+    generate_columns_of_title(worksheet, ComparisonTraceColumnType)
+
+    # generate comparison trace table
+    row_index = 1
+    for row in trace_json["builtin_cmp"]:
+        col = 0
+        for data in ComparisonTraceColumnType:
+            if args.format == 'hex':
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
     workbook.close()
-    print(MemoryTraceColumnType['IS_WRITE'].value)
 
 
 if __name__ == '__main__':
