@@ -92,7 +92,7 @@ pub(crate) const NUM_TABLES: usize = 3;
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     // TODO:
-    vec![ctl_cpu_memory()]
+    vec![ctl_cpu_memory(), ctl_bitwise_cpu()]
 }
 
 fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
@@ -753,11 +753,10 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        // TODO: dbg
         let begin_time = timestamp();
         println!("generate_builtins_bitwise_trace begin: {:?}", begin_time);
         let bitwise_rows =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let end_time = timestamp();
         println!("generate_builtins_bitwise_trace end: {:?}", end_time);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
@@ -837,8 +836,8 @@ mod tests {
         // fibo_use_loop_decode() // yes
         // memory_test() // yes
         // call_test() // yes
+        bitwise_test() // yes
         // range_check_test() // no
-        bitwise_test() // no
         // comparison_test() // no
     }
 

@@ -301,7 +301,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
-            new_row[i][bitwise::FILTER] = F::ZEROS;
+            new_row[bitwise::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
@@ -531,7 +531,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
-            new_row[i][cmp::FILTER] = F::ZEROS;
+            new_row[cmp::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
@@ -613,7 +613,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
-            new_row[i][rangecheck::FILTER] = F::ZEROS;
+            new_row[rangecheck::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
