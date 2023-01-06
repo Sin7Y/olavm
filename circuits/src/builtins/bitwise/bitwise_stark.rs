@@ -136,26 +136,26 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
         eval_lookups(
             vars,
             yield_constr,
-            COMPRESS_LIMBS.start,
             COMPRESS_PERMUTED.start,
+            FIX_COMPRESS_PERMUTED,
         );
         eval_lookups(
             vars,
             yield_constr,
-            COMPRESS_LIMBS.start + 1,
             COMPRESS_PERMUTED.start + 1,
+            FIX_COMPRESS_PERMUTED,
         );
         eval_lookups(
             vars,
             yield_constr,
-            COMPRESS_LIMBS.start + 2,
             COMPRESS_PERMUTED.start + 2,
+            FIX_COMPRESS_PERMUTED,
         );
         eval_lookups(
             vars,
             yield_constr,
-            COMPRESS_LIMBS.start + 3,
             COMPRESS_PERMUTED.start + 3,
+            FIX_COMPRESS_PERMUTED,
         );
     }
 
