@@ -66,7 +66,7 @@ pub(crate) const FIX_BITWSIE_RES: usize = FIX_BITWSIE_OP1 + 1;
 pub(crate) const FIX_COMPRESS: usize = FIX_BITWSIE_RES + 1;
 pub(crate) const FIX_COMPRESS_PERMUTED: usize = FIX_COMPRESS + 1;
 
-pub(crate) const COL_NUM_BITWISE: usize = FIX_COMPRESS_PERMUTED + 1; //44
+pub(crate) const COL_NUM_BITWISE: usize = FIX_COMPRESS_PERMUTED + 1; //45
 
 pub(crate) const RANGE_CHECK_U8_SIZE: usize = 1 << 8;
 pub(crate) const BITWISE_U8_SIZE_PER: usize = (1 << 15) + (1 << 7);
