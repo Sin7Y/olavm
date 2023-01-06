@@ -91,7 +91,7 @@ pub fn ctl_data_rc<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_rc<F: Field>() -> Column<F> {
-    Column::one()
+    Column::single(FILTER)
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
