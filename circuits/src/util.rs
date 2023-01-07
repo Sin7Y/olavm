@@ -301,7 +301,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
-            new_row[i][bitwise::FILTER] = F::ZEROS;
+            new_row[bitwise::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
@@ -531,7 +531,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
-            new_row[i][cmp::FILTER] = F::ZEROS;
+            new_row[cmp::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
@@ -573,7 +573,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
 pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
     let mut ary = [F::ZEROS; cmp::COL_NUM_CMP];
 
-    ary[bitwise::FILTER] = input[bitwise::FILTER];
+    ary[cmp::FILTER] = input[cmp::FILTER];
     ary[cmp::OP0] = input[cmp::OP0];
     ary[cmp::OP1] = input[cmp::OP1];
     ary[cmp::DIFF] = input[cmp::DIFF];
@@ -613,7 +613,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
-            new_row[i][rangecheck::FILTER] = F::ZEROS;
+            new_row[rangecheck::FILTER] = F::ZEROS;
             trace.push(new_row);
         }
     }
@@ -655,7 +655,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
 pub fn vec_to_ary_rc<F: RichField>(input: Vec<F>) -> [F; rangecheck::COL_NUM_RC] {
     let mut ary = [F::ZEROS; rangecheck::COL_NUM_RC];
 
-    ary[bitwise::FILTER] = input[bitwise::FILTER];
+    ary[rangecheck::FILTER] = input[rangecheck::FILTER];
     ary[rangecheck::VAL] = input[rangecheck::VAL];
     ary[rangecheck::LIMB_LO] = input[rangecheck::LIMB_LO];
     ary[rangecheck::LIMB_HI] = input[rangecheck::LIMB_HI];
