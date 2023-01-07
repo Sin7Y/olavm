@@ -295,15 +295,22 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         .max(bitwise::RANGE_CHECK_U8_SIZE)
         .max(bitwise::BITWISE_U8_SIZE);
 
-    // padding for exe trace
+
+    let mut new_row_len = max_trace_len;
+
     if !max_trace_len.is_power_of_two() {
-        let new_row_len = max_trace_len.next_power_of_two();
-        let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
-            let mut new_row = end_row;
-            new_row[bitwise::FILTER] = F::ZEROS;
-            trace.push(new_row);
-        }
+        
+        new_row_len = max_trace_len.next_power_of_two();
+    }
+
+    // padding for exe trace
+    //if !max_trace_len.is_power_of_two() {
+    //let new_row_len = max_trace_len.next_power_of_two();
+    let end_row = trace[trace_len - 1];
+    for i in trace_len..new_row_len {
+        let mut new_row = end_row;
+        new_row[cmp::FILTER] = F::ZEROS;
+        trace.push(new_row);
     }
 
     // add fix bitwise info
@@ -516,6 +523,8 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
             row[cmp::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
             row[cmp::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
             row[cmp::DIFF] = F::from_canonical_u64(c.diff.to_canonical_u64());
+            row[cmp::DIFF_LIMB_LO] = F::from_canonical_u64(c.diff_limb_lo.to_canonical_u64());
+            row[cmp::DIFF_LIMB_HI] = F::from_canonical_u64(c.diff_limb_hi.to_canonical_u64());
 
             row
         })
@@ -525,16 +534,23 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
     let trace_len = trace.len();
     let max_trace_len = trace_len.max(cmp::RANGE_CHECK_U16_SIZE);
 
-    // padding for exe trace
+    let mut new_row_len = max_trace_len;
+    
     if !max_trace_len.is_power_of_two() {
-        let new_row_len = max_trace_len.next_power_of_two();
-        let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
-            let mut new_row = end_row;
-            new_row[cmp::FILTER] = F::ZEROS;
-            trace.push(new_row);
-        }
+
+        new_row_len = max_trace_len.next_power_of_two();
     }
+
+    // padding for exe trace
+    //if !max_trace_len.is_power_of_two() {
+    //let new_row_len = max_trace_len.next_power_of_two();
+    let end_row = trace[trace_len - 1];
+    for i in trace_len..new_row_len {
+        let mut new_row = end_row;
+        new_row[cmp::FILTER] = F::ZEROS;
+        trace.push(new_row);
+    }
+    //}
 
     // Transpose to column-major form.
     let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
@@ -607,15 +623,21 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
     let trace_len = trace.len();
     let max_trace_len = trace_len.max(rangecheck::RANGE_CHECK_U16_SIZE);
 
-    // padding for exe trace
+    let mut new_row_len = max_trace_len;
+
     if !max_trace_len.is_power_of_two() {
-        let new_row_len = max_trace_len.next_power_of_two();
-        let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
-            let mut new_row = end_row;
-            new_row[rangecheck::FILTER] = F::ZEROS;
-            trace.push(new_row);
-        }
+        
+        new_row_len = max_trace_len.next_power_of_two();
+    }
+
+    // padding for exe trace
+    //if !max_trace_len.is_power_of_two() {
+    //let new_row_len = max_trace_len.next_power_of_two();
+    let end_row = trace[trace_len - 1];
+    for i in trace_len..new_row_len {
+        let mut new_row = end_row;
+        new_row[cmp::FILTER] = F::ZEROS;
+        trace.push(new_row);
     }
 
     // Transpose to column-major form.
