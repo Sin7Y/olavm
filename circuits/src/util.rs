@@ -567,6 +567,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
     );
 
     trace_col_vecs[cmp::DIFF_LIMB_LO_PERMUTED] = permuted_inputs;
+    trace_col_vecs[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] = permuted_table;
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace_col_vecs[cmp::DIFF_LIMB_HI],
@@ -574,7 +575,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
     );
 
     trace_col_vecs[cmp::DIFF_LIMB_LO_PERMUTED] = permuted_inputs;
-    trace_col_vecs[cmp::FIX_RANGE_CHECK_U16_PERMUTED] = permuted_table;
+    trace_col_vecs[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = permuted_table;
 
     let final_trace = transpose(&trace_col_vecs);
 
@@ -598,8 +599,9 @@ pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
     ary[cmp::DIFF_LIMB_LO_PERMUTED] = input[cmp::DIFF_LIMB_LO_PERMUTED];
     ary[cmp::DIFF_LIMB_HI_PERMUTED] = input[cmp::DIFF_LIMB_HI_PERMUTED];
     ary[cmp::FIX_RANGE_CHECK_U16] = input[cmp::FIX_RANGE_CHECK_U16];
-    ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED];
-
+    ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO];
+    ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI];
+    
     ary
 }
 
@@ -655,6 +657,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
     );
 
     trace_col_vecs[rangecheck::LIMB_LO_PERMUTED] = permuted_inputs;
+    trace_col_vecs[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_LO] = permuted_table;
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace_col_vecs[rangecheck::LIMB_HI],
@@ -662,7 +665,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
     );
 
     trace_col_vecs[rangecheck::LIMB_HI_PERMUTED] = permuted_inputs;
-    trace_col_vecs[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED] = permuted_table;
+    trace_col_vecs[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI] = permuted_table;
 
     let final_trace = transpose(&trace_col_vecs);
 
@@ -684,7 +687,8 @@ pub fn vec_to_ary_rc<F: RichField>(input: Vec<F>) -> [F; rangecheck::COL_NUM_RC]
     ary[rangecheck::LIMB_LO_PERMUTED] = input[rangecheck::LIMB_LO_PERMUTED];
     ary[rangecheck::LIMB_HI_PERMUTED] = input[rangecheck::LIMB_HI_PERMUTED];
     ary[rangecheck::FIX_RANGE_CHECK_U16] = input[rangecheck::FIX_RANGE_CHECK_U16];
-    ary[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED] = input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED];
+    ary[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_LO] = input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_LO];
+    ary[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI] = input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI];
 
     ary
 }
