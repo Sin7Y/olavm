@@ -55,13 +55,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
             vars,
             yield_constr,
             LIMB_LO_PERMUTED,
-            FIX_RANGE_CHECK_U16_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED_LO,
         );
         eval_lookups(
             vars,
             yield_constr,
             LIMB_HI_PERMUTED,
-            FIX_RANGE_CHECK_U16_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED_HI,
         );
     }
 
@@ -81,7 +81,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
         vec![
             PermutationPair::singletons(LIMB_LO, LIMB_LO_PERMUTED),
             PermutationPair::singletons(LIMB_HI, LIMB_HI_PERMUTED),
-            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED),
+            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED_LO),
+            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED_HI),            
         ]
     }
 }
