@@ -112,7 +112,7 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::one()
+    Column::single(FILTER)
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
