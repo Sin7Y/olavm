@@ -574,7 +574,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         &trace_col_vecs[cmp::FIX_RANGE_CHECK_U16],
     );
 
-    trace_col_vecs[cmp::DIFF_LIMB_LO_PERMUTED] = permuted_inputs;
+    trace_col_vecs[cmp::DIFF_LIMB_HI_PERMUTED] = permuted_inputs;
     trace_col_vecs[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = permuted_table;
 
     let final_trace = transpose(&trace_col_vecs);
