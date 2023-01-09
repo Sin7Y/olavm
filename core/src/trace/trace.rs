@@ -231,6 +231,7 @@ pub struct CmpRow {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
+    pub instructions: HashMap<u64, (String, u8, u64)>,
     pub raw_instructions: HashMap<u64, Instruction>,
     pub raw_binary_instructions: Vec<(String, Option<String>)>,
     // todo need limit the trace size
