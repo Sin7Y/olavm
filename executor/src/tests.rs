@@ -5,6 +5,7 @@ use log::debug;
 use serde_json::Value;
 use std::fs::File;
 use std::io::Write;
+use std::time::Instant;
 
 #[test]
 fn fibo_use_loop() {
@@ -379,4 +380,58 @@ fn call_test() {
 
     let mut file = File::create("call_trace.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn fibo_use_loop_decode_bench() {
+    // mov r0 8
+    // mov r1 1
+    // mov r2 1
+    // mov r3 0
+    // EQ r0 r3
+    // cjmp 19
+    // add r4 r1 r2
+    // mov r1 r2
+    // mov r2 r4
+    // mov r4 1
+    // add r3 r3 r4
+    // jmp 8
+    // end
+    let program_src = "0x4000000840000000
+        0x100000
+        0x4000001040000000
+        0x1
+        0x4000002040000000
+        0x1
+        0x4000004040000000
+        0x0
+        0x0020800100000000
+        0x4000000010000000
+        0x13
+        0x0040408400000000
+        0x0000401040000000
+        0x0001002040000000
+        0x4000008040000000
+        0x1
+        0x0101004400000000
+        0x4000000020000000
+        0x8
+        0x0000000000800000";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    let start = Instant::now();
+    process.execute(&mut program, true);
+    let exec_time = start.elapsed();
+    println!("exec_time: {}, exec steps: {}", exec_time.as_secs(), program.trace.exec.len());
 }
