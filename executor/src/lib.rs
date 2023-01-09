@@ -15,6 +15,7 @@ use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64};
 use std::collections::{BTreeMap, HashMap};
+use std::time::Instant;
 
 mod decode;
 pub mod error;
@@ -235,12 +236,15 @@ impl Process {
         decode_flag: bool,
     ) -> Result<(), ProcessorError> {
         let mut pc = 0;
+
+        let start = Instant::now();
         loop {
             let instruct_line = program.instructions[pc as usize].trim();
             let mut txt_instruction = Default::default();
             let mut step = 1;
 
             if decode_flag {
+                let mut imm_flag = 0;
                 let mut imm_line = "null";
                 if (pc + 1) < (program.instructions.len() as u64 - 1) {
                     imm_line = program.instructions[(pc + 1) as usize].trim();
@@ -249,18 +253,21 @@ impl Process {
                     (txt_instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
                 }
                 if step == IMM_INSTRUCTION_LEN {
+                    imm_flag = 1;
                     program
                         .trace
                         .raw_binary_instructions
                         .push((instruct_line.to_string(), Some(imm_line.to_string())));
                 } else {
+                    imm_flag = 0;
                     program
                         .trace
                         .raw_binary_instructions
                         .push((instruct_line.to_string(), None));
                 }
 
-                let instruction = self.decode_instruction(txt_instruction);
+                let instruction = self.decode_instruction(txt_instruction.clone());
+                program.trace.instructions.insert(pc, (txt_instruction, imm_flag, step));
                 program.trace.raw_instructions.insert(pc, instruction);
                 pc += step;
             } else {
@@ -270,57 +277,53 @@ impl Process {
                 break;
             }
         }
-        assert!(
-            program.trace.raw_binary_instructions.len() == program.trace.raw_instructions.len()
-        );
+        let decode_time = start.elapsed();
+        debug!("decode_time: {}", decode_time.as_secs());
 
+        assert_eq!(program.trace.raw_binary_instructions.len(), program.trace.raw_instructions.len());
+
+        let mut start = Instant::now();
         loop {
             self.register_selector = Default::default();
             let registers_status = self.registers.clone();
             let flag_status = self.flag.clone();
             let pc_status = self.pc;
 
-            let instruct_line = program.instructions[self.pc as usize].trim();
+            // let instruct_line = program.instructions[self.pc as usize].trim();
 
-            let mut instruction = Default::default();
-            let mut ops = Vec::new();
-            let mut step = 1;
-            let mut op_imm1 = GoldilocksField::default();
-            if decode_flag {
-                let mut imm_line = Default::default();
-                if (self.pc + 1) < (program.instructions.len() as u64 - 1) {
-                    imm_line = program.instructions[(self.pc + 1) as usize].trim();
-                    (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
-                } else {
-                    (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
-                }
-                if step == IMM_INSTRUCTION_LEN {
-                    op_imm1 = GoldilocksField::from_canonical_u64(1);
-                    program
-                        .trace
-                        .raw_binary_instructions
-                        .push((instruct_line.to_string(), Some(imm_line.to_string())));
-                    let imm_u64 = imm_line.trim_start_matches("0x");
-                    self.immediate_data = GoldilocksField::from_canonical_u64(
-                        u64::from_str_radix(imm_u64, 16).unwrap(),
-                    );
-                } else {
-                    op_imm1 = GoldilocksField::from_canonical_u64(0);
-                    program
-                        .trace
-                        .raw_binary_instructions
-                        .push((instruct_line.to_string(), None));
-                    self.immediate_data = Default::default();
-                }
-                let inst_u64 = instruct_line.trim_start_matches("0x");
-                self.instruction =
-                    GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
-            } else {
-                instruction = instruct_line.to_string();
-            }
-            ops = instruction.split(' ').collect();
+            // let mut instruction = Default::default();
+            // let mut ops = Vec::new();
+            // let mut step = 1;
+            // let mut op_imm1 = GoldilocksField::default();
+            // if decode_flag {
+            //     let mut imm_line = Default::default();
+            //     if (self.pc + 1) < (program.instructions.len() as u64 - 1) {
+            //         imm_line = program.instructions[(self.pc + 1) as usize].trim();
+            //         (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
+            //     } else {
+            //         (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
+            //     }
+            //     if step == IMM_INSTRUCTION_LEN {
+            //         op_imm1 = GoldilocksField::from_canonical_u64(1);
+            //         let imm_u64 = imm_line.trim_start_matches("0x");
+            //         self.immediate_data = GoldilocksField::from_canonical_u64(
+            //             u64::from_str_radix(imm_u64, 16).unwrap(),
+            //         );
+            //     } else {
+            //         op_imm1 = GoldilocksField::from_canonical_u64(0);
+            //         self.immediate_data = Default::default();
+            //     }
+            //     let inst_u64 = instruct_line.trim_start_matches("0x");
+            //     self.instruction =
+            //         GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
+            // } else {
+            //     instruction = instruct_line.to_string();
+            // }
+            let mut instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
+            let mut ops: Vec<&str> = instruction.0.split(' ').collect();
             let opcode = ops.get(0).unwrap().to_lowercase();
-            self.op1_imm = op_imm1;
+            self.op1_imm = GoldilocksField::from_canonical_u64(instruction.1 as u64);
+            let mut step = instruction.2 as u64;
             match opcode.as_str() {
                 "mov" => {
                     debug!("opcode: mov");
@@ -723,6 +726,11 @@ impl Process {
                 break;
             }
             self.clk += 1;
+            if self.clk % 1000000 == 0 {
+                let decode_time = start.elapsed();
+                debug!("100000_step_time: {}", decode_time.as_millis());
+                start = Instant::now();
+            }
         }
         Ok(())
     }
