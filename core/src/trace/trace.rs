@@ -215,6 +215,8 @@ pub struct CmpRow {
     pub op0: GoldilocksField,
     pub op1: GoldilocksField,
     pub diff: GoldilocksField,
+    pub diff_limb_lo: GoldilocksField,
+    pub diff_limb_hi: GoldilocksField,
 }
 
 //#[derive(Debug, Clone, Serialize, Deserialize)]
@@ -283,15 +285,20 @@ impl Trace {
 
     // Added by xb 2022-12-19
     pub fn insert_cmp(&mut self, op0: GoldilocksField, op1: GoldilocksField) {
+
         let mut diff = Default::default();
 
         diff = op0 - op1;
+
+        let split_limbs = split_u16_limbs_from_field(&diff);
 
         self.builtin_cmp.push(CmpRow {
             tag: 1,
             op0,
             op1,
             diff,
+            diff_limb_lo: GoldilocksField(split_limbs.0),
+            diff_limb_hi: GoldilocksField(split_limbs.1),
         });
     }
 

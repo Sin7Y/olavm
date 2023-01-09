@@ -14,8 +14,6 @@ pub const N_PARTIAL_ROUNDS: usize = 22;
 pub const N_ROUNDS: usize = N_FULL_ROUNDS_TOTAL + N_PARTIAL_ROUNDS;
 const MAX_WIDTH: usize = 12; // we only have width 8 and 12, and 12 is bigger. :)
 
-
-
 #[inline(always)]
 fn add_u160_u128((x_lo, x_hi): (u128, u32), y: u128) -> (u128, u32) {
     let (res_lo, over) = x_lo.overflowing_add(y);
@@ -347,14 +345,10 @@ pub trait PoseidonHash: PrimeField64 {
     }
 }
 
-
-
-
-
 #[test]
 fn poseidon_test() {
     use plonky2::field::goldilocks_field::GoldilocksField;
-    let data = [GoldilocksField(0);12] ;
+    let data = [GoldilocksField(0); 12];
     let res = PoseidonHash::poseidon(data);
-    println!("{:?}",res);
+    println!("{:?}", res);
 }

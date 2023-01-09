@@ -71,13 +71,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
             vars,
             yield_constr,
             DIFF_LIMB_LO_PERMUTED,
-            FIX_RANGE_CHECK_U16_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED_LO,
         );
         eval_lookups(
             vars,
             yield_constr,
             DIFF_LIMB_HI_PERMUTED,
-            FIX_RANGE_CHECK_U16_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED_HI,
         );
     }
 
@@ -97,7 +97,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
         vec![
             PermutationPair::singletons(DIFF_LIMB_LO, DIFF_LIMB_LO_PERMUTED),
             PermutationPair::singletons(DIFF_LIMB_HI, DIFF_LIMB_HI_PERMUTED),
-            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED),
+            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED_LO),
+            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED_HI),  
         ]
     }
 }
@@ -119,5 +120,5 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::one()
+    Column::single(FILTER)
 }
