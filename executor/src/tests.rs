@@ -399,7 +399,8 @@ fn fibo_use_loop_memory_decode() {
     //2 22 mov r4 1
     //1 24 add r3 r3 r4
     //2 25 jmp 10
-    //1 27 end
+    //1 27 range_check r3
+    //1 28 end
     let program_src = format!(
         "0x4000000840000000
         0x1
@@ -428,6 +429,7 @@ fn fibo_use_loop_memory_decode() {
         0x0101004400000000
         0x4000000020000000
         0xa
+        0x0000800000400000
         0x0000000000800000",
         8
     );
