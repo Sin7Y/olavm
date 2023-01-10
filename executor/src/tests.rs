@@ -383,6 +383,90 @@ fn call_test() {
 }
 
 #[test]
+fn fibo_use_loop_memory_decode() {
+    //2 0 mov r0 1
+    //2 2 mstore 128 r0
+    //2 4 mstore 135 r0
+    //2 6 mov r0 test_loop
+    //2 8 mov r3 0
+    //1 10 EQ r0 r3
+    //2 11 cjmp 27
+    //2 13 mload  r1  128
+    //2 15 mload  r2  135
+    //1 17 add r4 r1 r2
+    //2 18 mstore 128 r2
+    //2 20 mstore 135 r4
+    //2 22 mov r4 1
+    //1 24 add r3 r3 r4
+    //2 25 jmp 10
+    //1 27 end
+    let program_src = format!(
+        "0x4000000840000000
+        0x1
+        0x4020000001000000
+        0x80
+        0x4020000001000000
+        0x87
+        0x4000000840000000
+        {:#x}
+        0x4000004040000000
+        0x0
+        0x0020800100000000
+        0x4000000010000000
+        0x1b
+        0x4000001002000000
+        0x80
+        0x4000002002000000
+        0x87
+        0x0040408400000000
+        0x4080000001000000
+        0x80
+        0x4200000001000000
+        0x87
+        0x4000008040000000
+        0x1
+        0x0101004400000000
+        0x4000000020000000
+        0xa
+        0x0000000000800000",
+        8
+    );
+    debug!("program_src:{:?}", program_src);
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    let start = Instant::now();
+    process.execute(&mut program, true);
+    let exec_time = start.elapsed();
+    println!(
+        "exec_time: {}, exec steps: {}",
+        exec_time.as_millis(),
+        program.trace.exec.len()
+    );
+    process.gen_memory_table(&mut program);
+
+    println!(
+        "vm trace steps: {:?}, memory len: {}",
+        program.trace.exec.len(),
+        program.trace.memory.len()
+    );
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("fibo_memory.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
 fn fibo_use_loop_decode_bench() {
     // mov r0 8
     // mov r1 1
@@ -433,5 +517,9 @@ fn fibo_use_loop_decode_bench() {
     let start = Instant::now();
     process.execute(&mut program, true);
     let exec_time = start.elapsed();
-    println!("exec_time: {}, exec steps: {}", exec_time.as_secs(), program.trace.exec.len());
+    println!(
+        "exec_time: {}, exec steps: {}",
+        exec_time.as_secs(),
+        program.trace.exec.len()
+    );
 }

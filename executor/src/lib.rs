@@ -242,7 +242,10 @@ impl Process {
             let instruct_line = program.instructions[pc as usize].trim();
             let mut txt_instruction = Default::default();
             let mut step = 1;
-
+            program
+                .trace
+                .raw_binary_instructions
+                .push(instruct_line.to_string());
             if decode_flag {
                 let mut imm_flag = 0;
                 let mut imm_line = "null";
@@ -257,17 +260,16 @@ impl Process {
                     program
                         .trace
                         .raw_binary_instructions
-                        .push((instruct_line.to_string(), Some(imm_line.to_string())));
+                        .push(imm_line.to_string());
                 } else {
                     imm_flag = 0;
-                    program
-                        .trace
-                        .raw_binary_instructions
-                        .push((instruct_line.to_string(), None));
                 }
 
                 let instruction = self.decode_instruction(txt_instruction.clone());
-                program.trace.instructions.insert(pc, (txt_instruction, imm_flag, step));
+                program
+                    .trace
+                    .instructions
+                    .insert(pc, (txt_instruction, imm_flag, step));
                 program.trace.raw_instructions.insert(pc, instruction);
                 pc += step;
             } else {
@@ -280,7 +282,10 @@ impl Process {
         let decode_time = start.elapsed();
         debug!("decode_time: {}", decode_time.as_secs());
 
-        assert_eq!(program.trace.raw_binary_instructions.len(), program.trace.raw_instructions.len());
+        assert_eq!(
+            program.trace.raw_binary_instructions.len(),
+            program.instructions.len()
+        );
 
         let mut start = Instant::now();
         loop {
