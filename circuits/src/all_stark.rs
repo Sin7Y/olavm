@@ -403,7 +403,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &vec![]);
 
         println!("cpu rows: {:?}", cpu_rows);
 
@@ -442,7 +442,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &vec![]);
 
         println!("cpu rows: {:?}", cpu_rows);
         trace_rows_to_poly_values(cpu_rows)
