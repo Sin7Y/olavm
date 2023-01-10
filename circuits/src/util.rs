@@ -295,11 +295,9 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         .max(bitwise::RANGE_CHECK_U8_SIZE)
         .max(bitwise::BITWISE_U8_SIZE);
 
-
     let mut new_row_len = max_trace_len;
 
     if !max_trace_len.is_power_of_two() {
-        
         new_row_len = max_trace_len.next_power_of_two();
     }
 
@@ -535,9 +533,8 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
     let max_trace_len = trace_len.max(cmp::RANGE_CHECK_U16_SIZE);
 
     let mut new_row_len = max_trace_len;
-    
-    if !max_trace_len.is_power_of_two() {
 
+    if !max_trace_len.is_power_of_two() {
         new_row_len = max_trace_len.next_power_of_two();
     }
 
@@ -601,7 +598,7 @@ pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
     ary[cmp::FIX_RANGE_CHECK_U16] = input[cmp::FIX_RANGE_CHECK_U16];
     ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO];
     ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI];
-    
+
     ary
 }
 
@@ -628,7 +625,6 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
     let mut new_row_len = max_trace_len;
 
     if !max_trace_len.is_power_of_two() {
-        
         new_row_len = max_trace_len.next_power_of_two();
     }
 
@@ -687,8 +683,10 @@ pub fn vec_to_ary_rc<F: RichField>(input: Vec<F>) -> [F; rangecheck::COL_NUM_RC]
     ary[rangecheck::LIMB_LO_PERMUTED] = input[rangecheck::LIMB_LO_PERMUTED];
     ary[rangecheck::LIMB_HI_PERMUTED] = input[rangecheck::LIMB_HI_PERMUTED];
     ary[rangecheck::FIX_RANGE_CHECK_U16] = input[rangecheck::FIX_RANGE_CHECK_U16];
-    ary[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_LO] = input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_LO];
-    ary[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI] = input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI];
+    ary[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_LO] =
+        input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_LO];
+    ary[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI] =
+        input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI];
 
     ary
 }

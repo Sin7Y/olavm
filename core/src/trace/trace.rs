@@ -235,7 +235,7 @@ pub struct CmpRow {
 pub struct Trace {
     pub instructions: HashMap<u64, (String, u8, u64)>,
     pub raw_instructions: HashMap<u64, Instruction>,
-    pub raw_binary_instructions: Vec<(String, Option<String>)>,
+    pub raw_binary_instructions: Vec<String>,
     // todo need limit the trace size
     pub exec: Vec<Step>,
     pub memory: Vec<MemoryTraceCell>,
@@ -285,7 +285,6 @@ impl Trace {
 
     // Added by xb 2022-12-19
     pub fn insert_cmp(&mut self, op0: GoldilocksField, op1: GoldilocksField) {
-
         let mut diff = Default::default();
 
         diff = op0 - op1;
