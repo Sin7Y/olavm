@@ -1,6 +1,7 @@
 use crate::columns::*;
 use core::program::{instruction::Opcode, REGISTER_NUM};
 use core::trace::trace::*;
+use std::os::macos::raw;
 use std::sync::Arc;
 
 use env_logger::fmt;
@@ -23,7 +24,15 @@ use plonky2::field::types::{Field, PrimeField64};
 use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::util::transpose;
 
-pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_CPU_COLS]> {
+pub fn generate_cpu_trace<F: RichField>(
+    steps: &Vec<Step>,
+    raw_instructions: &Vec<String>,
+) -> Vec<[F; NUM_CPU_COLS]> {
+    let raw_insts: Vec<F> = raw_instructions
+        .iter()
+        .map(|ri| F::from_canonical_u64(u64::from_str_radix(&ri[2..], 16).unwrap()))
+        .collect();
+
     let mut trace: Vec<[F; NUM_CPU_COLS]> = steps
         .iter()
         .map(|s| {
@@ -38,6 +47,7 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_CPU_CO
             }
 
             // Instruction related columns.
+            row[COL_RAW_INST] = raw_insts[s.pc as usize];
             row[COL_INST] = F::from_canonical_u64(s.instruction.0);
             row[COL_OP1_IMM] = F::from_canonical_u64(s.op1_imm.0);
             row[COL_OPCODE] = F::from_canonical_u64(s.opcode.0);

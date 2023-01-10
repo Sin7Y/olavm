@@ -46,8 +46,7 @@ pub fn ctl_filter_cpu_mem_call_ret<F: Field>() -> Column<F> {
 
 // get the data source for bitwise in Cpu table
 pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec();
-    res
+    Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec()
 }
 
 pub fn ctl_filter_with_bitwise_and<F: Field>() -> Column<F> {
@@ -64,8 +63,7 @@ pub fn ctl_filter_with_bitwise_xor<F: Field>() -> Column<F> {
 
 // get the data source for CMP in Cpu table
 pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([COL_OP0, COL_OP1]).collect_vec();
-    res
+    Column::singles([COL_OP0, COL_OP1]).collect_vec()
 }
 
 pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
@@ -74,8 +72,7 @@ pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
 
 // get the data source for Rangecheck in Cpu table
 pub fn ctl_data_with_rangecheck<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([COL_OP1]).collect_vec();
-    res
+    Column::singles([COL_OP1]).collect_vec()
 }
 
 pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
@@ -84,12 +81,11 @@ pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
 
 // get the data source for Rangecheck in Cpu table
 pub fn ctl_data_with_program<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([COL_PC, COL_INST, COL_IMM_VAL]).collect_vec();
-    res
+    Column::singles([COL_PC, COL_INST, COL_IMM_VAL]).collect_vec()
 }
 
 pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
-    Column::one()
+    Column::single(COL_INST)
 }
 
 #[derive(Copy, Clone, Default)]
@@ -234,6 +230,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         instruction += lv[COL_OPCODE];
         yield_constr.constraint(lv[COL_INST] - instruction);
+        // We constrain raw inst and inst.
+        yield_constr.constraint(lv[COL_RAW_INST] - lv[COL_INST]);
 
         // Only one register used for op0.
         let sum_s_op0: P = s_op0s.clone().into_iter().sum();
@@ -400,7 +398,8 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program, true);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         // print_cpu_trace(&cpu_rows);
 
         let len = cpu_rows.len();

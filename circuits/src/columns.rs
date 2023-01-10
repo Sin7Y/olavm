@@ -5,7 +5,7 @@ use std::ops::Range;
 // There are 3 kinds of traces, one for cpu trace, one for memory trace, one for builtin trace.
 
 // 1. Main(CPU) trace.
-// There are 69 columns in cpu trace.
+// There are 70 columns in cpu trace.
 //
 // Context related columns(12):
 // ┌───────┬───────┬──────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬
@@ -19,13 +19,14 @@ pub(crate) const COL_FLAG: usize = COL_PC + 1;
 pub(crate) const COL_START_REG: usize = COL_FLAG + 1;
 pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTER_NUM;
 
-// Instruction related columns(4):
-// ┬────────┬─────────┬────────┬─────────┬
-// │  inst  │ op1_imm │ opcode │ imm_val │
-// ┼────────┼─────────┼────────┼─────────┼
-// │    0   │    0    │    0   │    0    │
-// ┴────────┴─────────┴────────┴─────────┴
-pub(crate) const COL_INST: usize = COL_REGS.end;
+// Instruction related columns(5):
+// ┬────────┬────────┬─────────┬────────┬─────────┬
+// │raw_inst│  inst  │ op1_imm │ opcode │ imm_val │
+// ┼────────┼────────┼─────────┼────────┼─────────┼
+// │    0   │    0   │    0    │    0   │    0    │
+// ┴────────┴────────┴─────────┴────────┴─────────┴
+pub(crate) const COL_RAW_INST: usize = COL_REGS.end;
+pub(crate) const COL_INST: usize = COL_RAW_INST + 1;
 pub(crate) const COL_OP1_IMM: usize = COL_INST + 1;
 pub(crate) const COL_OPCODE: usize = COL_OP1_IMM + 1;
 pub(crate) const COL_IMM_VAL: usize = COL_OPCODE + 1;
@@ -114,5 +115,3 @@ pub(crate) const COL_MEM_REGION_POSEIDON: usize = COL_MEM_REGION_PROPHET + 1;
 pub(crate) const COL_MEM_REGION_ECDSA: usize = COL_MEM_REGION_POSEIDON + 1;
 
 pub(crate) const NUM_MEM_COLS: usize = COL_MEM_REGION_ECDSA + 1;
-
-pub(crate) const NUM_BUILTIN_COLS: usize = 0;
