@@ -3,8 +3,8 @@ use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
 use core::program::instruction::ImmediateOrRegName::Immediate;
 use core::program::instruction::{
-    Add, And, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload, Mov,
-    Mstore, Mul, Neq, Opcode, Or, Range, Ret, Sub, Xor,
+    Add, And, Assert, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload,
+    Mov, Mstore, Mul, Neq, Opcode, Or, Range, Ret, Sub, Xor,
 };
 use core::program::{Program, REGISTER_NUM};
 use core::trace::trace::{
@@ -95,6 +95,16 @@ impl Process {
                 let dst_index = self.get_reg_index(&ops[1]);
                 let value = self.get_index_value(&ops[2]);
                 Instruction::MOV(Mov {
+                    ri: dst_index as u8,
+                    a: value.1,
+                })
+            }
+            "assert" => {
+                debug!("opcode: assert");
+                assert!(ops.len() == 3, "eq params len is 2");
+                let dst_index = self.get_reg_index(&ops[1]);
+                let value = self.get_index_value(&ops[2]);
+                Instruction::ASSERT(Assert {
                     ri: dst_index as u8,
                     a: value.1,
                 })
@@ -359,8 +369,8 @@ impl Process {
 
                     self.pc += step;
                 }
-                "eq" => {
-                    debug!("opcode: eq");
+                "eq" | "assert" => {
+                    debug!("opcode: eq or assert");
                     assert!(ops.len() == 3, "eq params len is 2");
                     let op0_index = self.get_reg_index(&ops[1]);
                     // let src_index = self.get_reg_index(&ops[2]);
@@ -374,14 +384,30 @@ impl Process {
                         self.register_selector.op1_reg_sel[op1_index] =
                             GoldilocksField::from_canonical_u64(1);
                     }
-                    self.register_selector.aux0 =
-                        self.register_selector.op0 - self.register_selector.op1;
-                    if self.register_selector.aux0.is_nonzero() {
-                        self.register_selector.aux0 = self.register_selector.aux0.inverse();
-                    }
 
-                    self.flag = self.registers[op0_index] == value.0;
-                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::EQ as u8);
+                    let op_type = match opcode.as_str() {
+                        "eq" => {
+                            self.register_selector.aux0 =
+                                self.register_selector.op0 - self.register_selector.op1;
+                            if self.register_selector.aux0.is_nonzero() {
+                                self.register_selector.aux0 = self.register_selector.aux0.inverse();
+                            }
+                            self.flag = self.registers[op0_index] == value.0;
+                            Opcode::EQ
+                        }
+                        "assert" => {
+                            if self.registers[op0_index] != value.0 {
+                                panic!(
+                                    "assert fail: left: {}, right: {}",
+                                    self.registers[op0_index], value.0
+                                );
+                            }
+                            Opcode::ASSERT
+                        }
+                        _ => panic!("not match opcode:{}", opcode),
+                    };
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << op_type as u8);
+
                     self.pc += step;
                 }
                 "cjmp" => {
