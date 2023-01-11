@@ -157,13 +157,14 @@ class MemoryTraceColumnType(Enum):
     REGION_PROPHET = 'region_prophet'
     REGION_POSEIDON = 'region_poseidon'
     REGION_ECDSA = 'region_ecdsa'
-
+    RC_VALUE = 'rc_value'
+    FILTER_LOOKING_RC = 'filter_looking_rc'
 
 class RangeCheckTraceColumnType(Enum):
     VAL = 'val'
     LIMB_LO = 'limb_lo'
     LIMB_HI = 'limb_hi'
-
+    FILTER_LOOKED_FOR_MEMORY = 'filter_looked_for_memory'
 
 class BitwiseTraceColumnType(Enum):
     BITWISE_TAG = 'bitwise_tag'
