@@ -385,23 +385,28 @@ fn call_test() {
 #[test]
 fn fibo_use_loop_memory_decode() {
     //2 0 mov r0 1
-    //2 2 mstore 128 r0
-    //2 4 mstore 135 r0
-    //2 6 mov r0 test_loop
-    //2 8 mov r3 0
-    //1 10 EQ r0 r3
-    //2 11 cjmp 27
-    //2 13 mload  r1  128
-    //2 15 mload  r2  135
-    //1 17 add r4 r1 r2
-    //2 18 mstore 128 r2
-    //2 20 mstore 135 r4
-    //2 22 mov r4 1
-    //1 24 add r3 r3 r4
-    //2 25 jmp 10
-    //1 27 end
+    //2 2 mov r2 1
+    //2 4 mstore 128 r0
+    //2 6 mstore 135 r0
+    //2 8 mov r0 test_loop
+    //2 10 mov r3 0
+    //1 12 EQ r0 r3
+    //2 13 cjmp 30
+    //2 15 mload  r1  128
+    //1 17 assert r1  r2
+    //2 18 mload  r2  135
+    //1 20 add r4 r1 r2
+    //2 21 mstore 128 r2
+    //2 23 mstore 135 r4
+    //2 25 mov r4 1
+    //1 27 add r3 r3 r4
+    //2 28 jmp 12
+    //1 30 range_check r3
+    //1 31 end
     let program_src = format!(
         "0x4000000840000000
+        0x1
+         0x4000002040000000
         0x1
         0x4020000001000000
         0x80
@@ -413,9 +418,10 @@ fn fibo_use_loop_memory_decode() {
         0x0
         0x0020800100000000
         0x4000000010000000
-        0x1b
+        0x1e
         0x4000001002000000
         0x80
+        0x0040400080000000
         0x4000002002000000
         0x87
         0x0040408400000000
@@ -427,7 +433,8 @@ fn fibo_use_loop_memory_decode() {
         0x1
         0x0101004400000000
         0x4000000020000000
-        0xa
+        0xc
+        0x0000800000400000
         0x0000000000800000",
         8
     );
