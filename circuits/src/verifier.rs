@@ -81,21 +81,21 @@ where
         config,
     )?;
 
-    // verify_stark_proof_with_challenges(
-    //     cmp_stark,
-    //     &all_proof.stark_proofs[Table::Cmp as usize],
-    //     &stark_challenges[Table::Cmp as usize],
-    //     &ctl_vars_per_table[Table::Cmp as usize],
-    //     config,
-    // )?;
+    verify_stark_proof_with_challenges(
+        cmp_stark,
+        &all_proof.stark_proofs[Table::Cmp as usize],
+        &stark_challenges[Table::Cmp as usize],
+        &ctl_vars_per_table[Table::Cmp as usize],
+        config,
+    )?;
 
-    // verify_stark_proof_with_challenges(
-    //     rangecheck_stark,
-    //     &all_proof.stark_proofs[Table::RangeCheck as usize],
-    //     &stark_challenges[Table::RangeCheck as usize],
-    //     &ctl_vars_per_table[Table::RangeCheck as usize],
-    //     config,
-    // )?;
+    verify_stark_proof_with_challenges(
+        rangecheck_stark,
+        &all_proof.stark_proofs[Table::RangeCheck as usize],
+        &stark_challenges[Table::RangeCheck as usize],
+        &ctl_vars_per_table[Table::RangeCheck as usize],
+        config,
+    )?;
 
     let degrees_bits =
         std::array::from_fn(|i| all_proof.stark_proofs[i].recover_degree_bits(config));

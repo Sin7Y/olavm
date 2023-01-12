@@ -56,8 +56,8 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
             self.cpu_stark.num_permutation_batches(config),
             self.memory_stark.num_permutation_batches(config),
             self.bitwise_stark.num_permutation_batches(config),
-            // self.cmp_stark.num_permutation_batches(config),
-            // self.rangecheck_stark.num_permutation_batches(config),
+            self.cmp_stark.num_permutation_batches(config),
+            self.rangecheck_stark.num_permutation_batches(config),
         ]
     }
 
@@ -66,8 +66,8 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
             self.cpu_stark.permutation_batch_size(),
             self.memory_stark.permutation_batch_size(),
             self.bitwise_stark.permutation_batch_size(),
-            // self.cmp_stark.permutation_batch_size(),
-            // self.rangecheck_stark.permutation_batch_size(),
+            self.cmp_stark.permutation_batch_size(),
+            self.rangecheck_stark.permutation_batch_size(),
         ]
     }
 }
@@ -87,12 +87,12 @@ pub enum Table {
     Program = 7,
 }
 
-pub(crate) const NUM_TABLES: usize = 3;
+pub(crate) const NUM_TABLES: usize = 5;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     // TODO:
-    vec![ctl_cpu_memory(), ctl_bitwise_cpu()]
+    vec![ctl_cpu_memory(), ctl_bitwise_cpu(), ctl_cmp_cpu(), ctl_rangecheck_cpu()]
 }
 
 fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
@@ -372,7 +372,7 @@ mod tests {
     use crate::prover::{prove_single_table, prove_with_traces};
     use crate::util::{
         generate_builtins_bitwise_trace, generate_cpu_trace, generate_memory_trace,
-        trace_rows_to_poly_values,
+        trace_rows_to_poly_values, generate_builtins_cmp_trace, generate_builtins_rangecheck_trace,
     };
 
     const D: usize = 2;
@@ -421,16 +421,16 @@ mod tests {
         let bitwise_rows =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         [
             cpu_trace,
             memory_trace,
             bitwise_trace,
-            // cmp_trace,
-            // rangecheck_trace,
+            cmp_trace,
+            rangecheck_trace,
         ]
     }
 
@@ -493,16 +493,16 @@ mod tests {
         let bitwise_rows =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         [
             cpu_trace,
             memory_trace,
             bitwise_trace,
-            // cmp_trace,
-            // rangecheck_trace,
+            cmp_trace,
+            rangecheck_trace,
         ]
     }
 
@@ -560,16 +560,16 @@ mod tests {
         let bitwise_rows =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         [
             cpu_trace,
             memory_trace,
             bitwise_trace,
-            // cmp_trace,
-            // rangecheck_trace,
+            cmp_trace,
+            rangecheck_trace,
         ]
     }
 
@@ -635,16 +635,16 @@ mod tests {
         let bitwise_rows =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         [
             cpu_trace,
             memory_trace,
             bitwise_trace,
-            // cmp_trace,
-            // rangecheck_trace,
+            cmp_trace,
+            rangecheck_trace,
         ]
     }
 
@@ -691,16 +691,16 @@ mod tests {
         let bitwise_rows =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         [
             cpu_trace,
             memory_trace,
             bitwise_trace,
-            // cmp_trace,
-            // rangecheck_trace,
+            cmp_trace,
+            rangecheck_trace,
         ]
     }
 
@@ -753,25 +753,19 @@ mod tests {
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let begin_time = timestamp();
-        println!("generate_builtins_bitwise_trace begin: {:?}", begin_time);
         let bitwise_rows =
-        generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let end_time = timestamp();
-        println!("generate_builtins_bitwise_trace end: {:?}", end_time);
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let bitwise_poly_end_time = timestamp();
-        println!("bitwise_trace_poly end: {:?}", bitwise_poly_end_time);
-        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         [
             cpu_trace,
             memory_trace,
             bitwise_trace,
-            // cmp_trace,
-            // rangecheck_trace,
+            cmp_trace,
+            rangecheck_trace,
         ]
     }
 
@@ -818,27 +812,27 @@ mod tests {
         let bitwise_rows =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![[F::default(); 1]];
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         [
             cpu_trace,
             memory_trace,
             bitwise_trace,
-            // cmp_trace,
-            // rangecheck_trace,
+            cmp_trace,
+            rangecheck_trace,
         ]
     }
 
     fn make_traces() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
         // add_mul_decode() // yes
         // fibo_use_loop_decode() // yes
-        // memory_test() // yes
-        // call_test() // yes
-        bitwise_test() // yes
-        // range_check_test() // no
-        // comparison_test() // no
+        // memory_test() // no
+        // call_test() // no
+        // bitwise_test() // yes
+        // range_check_test() // yes
+        comparison_test() // no
     }
 
     fn get_proof(config: &StarkConfig) -> Result<(AllStark<F, D>, AllProof<F, C, D>)> {
