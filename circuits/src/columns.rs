@@ -25,8 +25,7 @@ pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTE
 // ┼────────┼────────┼─────────┼────────┼─────────┼
 // │    0   │    0   │    0    │    0   │    0    │
 // ┴────────┴────────┴─────────┴────────┴─────────┴
-pub(crate) const COL_RAW_INST: usize = COL_REGS.end;
-pub(crate) const COL_INST: usize = COL_RAW_INST + 1;
+pub(crate) const COL_INST: usize = COL_REGS.end + 1;
 pub(crate) const COL_OP1_IMM: usize = COL_INST + 1;
 pub(crate) const COL_OPCODE: usize = COL_OP1_IMM + 1;
 pub(crate) const COL_IMM_VAL: usize = COL_OPCODE + 1;
@@ -74,11 +73,11 @@ pub(crate) const COL_S_MSTORE: usize = COL_S_MLOAD + 1;
 pub(crate) const COL_S_END: usize = COL_S_MSTORE + 1;
 
 // Selectors of Builtins related columns(9):
-// ┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────────┬─────────┐
-// │  s_rc │ s_and │ s_or  │ s_xor │ s_not │ s_neq │ s_gte │ s_poseidon │ s_ecdsa |
-// ┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼────────────┼─────────|
-// │   0   │   1   │   0   │   0   │   0   │   0   │   0   │      0     │    0    |
-// ┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴────────────┴─────────┘
+// ┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────────┬─────────┬
+// │  s_rc │ s_and │ s_or  │ s_xor │ s_not │ s_neq │ s_gte │ s_poseidon │ s_ecdsa │
+// ┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼────────────┼─────────┼
+// │   0   │   1   │   0   │   0   │   0   │   0   │   0   │      0     │    0    │
+// ┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴────────────┴─────────┴
 pub(crate) const COL_S_RC: usize = COL_S_END + 1;
 pub(crate) const COL_S_AND: usize = COL_S_RC + 1;
 pub(crate) const COL_S_OR: usize = COL_S_AND + 1;
@@ -89,7 +88,19 @@ pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
 pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
 
-pub(crate) const NUM_CPU_COLS: usize = COL_S_ECDSA + 1;
+// Program consistence relate columns:
+// ┬──────────┬────────┬──────────┬──────────┬─────────────┬──────────────┐
+// │ raw_inst │ raw_pc │ zip_raw  │ zip_exed │ per_zip_raw │ pre_zip_exed |
+// ┼──────────┼────────┼──────────┼──────────┼─────────────┼──────────────|
+// │     0    │    1   │     0    │     0    │       1     │       0      |
+// ┴──────────┴────────┴──────────┴──────────┴─────────────┴──────────────┘
+pub(crate) const COL_RAW_INST: usize = COL_S_ECDSA + 1;
+pub(crate) const COL_RAW_PC: usize = COL_RAW_INST + 1;
+pub(crate) const COL_ZIP_RAW: usize = COL_RAW_PC + 1;
+pub(crate) const COL_ZIP_EXED: usize = COL_ZIP_RAW + 1;
+pub(crate) const COL_PER_ZIP_RAW: usize = COL_ZIP_EXED + 1;
+pub(crate) const COL_PER_ZIP_EXED: usize = COL_PER_ZIP_RAW + 1;
+pub(crate) const NUM_CPU_COLS: usize = COL_PER_ZIP_EXED + 1;
 
 // 2. Memory Trace.
 // ┌───────┬──────┬─────┬────┬──────────┬───────┬───────────┬───────────────┬──────────┬────────────────┬

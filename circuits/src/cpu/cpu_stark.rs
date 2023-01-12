@@ -3,6 +3,7 @@ use {
     crate::columns::*,
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
     crate::cross_table_lookup::Column,
+    crate::lookup::eval_lookups,
     crate::stark::Stark,
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     core::program::REGISTER_NUM,
@@ -231,7 +232,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         instruction += lv[COL_OPCODE];
         yield_constr.constraint(lv[COL_INST] - instruction);
         // We constrain raw inst and inst.
-        yield_constr.constraint(lv[COL_RAW_INST] - lv[COL_INST]);
+        eval_lookups(vars, yield_constr, COL_PER_ZIP_EXED, COL_PER_ZIP_RAW);
 
         // Only one register used for op0.
         let sum_s_op0: P = s_op0s.clone().into_iter().sum();
