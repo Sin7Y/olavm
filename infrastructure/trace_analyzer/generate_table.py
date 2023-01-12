@@ -165,6 +165,9 @@ class RangeCheckTraceColumnType(Enum):
     LIMB_LO = 'limb_lo'
     LIMB_HI = 'limb_hi'
     FILTER_LOOKED_FOR_MEMORY = 'filter_looked_for_memory'
+    FILTER_LOOKED_FOR_CPU = 'filter_looked_for_cpu'
+    FILTER_LOOKED_FOR_CMP = 'filter_looked_for_comparison'
+
 
 class BitwiseTraceColumnType(Enum):
     BITWISE_TAG = 'bitwise_tag'
@@ -282,7 +285,7 @@ def main():
                     worksheet.write(row_index, col, reg)
                     col += 1
             elif data.value == 'asm':
-                print(trace_json["raw_instructions"]['{0}'.format(row["pc"])])
+                # print(trace_json["raw_instructions"]['{0}'.format(row["pc"])])
                 worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
                 col += 1
             else:
