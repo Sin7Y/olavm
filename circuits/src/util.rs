@@ -628,9 +628,12 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         .iter()
         .map(|c| {
             let mut row: [F; rangecheck::COL_NUM_RC] = [F::default(); rangecheck::COL_NUM_RC];
-            row[rangecheck::CPU_FILTER] = F::from_canonical_u64(c.val.to_canonical_u64());
-            row[rangecheck::MEMORY_FILTER] = F::from_canonical_u64(c.val.to_canonical_u64());
-            row[rangecheck::CMP_FILTER] = F::from_canonical_u64(c.val.to_canonical_u64());        
+            row[rangecheck::CPU_FILTER] =
+                F::from_canonical_u64(c.filter_looked_for_cpu.to_canonical_u64());
+            row[rangecheck::MEMORY_FILTER] =
+                F::from_canonical_u64(c.filter_looked_for_memory.to_canonical_u64());
+            row[rangecheck::CMP_FILTER] =
+                F::from_canonical_u64(c.filter_looked_for_comparison.to_canonical_u64());
             row[rangecheck::VAL] = F::from_canonical_u64(c.val.to_canonical_u64());
             row[rangecheck::LIMB_LO] = F::from_canonical_u64(c.limb_lo.to_canonical_u64());
             row[rangecheck::LIMB_HI] = F::from_canonical_u64(c.limb_hi.to_canonical_u64());
