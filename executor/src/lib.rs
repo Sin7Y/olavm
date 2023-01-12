@@ -3,8 +3,8 @@ use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
 use core::program::instruction::ImmediateOrRegName::Immediate;
 use core::program::instruction::{
-    Add, And, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload, Mov,
-    Mstore, Mul, Neq, Opcode, Or, Range, Ret, Sub, Xor,
+    Add, And, Assert, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload,
+    Mov, Mstore, Mul, Neq, Opcode, Or, Range, Ret, Sub, Xor,
 };
 use core::program::{Program, REGISTER_NUM};
 use core::trace::trace::{
@@ -15,6 +15,7 @@ use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64};
 use std::collections::{BTreeMap, HashMap};
+use std::time::Instant;
 
 mod decode;
 pub mod error;
@@ -94,6 +95,16 @@ impl Process {
                 let dst_index = self.get_reg_index(&ops[1]);
                 let value = self.get_index_value(&ops[2]);
                 Instruction::MOV(Mov {
+                    ri: dst_index as u8,
+                    a: value.1,
+                })
+            }
+            "assert" => {
+                debug!("opcode: assert");
+                assert!(ops.len() == 3, "eq params len is 2");
+                let dst_index = self.get_reg_index(&ops[1]);
+                let value = self.get_index_value(&ops[2]);
+                Instruction::ASSERT(Assert {
                     ri: dst_index as u8,
                     a: value.1,
                 })
@@ -235,13 +246,20 @@ impl Process {
         decode_flag: bool,
     ) -> Result<(), ProcessorError> {
         let mut pc = 0;
+
+        let start = Instant::now();
         loop {
             let instruct_line = program.instructions[pc as usize].trim();
             let mut txt_instruction = Default::default();
             let mut step = 1;
-
+            program
+                .trace
+                .raw_binary_instructions
+                .push(instruct_line.to_string());
             if decode_flag {
+                let mut imm_flag = 0;
                 let mut imm_line = "null";
+                let mut immediate_data = GoldilocksField::ZERO;
                 if (pc + 1) < (program.instructions.len() as u64 - 1) {
                     imm_line = program.instructions[(pc + 1) as usize].trim();
                     (txt_instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
@@ -249,18 +267,27 @@ impl Process {
                     (txt_instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
                 }
                 if step == IMM_INSTRUCTION_LEN {
+                    imm_flag = 1;
+                    let imm_u64 = imm_line.trim_start_matches("0x");
+                    immediate_data = GoldilocksField::from_canonical_u64(
+                        u64::from_str_radix(imm_u64, 16).unwrap(),
+                    );
                     program
                         .trace
                         .raw_binary_instructions
-                        .push((instruct_line.to_string(), Some(imm_line.to_string())));
+                        .push(imm_line.to_string());
                 } else {
-                    program
-                        .trace
-                        .raw_binary_instructions
-                        .push((instruct_line.to_string(), None));
+                    imm_flag = 0;
                 }
 
-                let instruction = self.decode_instruction(txt_instruction);
+                let instruction = self.decode_instruction(txt_instruction.clone());
+                let inst_u64 = instruct_line.trim_start_matches("0x");
+                let inst_encode =
+                    GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
+                program.trace.instructions.insert(
+                    pc,
+                    (txt_instruction, imm_flag, step, inst_encode, immediate_data),
+                );
                 program.trace.raw_instructions.insert(pc, instruction);
                 pc += step;
             } else {
@@ -270,57 +297,58 @@ impl Process {
                 break;
             }
         }
-        assert!(
-            program.trace.raw_binary_instructions.len() == program.trace.raw_instructions.len()
+        let decode_time = start.elapsed();
+        debug!("decode_time: {}", decode_time.as_secs());
+
+        assert_eq!(
+            program.trace.raw_binary_instructions.len(),
+            program.instructions.len()
         );
 
+        let mut start = Instant::now();
         loop {
             self.register_selector = Default::default();
             let registers_status = self.registers.clone();
             let flag_status = self.flag.clone();
             let pc_status = self.pc;
 
-            let instruct_line = program.instructions[self.pc as usize].trim();
+            // let instruct_line = program.instructions[self.pc as usize].trim();
 
-            let mut instruction = Default::default();
-            let mut ops = Vec::new();
-            let mut step = 1;
-            let mut op_imm1 = GoldilocksField::default();
-            if decode_flag {
-                let mut imm_line = Default::default();
-                if (self.pc + 1) < (program.instructions.len() as u64 - 1) {
-                    imm_line = program.instructions[(self.pc + 1) as usize].trim();
-                    (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
-                } else {
-                    (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
-                }
-                if step == IMM_INSTRUCTION_LEN {
-                    op_imm1 = GoldilocksField::from_canonical_u64(1);
-                    program
-                        .trace
-                        .raw_binary_instructions
-                        .push((instruct_line.to_string(), Some(imm_line.to_string())));
-                    let imm_u64 = imm_line.trim_start_matches("0x");
-                    self.immediate_data = GoldilocksField::from_canonical_u64(
-                        u64::from_str_radix(imm_u64, 16).unwrap(),
-                    );
-                } else {
-                    op_imm1 = GoldilocksField::from_canonical_u64(0);
-                    program
-                        .trace
-                        .raw_binary_instructions
-                        .push((instruct_line.to_string(), None));
-                    self.immediate_data = Default::default();
-                }
-                let inst_u64 = instruct_line.trim_start_matches("0x");
-                self.instruction =
-                    GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
-            } else {
-                instruction = instruct_line.to_string();
-            }
-            ops = instruction.split(' ').collect();
+            // let mut instruction = Default::default();
+            // let mut ops = Vec::new();
+            // let mut step = 1;
+            // let mut op_imm1 = GoldilocksField::default();
+            // if decode_flag {
+            //     let mut imm_line = Default::default();
+            //     if (self.pc + 1) < (program.instructions.len() as u64 - 1) {
+            //         imm_line = program.instructions[(self.pc + 1) as usize].trim();
+            //         (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
+            //     } else {
+            //         (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
+            //     }
+            //     if step == IMM_INSTRUCTION_LEN {
+            //         op_imm1 = GoldilocksField::from_canonical_u64(1);
+            //         let imm_u64 = imm_line.trim_start_matches("0x");
+            //         self.immediate_data = GoldilocksField::from_canonical_u64(
+            //             u64::from_str_radix(imm_u64, 16).unwrap(),
+            //         );
+            //     } else {
+            //         op_imm1 = GoldilocksField::from_canonical_u64(0);
+            //         self.immediate_data = Default::default();
+            //     }
+            //     let inst_u64 = instruct_line.trim_start_matches("0x");
+            //     self.instruction =
+            //         GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
+            // } else {
+            //     instruction = instruct_line.to_string();
+            // }
+            let mut instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
+            let mut ops: Vec<&str> = instruction.0.split(' ').collect();
             let opcode = ops.get(0).unwrap().to_lowercase();
-            self.op1_imm = op_imm1;
+            self.op1_imm = GoldilocksField::from_canonical_u64(instruction.1 as u64);
+            let mut step = instruction.2 as u64;
+            self.instruction = instruction.3;
+            self.immediate_data = instruction.4;
             match opcode.as_str() {
                 "mov" => {
                     debug!("opcode: mov");
@@ -341,8 +369,8 @@ impl Process {
 
                     self.pc += step;
                 }
-                "eq" => {
-                    debug!("opcode: eq");
+                "eq" | "assert" => {
+                    debug!("opcode: eq or assert");
                     assert!(ops.len() == 3, "eq params len is 2");
                     let op0_index = self.get_reg_index(&ops[1]);
                     // let src_index = self.get_reg_index(&ops[2]);
@@ -356,14 +384,30 @@ impl Process {
                         self.register_selector.op1_reg_sel[op1_index] =
                             GoldilocksField::from_canonical_u64(1);
                     }
-                    self.register_selector.aux0 =
-                        self.register_selector.op0 - self.register_selector.op1;
-                    if self.register_selector.aux0.is_nonzero() {
-                        self.register_selector.aux0 = self.register_selector.aux0.inverse();
-                    }
 
-                    self.flag = self.registers[op0_index] == value.0;
-                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::EQ as u8);
+                    let op_type = match opcode.as_str() {
+                        "eq" => {
+                            self.register_selector.aux0 =
+                                self.register_selector.op0 - self.register_selector.op1;
+                            if self.register_selector.aux0.is_nonzero() {
+                                self.register_selector.aux0 = self.register_selector.aux0.inverse();
+                            }
+                            self.flag = self.registers[op0_index] == value.0;
+                            Opcode::EQ
+                        }
+                        "assert" => {
+                            if self.registers[op0_index] != value.0 {
+                                panic!(
+                                    "assert fail: left: {}, right: {}",
+                                    self.registers[op0_index], value.0
+                                );
+                            }
+                            Opcode::ASSERT
+                        }
+                        _ => panic!("not match opcode:{}", opcode),
+                    };
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << op_type as u8);
+
                     self.pc += step;
                 }
                 "cjmp" => {
@@ -583,7 +627,9 @@ impl Process {
                     self.register_selector.op1 = self.registers[op1_index];
                     self.register_selector.op1_reg_sel[op1_index] =
                         GoldilocksField::from_canonical_u64(1);
-                    program.trace.insert_rangecheck(self.registers[op1_index]);
+                    program
+                        .trace
+                        .insert_rangecheck(self.registers[op1_index], GoldilocksField::ZERO);
 
                     self.pc += step;
                 }
@@ -638,8 +684,13 @@ impl Process {
                             + self.registers[dst_index].0,
                     );
 
-                    program.trace.insert_rangecheck(self.registers[op0_index]);
-                    program.trace.insert_rangecheck(op1_value.0);
+
+                    program
+                        .trace
+                        .insert_rangecheck(self.registers[op0_index], GoldilocksField::ZERO);
+                    program
+                        .trace
+                        .insert_rangecheck(op1_value.0, GoldilocksField::ZERO);
 
                     program.trace.insert_bitwise_combined(
                         op_type as u32,
@@ -685,8 +736,13 @@ impl Process {
                         _ => panic!("not match opcode:{}", opcode),
                     };
 
-                    program.trace.insert_rangecheck(self.registers[op0_index]);
-                    program.trace.insert_rangecheck(value.0);
+
+                    program
+                        .trace
+                        .insert_rangecheck(self.registers[op0_index], GoldilocksField::ZERO);
+                    program
+                        .trace
+                        .insert_rangecheck(value.0, GoldilocksField::ZERO);
 
                     program.trace.insert_cmp(self.registers[op0_index], value.0);
                     self.pc += step;
@@ -723,6 +779,11 @@ impl Process {
                 break;
             }
             self.clk += 1;
+            if self.clk % 1000000 == 0 {
+                let decode_time = start.elapsed();
+                debug!("100000_step_time: {}", decode_time.as_millis());
+                start = Instant::now();
+            }
         }
         Ok(())
     }
@@ -771,6 +832,8 @@ impl Process {
                         region_poseidon: cell.region_poseidon,
                         region_ecdsa: cell.region_ecdsa,
                         value: cell.value.clone(),
+                        filter_looking_rc: GoldilocksField::ONE,
+                        rc_value: GoldilocksField::ZERO,
                     };
                     program.trace.memory.push(trace_cell);
                     first_row_flag = false;
@@ -795,6 +858,8 @@ impl Process {
                         region_poseidon: cell.region_poseidon,
                         region_ecdsa: cell.region_ecdsa,
                         value: cell.value.clone(),
+                        filter_looking_rc: GoldilocksField::ONE,
+                        rc_value: diff_addr,
                     };
                     program.trace.memory.push(trace_cell);
                     new_addr_flag = false;
@@ -803,8 +868,12 @@ impl Process {
                     diff_addr_inv = GoldilocksField::ZERO;
                     diff_clk = GoldilocksField::from_canonical_u64(cell.clk as u64 - origin_clk);
                     let mut rw_addr_unchanged = GoldilocksField::ONE;
+                    let mut rc_value = GoldilocksField::ZERO;
                     if cell.is_rw == GoldilocksField::ZERO {
                         rw_addr_unchanged = GoldilocksField::ZERO;
+                        rc_value = diff_addr_cond;
+                    } else {
+                        rc_value = diff_clk;
                     }
                     let trace_cell = MemoryTraceCell {
                         addr: GoldilocksField::from_canonical_u64(*addr),
@@ -822,9 +891,16 @@ impl Process {
                         region_poseidon: cell.region_poseidon,
                         region_ecdsa: cell.region_ecdsa,
                         value: cell.value.clone(),
+                        filter_looking_rc: GoldilocksField::ONE,
+                        rc_value: rc_value,
                     };
                     program.trace.memory.push(trace_cell);
                 }
+                program.trace.insert_rangecheck(
+                    program.trace.memory.last().unwrap().rc_value,
+                    GoldilocksField::ONE,
+                );
+
                 origin_clk = cell.clk as u64;
             }
             origin_addr = *addr;

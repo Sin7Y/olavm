@@ -157,6 +157,49 @@ class MemoryTraceColumnType(Enum):
     REGION_PROPHET = 'region_prophet'
     REGION_POSEIDON = 'region_poseidon'
     REGION_ECDSA = 'region_ecdsa'
+    RC_VALUE = 'rc_value'
+    FILTER_LOOKING_RC = 'filter_looking_rc'
+
+class RangeCheckTraceColumnType(Enum):
+    VAL = 'val'
+    LIMB_LO = 'limb_lo'
+    LIMB_HI = 'limb_hi'
+    FILTER_LOOKED_FOR_MEMORY = 'filter_looked_for_memory'
+
+class BitwiseTraceColumnType(Enum):
+    BITWISE_TAG = 'bitwise_tag'
+    OP0 = 'op0'
+    OP1 = 'op1'
+    RES = 'res'
+    OP0_0 = 'op0_0'
+    OP0_1 = 'op0_1'
+    OP0_2 = 'op0_2'
+    OP0_3 = 'op0_3'
+    OP1_0 = 'op1_0'
+    OP1_1 = 'op1_1'
+    OP1_2 = 'op1_2'
+    OP1_3 = 'op1_3'
+    RES_0 = 'res_0'
+    RES_1 = 'res_1'
+    RES_2 = 'res_2'
+    RES_3 = 'res_3'
+
+
+class ComparisonTraceColumnType(Enum):
+    TAG = 'tag'
+    OP0 = 'op0'
+    OP1 = 'op1'
+    DIFF = 'diff'
+
+
+
+def generate_columns_of_title(worksheet, trace_column_title):
+    col = 0
+    title_row = 0
+    for data in trace_column_title:
+        # print(data.name)
+        worksheet.write(title_row, col, data.value)
+        col += 1
 
 
 class RangeCheckTraceColumnType(Enum):
@@ -322,6 +365,7 @@ def main():
             if (
                     data.value == "addr" or data.value == "op" or data.value == "diff_addr_inv" or data.value == "value" or data.value == "diff_addr_cond") \
                     and args.format == 'hex':
+
                 worksheet.write(row_index, col,
                                 '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                                     row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
