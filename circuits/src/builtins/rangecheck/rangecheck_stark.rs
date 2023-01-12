@@ -87,23 +87,23 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
     }
 }
 
-pub fn ctl_data_rc<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_memory<F: Field>() -> Vec<Column<F>> {
     Column::singles([VAL]).collect_vec()
 }
 
-pub fn ctl_filter_rc<F: Field>() -> Column<F> {
-    Column::single(FILTER)
+pub fn ctl_filter_memory<F: Field>() -> Column<F> {
+    Column::single(MEMORY_FILTER)
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-/*pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles([VAL]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
-    Column::single(ONE)
-}*/
+    Column::single(CMP_FILTER)
+}
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
@@ -112,7 +112,7 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::single(FILTER)
+    Column::single(CPU_FILTER)
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>

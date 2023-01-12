@@ -6,9 +6,7 @@ use plonky2::hash::hash_types::RichField;
 
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
-use crate::builtins::rangecheck::rangecheck_stark::{
-    self, ctl_data_rc, ctl_filter_rc, RangeCheckStark,
-};
+use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
 use crate::config::StarkConfig;
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
@@ -143,7 +141,7 @@ fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
         Some(ctl_filter_mem_rc_diff_clk()),
     );
     let all_mem_rc_lookers = vec![mem_rc_diff_cond, mem_rc_diff_addr, mem_rc_diff_clk];
-    let rc_looked = TableWithColumns::new(Table::RangeCheck, ctl_data_rc(), Some(ctl_filter_rc()));
+    let rc_looked = TableWithColumns::new(Table::RangeCheck, rangecheck_stark::ctl_data_memory(), Some(rangecheck_stark::ctl_filter_memory()));
     CrossTableLookup::new(all_mem_rc_lookers, rc_looked, None)
 }
 
