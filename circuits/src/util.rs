@@ -536,61 +536,71 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
             row
         })
         .collect();
-    // Pad trace to power of two.
-    // Ensure the max rows number.
-    let trace_len = trace.len();
-    let max_trace_len = trace_len.max(cmp::RANGE_CHECK_U16_SIZE);
 
-    let mut new_row_len = max_trace_len;
+    if trace.len() == 0 {
+        let mut ary = [F::ZEROS; cmp::COL_NUM_CMP];
 
-    if !max_trace_len.is_power_of_two() {
-        new_row_len = max_trace_len.next_power_of_two();
+        trace.push(ary);
+        trace.push(ary);
+
+        trace
+    } else {
+        // Pad trace to power of two.
+        // Ensure the max rows number.
+        let trace_len = trace.len();
+        let max_trace_len = trace_len.max(cmp::RANGE_CHECK_U16_SIZE);
+
+        let mut new_row_len = max_trace_len;
+
+        if !max_trace_len.is_power_of_two() {
+            new_row_len = max_trace_len.next_power_of_two();
+        }
+
+        // padding for exe trace
+        //if !max_trace_len.is_power_of_two() {
+        //let new_row_len = max_trace_len.next_power_of_two();
+        let end_row = trace[trace_len - 1];
+        for i in trace_len..new_row_len {
+            let mut new_row = end_row;
+            new_row[cmp::FILTER] = F::ZEROS;
+            trace.push(new_row);
+        }
+        //}
+
+        // Transpose to column-major form.
+        let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
+        let mut trace_col_vecs = transpose(&trace_row_vecs);
+
+        // add fix rangecheck info
+        trace_col_vecs[cmp::FIX_RANGE_CHECK_U16] = (0..cmp::RANGE_CHECK_U16_SIZE)
+            .map(|i| F::from_canonical_usize(i))
+            .collect();
+
+        let (permuted_inputs, permuted_table) = permuted_cols(
+            &trace_col_vecs[cmp::DIFF_LIMB_LO],
+            &trace_col_vecs[cmp::FIX_RANGE_CHECK_U16],
+        );
+
+        trace_col_vecs[cmp::DIFF_LIMB_LO_PERMUTED] = permuted_inputs;
+        trace_col_vecs[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] = permuted_table;
+
+        let (permuted_inputs, permuted_table) = permuted_cols(
+            &trace_col_vecs[cmp::DIFF_LIMB_HI],
+            &trace_col_vecs[cmp::FIX_RANGE_CHECK_U16],
+        );
+
+        trace_col_vecs[cmp::DIFF_LIMB_HI_PERMUTED] = permuted_inputs;
+        trace_col_vecs[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = permuted_table;
+
+        let final_trace = transpose(&trace_col_vecs);
+
+        let trace_row_vecs: Vec<_> = final_trace
+            .into_iter()
+            .map(|row| vec_to_ary_cmp(row))
+            .collect();
+
+        trace_row_vecs
     }
-
-    // padding for exe trace
-    //if !max_trace_len.is_power_of_two() {
-    //let new_row_len = max_trace_len.next_power_of_two();
-    let end_row = trace[trace_len - 1];
-    for i in trace_len..new_row_len {
-        let mut new_row = end_row;
-        new_row[cmp::FILTER] = F::ZEROS;
-        trace.push(new_row);
-    }
-    //}
-
-    // Transpose to column-major form.
-    let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
-    let mut trace_col_vecs = transpose(&trace_row_vecs);
-
-    // add fix rangecheck info
-    trace_col_vecs[cmp::FIX_RANGE_CHECK_U16] = (0..cmp::RANGE_CHECK_U16_SIZE)
-        .map(|i| F::from_canonical_usize(i))
-        .collect();
-
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[cmp::DIFF_LIMB_LO],
-        &trace_col_vecs[cmp::FIX_RANGE_CHECK_U16],
-    );
-
-    trace_col_vecs[cmp::DIFF_LIMB_LO_PERMUTED] = permuted_inputs;
-    trace_col_vecs[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] = permuted_table;
-
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace_col_vecs[cmp::DIFF_LIMB_HI],
-        &trace_col_vecs[cmp::FIX_RANGE_CHECK_U16],
-    );
-
-    trace_col_vecs[cmp::DIFF_LIMB_HI_PERMUTED] = permuted_inputs;
-    trace_col_vecs[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = permuted_table;
-
-    let final_trace = transpose(&trace_col_vecs);
-
-    let trace_row_vecs: Vec<_> = final_trace
-        .into_iter()
-        .map(|row| vec_to_ary_cmp(row))
-        .collect();
-
-    trace_row_vecs
 }
 
 pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
