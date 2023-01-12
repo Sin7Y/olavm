@@ -1,11 +1,9 @@
 use crate::columns::*;
+use crate::fixed_table::bitwise_fixed::columns::COL_NUM;
 use core::program::{instruction::Opcode, REGISTER_NUM};
 use core::trace::trace::*;
-use std::sync::Arc;
 
-use env_logger::fmt;
 use plonky2::hash::hash_types::RichField;
-use ripemd::digest::typenum::bit;
 use std::convert::TryInto;
 use std::mem::{size_of, transmute_copy, ManuallyDrop};
 use std::ops::Sub;
@@ -20,13 +18,38 @@ use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
 use plonky2::field::polynomial::PolynomialValues;
 use plonky2::field::types::{Field, PrimeField64};
+use plonky2::iop::challenger::Challenger;
 use plonky2::iop::ext_target::ExtensionTarget;
+use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::transpose;
 
-pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_CPU_COLS]> {
+pub fn generate_cpu_trace<F: RichField>(
+    steps: &Vec<Step>,
+    raw_instructions: &Vec<String>,
+) -> Vec<[F; NUM_CPU_COLS]> {
+    let mut raw_insts: Vec<(usize, F)> = raw_instructions
+        .iter()
+        .enumerate()
+        .map(|(i, ri)| {
+            (
+                i,
+                F::from_canonical_u64(u64::from_str_radix(&ri[2..], 16).unwrap()),
+            )
+        })
+        .collect();
+
+    // make raw and steps has same length.
+    let mut steps = steps.clone();
+    if raw_instructions.len() < steps.len() {
+        raw_insts.resize(steps.len(), raw_insts.last().unwrap().to_owned());
+    } else if raw_instructions.len() > steps.len() {
+        steps.resize(raw_instructions.len(), steps.last().unwrap().to_owned());
+    }
+
     let mut trace: Vec<[F; NUM_CPU_COLS]> = steps
         .iter()
-        .map(|s| {
+        .zip(raw_insts.iter())
+        .map(|(s, r)| {
             let mut row: [F; NUM_CPU_COLS] = [F::default(); NUM_CPU_COLS];
 
             // Context related columns.
@@ -121,18 +144,56 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> Vec<[F; NUM_CPU_CO
                 // o if u64::from(1_u64 << Opcode::ECDSA as u8) == o => row[COL_S_ECDSA] = F::from_canonical_u64(1),
                 _ => panic!("unspported opcode!"),
             }
+
+            // Raw program
+            row[COL_RAW_INST] = r.1;
+            row[COL_RAW_PC] = F::from_canonical_usize(r.0);
+
             row
         })
         .collect();
+
+    // We use our public (program) column to generate oracles.
+    let mut challenger =
+        Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
+    let mut raw_insts = vec![];
+    trace.iter().for_each(|row| {
+        raw_insts.push(row[COL_RAW_INST]);
+    });
+    challenger.observe_elements(&raw_insts);
+    let beta = challenger.get_challenge();
+
+    // Compress raw_pc and raw_inst columns into one column: COL_ZIP_RAW.
+    // Compress pc + inst columns into one column: COL_ZIP_EXED.
+    trace.iter_mut().for_each(|row| {
+        row[COL_ZIP_RAW] = row[COL_RAW_INST] * beta + row[COL_RAW_PC];
+        row[COL_ZIP_EXED] = row[COL_INST] * beta + row[COL_PC];
+    });
 
     // Pad trace to power of two, we use last row `END` to do it.
     let row_len = trace.len();
     if !row_len.is_power_of_two() {
         let new_row_len = row_len.next_power_of_two();
-        trace.resize(new_row_len, trace[row_len - 1]);
+        trace.resize(new_row_len, trace.last().unwrap().to_owned());
     }
 
-    trace
+    // Transpose to column-major form.
+    let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
+    let mut trace_col_vecs = transpose(&trace_row_vecs);
+
+    // Permuate zip_raw and zip_exed column.
+    let (permuted_inputs, permuted_table) =
+        permuted_cols(&trace_col_vecs[COL_ZIP_EXED], &trace_col_vecs[COL_ZIP_RAW]);
+    trace_col_vecs[COL_PER_ZIP_EXED] = permuted_inputs;
+    trace_col_vecs[COL_PER_ZIP_RAW] = permuted_table;
+
+    let final_trace = transpose(&trace_col_vecs);
+    let trace_row_vecs: Vec<[F; NUM_CPU_COLS]> = final_trace
+        .into_iter()
+        .map(|row| row.try_into().unwrap())
+        .collect();
+
+    trace_row_vecs
 }
 
 pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<[F; NUM_MEM_COLS]> {

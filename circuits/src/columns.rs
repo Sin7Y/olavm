@@ -5,7 +5,7 @@ use std::ops::Range;
 // There are 3 kinds of traces, one for cpu trace, one for memory trace, one for builtin trace.
 
 // 1. Main(CPU) trace.
-// There are 69 columns in cpu trace.
+// There are 76 columns in cpu trace.
 //
 // Context related columns(12):
 // ┌───────┬───────┬──────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬
@@ -19,13 +19,13 @@ pub(crate) const COL_FLAG: usize = COL_PC + 1;
 pub(crate) const COL_START_REG: usize = COL_FLAG + 1;
 pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTER_NUM;
 
-// Instruction related columns(4):
-// ┬────────┬─────────┬────────┬─────────┬
-// │  inst  │ op1_imm │ opcode │ imm_val │
-// ┼────────┼─────────┼────────┼─────────┼
-// │    0   │    0    │    0   │    0    │
-// ┴────────┴─────────┴────────┴─────────┴
-pub(crate) const COL_INST: usize = COL_REGS.end;
+// Instruction related columns(5):
+// ┬────────┬────────┬─────────┬────────┬─────────┬
+// │raw_inst│  inst  │ op1_imm │ opcode │ imm_val │
+// ┼────────┼────────┼─────────┼────────┼─────────┼
+// │    0   │    0   │    0    │    0   │    0    │
+// ┴────────┴────────┴─────────┴────────┴─────────┴
+pub(crate) const COL_INST: usize = COL_REGS.end + 1;
 pub(crate) const COL_OP1_IMM: usize = COL_INST + 1;
 pub(crate) const COL_OPCODE: usize = COL_OP1_IMM + 1;
 pub(crate) const COL_IMM_VAL: usize = COL_OPCODE + 1;
@@ -73,11 +73,11 @@ pub(crate) const COL_S_MSTORE: usize = COL_S_MLOAD + 1;
 pub(crate) const COL_S_END: usize = COL_S_MSTORE + 1;
 
 // Selectors of Builtins related columns(9):
-// ┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────────┬─────────┐
-// │  s_rc │ s_and │ s_or  │ s_xor │ s_not │ s_neq │ s_gte │ s_poseidon │ s_ecdsa |
-// ┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼────────────┼─────────|
-// │   0   │   1   │   0   │   0   │   0   │   0   │   0   │      0     │    0    |
-// ┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴────────────┴─────────┘
+// ┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────────┬─────────┬
+// │  s_rc │ s_and │ s_or  │ s_xor │ s_not │ s_neq │ s_gte │ s_poseidon │ s_ecdsa │
+// ┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼────────────┼─────────┼
+// │   0   │   1   │   0   │   0   │   0   │   0   │   0   │      0     │    0    │
+// ┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴────────────┴─────────┴
 pub(crate) const COL_S_RC: usize = COL_S_END + 1;
 pub(crate) const COL_S_AND: usize = COL_S_RC + 1;
 pub(crate) const COL_S_OR: usize = COL_S_AND + 1;
@@ -88,7 +88,19 @@ pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
 pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
 
-pub(crate) const NUM_CPU_COLS: usize = COL_S_ECDSA + 1;
+// Program consistence relate columns(6):
+// ┬──────────┬────────┬──────────┬──────────┬─────────────┬──────────────┐
+// │ raw_inst │ raw_pc │ zip_raw  │ zip_exed │ per_zip_raw │ pre_zip_exed |
+// ┼──────────┼────────┼──────────┼──────────┼─────────────┼──────────────|
+// │     0    │    1   │     0    │     0    │       1     │       0      |
+// ┴──────────┴────────┴──────────┴──────────┴─────────────┴──────────────┘
+pub(crate) const COL_RAW_INST: usize = COL_S_ECDSA + 1;
+pub(crate) const COL_RAW_PC: usize = COL_RAW_INST + 1;
+pub(crate) const COL_ZIP_RAW: usize = COL_RAW_PC + 1;
+pub(crate) const COL_ZIP_EXED: usize = COL_ZIP_RAW + 1;
+pub(crate) const COL_PER_ZIP_RAW: usize = COL_ZIP_EXED + 1;
+pub(crate) const COL_PER_ZIP_EXED: usize = COL_PER_ZIP_RAW + 1;
+pub(crate) const NUM_CPU_COLS: usize = COL_PER_ZIP_EXED + 1;
 
 // 2. Memory Trace.
 // ┌───────┬──────┬─────┬────┬──────────┬───────┬───────────┬───────────────┬──────────┬────────────────┬
@@ -114,5 +126,3 @@ pub(crate) const COL_MEM_REGION_POSEIDON: usize = COL_MEM_REGION_PROPHET + 1;
 pub(crate) const COL_MEM_REGION_ECDSA: usize = COL_MEM_REGION_POSEIDON + 1;
 
 pub(crate) const NUM_MEM_COLS: usize = COL_MEM_REGION_ECDSA + 1;
-
-pub(crate) const NUM_BUILTIN_COLS: usize = 0;
