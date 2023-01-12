@@ -369,8 +369,8 @@ impl Process {
 
                     self.pc += step;
                 }
-                "eq" | "assert" => {
-                    debug!("opcode: eq or assert");
+                "eq" | "neq" | "assert" => {
+                    debug!("opcode: eq or neq or assert");
                     assert!(ops.len() == 3, "eq params len is 2");
                     let op0_index = self.get_reg_index(&ops[1]);
                     // let src_index = self.get_reg_index(&ops[2]);
@@ -394,6 +394,15 @@ impl Process {
                             }
                             self.flag = self.registers[op0_index] == value.0;
                             Opcode::EQ
+                        }
+                        "neq" => {
+                            self.register_selector.aux0 =
+                                self.register_selector.op0 - self.register_selector.op1;
+                            if self.register_selector.aux0.is_nonzero() {
+                                self.register_selector.aux0 = self.register_selector.aux0.inverse();
+                            }
+                            self.flag = self.registers[op0_index] != value.0;
+                            Opcode::NEQ
                         }
                         "assert" => {
                             if self.registers[op0_index] != value.0 {
@@ -627,9 +636,14 @@ impl Process {
                     self.register_selector.op1 = self.registers[op1_index];
                     self.register_selector.op1_reg_sel[op1_index] =
                         GoldilocksField::from_canonical_u64(1);
-                    program
-                        .trace
-                        .insert_rangecheck(self.registers[op1_index], GoldilocksField::ZERO);
+                    program.trace.insert_rangecheck(
+                        self.registers[op1_index],
+                        (
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ONE,
+                            GoldilocksField::ZERO,
+                        ),
+                    );
 
                     self.pc += step;
                 }
@@ -684,13 +698,6 @@ impl Process {
                             + self.registers[dst_index].0,
                     );
 
-                    program
-                        .trace
-                        .insert_rangecheck(self.registers[op0_index], GoldilocksField::ZERO);
-                    program
-                        .trace
-                        .insert_rangecheck(op1_value.0, GoldilocksField::ZERO);
-
                     program.trace.insert_bitwise_combined(
                         op_type as u32,
                         self.registers[op0_index],
@@ -699,7 +706,7 @@ impl Process {
                     );
                     self.pc += step;
                 }
-                "neq" | "gte" => {
+                "gte" => {
                     debug!("opcode: comparison");
                     assert!(ops.len() == 3, "comparison params len is 2");
                     let op0_index = self.get_reg_index(&ops[1]);
@@ -720,12 +727,6 @@ impl Process {
                     }
 
                     let op_type = match opcode.as_str() {
-                        "neq" => {
-                            self.flag = self.registers[op0_index] != value.0;
-                            self.opcode =
-                                GoldilocksField::from_canonical_u64(1 << Opcode::NEQ as u8);
-                            ComparisonOperation::Neq
-                        }
                         "gte" => {
                             self.flag = self.registers[op0_index].0 >= value.0 .0;
                             self.opcode =
@@ -735,14 +736,26 @@ impl Process {
                         _ => panic!("not match opcode:{}", opcode),
                     };
 
-                    program
-                        .trace
-                        .insert_rangecheck(self.registers[op0_index], GoldilocksField::ZERO);
-                    program
-                        .trace
-                        .insert_rangecheck(value.0, GoldilocksField::ZERO);
+                    program.trace.insert_rangecheck(
+                        self.registers[op0_index],
+                        (
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ONE,
+                        ),
+                    );
+                    program.trace.insert_rangecheck(
+                        value.0,
+                        (
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ONE,
+                        ),
+                    );
 
-                    program.trace.insert_cmp(self.registers[op0_index], value.0);
+                    program
+                        .trace
+                        .insert_cmp(self.registers[op0_index], value.0, op_type as u32);
                     self.pc += step;
                 }
                 "end" => {
@@ -896,7 +909,11 @@ impl Process {
                 }
                 program.trace.insert_rangecheck(
                     program.trace.memory.last().unwrap().rc_value,
-                    GoldilocksField::ONE,
+                    (
+                        GoldilocksField::ONE,
+                        GoldilocksField::ZERO,
+                        GoldilocksField::ZERO,
+                    ),
                 );
 
                 origin_clk = cell.clk as u64;

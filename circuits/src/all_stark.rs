@@ -141,7 +141,11 @@ fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
         Some(ctl_filter_mem_rc_diff_clk()),
     );
     let all_mem_rc_lookers = vec![mem_rc_diff_cond, mem_rc_diff_addr, mem_rc_diff_clk];
-    let rc_looked = TableWithColumns::new(Table::RangeCheck, rangecheck_stark::ctl_data_memory(), Some(rangecheck_stark::ctl_filter_memory()));
+    let rc_looked = TableWithColumns::new(
+        Table::RangeCheck,
+        rangecheck_stark::ctl_data_memory(),
+        Some(rangecheck_stark::ctl_filter_memory()),
+    );
     CrossTableLookup::new(all_mem_rc_lookers, rc_looked, None)
 }
 
