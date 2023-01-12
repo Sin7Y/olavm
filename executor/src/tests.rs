@@ -4,7 +4,7 @@ use core::trace::trace::Trace;
 use log::debug;
 use serde_json::Value;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Seek, Write};
 use std::time::Instant;
 
 #[test]
@@ -489,7 +489,7 @@ fn fibo_use_loop_decode_bench() {
     // jmp 8
     // end
     let program_src = "0x4000000840000000
-        0x100000
+        0x10000
         0x4000001040000000
         0x1
         0x4000002040000000
@@ -529,4 +529,7 @@ fn fibo_use_loop_decode_bench() {
         exec_time.as_secs(),
         program.trace.exec.len()
     );
+    let mut file = File::create("fibo_memory.txt").unwrap();
+
+    serde_json::to_writer(file, &program.trace).unwrap();
 }

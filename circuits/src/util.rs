@@ -628,7 +628,12 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         .iter()
         .map(|c| {
             let mut row: [F; rangecheck::COL_NUM_RC] = [F::default(); rangecheck::COL_NUM_RC];
-            row[rangecheck::FILTER] = F::from_canonical_usize(1);
+            row[rangecheck::CPU_FILTER] =
+                F::from_canonical_u64(c.filter_looked_for_cpu.to_canonical_u64());
+            row[rangecheck::MEMORY_FILTER] =
+                F::from_canonical_u64(c.filter_looked_for_memory.to_canonical_u64());
+            row[rangecheck::CMP_FILTER] =
+                F::from_canonical_u64(c.filter_looked_for_comparison.to_canonical_u64());
             row[rangecheck::VAL] = F::from_canonical_u64(c.val.to_canonical_u64());
             row[rangecheck::LIMB_LO] = F::from_canonical_u64(c.limb_lo.to_canonical_u64());
             row[rangecheck::LIMB_HI] = F::from_canonical_u64(c.limb_hi.to_canonical_u64());
@@ -705,7 +710,9 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
 pub fn vec_to_ary_rc<F: RichField>(input: Vec<F>) -> [F; rangecheck::COL_NUM_RC] {
     let mut ary = [F::ZEROS; rangecheck::COL_NUM_RC];
 
-    ary[rangecheck::FILTER] = input[rangecheck::FILTER];
+    ary[rangecheck::CPU_FILTER] = input[rangecheck::CPU_FILTER];
+    ary[rangecheck::MEMORY_FILTER] = input[rangecheck::MEMORY_FILTER];
+    ary[rangecheck::CMP_FILTER] = input[rangecheck::CMP_FILTER];
     ary[rangecheck::VAL] = input[rangecheck::VAL];
     ary[rangecheck::LIMB_LO] = input[rangecheck::LIMB_LO];
     ary[rangecheck::LIMB_HI] = input[rangecheck::LIMB_HI];
