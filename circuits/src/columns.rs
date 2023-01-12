@@ -5,7 +5,7 @@ use std::ops::Range;
 // There are 3 kinds of traces, one for cpu trace, one for memory trace, one for builtin trace.
 
 // 1. Main(CPU) trace.
-// There are 70 columns in cpu trace.
+// There are 76 columns in cpu trace.
 //
 // Context related columns(12):
 // ┌───────┬───────┬──────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬
@@ -88,7 +88,7 @@ pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
 pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
 
-// Program consistence relate columns:
+// Program consistence relate columns(6):
 // ┬──────────┬────────┬──────────┬──────────┬─────────────┬──────────────┐
 // │ raw_inst │ raw_pc │ zip_raw  │ zip_exed │ per_zip_raw │ pre_zip_exed |
 // ┼──────────┼────────┼──────────┼──────────┼─────────────┼──────────────|
