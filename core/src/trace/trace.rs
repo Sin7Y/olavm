@@ -91,6 +91,8 @@ pub struct MemoryTraceCell {
     pub region_poseidon: GoldilocksField,
     pub region_ecdsa: GoldilocksField,
     pub value: GoldilocksField,
+    pub filter_looking_rc: GoldilocksField,
+    pub rc_value: GoldilocksField,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -144,6 +146,7 @@ pub struct RangeCheckRow {
     pub val: GoldilocksField,
     pub limb_lo: GoldilocksField,
     pub limb_hi: GoldilocksField,
+    pub filter_looked_for_memory: GoldilocksField,
 }
 
 //#[derive(Debug, Clone, Serialize, Deserialize)]
@@ -233,8 +236,10 @@ pub struct CmpRow {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
+    //(inst_asm_str, imm_flag, step, inst_encode, imm_val)
+    pub instructions: HashMap<u64, (String, u8, u64, GoldilocksField, GoldilocksField)>,
     pub raw_instructions: HashMap<u64, Instruction>,
-    pub raw_binary_instructions: Vec<(String, Option<String>)>,
+    pub raw_binary_instructions: Vec<String>,
     // todo need limit the trace size
     pub exec: Vec<Step>,
     pub memory: Vec<MemoryTraceCell>,
@@ -390,12 +395,17 @@ impl Trace {
     }*/
 
     // added by xb
-    pub fn insert_rangecheck(&mut self, input: GoldilocksField) {
+    pub fn insert_rangecheck(
+        &mut self,
+        input: GoldilocksField,
+        filter_looked_for_memory: GoldilocksField,
+    ) {
         let split_limbs = split_u16_limbs_from_field(&input);
         self.builtin_rangecheck.push(RangeCheckRow {
             val: input,
             limb_lo: GoldilocksField(split_limbs.0),
             limb_hi: GoldilocksField(split_limbs.1),
+            filter_looked_for_memory,
         });
     }
 

@@ -10,7 +10,7 @@ license = "MIT"
 
 
 [[bin]]
-name = "client"
+name = "ola"
 path = "src/main.rs"
 bench = false
 doctest = false
