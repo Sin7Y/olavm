@@ -92,12 +92,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let addr = lv[COL_MEM_ADDR];
         let nv_diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
         let nv_addr = nv[COL_MEM_ADDR];
+        let diff_addr = lv[COL_MEM_DIFF_ADDR];
         let nv_diff_addr = nv[COL_MEM_DIFF_ADDR];
         let rw_addr_unchanged = lv[COL_MEM_RW_ADDR_UNCHANGED];
         let nv_rw_addr_unchanged = nv[COL_MEM_RW_ADDR_UNCHANGED];
         let diff_addr_cond = lv[COL_MEM_DIFF_ADDR_COND];
         let value = lv[COL_MEM_VALUE];
         let nv_value = lv[COL_MEM_VALUE];
+        let diff_clk = lv[COL_MEM_DIFF_CLK];
+        let rc_value = lv[COL_MEM_RC_VALUE];
 
         let op_mload = P::Scalar::from_canonical_u64(2_u64.pow(25));
         let op_mstore = P::Scalar::from_canonical_u64(2_u64.pow(24));
@@ -164,6 +167,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         yield_constr.constraint_first_row(P::ONES - is_write);
         yield_constr.constraint_transition((nv_addr - addr) * (P::ONES - nv_is_write));
         yield_constr.constraint_transition((P::ONES - nv_is_write) * (nv_value - value));
+
+        // rc_value constraint:
+        yield_constr.constraint(is_rw * (diff_addr + diff_clk - rc_value));
+        yield_constr.constraint((P::ONES - is_rw) * (diff_addr_cond - rc_value));
     }
 
     fn eval_ext_circuit(

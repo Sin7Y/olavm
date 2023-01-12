@@ -160,6 +160,9 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             row[COL_MEM_REGION_POSEIDON] =
                 F::from_canonical_u64(c.region_poseidon.to_canonical_u64());
             row[COL_MEM_REGION_ECDSA] = F::from_canonical_u64(c.region_ecdsa.to_canonical_u64());
+            row[COL_MEM_RC_VALUE] = F::from_canonical_u64(c.rc_value.to_canonical_u64());
+            row[COL_MEM_FILTER_LOOKING_RC] =
+                F::from_canonical_u64(c.filter_looking_rc.to_canonical_u64());
             row
         })
         .collect();
@@ -185,6 +188,8 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
         dummy_row[COL_MEM_REGION_PROPHET] = F::ONE;
         dummy_row[COL_MEM_REGION_POSEIDON] = F::ZERO;
         dummy_row[COL_MEM_REGION_ECDSA] = F::ZERO;
+        dummy_row[COL_MEM_RC_VALUE] = F::ZERO;
+        dummy_row[COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
         trace.push(dummy_row);
     };
 
@@ -228,6 +233,8 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             padded_row[COL_MEM_REGION_PROPHET] = F::ONE;
             padded_row[COL_MEM_REGION_POSEIDON] = F::ZERO;
             padded_row[COL_MEM_REGION_ECDSA] = F::ZERO;
+            padded_row[COL_MEM_RC_VALUE] = F::ZERO;
+            padded_row[COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
 
             trace.push(padded_row);
             addr += F::ONE;
