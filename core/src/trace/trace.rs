@@ -147,6 +147,8 @@ pub struct RangeCheckRow {
     pub limb_lo: GoldilocksField,
     pub limb_hi: GoldilocksField,
     pub filter_looked_for_memory: GoldilocksField,
+    pub filter_looked_for_cpu: GoldilocksField,
+    pub filter_looked_for_comparison: GoldilocksField,
 }
 
 //#[derive(Debug, Clone, Serialize, Deserialize)]
@@ -288,7 +290,7 @@ impl Trace {
     }*/
 
     // Added by xb 2022-12-19
-    pub fn insert_cmp(&mut self, op0: GoldilocksField, op1: GoldilocksField) {
+    pub fn insert_cmp(&mut self, op0: GoldilocksField, op1: GoldilocksField, tag: u32) {
         let mut diff = Default::default();
 
         diff = op0 - op1;
@@ -397,14 +399,17 @@ impl Trace {
     pub fn insert_rangecheck(
         &mut self,
         input: GoldilocksField,
-        filter_looked_for_memory: GoldilocksField,
+        //tuple.0 for memory, tuple.1 for cpu, tuple.2 for cmp,
+        filter_looked_for_memory_cpu_cmp: (GoldilocksField, GoldilocksField, GoldilocksField),
     ) {
         let split_limbs = split_u16_limbs_from_field(&input);
         self.builtin_rangecheck.push(RangeCheckRow {
             val: input,
             limb_lo: GoldilocksField(split_limbs.0),
             limb_hi: GoldilocksField(split_limbs.1),
-            filter_looked_for_memory,
+            filter_looked_for_memory: filter_looked_for_memory_cpu_cmp.0,
+            filter_looked_for_cpu: filter_looked_for_memory_cpu_cmp.1,
+            filter_looked_for_comparison: filter_looked_for_memory_cpu_cmp.2,
         });
     }
 
