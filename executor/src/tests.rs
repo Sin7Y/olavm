@@ -5,6 +5,7 @@ use log::debug;
 use serde_json::Value;
 use std::fs::File;
 use std::io::Write;
+use std::time::Instant;
 
 #[test]
 fn fibo_use_loop() {
@@ -379,4 +380,153 @@ fn call_test() {
 
     let mut file = File::create("call_trace.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn fibo_use_loop_memory_decode() {
+    //2 0 mov r0 1
+    //2 2 mov r2 1
+    //2 4 mstore 128 r0
+    //2 6 mstore 135 r0
+    //2 8 mov r0 test_loop
+    //2 10 mov r3 0
+    //1 12 EQ r0 r3
+    //2 13 cjmp 30
+    //2 15 mload  r1  128
+    //1 17 assert r1  r2
+    //2 18 mload  r2  135
+    //1 20 add r4 r1 r2
+    //2 21 mstore 128 r2
+    //2 23 mstore 135 r4
+    //2 25 mov r4 1
+    //1 27 add r3 r3 r4
+    //2 28 jmp 12
+    //1 30 range_check r3
+    //1 31 end
+    let program_src = format!(
+        "0x4000000840000000
+        0x1
+         0x4000002040000000
+        0x1
+        0x4020000001000000
+        0x80
+        0x4020000001000000
+        0x87
+        0x4000000840000000
+        {:#x}
+        0x4000004040000000
+        0x0
+        0x0020800100000000
+        0x4000000010000000
+        0x1e
+        0x4000001002000000
+        0x80
+        0x0040400080000000
+        0x4000002002000000
+        0x87
+        0x0040408400000000
+        0x4080000001000000
+        0x80
+        0x4200000001000000
+        0x87
+        0x4000008040000000
+        0x1
+        0x0101004400000000
+        0x4000000020000000
+        0xc
+        0x0000800000400000
+        0x0000000000800000",
+        8
+    );
+    debug!("program_src:{:?}", program_src);
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    let start = Instant::now();
+    process.execute(&mut program, true);
+    let exec_time = start.elapsed();
+    println!(
+        "exec_time: {}, exec steps: {}",
+        exec_time.as_millis(),
+        program.trace.exec.len()
+    );
+    process.gen_memory_table(&mut program);
+
+    println!(
+        "vm trace steps: {:?}, memory len: {}",
+        program.trace.exec.len(),
+        program.trace.memory.len()
+    );
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("fibo_memory.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn fibo_use_loop_decode_bench() {
+    // mov r0 8
+    // mov r1 1
+    // mov r2 1
+    // mov r3 0
+    // EQ r0 r3
+    // cjmp 19
+    // add r4 r1 r2
+    // mov r1 r2
+    // mov r2 r4
+    // mov r4 1
+    // add r3 r3 r4
+    // jmp 8
+    // end
+    let program_src = "0x4000000840000000
+        0x100000
+        0x4000001040000000
+        0x1
+        0x4000002040000000
+        0x1
+        0x4000004040000000
+        0x0
+        0x0020800100000000
+        0x4000000010000000
+        0x13
+        0x0040408400000000
+        0x0000401040000000
+        0x0001002040000000
+        0x4000008040000000
+        0x1
+        0x0101004400000000
+        0x4000000020000000
+        0x8
+        0x0000000000800000";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    let start = Instant::now();
+    process.execute(&mut program, true);
+    let exec_time = start.elapsed();
+    println!(
+        "exec_time: {}, exec steps: {}",
+        exec_time.as_secs(),
+        program.trace.exec.len()
+    );
 }
