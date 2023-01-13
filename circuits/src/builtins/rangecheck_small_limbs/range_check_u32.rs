@@ -102,6 +102,7 @@ mod tests {
     use crate::util::trace_rows_to_poly_values;
     use crate::verifier::verify_proof;
     use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2::field::types::Field;
     use plonky2::fri::reduction_strategies::FriReductionStrategy;
     use plonky2::fri::FriConfig;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
