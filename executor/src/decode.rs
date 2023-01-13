@@ -3,7 +3,7 @@ use crate::{GoldilocksField, FP_REG_INDEX};
 use core::program::instruction::{Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub};
 use log::{debug, info};
 use std::fmt::Display;
-use std::num::ParseIntError;
+//use std::num::ParseIntError;
 
 pub const SEL_REG0_INDEX: u64 = 0x1;
 pub const SEL_REG1_INDEX: u64 = 0x2;

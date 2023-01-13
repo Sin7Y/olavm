@@ -160,11 +160,15 @@ class MemoryTraceColumnType(Enum):
     RC_VALUE = 'rc_value'
     FILTER_LOOKING_RC = 'filter_looking_rc'
 
+
 class RangeCheckTraceColumnType(Enum):
     VAL = 'val'
     LIMB_LO = 'limb_lo'
     LIMB_HI = 'limb_hi'
     FILTER_LOOKED_FOR_MEMORY = 'filter_looked_for_memory'
+    FILTER_LOOKED_FOR_CPU = 'filter_looked_for_cpu'
+    FILTER_LOOKED_FOR_CMP = 'filter_looked_for_comparison'
+
 
 class BitwiseTraceColumnType(Enum):
     BITWISE_TAG = 'bitwise_tag'
@@ -186,11 +190,12 @@ class BitwiseTraceColumnType(Enum):
 
 
 class ComparisonTraceColumnType(Enum):
-    TAG = 'tag'
     OP0 = 'op0'
     OP1 = 'op1'
     DIFF = 'diff'
-
+    DIFF_LIMB_LO = 'diff_limb_lo'
+    DIFF_LIMB_HI = 'diff_limb_hi'
+    FILTER_LOOKED_FOR_RANGE_CHECK = 'filter_looked_for_range_check'
 
 
 def generate_columns_of_title(worksheet, trace_column_title):
@@ -324,7 +329,7 @@ def main():
                     worksheet.write(row_index, col, reg)
                     col += 1
             elif data.value == 'asm':
-                print(trace_json["raw_instructions"]['{0}'.format(row["pc"])])
+                # print(trace_json["raw_instructions"]['{0}'.format(row["pc"])])
                 worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
                 col += 1
             else:

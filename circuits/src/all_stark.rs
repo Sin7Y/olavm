@@ -1,4 +1,4 @@
-use std::iter;
+//use std::iter;
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
@@ -6,21 +6,20 @@ use plonky2::hash::hash_types::RichField;
 
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
-use crate::builtins::rangecheck::rangecheck_stark::{
-    self, ctl_data_rc, ctl_filter_rc, RangeCheckStark,
-};
+use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
 use crate::config::StarkConfig;
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
-use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{self, BitwiseFixedStark};
-use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{self, RangecheckFixedStark};
+//use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{self, BitwiseFixedStark};
+//use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{self, RangecheckFixedStark};
 use crate::memory::{
     ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_addr, ctl_data_mem_rc_diff_clk,
     ctl_data_mem_rc_diff_cond, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_addr,
     ctl_filter_mem_rc_diff_clk, ctl_filter_mem_rc_diff_cond, MemoryStark,
 };
-use crate::program::program_stark::{self, ProgramStark};
+//use crate::program::program_stark::{self, ProgramStark};
+use crate::program::program_stark::{self};
 use crate::stark::Stark;
 
 #[derive(Clone)]
@@ -143,7 +142,11 @@ fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
         Some(ctl_filter_mem_rc_diff_clk()),
     );
     let all_mem_rc_lookers = vec![mem_rc_diff_cond, mem_rc_diff_addr, mem_rc_diff_clk];
-    let rc_looked = TableWithColumns::new(Table::RangeCheck, ctl_data_rc(), Some(ctl_filter_rc()));
+    let rc_looked = TableWithColumns::new(
+        Table::RangeCheck,
+        rangecheck_stark::ctl_data_memory(),
+        Some(rangecheck_stark::ctl_filter_memory()),
+    );
     CrossTableLookup::new(all_mem_rc_lookers, rc_looked, None)
 }
 
@@ -243,7 +246,7 @@ fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-/*fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
+fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::RangeCheck,
@@ -257,7 +260,7 @@ fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
         ),
         None,
     )
-}*/
+}
 
 // add Rangecheck cross lookup instance
 fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
@@ -340,29 +343,31 @@ fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
 }
 
 mod tests {
-    use std::borrow::BorrowMut;
+    //use std::borrow::BorrowMut;
 
     use anyhow::Result;
-    use ethereum_types::U256;
-    use itertools::Itertools;
-    // use crate::cross_table_lookup::testutils::check_ctls;
-    use crate::verifier::verify_proof;
+    //use ethereum_types::U256;
+    //use itertools::Itertools;
+    //use crate::cross_table_lookup::testutils::check_ctls;
+    //use crate::verifier::verify_proof;
     use core::program::Program;
-    use core::trace::trace::Trace;
+    //use core::trace::trace::Trace;
     use executor::Process;
     use log::debug;
     use plonky2::field::polynomial::PolynomialValues;
-    use plonky2::field::types::{Field, PrimeField64};
-    use plonky2::iop::witness::PartialWitness;
-    use plonky2::plonk::circuit_builder::CircuitBuilder;
-    use plonky2::plonk::circuit_data::{CircuitConfig, VerifierCircuitData};
+    //use plonky2::field::types::{Field, PrimeField64};
+    //use plonky2::field::types::*;
+    //use plonky2::iop::witness::PartialWitness;
+    //use plonky2::plonk::circuit_builder::CircuitBuilder;
+    //use plonky2::plonk::circuit_data::{CircuitConfig, VerifierCircuitData};
+    //use plonky2::plonk::circuit_data::*;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
-    use rand::{thread_rng, Rng};
+    //use rand::*;
     // use serde_json::Value;
-    use crate::all_stark::{AllStark, NUM_TABLES};
+    use crate::all_stark::AllStark;
     use crate::config::StarkConfig;
-    use crate::cpu::cpu_stark::CpuStark;
+    //use crate::cpu::cpu_stark::CpuStark;
     use crate::proof::{AllProof, PublicValues};
     use crate::prover::prove_with_traces;
     use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
@@ -403,7 +408,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
 
         println!("cpu rows: {:?}", cpu_rows);
 
@@ -442,7 +448,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
 
         println!("cpu rows: {:?}", cpu_rows);
         trace_rows_to_poly_values(cpu_rows)
