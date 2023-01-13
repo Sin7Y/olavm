@@ -20,7 +20,7 @@ impl StarkConfig {
             security_bits: 100,
             num_challenges: 2,
             fri_config: FriConfig {
-                rate_bits: 1,
+                rate_bits: 3,
                 cap_height: 4,
                 proof_of_work_bits: 16,
                 reduction_strategy: FriReductionStrategy::ConstantArityBits(4, 5),

@@ -86,12 +86,12 @@ pub enum Table {
     Program = 7,
 }
 
-pub(crate) const NUM_TABLES: usize = Table::RangeCheck as usize + 1;
+pub(crate) const NUM_TABLES: usize = 5;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     // TODO:
-    vec![]
+    vec![ctl_cpu_memory(), ctl_bitwise_cpu(), ctl_cmp_cpu(), ctl_rangecheck_cpu()]
 }
 
 fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
@@ -343,85 +343,51 @@ fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
 }
 
 mod tests {
-    //use std::borrow::BorrowMut;
-
-    use anyhow::Result;
-    //use ethereum_types::U256;
-    //use itertools::Itertools;
-    //use crate::cross_table_lookup::testutils::check_ctls;
-    //use crate::verifier::verify_proof;
+    use std::borrow::BorrowMut;
+    use std::time::{SystemTime, UNIX_EPOCH};
+    use crate::stark::Stark;
+    use anyhow::{Ok, Result};
+    use ethereum_types::U256;
+    use itertools::Itertools;
+    use plonky2::fri::oracle::PolynomialBatch;
+    use plonky2::iop::challenger::Challenger;
+    use crate::verifier::verify_proof;
     use core::program::Program;
     //use core::trace::trace::Trace;
     use executor::Process;
     use log::debug;
     use plonky2::field::polynomial::PolynomialValues;
-    //use plonky2::field::types::{Field, PrimeField64};
-    //use plonky2::field::types::*;
-    //use plonky2::iop::witness::PartialWitness;
-    //use plonky2::plonk::circuit_builder::CircuitBuilder;
-    //use plonky2::plonk::circuit_data::{CircuitConfig, VerifierCircuitData};
-    //use plonky2::plonk::circuit_data::*;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::field::types::{Field, PrimeField64};
+    use plonky2::iop::witness::PartialWitness;
+    use plonky2::plonk::circuit_builder::CircuitBuilder;
+    use plonky2::plonk::circuit_data::{CircuitConfig, VerifierCircuitData};
+    use plonky2::plonk::config::{GenericConfig, Hasher, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
     //use rand::*;
     // use serde_json::Value;
     use crate::all_stark::AllStark;
     use crate::config::StarkConfig;
-    //use crate::cpu::cpu_stark::CpuStark;
-    use crate::proof::{AllProof, PublicValues};
-    use crate::prover::prove_with_traces;
-    use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
+    use crate::cpu::cpu_stark::CpuStark;
+    use crate::proof::{AllProof, PublicValues, StarkProof};
+    use crate::prover::{prove_single_table, prove_with_traces};
+    use crate::util::{
+        generate_builtins_bitwise_trace, generate_cpu_trace, generate_memory_trace,
+        trace_rows_to_poly_values, generate_builtins_cmp_trace, generate_builtins_rangecheck_trace,
+    };
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
+    type S = dyn Stark<F, D>;
 
-    fn fibo_use_loop() -> Vec<PolynomialValues<F>> {
-        let program_src = "mov r0 8
-            mov r1 1
-            mov r2 1
-            mov r3 0
-            EQ r0 r3
-            cjmp 12
-            add r4 r1 r2
-            mov r1 r2
-            mov r2 r4
-            mov r4 1
-            sub r0 r0 r4
-            jmp 4
-            end
-            ";
-
-        let instructions = program_src.split('\n');
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
-        }
-
-        let mut process = Process::new();
-        process.execute(&mut program, false);
-
-        println!("vm trace: {:?}", program.trace);
-
-        let cpu_rows =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-
-        println!("cpu rows: {:?}", cpu_rows);
-
-        trace_rows_to_poly_values(cpu_rows)
-    }
-
-    fn add_mul_decode() -> Vec<PolynomialValues<F>> {
+    #[test]
+    fn add_mul_decode() -> Result<()> {
         //mov r0 8
         //mov r1 2
         //mov r2 3
         //add r3 r0 r1
         //mul r4 r3 r2
+        //end
         let program_src = "0x4000000840000000
             0x8
             0x4000001040000000
@@ -430,7 +396,7 @@ mod tests {
             0x3
             0x0020204400000000
             0x0100408200000000
-            ";
+            0x0000000000800000";
 
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
@@ -445,31 +411,20 @@ mod tests {
 
         let mut process = Process::new();
         process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-
-        println!("cpu rows: {:?}", cpu_rows);
-        trace_rows_to_poly_values(cpu_rows)
-    }
-
-    fn make_cpu_trace() -> Vec<PolynomialValues<F>> {
-        // add_mul_decode()
-        fibo_use_loop()
-    }
-
-    fn get_proof(config: &StarkConfig) -> Result<(AllStark<F, D>, AllProof<F, C, D>)> {
-        let all_stark = AllStark::default();
-        let cpu_trace = make_cpu_trace();
-        let memory_rows: Vec<[F; 1]> = vec![];
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows: Vec<[F; 1]> = vec![];
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows: Vec<[F; 1]> = vec![];
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows: Vec<[F; 1]> = vec![];
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
         let traces = [
             cpu_trace,
@@ -478,80 +433,592 @@ mod tests {
             cmp_trace,
             rangecheck_trace,
         ];
-        // check_ctls(&traces, &all_stark.cross_table_lookups);
 
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
         let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
-            config,
+            &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
-
-        Ok((all_stark, proof))
-    }
-
-    #[test]
-    #[ignore] // Ignoring but not deleting so the test can serve as an API usage example
-    fn test_all_stark() -> Result<()> {
-        let config = StarkConfig::standard_fast_config();
-        let (all_stark, proof) = get_proof(&config)?;
         verify_proof(all_stark, proof, &config)
     }
 
-    // #[test]
-    // #[ignore] // Ignoring but not deleting so the test can serve as an API usage example
-    // fn test_all_stark_recursive_verifier() -> Result<()> {
-    //     init_logger();
+    #[test]
+    fn fibo_use_loop_decode() -> Result<()> {
+        // mov r0 8
+        // mov r1 1
+        // mov r2 1
+        // mov r3 0
+        // EQ r0 r3
+        // cjmp 19
+        // add r4 r1 r2
+        // mov r1 r2
+        // mov r2 r4
+        // mov r4 1
+        // add r3 r3 r4
+        // jmp 8
+        // end
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x1
+            0x4000002040000000
+            0x1
+            0x4000004040000000
+            0x0
+            0x0020800100000000
+            0x4000000010000000
+            0x13
+            0x0040408400000000
+            0x0000401040000000
+            0x0001002040000000
+            0x4000008040000000
+            0x1
+            0x0101004400000000
+            0x4000000020000000
+            0x8
+            0x0000000000800000";
 
-    //     let config = StarkConfig::standard_fast_config();
-    //     let (all_stark, proof) = get_proof(&config)?;
-    //     verify_proof(all_stark.clone(), proof.clone(), &config)?;
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
 
-    //     recursive_proof(all_stark, proof, &config)
-    // }
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
 
-    // fn recursive_proof(
-    //     inner_all_stark: AllStark<F, D>,
-    //     inner_proof: AllProof<F, C, D>,
-    //     inner_config: &StarkConfig,
-    // ) -> Result<()> {
-    //     let circuit_config = CircuitConfig::standard_recursion_config();
-    //     let recursive_all_proof = recursively_verify_all_proof(
-    //         &inner_all_stark,
-    //         &inner_proof,
-    //         inner_config,
-    //         &circuit_config,
-    //     )?;
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
 
-    //     let verifier_data: [VerifierCircuitData<F, C, D>; NUM_TABLES] =
-    //         all_verifier_data_recursive_stark_proof(
-    //             &inner_all_stark,
-    //             inner_proof.degree_bits(inner_config),
-    //             inner_config,
-    //             &circuit_config,
-    //         );
-    //     let circuit_config = CircuitConfig::standard_recursion_config();
-    //     let mut builder = CircuitBuilder::<F, D>::new(circuit_config);
-    //     let mut pw = PartialWitness::new();
-    //     let recursive_all_proof_target =
-    //         add_virtual_recursive_all_proof(&mut builder, &verifier_data);
-    //     set_recursive_all_proof_target(&mut pw, &recursive_all_proof_target, &recursive_all_proof);
-    //     RecursiveAllProof::verify_circuit(
-    //         &mut builder,
-    //         recursive_all_proof_target,
-    //         &verifier_data,
-    //         inner_all_stark.cross_table_lookups,
-    //         inner_config,
-    //     );
+        println!("vm trace: {:?}", program.trace);
 
-    //     let data = builder.build::<C>();
-    //     let proof = data.prove(pw)?;
-    //     data.verify(proof)
-    // }
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        let traces = [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ];
 
-    fn init_logger() {
-        let _ = env_logger::builder().format_timestamp(None).try_init();
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
     }
+
+    #[test]
+    fn memory_test() -> Result<()> {
+        // mov r0 8
+        // mstore  0x100 r0
+        // mov r1 2
+        // mstore  0x200 r1
+        // mov r0 20
+        // mload r1 0x100
+        // mload r2 0x200
+        // mload r3 0x200
+        // add r0 r1 r1
+        // end
+        let program_src = "0x4000000840000000
+                            0x8
+                            0x4020000001000000
+                            0x100
+                            0x4000001040000000
+                            0x2
+                            0x4040000001000000
+                            0x200
+                            0x4000000840000000
+                            0x14
+                            0x4000001002000000
+                            0x100
+                            0x4000002002000000
+                            0x200
+                            0x4000004002000000
+                            0x200
+                            0x0040200c00000000
+                            0x0000000000800000";
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
+
+        println!("vm trace: {:?}", program.trace);
+
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        let traces = [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
+    }
+
+    #[test]
+    fn call_test() -> Result<()> {
+        //JMP 7
+        //MUL r4 r0 10
+        //ADD r4 r4 r1
+        //MOV r0 r4
+        //RET
+        //MOV r0 8
+        //MOV r1 2
+        //mov r8 0x100010000
+        //add r7 r8 -2
+        //mov r6 0x100000000
+        //mstore r7 r6
+        //CALL 2
+        //ADD r0 r0 r1
+        //END
+        let program_src = "0x4000000020000000
+                                0x7
+                            0x4020008200000000
+                            0xa
+                            0x0200208400000000
+                            0x0001000840000000
+                            0x0000000004000000
+                            0x4000000840000000
+                            0x8
+                            0x4000001040000000
+                            0x2
+                            0x4000080040000000
+                            0x100010000
+                            0x6000040400000000
+                            0xfffffffeffffffff
+                            0x4000020040000000
+                            0x100000000
+                            0x0808000001000000
+                            0x4000000008000000
+                            0x2
+                            0x0020200c00000000
+                            0x0000000000800000";
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
+
+        println!("vm trace: {:?}", program.trace);
+
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        let traces = [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
+    }
+
+    #[test]
+    fn range_check_test() -> Result<()> {
+        //mov r0 8
+        //mov r1 2
+        //mov r2 3
+        //add r3 r0 r1
+        //mul r4 r3 r2
+        //range_check r4
+        //end
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x2
+            0x4000002040000000
+            0x3
+            0x0020204400000000
+            0x0100408200000000
+            0x0001000000400000
+            0x0000000000800000";
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
+
+        println!("vm trace: {:?}", program.trace);
+
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        let traces = [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
+    }
+
+    fn timestamp() -> i64 {
+        let start = SystemTime::now();
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        let ms = since_the_epoch.as_secs() as i64 * 1000i64 + (since_the_epoch.subsec_nanos() as f64 / 1_000_000.0) as i64;
+        ms
+    }
+
+    #[test]
+    fn bitwise_test() -> Result<()> {
+        //mov r0 8
+        //mov r1 2
+        //mov r2 3
+        //add r3 r0 r1
+        //mul r4 r3 r2
+        //and r5 r4 r3
+        //end
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x2
+            0x4000002040000000
+            0x3
+            0x0020204400000000
+            0x0100408200000000
+            0x0200810000200000
+            0x0000000000800000";
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
+
+        println!("vm trace: {:?}", program.trace);
+
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        let traces = [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
+    }
+
+    #[test]
+    fn comparison_test() -> Result<()> {
+        //mov r0 8
+        //mov r1 2
+        //mov r2 3
+        //add r3 r0 r1
+        //mul r4 r3 r2
+        //gte r4 r3
+        //end
+        let program_src = "0x4000000840000000
+            0x8
+            0x4000001040000000
+            0x2
+            0x4000002040000000
+            0x3
+            0x0020204400000000
+            0x0100408200000000
+            0x0200800000010000
+            0x0000000000800000";
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
+
+        println!("vm trace: {:?}", program.trace);
+
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        let traces = [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
+    }
+
+    #[test]
+fn fibo_use_loop_memory_decode() -> Result<()> {
+    //2 0 mov r0 1
+    //2 2 mov r2 1
+    //2 4 mstore 128 r0
+    //2 6 mstore 135 r0
+    //2 8 mov r0 test_loop
+    //2 10 mov r3 0
+    //1 12 EQ r0 r3
+    //2 13 cjmp 30
+    //2 15 mload  r1  128
+    //1 17 assert r1  r2
+    //2 18 mload  r2  135
+    //1 20 add r4 r1 r2
+    //2 21 mstore 128 r2
+    //2 23 mstore 135 r4
+    //2 25 mov r4 1
+    //1 27 add r3 r3 r4
+    //2 28 jmp 12
+    //1 30 range_check r3
+    //1 31 end
+    let program_src = format!(
+        "0x4000000840000000
+        0x1
+         0x4000002040000000
+        0x1
+        0x4020000001000000
+        0x80
+        0x4020000001000000
+        0x87
+        0x4000000840000000
+        {:#x}
+        0x4000004040000000
+        0x0
+        0x0020800100000000
+        0x4000000010000000
+        0x1e
+        0x4000001002000000
+        0x80
+        0x0040400080000000
+        0x4000002002000000
+        0x87
+        0x0040408400000000
+        0x4080000001000000
+        0x80
+        0x4200000001000000
+        0x87
+        0x4000008040000000
+        0x1
+        0x0101004400000000
+        0x4000000020000000
+        0xc
+        0x0000800000400000
+        0x0000000000800000",
+        8 // 200~300, 0x20000 == 100 w
+    );
+
+    debug!("program_src:{:?}", program_src);
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program, true);
+    process.gen_memory_table(&mut program);
+
+    let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+    let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+    let memory_trace = trace_rows_to_poly_values(memory_rows);
+    let bitwise_rows =
+        generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+    let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+    let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+    let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+    let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+    let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+    let traces = [
+        cpu_trace,
+        memory_trace,
+        bitwise_trace,
+        cmp_trace,
+        rangecheck_trace,
+    ];
+
+    let all_stark = AllStark::default();
+    let config = StarkConfig::standard_fast_config();
+    let public_values = PublicValues::default();
+    let proof = prove_with_traces::<F, C, D>(
+        &all_stark,
+        &config,
+        traces,
+        public_values,
+        &mut TimingTree::default(),
+    )?;
+    verify_proof(all_stark, proof, &config)
+}
 }
