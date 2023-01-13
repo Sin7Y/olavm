@@ -1,6 +1,5 @@
 use {
-    super::*,
-    crate::columns::*,
+    super::{columns::*, *},
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
     crate::cross_table_lookup::Column,
     crate::lookup::eval_lookups,
