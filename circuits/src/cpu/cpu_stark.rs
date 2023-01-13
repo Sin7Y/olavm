@@ -369,10 +369,10 @@ mod tests {
 
     use super::*;
     use crate::util::generate_cpu_trace;
-    use core::program::{Program};
+    use core::program::Program;
     use executor::Process;
     use plonky2::{
-        field::{goldilocks_field::GoldilocksField},
+        field::goldilocks_field::GoldilocksField,
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
     use plonky2_util::log2_strict;

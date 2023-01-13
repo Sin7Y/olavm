@@ -327,7 +327,7 @@ mod tests {
     use crate::stark::Stark;
     use crate::util::generate_memory_trace;
     use crate::vars::StarkEvaluationVars;
-    use core::program::{Program};
+    use core::program::Program;
     use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
