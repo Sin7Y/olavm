@@ -1,5 +1,3 @@
-use crate::columns::*;
-//use crate::fixed_table::bitwise_fixed::columns::COL_NUM;
 use core::program::{instruction::Opcode, REGISTER_NUM};
 use core::trace::trace::*;
 
@@ -11,7 +9,9 @@ use std::ops::Sub;
 use crate::builtins::bitwise::columns::{self as bitwise};
 use crate::builtins::cmp::columns as cmp;
 use crate::builtins::rangecheck::columns as rangecheck;
+use crate::cpu::columns::{self as cpu};
 use crate::lookup::*;
+use crate::memory::columns::{self as memory};
 use ethereum_types::{H160, H256, U256};
 use itertools::Itertools;
 use plonky2::field::extension::Extendable;
@@ -26,7 +26,7 @@ use plonky2::util::transpose;
 pub fn generate_cpu_trace<F: RichField>(
     steps: &Vec<Step>,
     raw_instructions: &Vec<String>,
-) -> Vec<[F; NUM_CPU_COLS]> {
+) -> Vec<[F; cpu::NUM_CPU_COLS]> {
     let mut raw_insts: Vec<(usize, F)> = raw_instructions
         .iter()
         .enumerate()
@@ -46,108 +46,108 @@ pub fn generate_cpu_trace<F: RichField>(
         steps.resize(raw_instructions.len(), steps.last().unwrap().to_owned());
     }
 
-    let mut trace: Vec<[F; NUM_CPU_COLS]> = steps
+    let mut trace: Vec<[F; cpu::NUM_CPU_COLS]> = steps
         .iter()
         .zip(raw_insts.iter())
         .map(|(s, r)| {
-            let mut row: [F; NUM_CPU_COLS] = [F::default(); NUM_CPU_COLS];
+            let mut row: [F; cpu::NUM_CPU_COLS] = [F::default(); cpu::NUM_CPU_COLS];
 
             // Context related columns.
-            row[COL_CLK] = F::from_canonical_u32(s.clk);
-            row[COL_PC] = F::from_canonical_u64(s.pc);
-            row[COL_FLAG] = F::from_canonical_u32(s.flag as u32);
+            row[cpu::COL_CLK] = F::from_canonical_u32(s.clk);
+            row[cpu::COL_PC] = F::from_canonical_u64(s.pc);
+            row[cpu::COL_FLAG] = F::from_canonical_u32(s.flag as u32);
             for i in 0..REGISTER_NUM {
-                row[COL_START_REG + i] = F::from_canonical_u64(s.regs[i].0);
+                row[cpu::COL_START_REG + i] = F::from_canonical_u64(s.regs[i].0);
             }
 
             // Instruction related columns.
-            row[COL_INST] = F::from_canonical_u64(s.instruction.0);
-            row[COL_OP1_IMM] = F::from_canonical_u64(s.op1_imm.0);
-            row[COL_OPCODE] = F::from_canonical_u64(s.opcode.0);
-            row[COL_IMM_VAL] = F::from_canonical_u64(s.immediate_data.0);
+            row[cpu::COL_INST] = F::from_canonical_u64(s.instruction.0);
+            row[cpu::COL_OP1_IMM] = F::from_canonical_u64(s.op1_imm.0);
+            row[cpu::COL_OPCODE] = F::from_canonical_u64(s.opcode.0);
+            row[cpu::COL_IMM_VAL] = F::from_canonical_u64(s.immediate_data.0);
 
             // Selectors of register related columns.
-            row[COL_OP0] = F::from_canonical_u64(s.register_selector.op0.0);
-            row[COL_OP1] = F::from_canonical_u64(s.register_selector.op1.0);
-            row[COL_DST] = F::from_canonical_u64(s.register_selector.dst.0);
-            row[COL_AUX0] = F::from_canonical_u64(s.register_selector.aux0.0);
-            row[COL_AUX1] = F::from_canonical_u64(s.register_selector.aux1.0);
+            row[cpu::COL_OP0] = F::from_canonical_u64(s.register_selector.op0.0);
+            row[cpu::COL_OP1] = F::from_canonical_u64(s.register_selector.op1.0);
+            row[cpu::COL_DST] = F::from_canonical_u64(s.register_selector.dst.0);
+            row[cpu::COL_AUX0] = F::from_canonical_u64(s.register_selector.aux0.0);
+            row[cpu::COL_AUX1] = F::from_canonical_u64(s.register_selector.aux1.0);
             for i in 0..REGISTER_NUM {
-                row[COL_S_OP0_START + i] =
+                row[cpu::COL_S_OP0_START + i] =
                     F::from_canonical_u64(s.register_selector.op0_reg_sel[i].0);
-                row[COL_S_OP1_START + i] =
+                row[cpu::COL_S_OP1_START + i] =
                     F::from_canonical_u64(s.register_selector.op1_reg_sel[i].0);
-                row[COL_S_DST_START + i] =
+                row[cpu::COL_S_DST_START + i] =
                     F::from_canonical_u64(s.register_selector.dst_reg_sel[i].0);
             }
 
             // Selectors of opcode related columns.
             match s.opcode.0 {
                 o if u64::from(1_u64 << Opcode::ADD as u8) == o => {
-                    row[COL_S_ADD] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_ADD] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::MUL as u8) == o => {
-                    row[COL_S_MUL] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_MUL] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::EQ as u8) == o => {
-                    row[COL_S_EQ] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_EQ] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::ASSERT as u8) == o => {
-                    row[COL_S_ASSERT] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_ASSERT] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::MOV as u8) == o => {
-                    row[COL_S_MOV] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_MOV] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::JMP as u8) == o => {
-                    row[COL_S_JMP] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_JMP] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::CJMP as u8) == o => {
-                    row[COL_S_CJMP] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_CJMP] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::CALL as u8) == o => {
-                    row[COL_S_CALL] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_CALL] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::RET as u8) == o => {
-                    row[COL_S_RET] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_RET] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::MLOAD as u8) == o => {
-                    row[COL_S_MLOAD] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_MLOAD] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::MSTORE as u8) == o => {
-                    row[COL_S_MSTORE] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_MSTORE] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::END as u8) == o => {
-                    row[COL_S_END] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_END] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::RANGE_CHECK as u8) == o => {
-                    row[COL_S_RC] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_RC] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::AND as u8) == o => {
-                    row[COL_S_AND] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_AND] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::OR as u8) == o => {
-                    row[COL_S_OR] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_OR] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::XOR as u8) == o => {
-                    row[COL_S_XOR] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_XOR] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::NOT as u8) == o => {
-                    row[COL_S_NOT] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_NOT] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::NEQ as u8) == o => {
-                    row[COL_S_NEQ] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_NEQ] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::GTE as u8) == o => {
-                    row[COL_S_GTE] = F::from_canonical_u64(1)
+                    row[cpu::COL_S_GTE] = F::from_canonical_u64(1)
                 }
-                // o if u64::from(1_u64 << Opcode::PSDN as u8) == o => row[COL_S_PSDN] = F::from_canonical_u64(1),
-                // o if u64::from(1_u64 << Opcode::ECDSA as u8) == o => row[COL_S_ECDSA] = F::from_canonical_u64(1),
+                // o if u64::from(1_u64 << Opcode::PSDN as u8) == o => row[cpu::COL_S_PSDN] = F::from_canonical_u64(1),
+                // o if u64::from(1_u64 << Opcode::ECDSA as u8) == o => row[cpu::COL_S_ECDSA] = F::from_canonical_u64(1),
                 _ => panic!("unspported opcode!"),
             }
 
             // Raw program
-            row[COL_RAW_INST] = r.1;
-            row[COL_RAW_PC] = F::from_canonical_usize(r.0);
+            row[cpu::COL_RAW_INST] = r.1;
+            row[cpu::COL_RAW_PC] = F::from_canonical_usize(r.0);
 
             row
         })
@@ -158,7 +158,7 @@ pub fn generate_cpu_trace<F: RichField>(
         Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
     let mut raw_insts = vec![];
     trace.iter().for_each(|row| {
-        raw_insts.push(row[COL_RAW_INST]);
+        raw_insts.push(row[cpu::COL_RAW_INST]);
     });
     challenger.observe_elements(&raw_insts);
     let beta = challenger.get_challenge();
@@ -166,8 +166,8 @@ pub fn generate_cpu_trace<F: RichField>(
     // Compress raw_pc and raw_inst columns into one column: COL_ZIP_RAW.
     // Compress pc + inst columns into one column: COL_ZIP_EXED.
     trace.iter_mut().for_each(|row| {
-        row[COL_ZIP_RAW] = row[COL_RAW_INST] * beta + row[COL_RAW_PC];
-        row[COL_ZIP_EXED] = row[COL_INST] * beta + row[COL_PC];
+        row[cpu::COL_ZIP_RAW] = row[cpu::COL_RAW_INST] * beta + row[cpu::COL_RAW_PC];
+        row[cpu::COL_ZIP_EXED] = row[cpu::COL_INST] * beta + row[cpu::COL_PC];
     });
 
     // Pad trace to power of two, we use last row `END` to do it.
@@ -182,13 +182,15 @@ pub fn generate_cpu_trace<F: RichField>(
     let mut trace_col_vecs = transpose(&trace_row_vecs);
 
     // Permuate zip_raw and zip_exed column.
-    let (permuted_inputs, permuted_table) =
-        permuted_cols(&trace_col_vecs[COL_ZIP_EXED], &trace_col_vecs[COL_ZIP_RAW]);
-    trace_col_vecs[COL_PER_ZIP_EXED] = permuted_inputs;
-    trace_col_vecs[COL_PER_ZIP_RAW] = permuted_table;
+    let (permuted_inputs, permuted_table) = permuted_cols(
+        &trace_col_vecs[cpu::COL_ZIP_EXED],
+        &trace_col_vecs[cpu::COL_ZIP_RAW],
+    );
+    trace_col_vecs[cpu::COL_PER_ZIP_EXED] = permuted_inputs;
+    trace_col_vecs[cpu::COL_PER_ZIP_RAW] = permuted_table;
 
     let final_trace = transpose(&trace_col_vecs);
-    let trace_row_vecs: Vec<[F; NUM_CPU_COLS]> = final_trace
+    let trace_row_vecs: Vec<[F; cpu::NUM_CPU_COLS]> = final_trace
         .into_iter()
         .map(|row| row.try_into().unwrap())
         .collect();
@@ -196,33 +198,37 @@ pub fn generate_cpu_trace<F: RichField>(
     trace_row_vecs
 }
 
-pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<[F; NUM_MEM_COLS]> {
-    let mut trace: Vec<[F; NUM_MEM_COLS]> = cells
+pub fn generate_memory_trace<F: RichField>(
+    cells: &Vec<MemoryTraceCell>,
+) -> Vec<[F; memory::NUM_MEM_COLS]> {
+    let mut trace: Vec<[F; memory::NUM_MEM_COLS]> = cells
         .iter()
         .map(|c| {
-            let mut row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
-            row[COL_MEM_IS_RW] = F::from_canonical_u64(c.is_rw.to_canonical_u64());
-            row[COL_MEM_ADDR] = F::from_canonical_u64(c.addr.to_canonical_u64());
-            row[COL_MEM_CLK] = F::from_canonical_u64(c.clk.to_canonical_u64());
-            row[COL_MEM_OP] = F::from_canonical_u64(c.op.to_canonical_u64());
-            row[COL_MEM_IS_WRITE] = F::from_canonical_u64(c.is_write.to_canonical_u64());
-            row[COL_MEM_VALUE] = F::from_canonical_u64(c.value.to_canonical_u64());
-            row[COL_MEM_DIFF_ADDR] = F::from_canonical_u64(c.diff_addr.to_canonical_u64());
-            row[COL_MEM_DIFF_ADDR_INV] = F::from_canonical_u64(c.diff_addr_inv.to_canonical_u64());
-            row[COL_MEM_DIFF_CLK] = F::from_canonical_u64(c.diff_clk.to_canonical_u64());
-            row[COL_MEM_DIFF_ADDR_COND] =
+            let mut row: [F; memory::NUM_MEM_COLS] = [F::default(); memory::NUM_MEM_COLS];
+            row[memory::COL_MEM_IS_RW] = F::from_canonical_u64(c.is_rw.to_canonical_u64());
+            row[memory::COL_MEM_ADDR] = F::from_canonical_u64(c.addr.to_canonical_u64());
+            row[memory::COL_MEM_CLK] = F::from_canonical_u64(c.clk.to_canonical_u64());
+            row[memory::COL_MEM_OP] = F::from_canonical_u64(c.op.to_canonical_u64());
+            row[memory::COL_MEM_IS_WRITE] = F::from_canonical_u64(c.is_write.to_canonical_u64());
+            row[memory::COL_MEM_VALUE] = F::from_canonical_u64(c.value.to_canonical_u64());
+            row[memory::COL_MEM_DIFF_ADDR] = F::from_canonical_u64(c.diff_addr.to_canonical_u64());
+            row[memory::COL_MEM_DIFF_ADDR_INV] =
+                F::from_canonical_u64(c.diff_addr_inv.to_canonical_u64());
+            row[memory::COL_MEM_DIFF_CLK] = F::from_canonical_u64(c.diff_clk.to_canonical_u64());
+            row[memory::COL_MEM_DIFF_ADDR_COND] =
                 F::from_canonical_u64(c.diff_addr_cond.to_canonical_u64());
-            row[COL_MEM_FILTER_LOOKED_FOR_MAIN] =
+            row[memory::COL_MEM_FILTER_LOOKED_FOR_MAIN] =
                 F::from_canonical_u64(c.filter_looked_for_main.to_canonical_u64());
-            row[COL_MEM_RW_ADDR_UNCHANGED] =
+            row[memory::COL_MEM_RW_ADDR_UNCHANGED] =
                 F::from_canonical_u64(c.rw_addr_unchanged.to_canonical_u64());
-            row[COL_MEM_REGION_PROPHET] =
+            row[memory::COL_MEM_REGION_PROPHET] =
                 F::from_canonical_u64(c.region_prophet.to_canonical_u64());
-            row[COL_MEM_REGION_POSEIDON] =
+            row[memory::COL_MEM_REGION_POSEIDON] =
                 F::from_canonical_u64(c.region_poseidon.to_canonical_u64());
-            row[COL_MEM_REGION_ECDSA] = F::from_canonical_u64(c.region_ecdsa.to_canonical_u64());
-            row[COL_MEM_RC_VALUE] = F::from_canonical_u64(c.rc_value.to_canonical_u64());
-            row[COL_MEM_FILTER_LOOKING_RC] =
+            row[memory::COL_MEM_REGION_ECDSA] =
+                F::from_canonical_u64(c.region_ecdsa.to_canonical_u64());
+            row[memory::COL_MEM_RC_VALUE] = F::from_canonical_u64(c.rc_value.to_canonical_u64());
+            row[memory::COL_MEM_FILTER_LOOKING_RC] =
                 F::from_canonical_u64(c.filter_looking_rc.to_canonical_u64());
             row
         })
@@ -233,24 +239,24 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
         let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
         let span = F::from_canonical_u64(2_u64.pow(32).sub(1));
         let addr = p - span;
-        let mut dummy_row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
-        dummy_row[COL_MEM_IS_RW] = F::ZERO;
-        dummy_row[COL_MEM_ADDR] = addr;
-        dummy_row[COL_MEM_CLK] = F::ZERO;
-        dummy_row[COL_MEM_OP] = F::ZERO;
-        dummy_row[COL_MEM_IS_WRITE] = F::ONE;
-        dummy_row[COL_MEM_VALUE] = F::ZERO;
-        dummy_row[COL_MEM_DIFF_ADDR] = F::ZERO;
-        dummy_row[COL_MEM_DIFF_ADDR_INV] = F::ZERO;
-        dummy_row[COL_MEM_DIFF_CLK] = F::ZERO;
-        dummy_row[COL_MEM_DIFF_ADDR_COND] = p - addr;
-        dummy_row[COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
-        dummy_row[COL_MEM_RW_ADDR_UNCHANGED] = F::ZERO;
-        dummy_row[COL_MEM_REGION_PROPHET] = F::ONE;
-        dummy_row[COL_MEM_REGION_POSEIDON] = F::ZERO;
-        dummy_row[COL_MEM_REGION_ECDSA] = F::ZERO;
-        dummy_row[COL_MEM_RC_VALUE] = dummy_row[COL_MEM_DIFF_ADDR_COND];
-        dummy_row[COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
+        let mut dummy_row: [F; memory::NUM_MEM_COLS] = [F::default(); memory::NUM_MEM_COLS];
+        dummy_row[memory::COL_MEM_IS_RW] = F::ZERO;
+        dummy_row[memory::COL_MEM_ADDR] = addr;
+        dummy_row[memory::COL_MEM_CLK] = F::ZERO;
+        dummy_row[memory::COL_MEM_OP] = F::ZERO;
+        dummy_row[memory::COL_MEM_IS_WRITE] = F::ONE;
+        dummy_row[memory::COL_MEM_VALUE] = F::ZERO;
+        dummy_row[memory::COL_MEM_DIFF_ADDR] = F::ZERO;
+        dummy_row[memory::COL_MEM_DIFF_ADDR_INV] = F::ZERO;
+        dummy_row[memory::COL_MEM_DIFF_CLK] = F::ZERO;
+        dummy_row[memory::COL_MEM_DIFF_ADDR_COND] = p - addr;
+        dummy_row[memory::COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
+        dummy_row[memory::COL_MEM_RW_ADDR_UNCHANGED] = F::ZERO;
+        dummy_row[memory::COL_MEM_REGION_PROPHET] = F::ONE;
+        dummy_row[memory::COL_MEM_REGION_POSEIDON] = F::ZERO;
+        dummy_row[memory::COL_MEM_REGION_ECDSA] = F::ZERO;
+        dummy_row[memory::COL_MEM_RC_VALUE] = dummy_row[memory::COL_MEM_DIFF_ADDR_COND];
+        dummy_row[memory::COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
         trace.push(dummy_row);
     };
 
@@ -258,13 +264,13 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
     let num_filled_row_len = trace.len();
     if !num_filled_row_len.is_power_of_two() || num_filled_row_len == 1 {
         let filled_last_row = trace[num_filled_row_len - 1];
-        let filled_end_up_in_rw = filled_last_row[COL_MEM_IS_RW].eq(&F::ONE);
+        let filled_end_up_in_rw = filled_last_row[memory::COL_MEM_IS_RW].eq(&F::ONE);
         let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
         let mut addr: F = if filled_end_up_in_rw {
             let span = F::from_canonical_u64(2_u64.pow(32).sub(1));
             p - span
         } else {
-            filled_last_row[COL_MEM_ADDR] + F::ONE
+            filled_last_row[memory::COL_MEM_ADDR] + F::ONE
         };
         let num_padded_rows = if num_filled_row_len == 1 {
             2
@@ -274,28 +280,29 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
 
         let mut is_first_pad_row = true;
         for _ in num_filled_row_len..num_padded_rows {
-            let mut padded_row: [F; NUM_MEM_COLS] = [F::default(); NUM_MEM_COLS];
-            padded_row[COL_MEM_IS_RW] = F::ZERO;
-            padded_row[COL_MEM_ADDR] = addr;
-            padded_row[COL_MEM_CLK] = F::ZERO;
-            padded_row[COL_MEM_OP] = F::ZERO;
-            padded_row[COL_MEM_IS_WRITE] = F::ONE;
-            padded_row[COL_MEM_VALUE] = F::ZERO;
-            padded_row[COL_MEM_DIFF_ADDR] = if is_first_pad_row {
-                addr - filled_last_row[COL_MEM_ADDR]
+            let mut padded_row: [F; memory::NUM_MEM_COLS] = [F::default(); memory::NUM_MEM_COLS];
+            padded_row[memory::COL_MEM_IS_RW] = F::ZERO;
+            padded_row[memory::COL_MEM_ADDR] = addr;
+            padded_row[memory::COL_MEM_CLK] = F::ZERO;
+            padded_row[memory::COL_MEM_OP] = F::ZERO;
+            padded_row[memory::COL_MEM_IS_WRITE] = F::ONE;
+            padded_row[memory::COL_MEM_VALUE] = F::ZERO;
+            padded_row[memory::COL_MEM_DIFF_ADDR] = if is_first_pad_row {
+                addr - filled_last_row[memory::COL_MEM_ADDR]
             } else {
                 F::ONE
             };
-            padded_row[COL_MEM_DIFF_ADDR_INV] = padded_row[COL_MEM_DIFF_ADDR].inverse();
-            padded_row[COL_MEM_DIFF_CLK] = F::ZERO;
-            padded_row[COL_MEM_DIFF_ADDR_COND] = p - addr;
-            padded_row[COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
-            padded_row[COL_MEM_RW_ADDR_UNCHANGED] = F::ZERO;
-            padded_row[COL_MEM_REGION_PROPHET] = F::ONE;
-            padded_row[COL_MEM_REGION_POSEIDON] = F::ZERO;
-            padded_row[COL_MEM_REGION_ECDSA] = F::ZERO;
-            padded_row[COL_MEM_RC_VALUE] = padded_row[COL_MEM_DIFF_ADDR_COND];
-            padded_row[COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
+            padded_row[memory::COL_MEM_DIFF_ADDR_INV] =
+                padded_row[memory::COL_MEM_DIFF_ADDR].inverse();
+            padded_row[memory::COL_MEM_DIFF_CLK] = F::ZERO;
+            padded_row[memory::COL_MEM_DIFF_ADDR_COND] = p - addr;
+            padded_row[memory::COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
+            padded_row[memory::COL_MEM_RW_ADDR_UNCHANGED] = F::ZERO;
+            padded_row[memory::COL_MEM_REGION_PROPHET] = F::ONE;
+            padded_row[memory::COL_MEM_REGION_POSEIDON] = F::ZERO;
+            padded_row[memory::COL_MEM_REGION_ECDSA] = F::ZERO;
+            padded_row[memory::COL_MEM_RC_VALUE] = padded_row[memory::COL_MEM_DIFF_ADDR_COND];
+            padded_row[memory::COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
 
             trace.push(padded_row);
             addr += F::ONE;

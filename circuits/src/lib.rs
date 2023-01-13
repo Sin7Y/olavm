@@ -2,7 +2,6 @@
 
 pub mod all_stark;
 pub mod builtins;
-pub mod columns;
 pub mod config;
 pub mod constraint_consumer;
 pub mod cpu;
