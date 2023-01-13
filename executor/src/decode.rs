@@ -1,5 +1,5 @@
 use crate::error::ProcessorError;
-use crate::{GoldilocksField, FP_REG_INDEX};
+//use crate::{GoldilocksField, FP_REG_INDEX};
 use core::program::instruction::{Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub};
 use log::{debug, info};
 use std::fmt::Display;
