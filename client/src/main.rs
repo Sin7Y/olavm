@@ -35,7 +35,7 @@ fn main() {
                 trace: Default::default(),
             };
 
-            let mut file = File::open(path).unwrap();
+            let file = File::open(path).unwrap();
             let mut input_lines = BufReader::new(file).lines();
             loop {
                 let inst = input_lines.next();
@@ -53,7 +53,7 @@ fn main() {
                 .expect("OlaVM execute fail");
             let path = sub_matches.get_one::<String>("output").expect("required");
             debug!("output file path: {}", path);
-            let mut file = File::create(path).unwrap();
+            let file = File::create(path).unwrap();
             serde_json::to_writer(file, &program.trace).unwrap();
         }
         _ => unreachable!(),
