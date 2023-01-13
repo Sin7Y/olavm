@@ -344,15 +344,12 @@ fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
 mod tests {
     use std::borrow::BorrowMut;
     use std::time::{SystemTime, UNIX_EPOCH};
-
-    use crate::cross_table_lookup::testutils::check_ctls;
     use crate::stark::Stark;
     use anyhow::{Ok, Result};
     use ethereum_types::U256;
     use itertools::Itertools;
     use plonky2::fri::oracle::PolynomialBatch;
     use plonky2::iop::challenger::Challenger;
-    // use crate::cross_table_lookup::testutils::check_ctls;
     use crate::verifier::verify_proof;
     use core::program::Program;
     use core::trace::trace::Trace;
@@ -382,7 +379,8 @@ mod tests {
     type F = <C as GenericConfig<D>>::F;
     type S = dyn Stark<F, D>;
 
-    fn add_mul_decode() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
+    #[test]
+    fn add_mul_decode() -> Result<()> {
         //mov r0 8
         //mov r1 2
         //mov r2 3
@@ -427,16 +425,29 @@ mod tests {
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        [
+        let traces = [
             cpu_trace,
             memory_trace,
             bitwise_trace,
             cmp_trace,
             rangecheck_trace,
-        ]
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
     }
 
-    fn fibo_use_loop_decode() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
+    #[test]
+    fn fibo_use_loop_decode() -> Result<()> {
         // mov r0 8
         // mov r1 1
         // mov r2 1
@@ -499,16 +510,29 @@ mod tests {
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        [
+        let traces = [
             cpu_trace,
             memory_trace,
             bitwise_trace,
             cmp_trace,
             rangecheck_trace,
-        ]
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
     }
 
-    fn memory_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
+    #[test]
+    fn memory_test() -> Result<()> {
         // mov r0 8
         // mstore  0x100 r0
         // mov r1 2
@@ -566,16 +590,29 @@ mod tests {
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        [
+        let traces = [
             cpu_trace,
             memory_trace,
             bitwise_trace,
             cmp_trace,
             rangecheck_trace,
-        ]
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
     }
 
-    fn call_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
+    #[test]
+    fn call_test() -> Result<()> {
         //JMP 7
         //MUL r4 r0 10
         //ADD r4 r4 r1
@@ -641,16 +678,29 @@ mod tests {
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        [
+        let traces = [
             cpu_trace,
             memory_trace,
             bitwise_trace,
             cmp_trace,
             rangecheck_trace,
-        ]
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
     }
 
-    fn range_check_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
+    #[test]
+    fn range_check_test() -> Result<()> {
         //mov r0 8
         //mov r1 2
         //mov r2 3
@@ -697,13 +747,25 @@ mod tests {
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        [
+        let traces = [
             cpu_trace,
             memory_trace,
             bitwise_trace,
             cmp_trace,
             rangecheck_trace,
-        ]
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
     }
 
     fn timestamp() -> i64 {
@@ -715,7 +777,8 @@ mod tests {
         ms
     }
 
-    fn bitwise_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
+    #[test]
+    fn bitwise_test() -> Result<()> {
         //mov r0 8
         //mov r1 2
         //mov r2 3
@@ -762,16 +825,29 @@ mod tests {
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        [
+        let traces = [
             cpu_trace,
             memory_trace,
             bitwise_trace,
             cmp_trace,
             rangecheck_trace,
-        ]
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
     }
 
-    fn comparison_test() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
+    #[test]
+    fn comparison_test() -> Result<()> {
         //mov r0 8
         //mov r1 2
         //mov r2 3
@@ -818,47 +894,130 @@ mod tests {
         let cmp_trace = trace_rows_to_poly_values(cmp_rows);
         let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
         let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        [
+        let traces = [
             cpu_trace,
             memory_trace,
             bitwise_trace,
             cmp_trace,
             rangecheck_trace,
-        ]
-    }
+        ];
 
-    fn make_traces() -> [Vec<PolynomialValues<F>>; NUM_TABLES] {
-        // add_mul_decode() // yes
-        // fibo_use_loop_decode() // yes
-        // memory_test() // no
-        // call_test() // no
-        // bitwise_test() // yes
-        // range_check_test() // yes
-        // comparison_test() // no
-    }
-
-    fn get_proof(config: &StarkConfig) -> Result<(AllStark<F, D>, AllProof<F, C, D>)> {
         let all_stark = AllStark::default();
-        let traces = make_traces();
-        // check_ctls(&traces, &all_stark.cross_table_lookups);
-
+        let config = StarkConfig::standard_fast_config();
         let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
-            config,
+            &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
-
-        Ok((all_stark, proof))
+        verify_proof(all_stark, proof, &config)
     }
 
     #[test]
-    #[ignore] // Ignoring but not deleting so the test can serve as an API usage example
-    fn test_all_stark() -> Result<()> {
-        let config = StarkConfig::standard_fast_config();
-        let (all_stark, proof) = get_proof(&config)?;
-        verify_proof(all_stark, proof, &config)
+fn fibo_use_loop_memory_decode() -> Result<()> {
+    //2 0 mov r0 1
+    //2 2 mov r2 1
+    //2 4 mstore 128 r0
+    //2 6 mstore 135 r0
+    //2 8 mov r0 test_loop
+    //2 10 mov r3 0
+    //1 12 EQ r0 r3
+    //2 13 cjmp 30
+    //2 15 mload  r1  128
+    //1 17 assert r1  r2
+    //2 18 mload  r2  135
+    //1 20 add r4 r1 r2
+    //2 21 mstore 128 r2
+    //2 23 mstore 135 r4
+    //2 25 mov r4 1
+    //1 27 add r3 r3 r4
+    //2 28 jmp 12
+    //1 30 range_check r3
+    //1 31 end
+    let program_src = format!(
+        "0x4000000840000000
+        0x1
+         0x4000002040000000
+        0x1
+        0x4020000001000000
+        0x80
+        0x4020000001000000
+        0x87
+        0x4000000840000000
+        {:#x}
+        0x4000004040000000
+        0x0
+        0x0020800100000000
+        0x4000000010000000
+        0x1e
+        0x4000001002000000
+        0x80
+        0x0040400080000000
+        0x4000002002000000
+        0x87
+        0x0040408400000000
+        0x4080000001000000
+        0x80
+        0x4200000001000000
+        0x87
+        0x4000008040000000
+        0x1
+        0x0101004400000000
+        0x4000000020000000
+        0xc
+        0x0000800000400000
+        0x0000000000800000",
+        8 // 200~300, 0x20000 == 100 w
+    );
+
+    debug!("program_src:{:?}", program_src);
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
     }
+
+    let mut process = Process::new();
+    process.execute(&mut program, true);
+    process.gen_memory_table(&mut program);
+
+    let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+    let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+    let memory_trace = trace_rows_to_poly_values(memory_rows);
+    let bitwise_rows =
+        generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+    let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+    let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+    let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+    let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+    let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+    let traces = [
+        cpu_trace,
+        memory_trace,
+        bitwise_trace,
+        cmp_trace,
+        rangecheck_trace,
+    ];
+
+    let all_stark = AllStark::default();
+    let config = StarkConfig::standard_fast_config();
+    let public_values = PublicValues::default();
+    let proof = prove_with_traces::<F, C, D>(
+        &all_stark,
+        &config,
+        traces,
+        public_values,
+        &mut TimingTree::default(),
+    )?;
+    verify_proof(all_stark, proof, &config)
+}
 }
