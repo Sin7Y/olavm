@@ -3,7 +3,7 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 //use std::convert::TryFrom;
 use std::fmt;
-
+#[warn(non_camel_case_types)]
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ImmediateOrRegName {
     Immediate(GoldilocksField),
