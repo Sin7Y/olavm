@@ -160,6 +160,7 @@ class MemoryTraceColumnType(Enum):
     RC_VALUE = 'rc_value'
     FILTER_LOOKING_RC = 'filter_looking_rc'
 
+
 class RangeCheckTraceColumnType(Enum):
     VAL = 'val'
     LIMB_LO = 'limb_lo'
@@ -189,11 +190,12 @@ class BitwiseTraceColumnType(Enum):
 
 
 class ComparisonTraceColumnType(Enum):
-    TAG = 'tag'
     OP0 = 'op0'
     OP1 = 'op1'
     DIFF = 'diff'
-
+    DIFF_LIMB_LO = 'diff_limb_lo'
+    DIFF_LIMB_HI = 'diff_limb_hi'
+    FILTER_LOOKED_FOR_RANGE_CHECK = 'filter_looked_for_range_check'
 
 
 def generate_columns_of_title(worksheet, trace_column_title):
