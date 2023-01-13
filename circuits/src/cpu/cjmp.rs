@@ -1,4 +1,4 @@
-use crate::columns::*;
+use super::columns::*;
 use crate::constraint_consumer::ConstraintConsumer;
 use plonky2::field::packed::PackedField;
 

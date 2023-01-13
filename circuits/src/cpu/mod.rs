@@ -3,6 +3,7 @@ mod assert;
 mod call;
 mod cjmp;
 mod cmp;
+pub mod columns;
 pub mod cpu_stark;
 mod jmp;
 mod mov;
