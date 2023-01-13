@@ -618,7 +618,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
             new_row_len = trace_len.next_power_of_two();
         }
 
-        new_row_len = max(2, new_row_len);
+        new_row_len = new_row_len.max(2);
 
         // padding for exe trace
         //if !max_trace_len.is_power_of_two() {
