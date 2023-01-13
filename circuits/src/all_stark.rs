@@ -91,7 +91,7 @@ pub(crate) const NUM_TABLES: usize = 5;
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     // TODO:
-    vec![ctl_cpu_memory(), ctl_bitwise_cpu(), ctl_cmp_cpu(), ctl_rangecheck_cpu()]
+    vec![ctl_cpu_memory(), ctl_memory_rc(), ctl_bitwise_cpu(), ctl_cmp_cpu(), ctl_rangecheck_cpu()]
 }
 
 fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
