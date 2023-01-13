@@ -1,4 +1,4 @@
-use crate::program::instruction::{Instruction};
+use crate::program::instruction::Instruction;
 use crate::program::REGISTER_NUM;
 use crate::utils::split_limbs_from_field;
 use crate::utils::split_u16_limbs_from_field;
@@ -297,8 +297,7 @@ impl Trace {
         op1: GoldilocksField,
         filter_looked_for_range_check: GoldilocksField,
     ) {
-        let mut diff = Default::default();
-        diff = op0 - op1;
+        let diff = op0 - op1;
         let split_limbs = split_u16_limbs_from_field(&diff);
 
         self.builtin_cmp.push(CmpRow {
