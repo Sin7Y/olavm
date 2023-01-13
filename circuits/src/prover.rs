@@ -134,6 +134,7 @@ where
         &mut challenger,
         timing,
     )?;
+    
     let bitwise_proof = prove_single_table(
         &all_stark.bitwise_stark,
         config,

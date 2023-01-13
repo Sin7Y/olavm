@@ -615,9 +615,15 @@ pub(crate) fn verify_cross_table_lookups<
                 .map(|default| challenge.combine(default.iter()))
                 .unwrap_or(F::ONE);
 
+            let degree_diff = if looking_degrees_sum >= looked_degree {
+                looking_degrees_sum - looked_degree
+            } else {
+                looked_degree - looking_degrees_sum
+            };
+            
             ensure!(
                 looking_zs_prod
-                    == looked_z * combined_default.exp_u64(looking_degrees_sum - looked_degree),
+                    == looked_z * combined_default.exp_u64(degree_diff),
                 "Cross-table lookup verification failed."
             );
         }
