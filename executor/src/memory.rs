@@ -1,7 +1,7 @@
 use crate::GoldilocksField;
-use core::trace::trace::{MemoryCell, MemoryOperation};
+use core::trace::trace::{MemoryCell};
 use plonky2::field::types::Field;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap};
 
 const INIT_MEMORY_DATA: u64 = 0x0;
 

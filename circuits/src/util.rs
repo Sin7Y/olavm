@@ -1,5 +1,5 @@
 use crate::columns::*;
-use crate::fixed_table::bitwise_fixed::columns::COL_NUM;
+//use crate::fixed_table::bitwise_fixed::columns::COL_NUM;
 use core::program::{instruction::Opcode, REGISTER_NUM};
 use core::trace::trace::*;
 
@@ -13,7 +13,7 @@ use crate::builtins::cmp::columns as cmp;
 use crate::builtins::rangecheck::columns as rangecheck;
 use crate::lookup::*;
 use ethereum_types::{H160, H256, U256};
-use itertools::{Diff, Itertools};
+use itertools::{Itertools};
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
 use plonky2::field::polynomial::PolynomialValues;
