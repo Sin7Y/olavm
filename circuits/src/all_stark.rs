@@ -245,7 +245,7 @@ fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-/*fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
+fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::RangeCheck,
@@ -259,7 +259,7 @@ fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
         ),
         None,
     )
-}*/
+}
 
 // add Rangecheck cross lookup instance
 fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
