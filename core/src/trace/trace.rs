@@ -1,9 +1,9 @@
-use crate::program::instruction::{Instruction, Opcode};
+use crate::program::instruction::{Instruction};
 use crate::program::REGISTER_NUM;
 use crate::utils::split_limbs_from_field;
 use crate::utils::split_u16_limbs_from_field;
 use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
+//use plonky2::field::types::Field;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

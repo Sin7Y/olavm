@@ -1,7 +1,7 @@
 use crate::decode::{decode_raw_instruction, IMM_INSTRUCTION_LEN};
 use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
-use core::program::instruction::ImmediateOrRegName::Immediate;
+//use core::program::instruction::ImmediateOrRegName::Immediate;
 use core::program::instruction::{
     Add, And, Assert, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload,
     Mov, Mstore, Mul, Neq, Opcode, Or, Range, Ret, Sub, Xor,
@@ -10,11 +10,11 @@ use core::program::{Program, REGISTER_NUM};
 use core::trace::trace::{
     BitwiseOperation, ComparisonOperation, MemoryTraceCell, RegisterSelector,
 };
-use core::trace::trace::{FilterLockForMain, MemoryCell, MemoryOperation, MemoryType};
+use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap};
 use std::time::Instant;
 
 mod decode;
