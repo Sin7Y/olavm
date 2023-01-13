@@ -366,15 +366,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 }
 
 mod tests {
-    use num::bigint::BigUint;
-    use num::ToPrimitive;
 
     use super::*;
     use crate::util::generate_cpu_trace;
-    use core::program::{instruction::Opcode, Program};
+    use core::program::Program;
     use executor::Process;
     use plonky2::{
-        field::{goldilocks_field::GoldilocksField, types::Field64},
+        field::goldilocks_field::GoldilocksField,
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
     use plonky2_util::log2_strict;
