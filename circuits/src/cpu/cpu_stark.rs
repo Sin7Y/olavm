@@ -92,6 +92,19 @@ pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
 #[derive(Copy, Clone, Default)]
 pub struct CpuStark<F, const D: usize> {
     pub f: PhantomData<F>,
+    compress_challenge: F,
+}
+
+impl<F: RichField, const D: usize> CpuStark<F, D> {
+    fn new_with(challenge: F) -> Self {
+        let mut cpu_stark = Self::default();
+        cpu_stark.compress_challenge = challenge;
+        cpu_stark
+    }
+
+    fn get_compress_challenge(&self) -> F {
+        self.compress_challenge
+    }
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D> {
