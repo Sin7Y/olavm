@@ -330,7 +330,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 
 mod tests {
     use crate::constraint_consumer::ConstraintConsumer;
-    use crate::memory::MemoryStark;
     use crate::stark::Stark;
     use crate::util::generate_memory_trace;
     use crate::vars::StarkEvaluationVars;
@@ -339,6 +338,7 @@ mod tests {
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use crate::memory::memory_stark::MemoryStark;
 
     fn test_memory_stark(program_src: &str) {
         const D: usize = 2;

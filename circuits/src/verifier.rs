@@ -14,7 +14,7 @@ use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
-use crate::memory::MemoryStark;
+use crate::memory::memory_stark::MemoryStark;
 use crate::permutation::PermutationCheckVars;
 use crate::proof::{
     AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges,

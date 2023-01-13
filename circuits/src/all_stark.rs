@@ -13,7 +13,7 @@ use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 //use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{self, BitwiseFixedStark};
 //use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{self, RangecheckFixedStark};
-use crate::memory::{
+use crate::memory::memory_stark::{
     ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_addr, ctl_data_mem_rc_diff_clk,
     ctl_data_mem_rc_diff_cond, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_addr,
     ctl_filter_mem_rc_diff_clk, ctl_filter_mem_rc_diff_cond, MemoryStark,
