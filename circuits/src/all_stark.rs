@@ -365,7 +365,7 @@ mod tests {
     use plonky2::util::timing::TimingTree;
     //use rand::*;
     // use serde_json::Value;
-    use crate::all_stark::{AllStark};
+    use crate::all_stark::AllStark;
     use crate::config::StarkConfig;
     //use crate::cpu::cpu_stark::CpuStark;
     use crate::proof::{AllProof, PublicValues};

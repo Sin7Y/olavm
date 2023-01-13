@@ -3,7 +3,7 @@ extern crate clap;
 use clap::{arg, Command};
 use core::program::Program;
 use executor::Process;
-use log::{debug};
+use log::debug;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 //use std::path::PathBuf;

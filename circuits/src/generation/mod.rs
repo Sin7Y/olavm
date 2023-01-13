@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::all_stark::{AllStark, NUM_TABLES};
 use crate::config::StarkConfig;
-use crate::proof::{PublicValues};
+use crate::proof::PublicValues;
 use crate::util::trace_rows_to_poly_values;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
