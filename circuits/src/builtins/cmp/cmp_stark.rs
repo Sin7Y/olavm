@@ -3,19 +3,15 @@ use itertools::Itertools;
 
 use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::cross_table_lookup::Column;
-use crate::lookup::*;
-use crate::permutation::*;
 use crate::stark::Stark;
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
+//use plonky2::plonk::plonk_common::*;
 use std::marker::PhantomData;
-use std::ops::Range;
 
 #[derive(Copy, Clone, Default)]
 pub struct CmpStark<F, const D: usize> {
@@ -67,7 +63,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
 
         yield_constr.constraint(diff - sum);
 
-        eval_lookups(
+        /*eval_lookups(
             vars,
             yield_constr,
             DIFF_LIMB_LO_PERMUTED,
@@ -78,7 +74,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
             yield_constr,
             DIFF_LIMB_HI_PERMUTED,
             FIX_RANGE_CHECK_U16_PERMUTED_HI,
-        );
+        );*/
     }
 
     fn eval_ext_circuit(
@@ -92,26 +88,17 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
     fn constraint_degree(&self) -> usize {
         1
     }
-
-    fn permutation_pairs(&self) -> Vec<PermutationPair> {
-        vec![
-            PermutationPair::singletons(DIFF_LIMB_LO, DIFF_LIMB_LO_PERMUTED),
-            PermutationPair::singletons(DIFF_LIMB_HI, DIFF_LIMB_HI_PERMUTED),
-            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED_LO),
-            PermutationPair::singletons(FIX_RANGE_CHECK_U16, FIX_RANGE_CHECK_U16_PERMUTED_HI),
-        ]
-    }
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-/*pub fn ctl_data_with_rangecheck<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_with_rangecheck<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles([DIFF]).collect_vec();
     res
 }
 
 pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
-    Column::one()
-}*/
+    Column::single(FILTER)
+}
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
