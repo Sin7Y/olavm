@@ -1,4 +1,4 @@
-use crate::trace::trace::{Trace};
+use crate::trace::trace::Trace;
 use serde::{Deserialize, Serialize};
 
 pub mod instruction;
