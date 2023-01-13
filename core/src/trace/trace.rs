@@ -290,6 +290,7 @@ impl Trace {
     }*/
 
     // Added by xb 2022-12-19
+
     pub fn insert_cmp(
         &mut self,
         op0: GoldilocksField,

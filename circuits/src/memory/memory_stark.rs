@@ -1,3 +1,4 @@
+use std::env::var;
 //use core::program::instruction;
 use std::ops::Sub;
 
@@ -92,12 +93,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let addr = lv[COL_MEM_ADDR];
         let nv_diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
         let nv_addr = nv[COL_MEM_ADDR];
+        let diff_addr = lv[COL_MEM_DIFF_ADDR];
         let nv_diff_addr = nv[COL_MEM_DIFF_ADDR];
         let rw_addr_unchanged = lv[COL_MEM_RW_ADDR_UNCHANGED];
         let nv_rw_addr_unchanged = nv[COL_MEM_RW_ADDR_UNCHANGED];
         let diff_addr_cond = lv[COL_MEM_DIFF_ADDR_COND];
         let value = lv[COL_MEM_VALUE];
         let nv_value = lv[COL_MEM_VALUE];
+        let diff_clk = lv[COL_MEM_DIFF_CLK];
+        let rc_value = lv[COL_MEM_RC_VALUE];
 
         let op_mload = P::Scalar::from_canonical_u64(2_u64.pow(25));
         let op_mstore = P::Scalar::from_canonical_u64(2_u64.pow(24));
@@ -148,13 +152,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
                 * (P::ONES - nv_region_prophet + region_prophet)
                 * (P::ONES - nv_region_poseidon + region_poseidon)
                 * (nv_addr - addr)
-                * (P::ONES - nv_addr + addr),
+                * (nv_addr - addr - P::ONES),
         );
         yield_constr.constraint_transition(
             (P::ONES - is_rw)
                 * (P::ONES - nv_region_prophet + region_prophet)
                 * (P::ONES - nv_region_poseidon + region_poseidon)
-                * (P::ONES - nv_addr + addr)
+                * (nv_addr - addr - P::ONES)
                 * nv_is_write,
         );
 
@@ -164,6 +168,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         yield_constr.constraint_first_row(P::ONES - is_write);
         yield_constr.constraint_transition((nv_addr - addr) * (P::ONES - nv_is_write));
         yield_constr.constraint_transition((P::ONES - nv_is_write) * (nv_value - value));
+
+        // rc_value constraint:
+        yield_constr.constraint(is_rw * (diff_addr + diff_clk - rc_value));
+        yield_constr.constraint((P::ONES - is_rw) * (diff_addr_cond - rc_value));
     }
 
     fn eval_ext_circuit(
@@ -323,7 +331,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 
 mod tests {
     use crate::constraint_consumer::ConstraintConsumer;
-    use crate::memory::MemoryStark;
+    use crate::memory::memory_stark::MemoryStark;
     use crate::stark::Stark;
     use crate::util::generate_memory_trace;
     use crate::vars::StarkEvaluationVars;
@@ -332,6 +340,7 @@ mod tests {
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2_util::log2_strict;
 
     fn test_memory_stark(program_src: &str) {
         const D: usize = 2;
@@ -354,19 +363,37 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
         let rows = generate_memory_trace(&program.trace.memory);
+        println!(
+            "raw trace len:{}, extended len: {}",
+            program.trace.memory.len(),
+            rows.len()
+        );
+        let last = F::primitive_root_of_unity(log2_strict(rows.len())).inverse();
+        let subgroup = F::cyclic_subgroup_known_order(
+            F::primitive_root_of_unity(log2_strict(rows.len())),
+            rows.len(),
+        );
 
         for i in 0..rows.len() - 1 {
-            println!("row index: {}", i);
+            println!("mem row index: {}", i);
             let vars = StarkEvaluationVars {
-                local_values: &rows[i],
-                next_values: &rows[i + 1],
+                local_values: &rows[i % rows.len()],
+                next_values: &rows[(i + 1) % rows.len()],
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(
-                vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
-                GoldilocksField::ONE,
-                GoldilocksField::ONE,
-                GoldilocksField::ONE,
+                vec![F::rand()],
+                subgroup[i] - last,
+                if i == 0 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+                if i == rows.len() - 1 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
             );
             stark.eval_packed_generic(vars, &mut constraint_consumer);
 

@@ -221,6 +221,9 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             row[COL_MEM_REGION_POSEIDON] =
                 F::from_canonical_u64(c.region_poseidon.to_canonical_u64());
             row[COL_MEM_REGION_ECDSA] = F::from_canonical_u64(c.region_ecdsa.to_canonical_u64());
+            row[COL_MEM_RC_VALUE] = F::from_canonical_u64(c.rc_value.to_canonical_u64());
+            row[COL_MEM_FILTER_LOOKING_RC] =
+                F::from_canonical_u64(c.filter_looking_rc.to_canonical_u64());
             row
         })
         .collect();
@@ -246,6 +249,8 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
         dummy_row[COL_MEM_REGION_PROPHET] = F::ONE;
         dummy_row[COL_MEM_REGION_POSEIDON] = F::ZERO;
         dummy_row[COL_MEM_REGION_ECDSA] = F::ZERO;
+        dummy_row[COL_MEM_RC_VALUE] = dummy_row[COL_MEM_DIFF_ADDR_COND];
+        dummy_row[COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
         trace.push(dummy_row);
     };
 
@@ -289,6 +294,8 @@ pub fn generate_memory_trace<F: RichField>(cells: &Vec<MemoryTraceCell>) -> Vec<
             padded_row[COL_MEM_REGION_PROPHET] = F::ONE;
             padded_row[COL_MEM_REGION_POSEIDON] = F::ZERO;
             padded_row[COL_MEM_REGION_ECDSA] = F::ZERO;
+            padded_row[COL_MEM_RC_VALUE] = padded_row[COL_MEM_DIFF_ADDR_COND];
+            padded_row[COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
 
             trace.push(padded_row);
             addr += F::ONE;
@@ -677,6 +684,7 @@ pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
     ary[cmp::DIFF] = input[cmp::DIFF];
     ary[cmp::DIFF_LIMB_LO] = input[cmp::DIFF_LIMB_LO];
     ary[cmp::DIFF_LIMB_HI] = input[cmp::DIFF_LIMB_HI];
+
     //ary[cmp::DIFF_LIMB_LO_PERMUTED] = input[cmp::DIFF_LIMB_LO_PERMUTED];
     //ary[cmp::DIFF_LIMB_HI_PERMUTED] = input[cmp::DIFF_LIMB_HI_PERMUTED];
     //ary[cmp::FIX_RANGE_CHECK_U16] = input[cmp::FIX_RANGE_CHECK_U16];
@@ -788,7 +796,6 @@ pub fn vec_to_ary_rc<F: RichField>(input: Vec<F>) -> [F; rangecheck::COL_NUM_RC]
         input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_LO];
     ary[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI] =
         input[rangecheck::FIX_RANGE_CHECK_U16_PERMUTED_HI];
-
     ary
 }
 
