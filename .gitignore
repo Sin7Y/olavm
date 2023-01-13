@@ -3,3 +3,4 @@
 *.txt
 Cargo.lock
 trace.xlsx
+/**/.DS_Store
