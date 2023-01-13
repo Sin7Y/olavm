@@ -102,6 +102,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let nv_value = lv[COL_MEM_VALUE];
         let diff_clk = lv[COL_MEM_DIFF_CLK];
         let rc_value = lv[COL_MEM_RC_VALUE];
+        let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
 
         let op_mload = P::Scalar::from_canonical_u64(2_u64.pow(25));
         let op_mstore = P::Scalar::from_canonical_u64(2_u64.pow(24));
@@ -172,6 +173,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         // rc_value constraint:
         yield_constr.constraint(is_rw * (diff_addr + diff_clk - rc_value));
         yield_constr.constraint((P::ONES - is_rw) * (diff_addr_cond - rc_value));
+        // filter_looking_rc constraints:
+        // 1. read write segment filter_looking_rc must be 1.
+        // 2. in write once segment, when reading filter_looking_rc must be 1.
+        yield_constr.constraint(is_rw * (P::ONES - filter_looking_rc));
+        yield_constr
+            .constraint((P::ONES - is_rw) * (P::ONES - is_write) * (P::ONES - filter_looking_rc));
     }
 
     fn eval_ext_circuit(
