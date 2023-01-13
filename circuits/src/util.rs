@@ -587,12 +587,13 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         .map(|c| {
             let mut row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
 
-            row[cmp::FILTER] = F::from_canonical_usize(1);
             row[cmp::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
             row[cmp::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
             row[cmp::DIFF] = F::from_canonical_u64(c.diff.to_canonical_u64());
             row[cmp::DIFF_LIMB_LO] = F::from_canonical_u64(c.diff_limb_lo.to_canonical_u64());
             row[cmp::DIFF_LIMB_HI] = F::from_canonical_u64(c.diff_limb_hi.to_canonical_u64());
+            row[cmp::FILTER] =
+                F::from_canonical_u64(c.filter_looked_for_range_check.to_canonical_u64());
 
             row
         })
