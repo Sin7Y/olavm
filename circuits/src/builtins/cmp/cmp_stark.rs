@@ -3,19 +3,15 @@ use itertools::Itertools;
 
 use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::cross_table_lookup::Column;
-use crate::lookup::*;
-use crate::permutation::*;
 use crate::stark::Stark;
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
+//use plonky2::plonk::plonk_common::*;
 use std::marker::PhantomData;
-use std::ops::Range;
 
 #[derive(Copy, Clone, Default)]
 pub struct CmpStark<F, const D: usize> {
