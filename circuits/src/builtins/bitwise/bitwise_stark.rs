@@ -20,10 +20,21 @@ use std::marker::PhantomData;
 #[derive(Copy, Clone, Default)]
 pub struct BitwiseStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
+    compress_challenge: F,
 }
 
 impl<F: RichField, const D: usize> BitwiseStark<F, D> {
     const BASE: usize = 1 << 8;
+
+    fn new_with(challenge: F) -> Self {
+        let mut cpu_stark = Self::default();
+        cpu_stark.compress_challenge = challenge;
+        cpu_stark
+    }
+
+    fn get_compress_challenge(&self) -> F {
+        self.compress_challenge
+    }
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<F, D> {
