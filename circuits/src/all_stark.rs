@@ -91,7 +91,12 @@ pub(crate) const NUM_TABLES: usize = 5;
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     // TODO:
-    vec![ctl_cpu_memory(), ctl_bitwise_cpu(), ctl_cmp_cpu(), ctl_rangecheck_cpu()]
+    vec![
+        ctl_cpu_memory(),
+        ctl_bitwise_cpu(),
+        ctl_cmp_cpu(),
+        ctl_rangecheck_cpu(),
+    ]
 }
 
 fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
@@ -343,16 +348,16 @@ fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
 }
 
 mod tests {
-    use std::borrow::BorrowMut;
-    use std::time::{SystemTime, UNIX_EPOCH};
     use crate::stark::Stark;
+    use crate::verifier::verify_proof;
     use anyhow::{Ok, Result};
+    use core::program::Program;
     use ethereum_types::U256;
     use itertools::Itertools;
     use plonky2::fri::oracle::PolynomialBatch;
     use plonky2::iop::challenger::Challenger;
-    use crate::verifier::verify_proof;
-    use core::program::Program;
+    use std::borrow::BorrowMut;
+    use std::time::{SystemTime, UNIX_EPOCH};
     //use core::trace::trace::Trace;
     use executor::Process;
     use log::debug;
@@ -371,8 +376,9 @@ mod tests {
     use crate::proof::{AllProof, PublicValues, StarkProof};
     use crate::prover::{prove_single_table, prove_with_traces};
     use crate::util::{
-        generate_builtins_bitwise_trace, generate_cpu_trace, generate_memory_trace,
-        trace_rows_to_poly_values, generate_builtins_cmp_trace, generate_builtins_rangecheck_trace,
+        generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
+        generate_builtins_rangecheck_trace, generate_cpu_trace, generate_memory_trace,
+        trace_rows_to_poly_values,
     };
 
     const D: usize = 2;
@@ -415,7 +421,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
@@ -500,7 +507,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
@@ -580,7 +588,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
@@ -668,7 +677,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
@@ -737,7 +747,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
@@ -774,7 +785,8 @@ mod tests {
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards");
-        let ms = since_the_epoch.as_secs() as i64 * 1000i64 + (since_the_epoch.subsec_nanos() as f64 / 1_000_000.0) as i64;
+        let ms = since_the_epoch.as_secs() as i64 * 1000i64
+            + (since_the_epoch.subsec_nanos() as f64 / 1_000_000.0) as i64;
         ms
     }
 
@@ -815,7 +827,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
@@ -884,7 +897,8 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
@@ -917,28 +931,28 @@ mod tests {
     }
 
     #[test]
-fn fibo_use_loop_memory_decode() -> Result<()> {
-    //2 0 mov r0 1
-    //2 2 mov r2 1
-    //2 4 mstore 128 r0
-    //2 6 mstore 135 r0
-    //2 8 mov r0 test_loop
-    //2 10 mov r3 0
-    //1 12 EQ r0 r3
-    //2 13 cjmp 30
-    //2 15 mload  r1  128
-    //1 17 assert r1  r2
-    //2 18 mload  r2  135
-    //1 20 add r4 r1 r2
-    //2 21 mstore 128 r2
-    //2 23 mstore 135 r4
-    //2 25 mov r4 1
-    //1 27 add r3 r3 r4
-    //2 28 jmp 12
-    //1 30 range_check r3
-    //1 31 end
-    let program_src = format!(
-        "0x4000000840000000
+    fn fibo_use_loop_memory_decode() -> Result<()> {
+        //2 0 mov r0 1
+        //2 2 mov r2 1
+        //2 4 mstore 128 r0
+        //2 6 mstore 135 r0
+        //2 8 mov r0 test_loop
+        //2 10 mov r3 0
+        //1 12 EQ r0 r3
+        //2 13 cjmp 30
+        //2 15 mload  r1  128
+        //1 17 assert r1  r2
+        //2 18 mload  r2  135
+        //1 20 add r4 r1 r2
+        //2 21 mstore 128 r2
+        //2 23 mstore 135 r4
+        //2 25 mov r4 1
+        //1 27 add r3 r3 r4
+        //2 28 jmp 12
+        //1 30 range_check r3
+        //1 31 end
+        let program_src = format!(
+            "0x4000000840000000
         0x1
          0x4000002040000000
         0x1
@@ -970,55 +984,56 @@ fn fibo_use_loop_memory_decode() -> Result<()> {
         0xc
         0x0000800000400000
         0x0000000000800000",
-        8 // 200~300, 0x20000 == 100 w
-    );
+            8 // 200~300, 0x20000 == 100 w
+        );
 
-    debug!("program_src:{:?}", program_src);
+        debug!("program_src:{:?}", program_src);
 
-    let instructions = program_src.split('\n');
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-    debug!("instructions:{:?}", program.instructions);
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+        debug!("instructions:{:?}", program.instructions);
 
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.clone().parse().unwrap());
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        process.execute(&mut program, true);
+        process.gen_memory_table(&mut program);
+
+        let cpu_rows =
+            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
+        let memory_trace = trace_rows_to_poly_values(memory_rows);
+        let bitwise_rows =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
+        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        let traces = [
+            cpu_trace,
+            memory_trace,
+            bitwise_trace,
+            cmp_trace,
+            rangecheck_trace,
+        ];
+
+        let all_stark = AllStark::default();
+        let config = StarkConfig::standard_fast_config();
+        let public_values = PublicValues::default();
+        let proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        )?;
+        verify_proof(all_stark, proof, &config)
     }
-
-    let mut process = Process::new();
-    process.execute(&mut program, true);
-    process.gen_memory_table(&mut program);
-
-    let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-    let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-    let memory_trace = trace_rows_to_poly_values(memory_rows);
-    let bitwise_rows =
-        generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-    let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-    let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-    let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-    let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-    let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-    let traces = [
-        cpu_trace,
-        memory_trace,
-        bitwise_trace,
-        cmp_trace,
-        rangecheck_trace,
-    ];
-
-    let all_stark = AllStark::default();
-    let config = StarkConfig::standard_fast_config();
-    let public_values = PublicValues::default();
-    let proof = prove_with_traces::<F, C, D>(
-        &all_stark,
-        &config,
-        traces,
-        public_values,
-        &mut TimingTree::default(),
-    )?;
-    verify_proof(all_stark, proof, &config)
-}
 }

@@ -620,10 +620,9 @@ pub(crate) fn verify_cross_table_lookups<
             } else {
                 looked_degree - looking_degrees_sum
             };
-            
+
             ensure!(
-                looking_zs_prod
-                    == looked_z * combined_default.exp_u64(degree_diff),
+                looking_zs_prod == looked_z * combined_default.exp_u64(degree_diff),
                 "Cross-table lookup verification failed."
             );
         }

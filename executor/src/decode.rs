@@ -1,20 +1,6 @@
 use crate::error::ProcessorError;
-//use crate::{GoldilocksField, FP_REG_INDEX};
-use core::program::instruction::{Add, CJmp, Equal, Instruction, Jmp, Mov, Mul, Opcode, Ret, Sub};
-use log::{debug, info};
-use std::fmt::Display;
-//use std::num::ParseIntError;
-
-pub const SEL_REG0_INDEX: u64 = 0x1;
-pub const SEL_REG1_INDEX: u64 = 0x2;
-pub const SEL_REG2_INDEX: u64 = 0x4;
-pub const SEL_REG3_INDEX: u64 = 0x8;
-pub const SEL_REG4_INDEX: u64 = 0x10;
-pub const SEL_REG5_INDEX: u64 = 0x20;
-pub const SEL_REG6_INDEX: u64 = 0x40;
-pub const SEL_REG7_INDEX: u64 = 0x80;
-pub const SEL_REG8_INDEX: u64 = 0x100;
-pub const SEL_IMM_INDEX: u64 = 0x4000000000000000;
+use core::program::instruction::Opcode;
+use log::debug;
 
 pub const NO_IMM_INSTRUCTION_LEN: u64 = 1;
 pub const IMM_INSTRUCTION_LEN: u64 = 2;
@@ -25,7 +11,6 @@ pub const OPCODE_FLAG_FIELD_BIT_POSITION: u64 = 16;
 pub const REG0_FIELD_BIT_POSITION: u64 = OPCODE_FLAG_FIELD_BIT_POSITION + OPCODE_FLAG_FIELD_LEN;
 pub const REG1_FIELD_BIT_POSITION: u64 = REG0_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
 pub const REG2_FIELD_BIT_POSITION: u64 = REG1_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
-pub const IMM_FLAG_BIT_LEN: u64 = 1;
 pub const IMM_FLAG_FIELD_BIT_POSITION: u64 = REG2_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
 
 pub const REG_FIELD_BITS_MASK: u64 = 0x1ff;
@@ -34,7 +19,7 @@ pub const OPCODE_FIELD_BITS_MASK: u64 = 0x7_ffff_ffff;
 
 fn parse_hex_str(hex_str: &str) -> Result<u64, ProcessorError> {
     let res = u64::from_str_radix(hex_str, 16);
-    if let Err(e) = res {
+    if let Err(_) = res {
         return Err(ProcessorError::ParseIntError);
     } else {
         return Ok(res.unwrap());
