@@ -1,7 +1,7 @@
 use num_enum::TryFromPrimitive;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+//use std::convert::TryFrom;
 use std::fmt;
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
