@@ -608,7 +608,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
     } else {
         // Pad trace to power of two.
         // Ensure the max rows number.
-        let trace_len = trace.len();
+        /*let trace_len = trace.len();
         let max_trace_len = trace_len.max(cmp::RANGE_CHECK_U16_SIZE);
 
         let mut new_row_len = max_trace_len;
@@ -660,7 +660,8 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
             .map(|row| vec_to_ary_cmp(row))
             .collect();
 
-        trace_row_vecs
+        trace_row_vecs*/
+        trace
     }
 }
 
@@ -673,11 +674,11 @@ pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
     ary[cmp::DIFF] = input[cmp::DIFF];
     ary[cmp::DIFF_LIMB_LO] = input[cmp::DIFF_LIMB_LO];
     ary[cmp::DIFF_LIMB_HI] = input[cmp::DIFF_LIMB_HI];
-    ary[cmp::DIFF_LIMB_LO_PERMUTED] = input[cmp::DIFF_LIMB_LO_PERMUTED];
-    ary[cmp::DIFF_LIMB_HI_PERMUTED] = input[cmp::DIFF_LIMB_HI_PERMUTED];
-    ary[cmp::FIX_RANGE_CHECK_U16] = input[cmp::FIX_RANGE_CHECK_U16];
-    ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO];
-    ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI];
+    //ary[cmp::DIFF_LIMB_LO_PERMUTED] = input[cmp::DIFF_LIMB_LO_PERMUTED];
+    //ary[cmp::DIFF_LIMB_HI_PERMUTED] = input[cmp::DIFF_LIMB_HI_PERMUTED];
+    //ary[cmp::FIX_RANGE_CHECK_U16] = input[cmp::FIX_RANGE_CHECK_U16];
+    //ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO];
+    //ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI];
 
     ary
 }
