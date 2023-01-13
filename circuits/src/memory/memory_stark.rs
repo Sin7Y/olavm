@@ -29,6 +29,14 @@ pub fn ctl_filter_mem_rc_diff_cond<F: Field>() -> Column<F> {
     ])
 }
 
+pub fn ctl_data_mem_rc<F: Field>() -> Vec<Column<F>> {
+    vec![Column::single(COL_MEM_RC_VALUE)]
+}
+
+pub fn ctl_filter_mem_rc<F: Field>() -> Column<F> {
+    Column::single(COL_MEM_FILTER_LOOKING_RC)
+}
+
 pub fn ctl_data_mem_rc_diff_addr<F: Field>() -> Vec<Column<F>> {
     vec![Column::single(COL_MEM_DIFF_ADDR)]
 }
