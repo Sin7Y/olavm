@@ -1,5 +1,5 @@
 use crate::columns::*;
-use crate::fixed_table::bitwise_fixed::columns::COL_NUM;
+//use crate::fixed_table::bitwise_fixed::columns::COL_NUM;
 use core::program::{instruction::Opcode, REGISTER_NUM};
 use core::trace::trace::*;
 
@@ -13,7 +13,7 @@ use crate::builtins::cmp::columns as cmp;
 use crate::builtins::rangecheck::columns as rangecheck;
 use crate::lookup::*;
 use ethereum_types::{H160, H256, U256};
-use itertools::{Diff, Itertools};
+use itertools::Itertools;
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
 use plonky2::field::polynomial::PolynomialValues;
@@ -587,12 +587,13 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         .map(|c| {
             let mut row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
 
-            row[cmp::FILTER] = F::from_canonical_usize(1);
             row[cmp::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
             row[cmp::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
             row[cmp::DIFF] = F::from_canonical_u64(c.diff.to_canonical_u64());
             row[cmp::DIFF_LIMB_LO] = F::from_canonical_u64(c.diff_limb_lo.to_canonical_u64());
             row[cmp::DIFF_LIMB_HI] = F::from_canonical_u64(c.diff_limb_hi.to_canonical_u64());
+            row[cmp::FILTER] =
+                F::from_canonical_u64(c.filter_looked_for_range_check.to_canonical_u64());
 
             row
         })
@@ -608,13 +609,13 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
     } else {
         // Pad trace to power of two.
         // Ensure the max rows number.
-        /*let trace_len = trace.len();
-        let max_trace_len = trace_len.max(cmp::RANGE_CHECK_U16_SIZE);
+        let trace_len = trace.len();
+        //let max_trace_len = trace_len.max(cmp::RANGE_CHECK_U16_SIZE);
 
-        let mut new_row_len = max_trace_len;
+        let mut new_row_len = trace_len;
 
-        if !max_trace_len.is_power_of_two() {
-            new_row_len = max_trace_len.next_power_of_two();
+        if !trace_len.is_power_of_two() {
+            new_row_len = trace_len.next_power_of_two();
         }
 
         // padding for exe trace
@@ -629,7 +630,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         //}
 
         // Transpose to column-major form.
-        let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
+        /*let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
         let mut trace_col_vecs = transpose(&trace_row_vecs);
 
         // add fix rangecheck info

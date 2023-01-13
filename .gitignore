@@ -2,3 +2,4 @@
 /.idea
 *.txt
 Cargo.lock
+trace.xlsx

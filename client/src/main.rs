@@ -1,12 +1,12 @@
 extern crate clap;
 
-use clap::{arg, value_parser, Command};
+use clap::{arg, Command};
 use core::program::Program;
 use executor::Process;
-use log::{debug, error};
+use log::debug;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
-use std::path::PathBuf;
+use std::io::{BufRead, BufReader};
+//use std::path::PathBuf;
 
 fn main() {
     let matches = Command::new("olavm")
