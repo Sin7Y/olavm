@@ -14,7 +14,7 @@ use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64};
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 use std::time::Instant;
 
 mod decode;
@@ -70,7 +70,7 @@ impl Process {
 
     pub fn get_index_value(&self, op_str: &str) -> (GoldilocksField, ImmediateOrRegName) {
         let src = op_str.parse();
-        let mut value = Default::default();
+        let value;
         if src.is_ok() {
             let data: u64 = src.unwrap();
             return (
@@ -85,8 +85,8 @@ impl Process {
     }
 
     pub fn decode_instruction(&self, raw_instruction: String) -> Instruction {
-        let mut ops: Vec<_> = raw_instruction.split(' ').collect();
-        let mut opcode = ops.get(0).unwrap().to_lowercase();
+        let ops: Vec<_> = raw_instruction.split(' ').collect();
+        let opcode = ops.get(0).unwrap().to_lowercase();
 
         let instuction = match opcode.as_str() {
             "mov" => {
@@ -250,15 +250,15 @@ impl Process {
         let start = Instant::now();
         loop {
             let instruct_line = program.instructions[pc as usize].trim();
-            let mut txt_instruction = Default::default();
-            let mut step = 1;
+            let txt_instruction;
+            let step;
             program
                 .trace
                 .raw_binary_instructions
                 .push(instruct_line.to_string());
             if decode_flag {
-                let mut imm_flag = 0;
-                let mut imm_line = "null";
+                let imm_flag;
+                let mut imm_line = "";
                 let mut immediate_data = GoldilocksField::ZERO;
                 if (pc + 1) < (program.instructions.len() as u64 - 1) {
                     imm_line = program.instructions[(pc + 1) as usize].trim();
@@ -342,11 +342,11 @@ impl Process {
             // } else {
             //     instruction = instruct_line.to_string();
             // }
-            let mut instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
-            let mut ops: Vec<&str> = instruction.0.split(' ').collect();
+            let instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
+            let ops: Vec<&str> = instruction.0.split(' ').collect();
             let opcode = ops.get(0).unwrap().to_lowercase();
             self.op1_imm = GoldilocksField::from_canonical_u64(instruction.1 as u64);
-            let mut step = instruction.2 as u64;
+            let step = instruction.2 as u64;
             self.instruction = instruction.3;
             self.immediate_data = instruction.4;
             match opcode.as_str() {
@@ -466,7 +466,7 @@ impl Process {
                             GoldilocksField::from_canonical_u64(1);
                     }
 
-                    let inst = match opcode.as_str() {
+                    match opcode.as_str() {
                         "add" => {
                             self.registers[dst_index] = self.registers[op0_index] + op1_value.0;
                             self.opcode =
@@ -692,12 +692,6 @@ impl Process {
                     self.register_selector.dst_reg_sel[dst_index] =
                         GoldilocksField::from_canonical_u64(1);
 
-                    let target = GoldilocksField(
-                        self.registers[op0_index].0 * 2_u64.pow(16)
-                            + op1_value.0 .0 * 2_u64.pow(8)
-                            + self.registers[dst_index].0,
-                    );
-
                     program.trace.insert_bitwise_combined(
                         op_type as u32,
                         self.registers[op0_index],
@@ -727,7 +721,7 @@ impl Process {
                         self.register_selector.aux0 = GoldilocksField::ZERO;
                     }
 
-                    let op_type = match opcode.as_str() {
+                    match opcode.as_str() {
                         "gte" => {
                             self.flag = self.registers[op0_index].0 >= value.0 .0;
                             self.opcode =
@@ -797,13 +791,13 @@ impl Process {
     pub fn gen_memory_table(&mut self, program: &mut Program) {
         let mut origin_addr = 0;
         let mut origin_clk = 0;
-        let mut diff_addr = GoldilocksField::ZERO;
-        let mut diff_addr_inv = GoldilocksField::ZERO;
-        let mut diff_clk = GoldilocksField::ZERO;
-        let mut diff_addr_cond = GoldilocksField::ZERO;
+        let mut diff_addr;
+        let mut diff_addr_inv;
+        let mut diff_clk;
+        let mut diff_addr_cond;
         let mut first_row_flag = true;
 
-        for (addr, mut cells) in self.memory.trace.iter() {
+        for (addr, cells) in self.memory.trace.iter() {
             let mut new_addr_flag = true;
             for cell in cells {
                 debug!("addr:{}, cell:{:?}", addr, cell);
@@ -874,7 +868,7 @@ impl Process {
                     diff_addr_inv = GoldilocksField::ZERO;
                     diff_clk = GoldilocksField::from_canonical_u64(cell.clk as u64 - origin_clk);
                     let mut rw_addr_unchanged = GoldilocksField::ONE;
-                    let mut rc_value = GoldilocksField::ZERO;
+                    let rc_value;
                     if cell.is_rw == GoldilocksField::ZERO {
                         rw_addr_unchanged = GoldilocksField::ZERO;
                         rc_value = diff_addr_cond;
