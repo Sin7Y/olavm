@@ -1,6 +1,6 @@
 use crate::hash::{PoseidonHash, N_PARTIAL_ROUNDS};
 use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
+//use plonky2::field::types::Field;
 
 #[rustfmt::skip]
 impl PoseidonHash for GoldilocksField {

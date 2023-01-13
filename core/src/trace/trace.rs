@@ -216,12 +216,12 @@ pub struct BitwiseCombinedRow {
 // Added by xb-2022-12-16
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CmpRow {
-    pub tag: u32,
     pub op0: GoldilocksField,
     pub op1: GoldilocksField,
     pub diff: GoldilocksField,
     pub diff_limb_lo: GoldilocksField,
     pub diff_limb_hi: GoldilocksField,
+    pub filter_looked_for_range_check: GoldilocksField,
 }
 
 //#[derive(Debug, Clone, Serialize, Deserialize)]
@@ -290,20 +290,23 @@ impl Trace {
     }*/
 
     // Added by xb 2022-12-19
-    pub fn insert_cmp(&mut self, op0: GoldilocksField, op1: GoldilocksField, tag: u32) {
+    pub fn insert_cmp(
+        &mut self,
+        op0: GoldilocksField,
+        op1: GoldilocksField,
+        filter_looked_for_range_check: GoldilocksField,
+    ) {
         let mut diff = Default::default();
-
         diff = op0 - op1;
-
         let split_limbs = split_u16_limbs_from_field(&diff);
 
         self.builtin_cmp.push(CmpRow {
-            tag: 1,
             op0,
             op1,
             diff,
             diff_limb_lo: GoldilocksField(split_limbs.0),
             diff_limb_hi: GoldilocksField(split_limbs.1),
+            filter_looked_for_range_check,
         });
     }
 

@@ -720,10 +720,11 @@ impl Process {
                         self.register_selector.op1_reg_sel[op1_index] =
                             GoldilocksField::from_canonical_u64(1);
                     }
-                    self.register_selector.aux0 =
-                        self.register_selector.op0 - self.register_selector.op1;
-                    if self.register_selector.aux0.is_nonzero() {
-                        self.register_selector.aux0 = self.register_selector.aux0.inverse();
+                    let diff = self.register_selector.op0 - self.register_selector.op1;
+                    if diff.is_nonzero() {
+                        self.register_selector.aux0 = diff.inverse();
+                    } else {
+                        self.register_selector.aux0 = GoldilocksField::ZERO;
                     }
 
                     let op_type = match opcode.as_str() {
@@ -737,15 +738,7 @@ impl Process {
                     };
 
                     program.trace.insert_rangecheck(
-                        self.registers[op0_index],
-                        (
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ONE,
-                        ),
-                    );
-                    program.trace.insert_rangecheck(
-                        value.0,
+                        diff,
                         (
                             GoldilocksField::ZERO,
                             GoldilocksField::ZERO,
@@ -753,9 +746,11 @@ impl Process {
                         ),
                     );
 
-                    program
-                        .trace
-                        .insert_cmp(self.registers[op0_index], value.0, op_type as u32);
+                    program.trace.insert_cmp(
+                        self.registers[op0_index],
+                        value.0,
+                        GoldilocksField::ONE,
+                    );
                     self.pc += step;
                 }
                 "end" => {
