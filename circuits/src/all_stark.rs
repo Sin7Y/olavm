@@ -371,6 +371,7 @@ mod tests {
     use crate::proof::{AllProof, PublicValues};
     use crate::prover::prove_with_traces;
     use crate::util::{generate_cpu_trace, trace_rows_to_poly_values};
+    use crate::verifier::verify_proof;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;

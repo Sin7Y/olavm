@@ -1,3 +1,4 @@
+use std::env::var;
 //use core::program::instruction;
 use std::ops::Sub;
 
@@ -151,13 +152,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
                 * (P::ONES - nv_region_prophet + region_prophet)
                 * (P::ONES - nv_region_poseidon + region_poseidon)
                 * (nv_addr - addr)
-                * (P::ONES - nv_addr + addr),
+                * (nv_addr - addr - P::ONES),
         );
         yield_constr.constraint_transition(
             (P::ONES - is_rw)
                 * (P::ONES - nv_region_prophet + region_prophet)
                 * (P::ONES - nv_region_poseidon + region_poseidon)
-                * (P::ONES - nv_addr + addr)
+                * (nv_addr - addr - P::ONES)
                 * nv_is_write,
         );
 
@@ -330,6 +331,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 
 mod tests {
     use crate::constraint_consumer::ConstraintConsumer;
+    use crate::memory::memory_stark::MemoryStark;
     use crate::stark::Stark;
     use crate::util::generate_memory_trace;
     use crate::vars::StarkEvaluationVars;
@@ -338,7 +340,7 @@ mod tests {
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use crate::memory::memory_stark::MemoryStark;
+    use plonky2_util::log2_strict;
 
     fn test_memory_stark(program_src: &str) {
         const D: usize = 2;
@@ -361,19 +363,37 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
         let rows = generate_memory_trace(&program.trace.memory);
+        println!(
+            "raw trace len:{}, extended len: {}",
+            program.trace.memory.len(),
+            rows.len()
+        );
+        let last = F::primitive_root_of_unity(log2_strict(rows.len())).inverse();
+        let subgroup = F::cyclic_subgroup_known_order(
+            F::primitive_root_of_unity(log2_strict(rows.len())),
+            rows.len(),
+        );
 
         for i in 0..rows.len() - 1 {
-            println!("row index: {}", i);
+            println!("mem row index: {}", i);
             let vars = StarkEvaluationVars {
-                local_values: &rows[i],
-                next_values: &rows[i + 1],
+                local_values: &rows[i % rows.len()],
+                next_values: &rows[(i + 1) % rows.len()],
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(
-                vec![GoldilocksField(2), GoldilocksField(3), GoldilocksField(5)],
-                GoldilocksField::ONE,
-                GoldilocksField::ONE,
-                GoldilocksField::ONE,
+                vec![F::rand()],
+                subgroup[i] - last,
+                if i == 0 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+                if i == rows.len() - 1 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
             );
             stark.eval_packed_generic(vars, &mut constraint_consumer);
 
