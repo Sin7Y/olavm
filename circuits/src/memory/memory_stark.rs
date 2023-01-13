@@ -6,7 +6,7 @@ use plonky2::field::types::Field;
 
 use crate::cross_table_lookup::Column;
 use {
-    crate::columns::*,
+    super::columns::*,
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
     crate::stark::Stark,
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
