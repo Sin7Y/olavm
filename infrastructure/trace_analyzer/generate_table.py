@@ -207,12 +207,6 @@ def generate_columns_of_title(worksheet, trace_column_title):
         col += 1
 
 
-class RangeCheckTraceColumnType(Enum):
-    VAL = 'val'
-    LIMB_LO = 'limb_lo'
-    LIMB_HI = 'limb_hi'
-
-
 class BitwiseTraceColumnType(Enum):
     BITWISE_TAG = 'bitwise_tag'
     OP0 = 'op0'
@@ -237,7 +231,6 @@ class ComparisonTraceColumnType(Enum):
     OP0 = 'op0'
     OP1 = 'op1'
     DIFF = 'diff'
-
 
 
 def generate_columns_of_title(worksheet, trace_column_title):
