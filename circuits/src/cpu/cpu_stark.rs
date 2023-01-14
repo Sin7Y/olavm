@@ -243,7 +243,14 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         instruction += lv[COL_OPCODE];
         yield_constr.constraint(lv[COL_INST] - instruction);
+        
         // We constrain raw inst and inst.
+        // First constrain compress consistency
+        let beta = FE::from_basefield(self.get_compress_challenge());
+        yield_constr.constraint(lv[COL_RAW_INST] * beta + lv[COL_RAW_PC] - lv[COL_ZIP_RAW]);
+        yield_constr.constraint(lv[COL_INST] * beta + lv[COL_PC] - lv[COL_ZIP_EXED]);
+
+        // Then check raw inst and inst's lookup logic.
         eval_lookups(vars, yield_constr, COL_PER_ZIP_EXED, COL_PER_ZIP_RAW);
 
         // Only one register used for op0.
