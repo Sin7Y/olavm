@@ -415,12 +415,12 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows =
+        let (bitwise_rows, _) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
@@ -501,12 +501,12 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows =
+        let (bitwise_rows, _) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
@@ -582,12 +582,12 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows =
+        let (bitwise_rows, _) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
@@ -671,12 +671,12 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows =
+        let (bitwise_rows, _) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
@@ -741,12 +741,12 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows =
+        let (bitwise_rows, _) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
@@ -821,12 +821,12 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows =
+        let (bitwise_rows, _) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
@@ -891,12 +891,12 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows =
+        let (bitwise_rows, _) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
@@ -995,15 +995,15 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.execute(&mut program, true);
+        let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
         let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let bitwise_rows =
+        let (bitwise_rows, _) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
         let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);

@@ -26,7 +26,7 @@ use plonky2::util::transpose;
 pub fn generate_cpu_trace<F: RichField>(
     steps: &Vec<Step>,
     raw_instructions: &Vec<String>,
-) -> Vec<[F; cpu::NUM_CPU_COLS]> {
+) -> (Vec<[F; cpu::NUM_CPU_COLS]>, F) {
     let mut raw_insts: Vec<(usize, F)> = raw_instructions
         .iter()
         .enumerate()
@@ -195,7 +195,7 @@ pub fn generate_cpu_trace<F: RichField>(
         .map(|row| row.try_into().unwrap())
         .collect();
 
-    trace_row_vecs
+    (trace_row_vecs, beta)
 }
 
 pub fn generate_memory_trace<F: RichField>(
@@ -333,7 +333,7 @@ pub fn generate_memory_trace<F: RichField>(
 //      looked_table: <0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15>
 pub fn generate_builtins_bitwise_trace<F: RichField>(
     cells: &Vec<BitwiseCombinedRow>,
-) -> Vec<[F; bitwise::COL_NUM_BITWISE]> {
+) -> (Vec<[F; bitwise::COL_NUM_BITWISE]>, F) {
     let mut trace: Vec<[F; bitwise::COL_NUM_BITWISE]> = cells
         .iter()
         .map(|c| {
@@ -365,12 +365,11 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         .collect();
 
     if trace.len() == 0 {
-        let mut ary = [F::ZEROS; bitwise::COL_NUM_BITWISE];
-
-        trace.push(ary);
-        trace.push(ary);
-
-        trace
+        trace.extend([
+            [F::ZEROS; bitwise::COL_NUM_BITWISE],
+            [F::ZEROS; bitwise::COL_NUM_BITWISE],
+        ]);
+        (trace, F::default())
     } else {
         // Ensure the max rows number.
         let trace_len = trace.len();
@@ -436,31 +435,45 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
             }
         }
 
+        // TODO: We should choose proper columns for oracle.
+        let mut challenger =
+            Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
+        let mut op0_columns = vec![];
+        let mut op1_columns = vec![];
+        let mut res_columns = vec![];
+        trace.iter().for_each(|row| {
+            op0_columns.extend(row[bitwise::OP0_LIMBS].iter().clone());
+            op1_columns.extend(row[bitwise::OP1_LIMBS].iter().clone());
+            res_columns.extend(row[bitwise::RES_LIMBS].iter().clone());
+        });
+        challenger.observe_elements(&[op0_columns, op1_columns, res_columns].concat());
+        let beta = challenger.get_challenge();
+
         for i in 0..max_trace_len {
             trace[i][bitwise::COMPRESS_LIMBS.start] = trace[i][bitwise::TAG]
-                + trace[i][bitwise::OP0_LIMBS.start]
-                + trace[i][bitwise::OP1_LIMBS.start]
-                + trace[i][bitwise::RES_LIMBS.start];
+                + trace[i][bitwise::OP0_LIMBS.start] * beta
+                + trace[i][bitwise::OP1_LIMBS.start] * beta * beta
+                + trace[i][bitwise::RES_LIMBS.start] * beta * beta * beta;
 
             trace[i][bitwise::COMPRESS_LIMBS.start + 1] = trace[i][bitwise::TAG]
-                + trace[i][bitwise::OP0_LIMBS.start + 1]
-                + trace[i][bitwise::OP1_LIMBS.start + 1]
-                + trace[i][bitwise::RES_LIMBS.start + 1];
+                + trace[i][bitwise::OP0_LIMBS.start + 1] * beta
+                + trace[i][bitwise::OP1_LIMBS.start + 1] * beta * beta
+                + trace[i][bitwise::RES_LIMBS.start + 1] * beta * beta * beta;
 
             trace[i][bitwise::COMPRESS_LIMBS.start + 2] = trace[i][bitwise::TAG]
-                + trace[i][bitwise::OP0_LIMBS.start + 2]
-                + trace[i][bitwise::OP1_LIMBS.start + 2]
-                + trace[i][bitwise::RES_LIMBS.start + 2];
+                + trace[i][bitwise::OP0_LIMBS.start + 2] * beta
+                + trace[i][bitwise::OP1_LIMBS.start + 2] * beta * beta
+                + trace[i][bitwise::RES_LIMBS.start + 2] * beta * beta * beta;
 
             trace[i][bitwise::COMPRESS_LIMBS.start + 3] = trace[i][bitwise::TAG]
-                + trace[i][bitwise::OP0_LIMBS.start + 3]
-                + trace[i][bitwise::OP1_LIMBS.start + 3]
-                + trace[i][bitwise::RES_LIMBS.start + 3];
+                + trace[i][bitwise::OP0_LIMBS.start + 3] * beta
+                + trace[i][bitwise::OP1_LIMBS.start + 3] * beta * beta
+                + trace[i][bitwise::RES_LIMBS.start + 3] * beta * beta * beta;
 
             trace[i][bitwise::FIX_COMPRESS] = trace[i][bitwise::FIX_TAG]
-                + trace[i][bitwise::FIX_BITWSIE_OP0]
-                + trace[i][bitwise::FIX_BITWSIE_OP1]
-                + trace[i][bitwise::FIX_BITWSIE_RES];
+                + trace[i][bitwise::FIX_BITWSIE_OP0] * beta
+                + trace[i][bitwise::FIX_BITWSIE_OP1] * beta * beta
+                + trace[i][bitwise::FIX_BITWSIE_RES] * beta * beta * beta;
         }
 
         // Transpose to column-major form.
@@ -511,7 +524,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
             .map(|row| vec_to_ary_bitwise(row))
             .collect();
 
-        trace_row_vecs
+        (trace_row_vecs, beta)
     }
 }
 
