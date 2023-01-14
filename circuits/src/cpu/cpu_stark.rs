@@ -243,7 +243,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         instruction += lv[COL_OPCODE];
         yield_constr.constraint(lv[COL_INST] - instruction);
-        
+
         // We constrain raw inst and inst.
         // First constrain compress consistency
         let beta = FE::from_basefield(self.get_compress_challenge());
