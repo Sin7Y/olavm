@@ -95,7 +95,7 @@ pub struct CpuStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> CpuStark<F, D> {
-    fn new_with(challenge: F) -> Self {
+    pub fn new(challenge: F) -> Self {
         let mut cpu_stark = Self::default();
         cpu_stark.compress_challenge = challenge;
         cpu_stark
@@ -419,7 +419,7 @@ mod tests {
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         // print_cpu_trace(&cpu_rows);
 
-        let stark = S::new_with(beta);
+        let stark = S::new(beta);
         let len = cpu_rows.len();
         let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
         let subgroup =
