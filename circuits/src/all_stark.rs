@@ -415,7 +415,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
@@ -501,7 +501,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
@@ -582,7 +582,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
@@ -671,7 +671,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
@@ -741,7 +741,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
@@ -821,7 +821,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
@@ -891,7 +891,7 @@ mod tests {
 
         println!("vm trace: {:?}", program.trace);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
@@ -998,7 +998,7 @@ mod tests {
         process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let cpu_rows =
+        let (cpu_rows, _) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
         let memory_rows = generate_memory_trace::<F>(&program.trace.memory);

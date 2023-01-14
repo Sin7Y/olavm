@@ -394,7 +394,6 @@ mod tests {
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = CpuStark<F, D>;
-        let stark = S::default();
 
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
@@ -409,10 +408,11 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program, true);
 
-        let cpu_rows =
+        let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         // print_cpu_trace(&cpu_rows);
 
+        let stark = S::new_with(beta);
         let len = cpu_rows.len();
         let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
         let subgroup =
