@@ -207,41 +207,6 @@ def generate_columns_of_title(worksheet, trace_column_title):
         col += 1
 
 
-class BitwiseTraceColumnType(Enum):
-    BITWISE_TAG = 'bitwise_tag'
-    OP0 = 'op0'
-    OP1 = 'op1'
-    RES = 'res'
-    OP0_0 = 'op0_0'
-    OP0_1 = 'op0_1'
-    OP0_2 = 'op0_2'
-    OP0_3 = 'op0_3'
-    OP1_0 = 'op1_0'
-    OP1_1 = 'op1_1'
-    OP1_2 = 'op1_2'
-    OP1_3 = 'op1_3'
-    RES_0 = 'res_0'
-    RES_1 = 'res_1'
-    RES_2 = 'res_2'
-    RES_3 = 'res_3'
-
-
-class ComparisonTraceColumnType(Enum):
-    TAG = 'tag'
-    OP0 = 'op0'
-    OP1 = 'op1'
-    DIFF = 'diff'
-
-
-def generate_columns_of_title(worksheet, trace_column_title):
-    col = 0
-    title_row = 0
-    for data in trace_column_title:
-        # print(data.name)
-        worksheet.write(title_row, col, data.value)
-        col += 1
-
-
 def main():
     import sys
     parser = argparse.ArgumentParser()
