@@ -747,7 +747,9 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
             let mut new_row = end_row;
-            new_row[cmp::FILTER] = F::ZEROS;
+            new_row[rangecheck::CPU_FILTER] = F::ZEROS;
+            new_row[rangecheck::MEMORY_FILTER] = F::ZEROS;
+            new_row[rangecheck::CMP_FILTER] = F::ZEROS;
             trace.push(new_row);
         }
 
