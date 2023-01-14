@@ -26,7 +26,7 @@ use plonky2::util::transpose;
 pub fn generate_cpu_trace<F: RichField>(
     steps: &Vec<Step>,
     raw_instructions: &Vec<String>,
-) -> Vec<[F; cpu::NUM_CPU_COLS]> {
+) -> (Vec<[F; cpu::NUM_CPU_COLS]>, F) {
     let mut raw_insts: Vec<(usize, F)> = raw_instructions
         .iter()
         .enumerate()
@@ -195,7 +195,7 @@ pub fn generate_cpu_trace<F: RichField>(
         .map(|row| row.try_into().unwrap())
         .collect();
 
-    trace_row_vecs
+    (trace_row_vecs, beta)
 }
 
 pub fn generate_memory_trace<F: RichField>(
