@@ -48,28 +48,41 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
     {
-        let op0 = vars.local_values[OP0];
-        let op1 = vars.local_values[OP1];
-        let res = vars.local_values[RES];
+        let lv = vars.local_values;
+        let op0 = lv[OP0];
+        let op1 = lv[OP1];
+        let res = lv[RES];
 
         // sumcheck for op0, op1, res
         // op0 = Sum(op0_limbs_i * 2^(8*i))
-        let op0_limbs: Vec<_> = vars.local_values[OP0_LIMBS].to_vec();
+        let op0_limbs: Vec<_> = lv[OP0_LIMBS].to_vec();
         let computed_sum =
             reduce_with_powers(&op0_limbs, P::Scalar::from_canonical_usize(Self::BASE));
         yield_constr.constraint(computed_sum - op0);
 
         // op1 = Sum(op1_limbs_i * 2^(8*i))
-        let op1_limbs: Vec<_> = vars.local_values[OP1_LIMBS].to_vec();
+        let op1_limbs: Vec<_> = lv[OP1_LIMBS].to_vec();
         let computed_sum =
             reduce_with_powers(&op1_limbs, P::Scalar::from_canonical_usize(Self::BASE));
         yield_constr.constraint(computed_sum - op1);
 
         // res = Sum(res_limbs_i * 2^(8*i))
-        let res_limbs: Vec<_> = vars.local_values[RES_LIMBS].to_vec();
+        let res_limbs: Vec<_> = lv[RES_LIMBS].to_vec();
         let computed_sum =
             reduce_with_powers(&res_limbs, P::Scalar::from_canonical_usize(Self::BASE));
         yield_constr.constraint(computed_sum - res);
+
+        // Constrain compress logic.
+        let beta = FE::from_basefield(self.get_compress_challenge());
+        for i in 0..4 {
+            yield_constr.constraint(
+                lv[TAG]
+                    + lv[OP0_LIMBS.start + i] * beta
+                    + lv[OP1_LIMBS.start + i] * beta * beta
+                    + lv[RES_LIMBS.start + i] * beta * beta
+                    - lv[COMPRESS_LIMBS.start + i] * beta,
+            );
+        }
 
         eval_lookups(
             vars,
@@ -172,9 +185,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, { COL_NUM_BITWISE }>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, { COL_NUM_BITWISE }>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
     }
 
@@ -198,8 +211,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([OP0, OP1, RES]).collect_vec();
-    res
+    Column::singles([OP0, OP1, RES]).collect_vec()
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
