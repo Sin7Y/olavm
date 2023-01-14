@@ -26,7 +26,7 @@ pub struct BitwiseStark<F, const D: usize> {
 impl<F: RichField, const D: usize> BitwiseStark<F, D> {
     const BASE: usize = 1 << 8;
 
-    fn new_with(challenge: F) -> Self {
+    pub fn new(challenge: F) -> Self {
         let mut cpu_stark = Self::default();
         cpu_stark.compress_challenge = challenge;
         cpu_stark
