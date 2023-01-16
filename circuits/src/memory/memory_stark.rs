@@ -354,6 +354,7 @@ mod tests {
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
 
+    #[allow(unused)]
     fn test_memory_stark(program_src: &str) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;

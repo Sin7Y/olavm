@@ -15,6 +15,7 @@ pub const N_ROUNDS: usize = N_FULL_ROUNDS_TOTAL + N_PARTIAL_ROUNDS;
 const MAX_WIDTH: usize = 12; // we only have width 8 and 12, and 12 is bigger. :)
 
 #[inline(always)]
+#[allow(unused)]
 fn add_u160_u128((x_lo, x_hi): (u128, u32), y: u128) -> (u128, u32) {
     let (res_lo, over) = x_lo.overflowing_add(y);
     let res_hi = x_hi + (over as u32);
@@ -22,6 +23,7 @@ fn add_u160_u128((x_lo, x_hi): (u128, u32), y: u128) -> (u128, u32) {
 }
 
 #[inline(always)]
+#[allow(unused)]
 fn reduce_u160<F: PrimeField64>((n_lo, n_hi): (u128, u32)) -> F {
     let n_lo_hi = (n_lo >> 64) as u64;
     let n_lo_lo = n_lo as u64;
@@ -34,6 +36,7 @@ fn reduce_u160<F: PrimeField64>((n_lo, n_hi): (u128, u32)) -> F {
 /// `generate_constants` about how these were generated. We include enough for a WIDTH of 12;
 /// smaller widths just use a subset.
 #[rustfmt::skip]
+#[allow(unused)]
 pub const ALL_ROUND_CONSTANTS: [u64; MAX_WIDTH * N_ROUNDS]  = [
     // WARNING: The AVX2 Goldilocks specialization relies on all round constants being in
     // 0..0xfffeeac900011537. If these constants are randomly regenerated, there is a ~.6% chance
@@ -134,6 +137,7 @@ pub const ALL_ROUND_CONSTANTS: [u64; MAX_WIDTH * N_ROUNDS]  = [
     0x4543d9df5476d3cb, 0xf172d73e004fc90d, 0xdfd1c4febcc81238, 0xbc8dfb627fe558fc,
 ];
 
+#[allow(unused)]
 const WIDTH: usize = SPONGE_WIDTH;
 pub trait PoseidonHash: PrimeField64 {
     // Total number of round constants required: width of the input

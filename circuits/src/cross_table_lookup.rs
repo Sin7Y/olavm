@@ -192,6 +192,7 @@ impl<F: Field> CrossTableLookup<F> {
         }
     }
 
+    #[allow(unused)]
     pub(crate) fn num_ctl_zs(ctls: &[Self], table: Table, num_challenges: usize) -> usize {
         let mut num_ctls = 0;
         for ctl in ctls {
@@ -459,6 +460,7 @@ pub struct CtlCheckVarsTarget<'a, F: Field, const D: usize> {
 }
 
 impl<'a, F: Field, const D: usize> CtlCheckVarsTarget<'a, F, D> {
+    #[allow(unused)]
     pub(crate) fn from_proof(
         table: Table,
         proof: &StarkProofTarget<D>,
@@ -632,6 +634,7 @@ pub(crate) fn verify_cross_table_lookups<
     Ok(())
 }
 
+#[allow(unused)]
 pub(crate) fn verify_cross_table_lookups_circuit<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
