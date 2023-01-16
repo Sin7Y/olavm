@@ -387,7 +387,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
         //let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
+        for _ in trace_len..new_row_len {
             //let mut new_row = end_row;
             //new_row[bitwise::FILTER] = F::ZEROS;
             trace.push([F::ZERO; bitwise::COL_NUM_BITWISE]);
@@ -653,7 +653,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
         //let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
+        for _ in trace_len..new_row_len {
             //let mut new_row = end_row;
             //new_row[cmp::FILTER] = F::ZEROS;
             //trace.push(new_row);
@@ -761,7 +761,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
         //let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
+        for _ in trace_len..new_row_len {
             //let mut new_row = end_row;
             //new_row[rangecheck::CPU_FILTER] = F::ZEROS;
             //new_row[rangecheck::MEMORY_FILTER] = F::ZEROS;

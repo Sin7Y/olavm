@@ -19,10 +19,10 @@ use crate::util::trace_rows_to_poly_values;
 pub struct GenerationInputs {}
 
 pub(crate) fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
-    all_stark: &AllStark<F, D>,
-    inputs: GenerationInputs,
-    config: &StarkConfig,
-    timing: &mut TimingTree,
+    _all_stark: &AllStark<F, D>,
+    _inputs: GenerationInputs,
+    _config: &StarkConfig,
+    _timing: &mut TimingTree,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     // TODO:
     let cpu_rows: Vec<[F; 1]> = vec![];
