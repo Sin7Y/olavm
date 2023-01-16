@@ -1,18 +1,12 @@
 use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-//use crate::cross_table_lookup::Column;
 use crate::fixed_table::rangecheck_fixed::columns::*;
 use crate::stark::Stark;
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
-//use itertools::Itertools;
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
-//use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
-//use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-//use plonky2::plonk::plonk_common::*;
 use std::marker::PhantomData;
-//use std::ops::*;
 
 #[derive(Copy, Clone, Default)]
 pub struct RangecheckFixedStark<F, const D: usize> {
@@ -28,8 +22,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangecheckFix
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
-        vars: StarkEvaluationVars<FE, P, { COL_NUM }>,
-        yield_constr: &mut ConstraintConsumer<P>,
+        _vars: StarkEvaluationVars<FE, P, { COL_NUM }>,
+        _yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
@@ -38,9 +32,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangecheckFix
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, { COL_NUM }>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, { COL_NUM }>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
     }
 
