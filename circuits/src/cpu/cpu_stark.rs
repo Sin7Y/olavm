@@ -120,10 +120,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let lv = vars.local_values;
         let nv = vars.next_values;
 
-        // Only for debug
-        println!("l_clk: {:?}: s_add: {:?}, s_mul: {:?}, s_eq: {:?}, s_assert: {:?}, s_mov: {:?}, s_jmp: {:?}, s_cjmp: {:?}, s_call: {:?}, s_ret: {:?}, s_mload: {:?}, s_mstore: {:?}, s_end: {:?}", lv[COL_CLK], lv
-        [COL_S_ADD], lv[COL_S_MUL], lv[COL_S_EQ], lv[COL_S_ASSERT], lv[COL_S_MOV], lv[COL_S_JMP], lv[COL_S_CJMP], lv[COL_S_CALL], lv[COL_S_RET], lv[COL_S_MLOAD], lv[COL_S_MSTORE], lv[COL_S_END]);
-
         // 1. Constrain instruction decoding.
         // op_imm should be binary.
         yield_constr.constraint(lv[COL_OP1_IMM] * (P::ONES - lv[COL_OP1_IMM]));
@@ -384,17 +380,20 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     }
 }
 
+#[cfg(test)]
 mod tests {
 
-    use super::*;
-    use crate::util::generate_cpu_trace;
-    use core::program::Program;
-    use executor::Process;
-    use plonky2::{
-        field::goldilocks_field::GoldilocksField,
-        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    use {
+        super::*,
+        crate::util::generate_cpu_trace,
+        core::program::Program,
+        executor::Process,
+        plonky2::{
+            field::goldilocks_field::GoldilocksField,
+            plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+        },
+        plonky2_util::log2_strict,
     };
-    use plonky2_util::log2_strict;
 
     fn test_cpu_stark(program_src: &str) {
         const D: usize = 2;
