@@ -121,7 +121,7 @@ pub fn decode_raw_instruction(
                 let reg1_name = format!("r{}", reg1);
                 instruction += &reg1_name;
             }
-            Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RangeCheck => {
+            Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RANGECHECK => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 if imm_flag == 1 {
@@ -136,7 +136,6 @@ pub fn decode_raw_instruction(
             Opcode::RET | Opcode::END => {
                 instruction += &op_code.to_string();
             }
-            _ => panic!("not match opcode:{}", op_code),
         };
         return Ok((instruction, step));
     }
