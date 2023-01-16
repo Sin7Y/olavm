@@ -91,7 +91,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::MOV | Opcode::MLOAD => {
+            Opcode::MOV | Opcode::MLOAD | Opcode::NOT => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
