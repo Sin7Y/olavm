@@ -386,15 +386,16 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         // padding for exe trace
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
-        let end_row = trace[trace_len - 1];
+        //let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
-            let mut new_row = end_row;
-            new_row[cmp::FILTER] = F::ZEROS;
-            trace.push(new_row);
+            //let mut new_row = end_row;
+            //new_row[bitwise::FILTER] = F::ZEROS;
+            trace.push([F::ZERO; bitwise::COL_NUM_BITWISE]);
         }
 
         // add fix bitwise info
         // for 2^8 case, the row is 2^15 + 2^7
+        // fixed at 2023-1-16, for 2^8 case, row number is 2^16
         let mut index = 0;
         for op0 in 0..bitwise::RANGE_CHECK_U8_SIZE {
             // add fix rangecheck info
@@ -651,11 +652,12 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         // padding for exe trace
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
-        let end_row = trace[trace_len - 1];
+        //let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
-            let mut new_row = end_row;
-            new_row[cmp::FILTER] = F::ZEROS;
-            trace.push(new_row);
+            //let mut new_row = end_row;
+            //new_row[cmp::FILTER] = F::ZEROS;
+            //trace.push(new_row);
+            trace.push([F::ZERO; cmp::COL_NUM_CMP]);
         }
         //}
 
@@ -758,13 +760,14 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         // padding for exe trace
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
-        let end_row = trace[trace_len - 1];
+        //let end_row = trace[trace_len - 1];
         for i in trace_len..new_row_len {
-            let mut new_row = end_row;
-            new_row[rangecheck::CPU_FILTER] = F::ZEROS;
-            new_row[rangecheck::MEMORY_FILTER] = F::ZEROS;
-            new_row[rangecheck::CMP_FILTER] = F::ZEROS;
-            trace.push(new_row);
+            //let mut new_row = end_row;
+            //new_row[rangecheck::CPU_FILTER] = F::ZEROS;
+            //new_row[rangecheck::MEMORY_FILTER] = F::ZEROS;
+            //new_row[rangecheck::CMP_FILTER] = F::ZEROS;
+            //trace.push(new_row);
+            trace.push([F::ZERO; rangecheck::COL_NUM_RC]);
         }
 
         // Transpose to column-major form.
