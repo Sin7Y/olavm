@@ -12,7 +12,6 @@ use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::plonk_common::*;
 use std::marker::PhantomData;
 
 #[derive(Copy, Clone, Default)]
@@ -64,9 +63,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, { COL_NUM_RC }>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, { COL_NUM_RC }>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
     }
 

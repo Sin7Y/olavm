@@ -1,6 +1,3 @@
-use plonky2::field::extension::Extendable;
-use plonky2::field::types::Field;
-use plonky2::hash::hash_types::RichField;
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
@@ -9,13 +6,13 @@ use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::memory::memory_stark::{
-    ctl_data as mem_ctl_data, ctl_data_mem_rc, ctl_data_mem_rc_diff_addr, ctl_data_mem_rc_diff_clk,
-    ctl_data_mem_rc_diff_cond, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc,
-    ctl_filter_mem_rc_diff_addr, ctl_filter_mem_rc_diff_clk, ctl_filter_mem_rc_diff_cond,
+    ctl_data as mem_ctl_data, ctl_data_mem_rc, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc,
     MemoryStark,
 };
-use crate::program::program_stark::{self};
 use crate::stark::Stark;
+use plonky2::field::extension::Extendable;
+use plonky2::field::types::Field;
+use plonky2::hash::hash_types::RichField;
 
 #[derive(Clone)]
 pub struct AllStark<F: RichField + Extendable<D>, const D: usize> {
@@ -316,35 +313,24 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
 }*/
 
 mod tests {
-    use crate::stark::Stark;
-    use crate::verifier::verify_proof;
-    use anyhow::{Ok, Result};
-    use core::program::Program;
-    use ethereum_types::U256;
-    use itertools::Itertools;
-    use plonky2::fri::oracle::PolynomialBatch;
-    use plonky2::iop::challenger::Challenger;
-    use std::borrow::BorrowMut;
-    use std::time::{SystemTime, UNIX_EPOCH};
-    use executor::Process;
-    use log::debug;
-    use plonky2::field::polynomial::PolynomialValues;
-    use plonky2::field::types::{Field, PrimeField64};
-    use plonky2::iop::witness::PartialWitness;
-    use plonky2::plonk::circuit_builder::CircuitBuilder;
-    use plonky2::plonk::circuit_data::{CircuitConfig, VerifierCircuitData};
-    use plonky2::plonk::config::{GenericConfig, Hasher, PoseidonGoldilocksConfig};
-    use plonky2::util::timing::TimingTree;
     use crate::all_stark::AllStark;
     use crate::config::StarkConfig;
-    use crate::cpu::cpu_stark::CpuStark;
-    use crate::proof::{AllProof, PublicValues, StarkProof};
-    use crate::prover::{prove_single_table, prove_with_traces};
+    use crate::proof::PublicValues;
+    use crate::prover::prove_with_traces;
+    use crate::stark::Stark;
     use crate::util::{
         generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
         generate_builtins_rangecheck_trace, generate_cpu_trace, generate_memory_trace,
         trace_rows_to_poly_values,
     };
+    use crate::verifier::verify_proof;
+    use anyhow::Result;
+    use core::program::Program;
+    use executor::Process;
+    use log::debug;
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::util::timing::TimingTree;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
