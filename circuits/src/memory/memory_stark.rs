@@ -81,7 +81,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
     {
-        dbg!(vars);
         let lv = vars.local_values;
         let nv = vars.next_values;
 
