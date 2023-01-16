@@ -163,6 +163,7 @@ pub(crate) struct StarkProofChallenges<F: RichField + Extendable<D>, const D: us
     pub fri_challenges: FriChallenges<F, D>,
 }
 
+#[allow(unused)]
 pub(crate) struct StarkProofChallengesTarget<const D: usize> {
     pub permutation_challenge_sets: Option<Vec<GrandProductChallengeSet<Target>>>,
     pub stark_alphas: Vec<Target>,
@@ -268,6 +269,7 @@ pub struct StarkOpeningSetTarget<const D: usize> {
 }
 
 impl<const D: usize> StarkOpeningSetTarget<D> {
+    #[allow(unused)]
     pub(crate) fn to_fri_openings(&self, zero: Target) -> FriOpeningsTarget<D> {
         let zeta_batch = FriOpeningBatchTarget {
             values: self

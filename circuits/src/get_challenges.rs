@@ -150,6 +150,7 @@ where
 }
 
 impl<const D: usize> StarkProofTarget<D> {
+    #[allow(unused)]
     pub(crate) fn get_challenges<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>>(
         &self,
         builder: &mut CircuitBuilder<F, D>,

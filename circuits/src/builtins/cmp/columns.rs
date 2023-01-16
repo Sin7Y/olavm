@@ -36,4 +36,4 @@ pub(crate) const DIFF_LIMB_HI: usize = DIFF_LIMB_LO + 1;
 
 pub(crate) const COL_NUM_CMP: usize = DIFF_LIMB_HI + 1; //6
 
-pub(crate) const RANGE_CHECK_U16_SIZE: usize = 1 << 16;
+// pub(crate) const RANGE_CHECK_U16_SIZE: usize = 1 << 16;
