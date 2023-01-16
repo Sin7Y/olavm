@@ -91,7 +91,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::MOV | Opcode::MLOAD => {
+            Opcode::MOV | Opcode::MLOAD | Opcode::NOT => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
@@ -121,7 +121,7 @@ pub fn decode_raw_instruction(
                 let reg1_name = format!("r{}", reg1);
                 instruction += &reg1_name;
             }
-            Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RANGE_CHECK => {
+            Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RANGECHECK => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 if imm_flag == 1 {
@@ -136,7 +136,6 @@ pub fn decode_raw_instruction(
             Opcode::RET | Opcode::END => {
                 instruction += &op_code.to_string();
             }
-            _ => panic!("not match opcode:{}", op_code),
         };
         return Ok((instruction, step));
     }

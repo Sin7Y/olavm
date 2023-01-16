@@ -79,9 +79,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, { COL_NUM_CMP }>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, { COL_NUM_CMP }>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
     }
 

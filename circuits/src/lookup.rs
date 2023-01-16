@@ -155,7 +155,7 @@ pub fn extend_to_power_of_2<F: PrimeField64>(inputs: &[F], table: &[F]) -> (Vec<
     let expect_trace_len = looking_trace_len.max(looked_trace_len).next_power_of_two();
 
     let mut extend_input = Vec::with_capacity(expect_trace_len);
-    let mut extend_table = Vec::with_capacity(expect_trace_len);
+    let extend_table = Vec::with_capacity(expect_trace_len);
 
     for i in 0..expect_trace_len {
         if i < looking_trace_len {

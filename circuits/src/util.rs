@@ -119,7 +119,7 @@ pub fn generate_cpu_trace<F: RichField>(
                 o if u64::from(1_u64 << Opcode::END as u8) == o => {
                     row[cpu::COL_S_END] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::RANGE_CHECK as u8) == o => {
+                o if u64::from(1_u64 << Opcode::RANGECHECK as u8) == o => {
                     row[cpu::COL_S_RC] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::AND as u8) == o => {
@@ -387,7 +387,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
         //let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
+        for _ in trace_len..new_row_len {
             //let mut new_row = end_row;
             //new_row[bitwise::FILTER] = F::ZEROS;
             trace.push([F::ZERO; bitwise::COL_NUM_BITWISE]);
@@ -629,7 +629,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         .collect();
 
     if trace.len() == 0 {
-        let mut ary = [F::ZEROS; cmp::COL_NUM_CMP];
+        let ary = [F::ZEROS; cmp::COL_NUM_CMP];
 
         trace.push(ary);
         trace.push(ary);
@@ -653,7 +653,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
         //let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
+        for _ in trace_len..new_row_len {
             //let mut new_row = end_row;
             //new_row[cmp::FILTER] = F::ZEROS;
             //trace.push(new_row);
@@ -739,7 +739,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         .collect();
 
     if trace.len() == 0 {
-        let mut ary = [F::ZEROS; rangecheck::COL_NUM_RC];
+        let ary = [F::ZEROS; rangecheck::COL_NUM_RC];
 
         trace.push(ary);
         trace.push(ary);
@@ -761,7 +761,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         //if !max_trace_len.is_power_of_two() {
         //let new_row_len = max_trace_len.next_power_of_two();
         //let end_row = trace[trace_len - 1];
-        for i in trace_len..new_row_len {
+        for _ in trace_len..new_row_len {
             //let mut new_row = end_row;
             //new_row[rangecheck::CPU_FILTER] = F::ZEROS;
             //new_row[rangecheck::MEMORY_FILTER] = F::ZEROS;

@@ -380,17 +380,20 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     }
 }
 
+#[cfg(test)]
 mod tests {
 
-    use super::*;
-    use crate::util::generate_cpu_trace;
-    use core::program::Program;
-    use executor::Process;
-    use plonky2::{
-        field::goldilocks_field::GoldilocksField,
-        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    use {
+        super::*,
+        crate::util::generate_cpu_trace,
+        core::program::Program,
+        executor::Process,
+        plonky2::{
+            field::goldilocks_field::GoldilocksField,
+            plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+        },
+        plonky2_util::log2_strict,
     };
-    use plonky2_util::log2_strict;
 
     fn test_cpu_stark(program_src: &str) {
         const D: usize = 2;
