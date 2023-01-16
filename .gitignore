@@ -2,5 +2,5 @@
 /.idea
 *.txt
 Cargo.lock
-trace.xlsx
+*.xlsx
 /**/.DS_Store
