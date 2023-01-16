@@ -217,3 +217,41 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
     Column::single(FILTER)
 }
+
+// Get the column info for Cross_Lookup<Rangecheck_Fixed_table, Bitwise_table>
+/*pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles(OP0_LIMBS).collect_vec();
+    res.extend(Column::singles(OP1_LIMBS).collect_vec());
+    res.extend(Column::singles(RES_LIMBS).collect_vec());
+    res
+}
+pub fn ctl_filter_with_rangecheck_fixed<F: Field>() -> Column<F> {
+    Column::one()
+}
+// Get the column info for Cross_Lookup<Bitwise_Fixed_table, Bitwise_table>
+pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
+    let mut res =
+        Column::singles([OP0_LIMBS.start, OP1_LIMBS.start, RES_LIMBS.start]).collect_vec();
+    res.extend(
+        Column::singles([
+            OP0_LIMBS.start.add(1),
+            OP1_LIMBS.start.add(1),
+            RES_LIMBS.start.add(1),
+        ])
+        .collect_vec(),
+    );
+    res.extend(
+        Column::singles([
+            OP0_LIMBS.start.add(2),
+            OP1_LIMBS.start.add(2),
+            RES_LIMBS.start.add(2),
+        ])
+        .collect_vec(),
+    );
+    res.extend(Column::singles([OP0_LIMBS.end, OP1_LIMBS.end, RES_LIMBS.end]).collect_vec());
+    res.extend(Column::singles([TAG]));
+    res
+}
+pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
+    Column::one()
+}*/

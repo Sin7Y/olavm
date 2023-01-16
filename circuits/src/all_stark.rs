@@ -68,16 +68,20 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
 pub enum Table {
     Cpu = 0,
     Memory = 1,
+    // builtins
     Bitwise = 2,
     Cmp = 3,
     RangeCheck = 4,
+    BitwiseFixed = 5,
+    RangecheckFixed = 6,
+    // program table
+    Program = 7,
 }
 
 pub(crate) const NUM_TABLES: usize = 5;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
-    // TODO: bitwise rangecheck lookup?
     vec![
         ctl_cpu_memory(),
         ctl_memory_rc(),
@@ -181,23 +185,6 @@ fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-// Cross_Lookup_Table(looking_table, looked_table)
-/*fn ctl_bitwise_rangecheck<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::RangecheckFixed,
-            rangecheck_fixed_stark::ctl_data_with_bitwise(),
-            Some(rangecheck_fixed_stark::ctl_filter_with_bitwise()),
-        )],
-        TableWithColumns::new(
-            Table::Bitwise,
-            bitwise_stark::ctl_data_with_rangecheck_fixed(),
-            Some(bitwise_stark::ctl_filter_with_rangecheck_fixed()),
-        ),
-        None,
-    )
-}*/
-
 // add CMP cross lookup instance
 fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
@@ -247,6 +234,86 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
         None,
     )
 }
+
+// Cross_Lookup_Table(looking_table, looked_table)
+/*fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::BitwiseFixed,
+            bitwise_fixed_stark::ctl_data_with_bitwise(),
+            Some(bitwise_fixed_stark::ctl_filter_with_bitwise()),
+        )],
+        TableWithColumns::new(
+            Table::Bitwise,
+            bitwise_stark::ctl_data_with_bitwise_fixed(),
+            Some(bitwise_stark::ctl_filter_with_bitwise_fixed()),
+        ),
+        None,
+    )
+}*/
+
+/*fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::RangecheckFixed,
+            rangecheck_fixed_stark::ctl_data_with_rangecheck(),
+            Some(rangecheck_fixed_stark::ctl_filter_with_rangecheck()),
+        )],
+        TableWithColumns::new(
+            Table::RangeCheck,
+            rangecheck_stark::ctl_data_with_rangecheck_fixed(),
+            Some(rangecheck_stark::ctl_filter_with_rangecheck_fixed()),
+        ),
+        None,
+    )
+}*/
+
+// check the correct program with lookup
+
+// Program table
+// +-----+--------------+-------+----------+
+// | PC  |      INS     |  IMM  | COMPRESS |
+// +-----+--------------+-------+----------+
+// +-----+--------------+-------+----------+
+// |  1  |  0x********  |  U32  |   Field  |
+// +-----+--------------+-------+----------+
+// +-----+--------------+-------+----------+
+// |  2  |  0x********  |  U32  |   Field  |
+// +-----+--------------+-------+----------++
+// +-----+--------------+-------+----------+
+// |  3  |  0x********  |  U32  |   Field  |
+// +-----+--------------+-------+----------+
+
+// CPU table
+// +-----+-----+--------------+-------+----------+
+// | ... | PC  |      INS     |  IMM  | COMPRESS |
+// +-----+-----+--------------+-------+----------+
+// +-----+-----+--------------+-------+----------+
+// | ... |  1  |  0x********  |  U32  |   Field  |
+// +-----+-----+--------------+-------+----------+
+// +-----+-----+--------------+-------+----------+
+// | ... |  2  |  0x********  |  U32  |   Field  |
+// +-----+-----+--------------+-------+----------++
+// +-----+-----+--------------+-------+----------+
+// | ... |  3  |  0x********  |  U32  |   Field  |
+// +-----+-----+--------------+-------+----------+
+
+// Note that COMPRESS will be computed by vector lookup argument protocol
+/*fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_program(),
+            Some(cpu_stark::ctl_filter_with_program()),
+        )],
+        TableWithColumns::new(
+            Table::Program,
+            program_stark::ctl_data_with_cpu(),
+            Some(program_stark::ctl_filter_with_cpu()),
+        ),
+        None,
+    )
+}*/
 
 mod tests {
     use crate::stark::Stark;
@@ -316,8 +383,6 @@ mod tests {
         let mut process = Process::new();
         process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
-
-        println!("vm trace: {:?}", program.trace);
 
         let (cpu_rows, cpu_beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
@@ -403,8 +468,6 @@ mod tests {
         process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        println!("vm trace: {:?}", program.trace);
-
         let (cpu_rows, cpu_beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
@@ -483,8 +546,6 @@ mod tests {
         let mut process = Process::new();
         process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
-
-        println!("vm trace: {:?}", program.trace);
 
         let (cpu_rows, cpu_beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
@@ -573,8 +634,6 @@ mod tests {
         process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        println!("vm trace: {:?}", program.trace);
-
         let (cpu_rows, cpu_beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
@@ -642,8 +701,6 @@ mod tests {
         let mut process = Process::new();
         process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
-
-        println!("vm trace: {:?}", program.trace);
 
         let (cpu_rows, cpu_beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
@@ -723,8 +780,6 @@ mod tests {
         process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        println!("vm trace: {:?}", program.trace);
-
         let (cpu_rows, cpu_beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
         let cpu_trace = trace_rows_to_poly_values(cpu_rows);
@@ -792,8 +847,6 @@ mod tests {
         let mut process = Process::new();
         process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
-
-        println!("vm trace: {:?}", program.trace);
 
         let (cpu_rows, cpu_beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);

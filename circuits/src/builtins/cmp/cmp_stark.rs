@@ -61,6 +61,20 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
         let sum = limb_lo.add(limb_hi.mul(base));
 
         yield_constr.constraint(diff - sum);
+
+
+        /*eval_lookups(
+            vars,
+            yield_constr,
+            DIFF_LIMB_LO_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED_LO,
+        );
+        eval_lookups(
+            vars,
+            yield_constr,
+            DIFF_LIMB_HI_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED_HI,
+        );*/
     }
 
     fn eval_ext_circuit(
