@@ -71,5 +71,6 @@ pub(crate) const FIX_COMPRESS_PERMUTED: Range<usize> = FIX_COMPRESS + 1..FIX_COM
 pub(crate) const COL_NUM_BITWISE: usize = FIX_COMPRESS_PERMUTED.end; //58
 
 pub(crate) const RANGE_CHECK_U8_SIZE: usize = 1 << 8;
-pub(crate) const BITWISE_U8_SIZE_PER: usize = (1 << 15) + (1 << 7);
+//pub(crate) const BITWISE_U8_SIZE_PER: usize = (1 << 15) + (1 << 7);
+pub(crate) const BITWISE_U8_SIZE_PER: usize = 1 << 16;
 pub(crate) const BITWISE_U8_SIZE: usize = 3 * BITWISE_U8_SIZE_PER;
