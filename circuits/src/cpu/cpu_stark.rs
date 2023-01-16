@@ -416,7 +416,6 @@ mod tests {
 
         let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        // print_cpu_trace(&cpu_rows);
 
         let stark = S::new(beta);
         let len = cpu_rows.len();
@@ -424,7 +423,6 @@ mod tests {
         let subgroup =
             F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
         for i in 0..len {
-            println!("row index: {}", i);
             let vars = StarkEvaluationVars {
                 local_values: &cpu_rows[i % len],
                 next_values: &cpu_rows[(i + 1) % len],

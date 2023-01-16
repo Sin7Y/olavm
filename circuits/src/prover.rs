@@ -60,7 +60,7 @@ where
 }
 
 /// Compute all STARK proofs.
-pub(crate) fn prove_with_traces<F, C, const D: usize>(
+pub fn prove_with_traces<F, C, const D: usize>(
     all_stark: &AllStark<F, D>,
     config: &StarkConfig,
     trace_poly_values: [Vec<PolynomialValues<F>>; NUM_TABLES],
