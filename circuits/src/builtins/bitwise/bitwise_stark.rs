@@ -26,7 +26,7 @@ pub struct BitwiseStark<F, const D: usize> {
 impl<F: RichField, const D: usize> BitwiseStark<F, D> {
     const BASE: usize = 1 << 8;
 
-    fn new_with(challenge: F) -> Self {
+    pub fn new(challenge: F) -> Self {
         let mut cpu_stark = Self::default();
         cpu_stark.compress_challenge = challenge;
         cpu_stark
@@ -192,7 +192,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
     }
 
     fn constraint_degree(&self) -> usize {
-        1
+        3
     }
 
     fn permutation_pairs(&self) -> Vec<PermutationPair> {
@@ -217,46 +217,3 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
     Column::single(FILTER)
 }
-
-// Get the column info for Cross_Lookup<Rangecheck_Fixed_table, Bitwise_table>
-/*pub fn ctl_data_with_rangecheck_fixed<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles(OP0_LIMBS).collect_vec();
-    res.extend(Column::singles(OP1_LIMBS).collect_vec());
-    res.extend(Column::singles(RES_LIMBS).collect_vec());
-
-    res
-}
-
-pub fn ctl_filter_with_rangecheck_fixed<F: Field>() -> Column<F> {
-    Column::one()
-}
-
-// Get the column info for Cross_Lookup<Bitwise_Fixed_table, Bitwise_table>
-pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
-    let mut res =
-        Column::singles([OP0_LIMBS.start, OP1_LIMBS.start, RES_LIMBS.start]).collect_vec();
-    res.extend(
-        Column::singles([
-            OP0_LIMBS.start.add(1),
-            OP1_LIMBS.start.add(1),
-            RES_LIMBS.start.add(1),
-        ])
-        .collect_vec(),
-    );
-    res.extend(
-        Column::singles([
-            OP0_LIMBS.start.add(2),
-            OP1_LIMBS.start.add(2),
-            RES_LIMBS.start.add(2),
-        ])
-        .collect_vec(),
-    );
-    res.extend(Column::singles([OP0_LIMBS.end, OP1_LIMBS.end, RES_LIMBS.end]).collect_vec());
-    res.extend(Column::singles([TAG]));
-
-    res
-}
-
-pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
-    Column::one()
-}*/
