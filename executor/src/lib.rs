@@ -632,7 +632,7 @@ impl Process {
                     assert!(ops.len() == 2, "range params len is 1");
                     let op1_index = self.get_reg_index(&ops[1]);
                     self.opcode =
-                        GoldilocksField::from_canonical_u64(1 << Opcode::RANGE_CHECK as u8);
+                        GoldilocksField::from_canonical_u64(1 << Opcode::RangeCheck as u8);
                     self.register_selector.op1 = self.registers[op1_index];
                     self.register_selector.op1_reg_sel[op1_index] =
                         GoldilocksField::from_canonical_u64(1);
