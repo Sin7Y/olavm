@@ -119,7 +119,7 @@ pub fn generate_cpu_trace<F: RichField>(
                 o if u64::from(1_u64 << Opcode::END as u8) == o => {
                     row[cpu::COL_S_END] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::RangeCheck as u8) == o => {
+                o if u64::from(1_u64 << Opcode::RANGECHECK as u8) == o => {
                     row[cpu::COL_S_RC] = F::from_canonical_u64(1)
                 }
                 o if u64::from(1_u64 << Opcode::AND as u8) == o => {
