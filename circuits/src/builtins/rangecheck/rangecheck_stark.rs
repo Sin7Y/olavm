@@ -12,7 +12,6 @@ use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::plonk_common::*;
 use std::marker::PhantomData;
 
 #[derive(Copy, Clone, Default)]
