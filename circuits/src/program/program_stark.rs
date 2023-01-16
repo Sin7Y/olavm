@@ -48,7 +48,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ProgramStark<
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([PC, INS, IMM]).collect_vec();
+    let res = Column::singles([PC, INS, IMM]).collect_vec();
     res
 }
 
