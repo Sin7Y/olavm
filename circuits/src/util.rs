@@ -629,7 +629,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         .collect();
 
     if trace.len() == 0 {
-        let mut ary = [F::ZEROS; cmp::COL_NUM_CMP];
+        let ary = [F::ZEROS; cmp::COL_NUM_CMP];
 
         trace.push(ary);
         trace.push(ary);
@@ -739,7 +739,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         .collect();
 
     if trace.len() == 0 {
-        let mut ary = [F::ZEROS; rangecheck::COL_NUM_RC];
+        let ary = [F::ZEROS; rangecheck::COL_NUM_RC];
 
         trace.push(ary);
         trace.push(ary);
