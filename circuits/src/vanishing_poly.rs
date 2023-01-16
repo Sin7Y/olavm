@@ -44,6 +44,7 @@ pub(crate) fn eval_vanishing_poly<F, FE, P, C, S, const D: usize, const D2: usiz
     eval_cross_table_lookup_checks::<F, FE, P, C, S, D, D2>(vars, ctl_vars, consumer);
 }
 
+#[allow(unused)]
 pub(crate) fn eval_vanishing_poly_circuit<F, C, S, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     stark: &S,

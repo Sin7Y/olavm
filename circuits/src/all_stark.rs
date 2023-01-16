@@ -312,6 +312,7 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }*/
 
+#[allow(unused_imports)]
 mod tests {
     use crate::all_stark::AllStark;
     use crate::config::StarkConfig;
@@ -332,9 +333,13 @@ mod tests {
     use plonky2::util::timing::TimingTree;
     use std::time::{SystemTime, UNIX_EPOCH};
 
+    #[allow(dead_code)]
     const D: usize = 2;
+    #[allow(dead_code)]
     type C = PoseidonGoldilocksConfig;
+    #[allow(dead_code)]
     type F = <C as GenericConfig<D>>::F;
+    #[allow(dead_code)]
     type S = dyn Stark<F, D>;
 
     #[test]
@@ -721,6 +726,7 @@ mod tests {
         verify_proof(all_stark, proof, &config)
     }
 
+    #[allow(unused)]
     fn timestamp() -> i64 {
         let start = SystemTime::now();
         let since_the_epoch = start

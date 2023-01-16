@@ -33,6 +33,7 @@ pub(crate) fn eval_lookups<F: Field, P: PackedField<Scalar = F>, const COLS: usi
     yield_constr.constraint_last_row(diff_input_table);
 }
 
+#[allow(unused)]
 pub(crate) fn eval_lookups_circuit<
     F: RichField + Extendable<D>,
     const D: usize,
