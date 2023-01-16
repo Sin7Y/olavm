@@ -1,5 +1,3 @@
-use std::env::var;
-//use core::program::instruction;
 use std::ops::Sub;
 
 use plonky2::field::types::Field;
