@@ -860,6 +860,7 @@ pub fn trace_rows_to_poly_values<F: Field, const COLUMNS: usize>(
 }
 
 /// Returns the 32-bit little-endian limbs of a `U256`.
+#[allow(unused)]
 pub(crate) fn u256_limbs<F: Field>(u256: U256) -> [F; 8] {
     u256.0
         .into_iter()
@@ -875,6 +876,7 @@ pub(crate) fn u256_limbs<F: Field>(u256: U256) -> [F; 8] {
 }
 
 /// Returns the 32-bit little-endian limbs of a `H256`.
+#[allow(unused)]
 pub(crate) fn h256_limbs<F: Field>(h256: H256) -> [F; 8] {
     h256.0
         .chunks(4)
@@ -886,6 +888,7 @@ pub(crate) fn h256_limbs<F: Field>(h256: H256) -> [F; 8] {
 }
 
 /// Returns the 32-bit limbs of a `U160`.
+#[allow(unused)]
 pub(crate) fn h160_limbs<F: Field>(h160: H160) -> [F; 5] {
     h160.0
         .chunks(4)
@@ -896,6 +899,7 @@ pub(crate) fn h160_limbs<F: Field>(h160: H160) -> [F; 5] {
         .unwrap()
 }
 
+#[allow(unused)]
 pub(crate) const fn indices_arr<const N: usize>() -> [usize; N] {
     let mut indices_arr = [0; N];
     let mut i = 0;
@@ -906,6 +910,7 @@ pub(crate) const fn indices_arr<const N: usize>() -> [usize; N] {
     indices_arr
 }
 
+#[allow(unused)]
 pub(crate) unsafe fn transmute_no_compile_time_size_checks<F, U>(value: F) -> U {
     debug_assert_eq!(size_of::<F>(), size_of::<U>());
     // Need ManuallyDrop so that `value` is not dropped by this function.

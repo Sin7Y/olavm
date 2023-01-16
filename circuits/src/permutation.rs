@@ -241,6 +241,7 @@ pub(crate) fn get_grand_product_challenge_set_target<
     GrandProductChallengeSet { challenges }
 }
 
+#[allow(unused)]
 pub(crate) fn get_n_grand_product_challenge_sets_target<
     F: RichField + Extendable<D>,
     H: AlgebraicHasher<F>,
