@@ -28,8 +28,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseFixedS
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
-        vars: StarkEvaluationVars<FE, P, { COL_NUM }>,
-        yield_constr: &mut ConstraintConsumer<P>,
+        _vars: StarkEvaluationVars<FE, P, { COL_NUM }>,
+        _yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
@@ -38,9 +38,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseFixedS
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, { COL_NUM }>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, { COL_NUM }>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
     }
 

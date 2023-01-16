@@ -1,5 +1,3 @@
-use std::env::var;
-//use core::program::instruction;
 use std::ops::Sub;
 
 use plonky2::field::types::Field;
@@ -56,7 +54,7 @@ pub fn ctl_filter_mem_rc_diff_clk<F: Field>() -> Column<F> {
 // todo ctl for poseidon and ecdsa
 
 pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
-    let mut cols: Vec<_> =
+    let cols: Vec<_> =
         Column::singles([COL_MEM_CLK, COL_MEM_OP, COL_MEM_ADDR, COL_MEM_VALUE]).collect();
     cols
 }
