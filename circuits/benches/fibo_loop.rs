@@ -21,7 +21,7 @@ type F = <C as GenericConfig<D>>::F;
 type S = dyn Stark<F, D>;
 
 pub(crate) fn bench_fibo_loop(inst_size: u64) {
-    // mov r0 test_loop
+    // mov r0 inst_size
     // mov r1 1
     // mov r2 1
     // mov r3 0
