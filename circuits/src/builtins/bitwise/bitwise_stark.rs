@@ -79,8 +79,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
                 lv[TAG]
                     + lv[OP0_LIMBS.start + i] * beta
                     + lv[OP1_LIMBS.start + i] * beta * beta
-                    + lv[RES_LIMBS.start + i] * beta * beta
-                    - lv[COMPRESS_LIMBS.start + i] * beta,
+                    + lv[RES_LIMBS.start + i] * beta * beta * beta
+                    - lv[COMPRESS_LIMBS.start + i],
             );
         }
 
