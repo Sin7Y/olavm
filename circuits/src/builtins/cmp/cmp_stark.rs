@@ -10,7 +10,6 @@ use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-//use plonky2::plonk::plonk_common::*;
 use std::marker::PhantomData;
 
 #[derive(Copy, Clone, Default)]
@@ -62,19 +61,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
         let sum = limb_lo.add(limb_hi.mul(base));
 
         yield_constr.constraint(diff - sum);
-
-        /*eval_lookups(
-            vars,
-            yield_constr,
-            DIFF_LIMB_LO_PERMUTED,
-            FIX_RANGE_CHECK_U16_PERMUTED_LO,
-        );
-        eval_lookups(
-            vars,
-            yield_constr,
-            DIFF_LIMB_HI_PERMUTED,
-            FIX_RANGE_CHECK_U16_PERMUTED_HI,
-        );*/
     }
 
     fn eval_ext_circuit(
@@ -86,14 +72,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
     }
 
     fn constraint_degree(&self) -> usize {
-        1
+        3
     }
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_rangecheck<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([DIFF]).collect_vec();
-    res
+    Column::singles([DIFF]).collect_vec()
 }
 
 pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
@@ -102,8 +87,7 @@ pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles([OP0, OP1]).collect_vec();
-    res
+    Column::singles([OP0, OP1]).collect_vec()
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {

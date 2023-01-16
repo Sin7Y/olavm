@@ -1,9 +1,6 @@
-//use std::iter;
-
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
-
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
@@ -11,15 +8,12 @@ use crate::config::StarkConfig;
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
-//use crate::fixed_table::bitwise_fixed::bitwise_fixed_stark::{self, BitwiseFixedStark};
-//use crate::fixed_table::rangecheck_fixed::rangecheck_fixed_stark::{self, RangecheckFixedStark};
 use crate::memory::memory_stark::{
     ctl_data as mem_ctl_data, ctl_data_mem_rc, ctl_data_mem_rc_diff_addr, ctl_data_mem_rc_diff_clk,
     ctl_data_mem_rc_diff_cond, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc,
     ctl_filter_mem_rc_diff_addr, ctl_filter_mem_rc_diff_clk, ctl_filter_mem_rc_diff_cond,
     MemoryStark,
 };
-//use crate::program::program_stark::{self, ProgramStark};
 use crate::program::program_stark::{self};
 use crate::stark::Stark;
 
@@ -74,27 +68,22 @@ impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
 pub enum Table {
     Cpu = 0,
     Memory = 1,
-    // builtins
     Bitwise = 2,
     Cmp = 3,
     RangeCheck = 4,
-    // fixed table
-    BitwiseFixed = 5,
-    RangecheckFixed = 6,
-    // program table
-    Program = 7,
 }
 
 pub(crate) const NUM_TABLES: usize = 5;
 
 #[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
-    // TODO:
+    // TODO: bitwise rangecheck lookup?
     vec![
         ctl_cpu_memory(),
         ctl_memory_rc(),
         ctl_bitwise_cpu(),
         ctl_cmp_cpu(),
+        ctl_cmp_rangecheck(),
         ctl_rangecheck_cpu(),
     ]
 }
@@ -209,23 +198,6 @@ fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }*/
 
-// Cross_Lookup_Table(looking_table, looked_table)
-/*fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::BitwiseFixed,
-            bitwise_fixed_stark::ctl_data_with_bitwise(),
-            Some(bitwise_fixed_stark::ctl_filter_with_bitwise()),
-        )],
-        TableWithColumns::new(
-            Table::Bitwise,
-            bitwise_stark::ctl_data_with_bitwise_fixed(),
-            Some(bitwise_stark::ctl_filter_with_bitwise_fixed()),
-        ),
-        None,
-    )
-}*/
-
 // add CMP cross lookup instance
 fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
@@ -276,69 +248,6 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-/*fn ctl_rangecheck_rangecheck_fixed<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::RangecheckFixed,
-            rangecheck_fixed_stark::ctl_data_with_rangecheck(),
-            Some(rangecheck_fixed_stark::ctl_filter_with_rangecheck()),
-        )],
-        TableWithColumns::new(
-            Table::RangeCheck,
-            rangecheck_stark::ctl_data_with_rangecheck_fixed(),
-            Some(rangecheck_stark::ctl_filter_with_rangecheck_fixed()),
-        ),
-        None,
-    )
-}*/
-
-// check the correct program with lookup
-
-// Program table
-// +-----+--------------+-------+----------+
-// | PC  |      INS     |  IMM  | COMPRESS |
-// +-----+--------------+-------+----------+
-// +-----+--------------+-------+----------+
-// |  1  |  0x********  |  U32  |   Field  |
-// +-----+--------------+-------+----------+
-// +-----+--------------+-------+----------+
-// |  2  |  0x********  |  U32  |   Field  |
-// +-----+--------------+-------+----------++
-// +-----+--------------+-------+----------+
-// |  3  |  0x********  |  U32  |   Field  |
-// +-----+--------------+-------+----------+
-
-// CPU table
-// +-----+-----+--------------+-------+----------+
-// | ... | PC  |      INS     |  IMM  | COMPRESS |
-// +-----+-----+--------------+-------+----------+
-// +-----+-----+--------------+-------+----------+
-// | ... |  1  |  0x********  |  U32  |   Field  |
-// +-----+-----+--------------+-------+----------+
-// +-----+-----+--------------+-------+----------+
-// | ... |  2  |  0x********  |  U32  |   Field  |
-// +-----+-----+--------------+-------+----------++
-// +-----+-----+--------------+-------+----------+
-// | ... |  3  |  0x********  |  U32  |   Field  |
-// +-----+-----+--------------+-------+----------+
-
-// Note that COMPRESS will be computed by vector lookup argument protocol
-fn ctl_correct_program_cpu<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::Cpu,
-            cpu_stark::ctl_data_with_program(),
-            Some(cpu_stark::ctl_filter_with_program()),
-        )],
-        TableWithColumns::new(
-            Table::Program,
-            program_stark::ctl_data_with_cpu(),
-            Some(program_stark::ctl_filter_with_cpu()),
-        ),
-        None,
-    )
-}
-
 mod tests {
     use crate::stark::Stark;
     use crate::verifier::verify_proof;
@@ -350,7 +259,6 @@ mod tests {
     use plonky2::iop::challenger::Challenger;
     use std::borrow::BorrowMut;
     use std::time::{SystemTime, UNIX_EPOCH};
-    //use core::trace::trace::Trace;
     use executor::Process;
     use log::debug;
     use plonky2::field::polynomial::PolynomialValues;
@@ -360,8 +268,6 @@ mod tests {
     use plonky2::plonk::circuit_data::{CircuitConfig, VerifierCircuitData};
     use plonky2::plonk::config::{GenericConfig, Hasher, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
-    //use rand::*;
-    // use serde_json::Value;
     use crate::all_stark::AllStark;
     use crate::config::StarkConfig;
     use crate::cpu::cpu_stark::CpuStark;
