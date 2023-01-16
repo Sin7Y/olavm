@@ -18,7 +18,6 @@ use std::time::{Instant, Duration};
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
-type S = dyn Stark<F, D>;
 
 pub(crate) fn bench_fibo_loop(inst_size: u64) {
     // mov r0 inst_size
