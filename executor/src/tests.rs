@@ -241,6 +241,10 @@ fn bitwise_test() {
     //add r3 r0 r1
     //mul r4 r3 r2
     //and r5 r4 r3
+    //or r6 r1 r4
+    //xor r7 r5 r2
+    //or r3 r2 r3
+    //and r4 r4 r3
     //end
     let program_src = "0x4000000840000000
         0x8
@@ -251,6 +255,10 @@ fn bitwise_test() {
         0x0020204400000000
         0x0100408200000000
         0x0200810000200000
+        0x0041020000100000
+        0x0400440000080000
+        0x0080804000100000
+        0x0200808000200000
         0x0000000000800000";
 
     let instructions = program_src.split('\n');
