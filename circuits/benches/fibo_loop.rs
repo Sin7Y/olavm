@@ -109,7 +109,7 @@ fn fibo_loop_benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("fibo_loop");
 
-    for inst_size in [0x600, 0x4000, 0x20000] {
+    for inst_size in [0x6000, 0x4000, 0x20000] {
         group.bench_with_input(
             BenchmarkId::from_parameter(inst_size),
             &inst_size,
