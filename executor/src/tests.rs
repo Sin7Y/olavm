@@ -8,43 +8,6 @@ use std::io::{Seek, Write};
 use std::time::Instant;
 
 #[test]
-fn fibo_use_loop() {
-    let program_src = "mov r0 8
-        mov r1 1
-        mov r2 1
-        mov r3 0
-        EQ r0 r3
-        cjmp 12
-        add r4 r1 r2
-        mov r1 r2
-        mov r2 r4
-        mov r4 1
-        add r3 r3 r4
-        jmp 4
-        end";
-
-    let instructions = program_src.split('\n');
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-    debug!("instructions:{:?}", program.instructions);
-
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.clone().parse().unwrap());
-    }
-
-    let mut process = Process::new();
-    process.execute(&mut program, false);
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("fibo_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
-}
-
-#[test]
 fn add_mul_decode() {
     //mov r0 8
     //mov r1 2
