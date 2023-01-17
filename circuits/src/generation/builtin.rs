@@ -3,7 +3,7 @@ use core::trace::trace::{BitwiseCombinedRow, CmpRow, RangeCheckRow};
 use plonky2::field::types::PrimeField64;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::challenger::Challenger;
-use plonky2::plonk::config::{PoseidonGoldilocksConfig, GenericConfig};
+use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::transpose;
 
 use crate::builtins::bitwise::columns as bitwise;
