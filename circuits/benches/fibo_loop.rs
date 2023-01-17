@@ -7,9 +7,10 @@ use circuits::verifier::verify_proof;
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::Process;
+use log::{debug, error, info, logger, LevelFilter};
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::time::{Duration};
+use std::time::{Duration, Instant};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -71,12 +72,20 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true).unwrap();
-    process.gen_memory_table(&mut program);
 
+    let start = Instant::now();
+    process.execute(&mut program, true);
+    process.gen_memory_table(&mut program);
+    let exec_time = start.elapsed();
+    info!(
+        "exec_time: {}, exec steps: {}",
+        exec_time.as_millis(),
+        program.trace.exec.len()
+    );
     let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
-        let config = StarkConfig::standard_fast_config();
+    let (traces, public_values) = generate_traces(&program, &mut all_stark);
+    let config = StarkConfig::standard_fast_config();
+
     let proof = prove_with_traces::<F, C, D>(
         &all_stark,
         &config,
@@ -89,11 +98,13 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
 }
 
 fn fibo_loop_benchmark(c: &mut Criterion) {
-    let _ = env_logger::builder().try_init();
+    let _ = env_logger::builder()
+        .filter_level(LevelFilter::Info)
+        .try_init();
 
     let mut group = c.benchmark_group("fibo_loop");
 
-    for inst_size in [0x8] {
+    for inst_size in [0x5d00, 0xb800, 0x17200] {
         group.bench_with_input(
             BenchmarkId::from_parameter(inst_size),
             &inst_size,
