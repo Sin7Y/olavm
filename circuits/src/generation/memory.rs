@@ -1,7 +1,7 @@
 use core::trace::trace::MemoryTraceCell;
 use std::ops::Sub;
 
-use plonky2::{hash::hash_types::RichField, field::types::PrimeField64};
+use plonky2::{field::types::PrimeField64, hash::hash_types::RichField};
 
 use crate::memory::columns as memory;
 

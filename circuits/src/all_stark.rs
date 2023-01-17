@@ -316,7 +316,10 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
 mod tests {
     use crate::all_stark::AllStark;
     use crate::config::StarkConfig;
-    use crate::generation::builtin::{generate_builtins_cmp_trace, generate_builtins_bitwise_trace, generate_builtins_rangecheck_trace};
+    use crate::generation::builtin::{
+        generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
+        generate_builtins_rangecheck_trace,
+    };
     use crate::generation::cpu::generate_cpu_trace;
     use crate::generation::generate_traces;
     use crate::generation::memory::generate_memory_trace;

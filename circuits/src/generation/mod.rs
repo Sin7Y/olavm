@@ -12,13 +12,16 @@ use crate::all_stark::{AllStark, NUM_TABLES};
 use crate::proof::PublicValues;
 use crate::util::trace_rows_to_poly_values;
 
-use self::builtin::{generate_builtins_bitwise_trace, generate_builtins_cmp_trace, generate_builtins_rangecheck_trace};
+use self::builtin::{
+    generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
+    generate_builtins_rangecheck_trace,
+};
 use self::cpu::generate_cpu_trace;
 use self::memory::generate_memory_trace;
 
+pub mod builtin;
 pub mod cpu;
 pub mod memory;
-pub mod builtin;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 /// Inputs needed for trace generation.
@@ -26,7 +29,7 @@ pub struct GenerationInputs {}
 
 pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     program: &Program,
-    all_stark: &mut AllStark::<F, D>
+    all_stark: &mut AllStark<F, D>,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     let (cpu_rows, cpu_beta) =
         generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
@@ -41,8 +44,14 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
     let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
 
-    all_stark.cpu_stark.set_compress_challenge(cpu_beta).unwrap();
-    all_stark.bitwise_stark.set_compress_challenge(bitwise_beta).unwrap();
+    all_stark
+        .cpu_stark
+        .set_compress_challenge(cpu_beta)
+        .unwrap();
+    all_stark
+        .bitwise_stark
+        .set_compress_challenge(bitwise_beta)
+        .unwrap();
 
     let traces = [
         cpu_trace,
@@ -52,8 +61,5 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         rangecheck_trace,
     ];
     let public_values = PublicValues {};
-    (
-        traces,
-        public_values,
-    )
+    (traces, public_values)
 }
