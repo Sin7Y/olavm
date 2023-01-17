@@ -372,7 +372,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.execute(&mut program, true);
+        let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
         let (cpu_rows, cpu_beta) =
@@ -456,7 +456,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.execute(&mut program, true);
+        let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
         let (cpu_rows, cpu_beta) =
@@ -535,7 +535,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.execute(&mut program, true);
+        let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
         let (cpu_rows, cpu_beta) =
@@ -622,7 +622,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.execute(&mut program, true);
+        let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
         let (cpu_rows, cpu_beta) =
@@ -690,7 +690,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.execute(&mut program, true);
+        let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
         let (cpu_rows, cpu_beta) =
@@ -768,7 +768,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.execute(&mut program, true);
+        let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
         let (cpu_rows, cpu_beta) =
@@ -836,7 +836,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.execute(&mut program, true);
+        let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
         let (cpu_rows, cpu_beta) =

@@ -19,10 +19,9 @@ pub const OPCODE_FIELD_BITS_MASK: u64 = 0x7_ffff_ffff;
 
 fn parse_hex_str(hex_str: &str) -> Result<u64, ProcessorError> {
     let res = u64::from_str_radix(hex_str, 16);
-    if let Err(_) = res {
-        return Err(ProcessorError::ParseIntError);
-    } else {
-        return Ok(res.unwrap());
+    match res {
+        Err(_) => Err(ProcessorError::ParseIntError),
+        Ok(num) => Ok(num),
     }
 }
 
@@ -32,9 +31,9 @@ fn get_index(data: u64) -> u8 {
         if ((data >> i) & 1) != 0 {
             return i as u8;
         }
-        i = i - 1;
+        i -= 1;
     }
-    return 0xff;
+    0xff
 }
 pub fn decode_raw_instruction(
     raw_inst_str: &str,
@@ -139,7 +138,8 @@ pub fn decode_raw_instruction(
         };
         return Ok((instruction, step));
     }
-    return Err(ProcessorError::ParseOpcodeError);
+
+    Err(ProcessorError::ParseOpcodeError)
 }
 
 #[test]
