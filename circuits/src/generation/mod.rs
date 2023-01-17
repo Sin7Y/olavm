@@ -24,7 +24,7 @@ pub mod builtin;
 /// Inputs needed for trace generation.
 pub struct GenerationInputs {}
 
-pub(crate) fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
+pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     program: &Program,
     all_stark: &mut AllStark::<F, D>
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
