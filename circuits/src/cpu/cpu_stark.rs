@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use {
     super::{columns::*, *},
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -90,19 +92,18 @@ pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
 
 #[derive(Copy, Clone, Default)]
 pub struct CpuStark<F, const D: usize> {
-    compress_challenge: F,
+    compress_challenge: Option<F>,
     pub f: PhantomData<F>,
 }
 
 impl<F: RichField, const D: usize> CpuStark<F, D> {
-    pub fn new(challenge: F) -> Self {
-        Self {
-            compress_challenge: challenge,
-            f: PhantomData::default(),
-        }
+    pub(crate) fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
+        assert!(self.compress_challenge.is_none(), "already set?");
+        self.compress_challenge = Some(challenge);
+        Ok(())
     }
 
-    fn get_compress_challenge(&self) -> F {
+    fn get_compress_challenge(&self) -> Option<F> {
         self.compress_challenge
     }
 }
@@ -243,7 +244,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // We constrain raw inst and inst.
         // First constrain compress consistency
-        let beta = FE::from_basefield(self.get_compress_challenge());
+        let beta = FE::from_basefield(self.get_compress_challenge().unwrap());
         yield_constr.constraint(lv[COL_RAW_INST] * beta + lv[COL_RAW_PC] - lv[COL_ZIP_RAW]);
         yield_constr.constraint(lv[COL_INST] * beta + lv[COL_PC] - lv[COL_ZIP_EXED]);
 
@@ -383,10 +384,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
 #[cfg(test)]
 mod tests {
-
+    use crate::generation::cpu::generate_cpu_trace;
     use {
         super::*,
-        crate::util::generate_cpu_trace,
         core::program::Program,
         executor::Process,
         plonky2::{
@@ -418,7 +418,8 @@ mod tests {
         let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
 
-        let stark = S::new(beta);
+        let mut stark = S::default();
+        stark.set_compress_challenge(beta).unwrap();
         let len = cpu_rows.len();
         let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
         let subgroup =

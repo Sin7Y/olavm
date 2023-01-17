@@ -1,23 +1,15 @@
 use circuits::all_stark::AllStark;
 use circuits::config::StarkConfig;
+use circuits::generation::generate_traces;
 use circuits::proof::PublicValues;
 use circuits::prover::prove_with_traces;
-use circuits::stark::Stark;
-use circuits::util::{
-    generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
-    generate_builtins_rangecheck_trace, generate_cpu_trace, generate_memory_trace,
-    trace_rows_to_poly_values,
-};
 use circuits::verifier::verify_proof;
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::Process;
-use log::{debug, error, info};
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::time::{Duration, Instant};
+use std::time::{Duration};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -79,32 +71,12 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true);
+    process.execute(&mut program, true).unwrap();
     process.gen_memory_table(&mut program);
 
-    let (cpu_rows, cpu_beta) =
-        generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-    let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-    let memory_trace = trace_rows_to_poly_values(memory_rows);
-    let (bitwise_rows, bitwise_beta) =
-        generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-    let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-    let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-    let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-    let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-    let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-    let traces = [
-        cpu_trace,
-        memory_trace,
-        bitwise_trace,
-        cmp_trace,
-        rangecheck_trace,
-    ];
-
-    let all_stark = AllStark::new(cpu_beta, bitwise_beta);
-    let config = StarkConfig::standard_fast_config();
-    let public_values = PublicValues::default();
+    let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let config = StarkConfig::standard_fast_config();
     let proof = prove_with_traces::<F, C, D>(
         &all_stark,
         &config,
@@ -121,7 +93,7 @@ fn fibo_loop_benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("fibo_loop");
 
-    for inst_size in [0x6000, 0x40000, 0x200000] {
+    for inst_size in [0x8] {
         group.bench_with_input(
             BenchmarkId::from_parameter(inst_size),
             &inst_size,
@@ -137,7 +109,7 @@ fn fibo_loop_benchmark(c: &mut Criterion) {
 
 criterion_group![
     name = benches;
-    config = Criterion::default().sample_size(10).measurement_time(Duration::from_secs(3600));
+    config = Criterion::default().sample_size(10);
     targets = fibo_loop_benchmark
 ];
 criterion_main!(benches);

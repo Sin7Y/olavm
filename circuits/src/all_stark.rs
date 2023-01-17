@@ -26,12 +26,12 @@ pub struct AllStark<F: RichField + Extendable<D>, const D: usize> {
     pub cross_table_lookups: Vec<CrossTableLookup<F>>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
-    pub fn new(cpu_challenge: F, bitwise_challenge: F) -> Self {
+impl<F: RichField + Extendable<D>, const D: usize> Default for AllStark<F, D> {
+    fn default() -> Self {
         Self {
-            cpu_stark: CpuStark::new(cpu_challenge),
+            cpu_stark: CpuStark::default(),
             memory_stark: MemoryStark::default(),
-            bitwise_stark: BitwiseStark::new(bitwise_challenge),
+            bitwise_stark: BitwiseStark::default(),
             cmp_stark: CmpStark::default(),
             rangecheck_stark: RangeCheckStark::default(),
             cross_table_lookups: all_cross_table_lookups(),
@@ -316,14 +316,14 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
 mod tests {
     use crate::all_stark::AllStark;
     use crate::config::StarkConfig;
+    use crate::generation::builtin::{generate_builtins_cmp_trace, generate_builtins_bitwise_trace, generate_builtins_rangecheck_trace};
+    use crate::generation::cpu::generate_cpu_trace;
+    use crate::generation::generate_traces;
+    use crate::generation::memory::generate_memory_trace;
     use crate::proof::PublicValues;
     use crate::prover::prove_with_traces;
     use crate::stark::Stark;
-    use crate::util::{
-        generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
-        generate_builtins_rangecheck_trace, generate_cpu_trace, generate_memory_trace,
-        trace_rows_to_poly_values,
-    };
+    use crate::util::trace_rows_to_poly_values;
     use crate::verifier::verify_proof;
     use anyhow::Result;
     use core::program::Program;
@@ -375,29 +375,9 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let (cpu_rows, cpu_beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-        let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let (bitwise_rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-
-        let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+        let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
             &config,
@@ -459,29 +439,9 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let (cpu_rows, cpu_beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-        let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let (bitwise_rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-
-        let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+        let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
             &config,
@@ -538,29 +498,9 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let (cpu_rows, cpu_beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-        let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let (bitwise_rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-
-        let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+        let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
             &config,
@@ -625,29 +565,9 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let (cpu_rows, cpu_beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-        let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let (bitwise_rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-
-        let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+        let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
             &config,
@@ -693,29 +613,9 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let (cpu_rows, cpu_beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-        let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let (bitwise_rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-
-        let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+        let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
             &config,
@@ -771,29 +671,9 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let (cpu_rows, cpu_beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-        let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let (bitwise_rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-
-        let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+        let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
             &config,
@@ -839,29 +719,9 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let (cpu_rows, cpu_beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-        let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let (bitwise_rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-
-        let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+        let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
             &config,
@@ -946,29 +806,9 @@ mod tests {
         let _ = process.execute(&mut program, true);
         process.gen_memory_table(&mut program);
 
-        let (cpu_rows, cpu_beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-        let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-        let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-        let memory_trace = trace_rows_to_poly_values(memory_rows);
-        let (bitwise_rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-        let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-        let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-        let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-        let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-        let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-        let traces = [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ];
-
-        let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+        let mut all_stark = AllStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let public_values = PublicValues::default();
         let proof = prove_with_traces::<F, C, D>(
             &all_stark,
             &config,

@@ -343,9 +343,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 
 mod tests {
     use crate::constraint_consumer::ConstraintConsumer;
+    use crate::generation::memory::generate_memory_trace;
     use crate::memory::memory_stark::MemoryStark;
     use crate::stark::Stark;
-    use crate::util::generate_memory_trace;
     use crate::vars::StarkEvaluationVars;
     use core::program::Program;
     use executor::Process;
