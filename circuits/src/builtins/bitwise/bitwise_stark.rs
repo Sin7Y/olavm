@@ -1,4 +1,5 @@
 use crate::builtins::bitwise::columns::*;
+use anyhow::Result;
 use itertools::Itertools;
 //use crate::var::{StarkEvaluationTargets, StarkEvaluationVars};
 use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
@@ -19,21 +20,20 @@ use std::marker::PhantomData;
 
 #[derive(Copy, Clone, Default)]
 pub struct BitwiseStark<F, const D: usize> {
-    compress_challenge: F,
+    compress_challenge: Option<F>,
     pub _phantom: PhantomData<F>,
 }
 
 impl<F: RichField, const D: usize> BitwiseStark<F, D> {
     const BASE: usize = 1 << 8;
 
-    pub fn new(challenge: F) -> Self {
-        Self {
-            compress_challenge: challenge,
-            _phantom: PhantomData::default(),
-        }
+    pub(crate) fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
+        assert!(self.compress_challenge.is_none(), "already set?");
+        self.compress_challenge = Some(challenge);
+        Ok(())
     }
 
-    fn get_compress_challenge(&self) -> F {
+    fn get_compress_challenge(&self) -> Option<F> {
         self.compress_challenge
     }
 }
@@ -74,7 +74,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
         yield_constr.constraint(computed_sum - res);
 
         // Constrain compress logic.
-        let beta = FE::from_basefield(self.get_compress_challenge());
+        let beta = FE::from_basefield(self.get_compress_challenge().unwrap());
         for i in 0..4 {
             yield_constr.constraint(
                 lv[TAG]
