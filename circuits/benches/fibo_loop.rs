@@ -1,19 +1,23 @@
-use core::program::Program;
 use circuits::all_stark::AllStark;
 use circuits::config::StarkConfig;
 use circuits::proof::PublicValues;
-use circuits::stark::Stark;
 use circuits::prover::prove_with_traces;
-use circuits::util::{generate_cpu_trace, trace_rows_to_poly_values, generate_memory_trace, generate_builtins_bitwise_trace, generate_builtins_cmp_trace, generate_builtins_rangecheck_trace};
+use circuits::stark::Stark;
+use circuits::util::{
+    generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
+    generate_builtins_rangecheck_trace, generate_cpu_trace, generate_memory_trace,
+    trace_rows_to_poly_values,
+};
 use circuits::verifier::verify_proof;
+use core::program::Program;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::Process;
 use log::{debug, error, info};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
-use plonky2::plonk::config::{PoseidonGoldilocksConfig, GenericConfig};
+use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -99,13 +103,13 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
         traces,
         public_values,
         &mut TimingTree::default(),
-    ).unwrap();
+    )
+    .unwrap();
     verify_proof(all_stark, proof, &config).unwrap();
 }
 
 fn fibo_loop_benchmark(c: &mut Criterion) {
-    let _ = env_logger::builder()
-        .try_init();
+    let _ = env_logger::builder().try_init();
 
     let mut group = c.benchmark_group("fibo_loop");
 

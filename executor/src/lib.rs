@@ -45,7 +45,7 @@ pub struct Process {
 
 impl Process {
     pub fn new() -> Self {
-        return Process {
+        Self {
             clk: 0,
             registers: [Default::default(); REGISTER_NUM],
             register_selector: Default::default(),
@@ -58,14 +58,13 @@ impl Process {
             memory: MemoryTree {
                 trace: BTreeMap::new(),
             },
-        };
+        }
     }
 
     pub fn get_reg_index(&self, reg_str: &str) -> usize {
         let first = reg_str.chars().nth(0).unwrap();
         assert!(first == 'r', "wrong reg name");
-        let index = reg_str[1..].parse().unwrap();
-        return index;
+        reg_str[1..].parse().unwrap()
     }
 
     pub fn get_index_value(&self, op_str: &str) -> (GoldilocksField, ImmediateOrRegName) {
@@ -86,14 +85,14 @@ impl Process {
 
     pub fn decode_instruction(&self, raw_instruction: String) -> Instruction {
         let ops: Vec<_> = raw_instruction.split(' ').collect();
-        let opcode = ops.get(0).unwrap().to_lowercase();
+        let opcode = ops.first().unwrap().to_lowercase();
 
         let instuction = match opcode.as_str() {
             "mov" | "assert" | "eq" | "neq" | "not" | "gte" => {
                 debug!("opcode: mov");
                 assert!(ops.len() == 3, "mov params len is 2");
-                let dst_index = self.get_reg_index(&ops[1]);
-                let value = self.get_index_value(&ops[2]);
+                let dst_index = self.get_reg_index(ops[1]);
+                let value = self.get_index_value(ops[2]);
                 match opcode.as_str() {
                     "mov" => Instruction::MOV(Mov {
                         ri: dst_index as u8,
@@ -469,7 +468,7 @@ impl Process {
                     debug!("opcode: cjmp");
                     assert!(ops.len() == 2, "cjmp params len is 1");
                     let value = self.get_index_value(ops[1]);
-                    if self.flag == true {
+                    if self.flag {
                         // fixme: use flag need reset?
                         self.flag = false;
                         self.pc = value.0 .0;
@@ -677,8 +676,7 @@ impl Process {
                     debug!("opcode: range");
                     assert!(ops.len() == 2, "range params len is 1");
                     let op1_index = self.get_reg_index(ops[1]);
-                    self.opcode =
-                        GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
                     self.register_selector.op1 = self.registers[op1_index];
                     self.register_selector.op1_reg_sel[op1_index] =
                         GoldilocksField::from_canonical_u64(1);
@@ -866,7 +864,7 @@ impl Process {
                         addr: GoldilocksField::from_canonical_u64(*addr),
                         clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
                         is_rw: cell.is_rw,
-                        op: cell.op.clone(),
+                        op: cell.op,
                         is_write: cell.is_write,
                         diff_addr: GoldilocksField::from_canonical_u64(0_u64),
                         diff_addr_inv: GoldilocksField::from_canonical_u64(0_u64),
@@ -938,7 +936,7 @@ impl Process {
                         region_ecdsa: cell.region_ecdsa,
                         value: cell.value,
                         filter_looking_rc: GoldilocksField::ONE,
-                        rc_value: rc_value,
+                        rc_value,
                     };
                     program.trace.memory.push(trace_cell);
                 }

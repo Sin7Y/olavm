@@ -24,8 +24,8 @@ use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::transpose;
 
 pub fn generate_cpu_trace<F: RichField>(
-    steps: &Vec<Step>,
-    raw_instructions: &Vec<String>,
+    steps: &[Step],
+    raw_instructions: &[String],
 ) -> (Vec<[F; cpu::NUM_CPU_COLS]>, F) {
     let mut raw_insts: Vec<(usize, F)> = raw_instructions
         .iter()
@@ -39,7 +39,7 @@ pub fn generate_cpu_trace<F: RichField>(
         .collect();
 
     // make raw and steps has same length.
-    let mut steps = steps.clone();
+    let mut steps = steps.to_vec();
     if raw_instructions.len() < steps.len() {
         raw_insts.resize(steps.len(), raw_insts.last().unwrap().to_owned());
     } else if raw_instructions.len() > steps.len() {
@@ -83,65 +83,65 @@ pub fn generate_cpu_trace<F: RichField>(
 
             // Selectors of opcode related columns.
             match s.opcode.0 {
-                o if u64::from(1_u64 << Opcode::ADD as u8) == o => {
+                o if (1_u64 << Opcode::ADD as u8) == o => {
                     row[cpu::COL_S_ADD] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::MUL as u8) == o => {
+                o if (1_u64 << Opcode::MUL as u8) == o => {
                     row[cpu::COL_S_MUL] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::EQ as u8) == o => {
+                o if (1_u64 << Opcode::EQ as u8) == o => {
                     row[cpu::COL_S_EQ] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::ASSERT as u8) == o => {
+                o if (1_u64 << Opcode::ASSERT as u8) == o => {
                     row[cpu::COL_S_ASSERT] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::MOV as u8) == o => {
+                o if (1_u64 << Opcode::MOV as u8) == o => {
                     row[cpu::COL_S_MOV] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::JMP as u8) == o => {
+                o if (1_u64 << Opcode::JMP as u8) == o => {
                     row[cpu::COL_S_JMP] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::CJMP as u8) == o => {
+                o if (1_u64 << Opcode::CJMP as u8) == o => {
                     row[cpu::COL_S_CJMP] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::CALL as u8) == o => {
+                o if (1_u64 << Opcode::CALL as u8) == o => {
                     row[cpu::COL_S_CALL] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::RET as u8) == o => {
+                o if (1_u64 << Opcode::RET as u8) == o => {
                     row[cpu::COL_S_RET] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::MLOAD as u8) == o => {
+                o if (1_u64 << Opcode::MLOAD as u8) == o => {
                     row[cpu::COL_S_MLOAD] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::MSTORE as u8) == o => {
+                o if (1_u64 << Opcode::MSTORE as u8) == o => {
                     row[cpu::COL_S_MSTORE] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::END as u8) == o => {
+                o if (1_u64 << Opcode::END as u8) == o => {
                     row[cpu::COL_S_END] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::RC as u8) == o => {
+                o if (1_u64 << Opcode::RC as u8) == o => {
                     row[cpu::COL_S_RC] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::AND as u8) == o => {
+                o if (1_u64 << Opcode::AND as u8) == o => {
                     row[cpu::COL_S_AND] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::OR as u8) == o => {
+                o if (1_u64 << Opcode::OR as u8) == o => {
                     row[cpu::COL_S_OR] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::XOR as u8) == o => {
+                o if (1_u64 << Opcode::XOR as u8) == o => {
                     row[cpu::COL_S_XOR] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::NOT as u8) == o => {
+                o if (1_u64 << Opcode::NOT as u8) == o => {
                     row[cpu::COL_S_NOT] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::NEQ as u8) == o => {
+                o if (1_u64 << Opcode::NEQ as u8) == o => {
                     row[cpu::COL_S_NEQ] = F::from_canonical_u64(1)
                 }
-                o if u64::from(1_u64 << Opcode::GTE as u8) == o => {
+                o if (1_u64 << Opcode::GTE as u8) == o => {
                     row[cpu::COL_S_GTE] = F::from_canonical_u64(1)
                 }
-                // o if u64::from(1_u64 << Opcode::PSDN as u8) == o => row[cpu::COL_S_PSDN] = F::from_canonical_u64(1),
-                // o if u64::from(1_u64 << Opcode::ECDSA as u8) == o => row[cpu::COL_S_ECDSA] = F::from_canonical_u64(1),
+                // o if (1_u64 << Opcode::PSDN as u8) == o => row[cpu::COL_S_PSDN] = F::from_canonical_u64(1),
+                // o (1_u64 << Opcode::ECDSA as u8) == o => row[cpu::COL_S_ECDSA] = F::from_canonical_u64(1),
                 _ => panic!("unspported opcode!"),
             }
 
@@ -199,7 +199,7 @@ pub fn generate_cpu_trace<F: RichField>(
 }
 
 pub fn generate_memory_trace<F: RichField>(
-    cells: &Vec<MemoryTraceCell>,
+    cells: &[MemoryTraceCell],
 ) -> Vec<[F; memory::NUM_MEM_COLS]> {
     let mut trace: Vec<[F; memory::NUM_MEM_COLS]> = cells
         .iter()
@@ -235,28 +235,16 @@ pub fn generate_memory_trace<F: RichField>(
         .collect();
 
     // add a dummy row when memory trace is empty.
-    if trace.len() == 0 {
+    if trace.is_empty() {
         let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
         let span = F::from_canonical_u64(2_u64.pow(32).sub(1));
         let addr = p - span;
         let mut dummy_row: [F; memory::NUM_MEM_COLS] = [F::default(); memory::NUM_MEM_COLS];
-        dummy_row[memory::COL_MEM_IS_RW] = F::ZERO;
         dummy_row[memory::COL_MEM_ADDR] = addr;
-        dummy_row[memory::COL_MEM_CLK] = F::ZERO;
-        dummy_row[memory::COL_MEM_OP] = F::ZERO;
         dummy_row[memory::COL_MEM_IS_WRITE] = F::ONE;
-        dummy_row[memory::COL_MEM_VALUE] = F::ZERO;
-        dummy_row[memory::COL_MEM_DIFF_ADDR] = F::ZERO;
-        dummy_row[memory::COL_MEM_DIFF_ADDR_INV] = F::ZERO;
-        dummy_row[memory::COL_MEM_DIFF_CLK] = F::ZERO;
         dummy_row[memory::COL_MEM_DIFF_ADDR_COND] = p - addr;
-        dummy_row[memory::COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
-        dummy_row[memory::COL_MEM_RW_ADDR_UNCHANGED] = F::ZERO;
         dummy_row[memory::COL_MEM_REGION_PROPHET] = F::ONE;
-        dummy_row[memory::COL_MEM_REGION_POSEIDON] = F::ZERO;
-        dummy_row[memory::COL_MEM_REGION_ECDSA] = F::ZERO;
         dummy_row[memory::COL_MEM_RC_VALUE] = dummy_row[memory::COL_MEM_DIFF_ADDR_COND];
-        dummy_row[memory::COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
         trace.push(dummy_row);
     };
 
@@ -281,12 +269,8 @@ pub fn generate_memory_trace<F: RichField>(
         let mut is_first_pad_row = true;
         for _ in num_filled_row_len..num_padded_rows {
             let mut padded_row: [F; memory::NUM_MEM_COLS] = [F::default(); memory::NUM_MEM_COLS];
-            padded_row[memory::COL_MEM_IS_RW] = F::ZERO;
             padded_row[memory::COL_MEM_ADDR] = addr;
-            padded_row[memory::COL_MEM_CLK] = F::ZERO;
-            padded_row[memory::COL_MEM_OP] = F::ZERO;
             padded_row[memory::COL_MEM_IS_WRITE] = F::ONE;
-            padded_row[memory::COL_MEM_VALUE] = F::ZERO;
             padded_row[memory::COL_MEM_DIFF_ADDR] = if is_first_pad_row {
                 addr - filled_last_row[memory::COL_MEM_ADDR]
             } else {
@@ -294,15 +278,9 @@ pub fn generate_memory_trace<F: RichField>(
             };
             padded_row[memory::COL_MEM_DIFF_ADDR_INV] =
                 padded_row[memory::COL_MEM_DIFF_ADDR].inverse();
-            padded_row[memory::COL_MEM_DIFF_CLK] = F::ZERO;
             padded_row[memory::COL_MEM_DIFF_ADDR_COND] = p - addr;
-            padded_row[memory::COL_MEM_FILTER_LOOKED_FOR_MAIN] = F::ZERO;
-            padded_row[memory::COL_MEM_RW_ADDR_UNCHANGED] = F::ZERO;
             padded_row[memory::COL_MEM_REGION_PROPHET] = F::ONE;
-            padded_row[memory::COL_MEM_REGION_POSEIDON] = F::ZERO;
-            padded_row[memory::COL_MEM_REGION_ECDSA] = F::ZERO;
             padded_row[memory::COL_MEM_RC_VALUE] = padded_row[memory::COL_MEM_DIFF_ADDR_COND];
-            padded_row[memory::COL_MEM_FILTER_LOOKING_RC] = F::ZERO;
 
             trace.push(padded_row);
             addr += F::ONE;
@@ -332,7 +310,7 @@ pub fn generate_memory_trace<F: RichField>(
 //      looking_table: <0,1,2,3,4,5,5,5,5,5,5,5,5,5,5,5>
 //      looked_table: <0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15>
 pub fn generate_builtins_bitwise_trace<F: RichField>(
-    cells: &Vec<BitwiseCombinedRow>,
+    cells: &[BitwiseCombinedRow],
 ) -> (Vec<[F; bitwise::COL_NUM_BITWISE]>, F) {
     let mut trace: Vec<[F; bitwise::COL_NUM_BITWISE]> = cells
         .iter()
@@ -364,7 +342,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         })
         .collect();
 
-    if trace.len() == 0 {
+    if trace.is_empty() {
         trace.extend([
             [F::ZEROS; bitwise::COL_NUM_BITWISE],
             [F::ZEROS; bitwise::COL_NUM_BITWISE],
@@ -451,31 +429,31 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
         challenger.observe_elements(&[op0_columns, op1_columns, res_columns].concat());
         let beta = challenger.get_challenge();
 
-        for i in 0..max_trace_len {
-            trace[i][bitwise::COMPRESS_LIMBS.start] = trace[i][bitwise::TAG]
-                + trace[i][bitwise::OP0_LIMBS.start] * beta
-                + trace[i][bitwise::OP1_LIMBS.start] * beta * beta
-                + trace[i][bitwise::RES_LIMBS.start] * beta * beta * beta;
+        for t in trace.iter_mut().take(max_trace_len) {
+            t[bitwise::COMPRESS_LIMBS.start] = t[bitwise::TAG]
+                + t[bitwise::OP0_LIMBS.start] * beta
+                + t[bitwise::OP1_LIMBS.start] * beta * beta
+                + t[bitwise::RES_LIMBS.start] * beta * beta * beta;
 
-            trace[i][bitwise::COMPRESS_LIMBS.start + 1] = trace[i][bitwise::TAG]
-                + trace[i][bitwise::OP0_LIMBS.start + 1] * beta
-                + trace[i][bitwise::OP1_LIMBS.start + 1] * beta * beta
-                + trace[i][bitwise::RES_LIMBS.start + 1] * beta * beta * beta;
+            t[bitwise::COMPRESS_LIMBS.start + 1] = t[bitwise::TAG]
+                + t[bitwise::OP0_LIMBS.start + 1] * beta
+                + t[bitwise::OP1_LIMBS.start + 1] * beta * beta
+                + t[bitwise::RES_LIMBS.start + 1] * beta * beta * beta;
 
-            trace[i][bitwise::COMPRESS_LIMBS.start + 2] = trace[i][bitwise::TAG]
-                + trace[i][bitwise::OP0_LIMBS.start + 2] * beta
-                + trace[i][bitwise::OP1_LIMBS.start + 2] * beta * beta
-                + trace[i][bitwise::RES_LIMBS.start + 2] * beta * beta * beta;
+            t[bitwise::COMPRESS_LIMBS.start + 2] = t[bitwise::TAG]
+                + t[bitwise::OP0_LIMBS.start + 2] * beta
+                + t[bitwise::OP1_LIMBS.start + 2] * beta * beta
+                + t[bitwise::RES_LIMBS.start + 2] * beta * beta * beta;
 
-            trace[i][bitwise::COMPRESS_LIMBS.start + 3] = trace[i][bitwise::TAG]
-                + trace[i][bitwise::OP0_LIMBS.start + 3] * beta
-                + trace[i][bitwise::OP1_LIMBS.start + 3] * beta * beta
-                + trace[i][bitwise::RES_LIMBS.start + 3] * beta * beta * beta;
+            t[bitwise::COMPRESS_LIMBS.start + 3] = t[bitwise::TAG]
+                + t[bitwise::OP0_LIMBS.start + 3] * beta
+                + t[bitwise::OP1_LIMBS.start + 3] * beta * beta
+                + t[bitwise::RES_LIMBS.start + 3] * beta * beta * beta;
 
-            trace[i][bitwise::FIX_COMPRESS] = trace[i][bitwise::FIX_TAG]
-                + trace[i][bitwise::FIX_BITWSIE_OP0] * beta
-                + trace[i][bitwise::FIX_BITWSIE_OP1] * beta * beta
-                + trace[i][bitwise::FIX_BITWSIE_RES] * beta * beta * beta;
+            t[bitwise::FIX_COMPRESS] = t[bitwise::FIX_TAG]
+                + t[bitwise::FIX_BITWSIE_OP0] * beta
+                + t[bitwise::FIX_BITWSIE_OP1] * beta * beta
+                + t[bitwise::FIX_BITWSIE_RES] * beta * beta * beta;
         }
 
         // Transpose to column-major form.
@@ -608,9 +586,7 @@ pub fn vec_to_ary_bitwise<F: RichField>(input: Vec<F>) -> [F; bitwise::COL_NUM_B
     ary
 }
 
-pub fn generate_builtins_cmp_trace<F: RichField>(
-    cells: &Vec<CmpRow>,
-) -> Vec<[F; cmp::COL_NUM_CMP]> {
+pub fn generate_builtins_cmp_trace<F: RichField>(cells: &[CmpRow]) -> Vec<[F; cmp::COL_NUM_CMP]> {
     let mut trace: Vec<[F; cmp::COL_NUM_CMP]> = cells
         .iter()
         .map(|c| {
@@ -628,7 +604,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(
         })
         .collect();
 
-    if trace.len() == 0 {
+    if trace.is_empty() {
         let ary = [F::ZEROS; cmp::COL_NUM_CMP];
 
         trace.push(ary);
@@ -718,7 +694,7 @@ pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
 }
 
 pub fn generate_builtins_rangecheck_trace<F: RichField>(
-    cells: &Vec<RangeCheckRow>,
+    cells: &[RangeCheckRow],
 ) -> Vec<[F; rangecheck::COL_NUM_RC]> {
     let mut trace: Vec<[F; rangecheck::COL_NUM_RC]> = cells
         .iter()
@@ -738,7 +714,7 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         })
         .collect();
 
-    if trace.len() == 0 {
+    if trace.is_empty() {
         let ary = [F::ZEROS; rangecheck::COL_NUM_RC];
 
         trace.push(ary);

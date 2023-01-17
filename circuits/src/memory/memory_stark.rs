@@ -368,7 +368,7 @@ mod tests {
             trace: Default::default(),
         };
 
-        for inst in instructions {
+        for inst in instructions.into_iter() {
             program.instructions.push(inst.clone().parse().unwrap());
         }
 
