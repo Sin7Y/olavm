@@ -17,11 +17,11 @@ use plonky2::field::types::{Field, Field64};
 use std::collections::BTreeMap;
 use std::time::Instant;
 
+mod coprocessor;
 mod decode;
 pub mod error;
-mod hash;
 mod memory;
-mod poseidon_field;
+
 #[cfg(test)]
 mod tests;
 
