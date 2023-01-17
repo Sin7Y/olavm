@@ -19,7 +19,7 @@ fn main() {
                 .about("Run an program from an input code file")
                 .args(&[
                     arg!(-i --input <INPUT> "Must set a input file for OlaVM executing"),
-                    arg!(-o --output <OUTPUT> "Must set a input file for OlaVM executing"),
+                    arg!(-o --output <OUTPUT> "Must set a output file for OlaVM executing"),
                 ])
                 .arg_required_else_help(true),
         )
