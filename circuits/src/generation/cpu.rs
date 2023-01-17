@@ -1,7 +1,15 @@
-use core::{trace::trace::Step, program::{REGISTER_NUM, instruction::Opcode}};
+use core::{
+    program::{instruction::Opcode, REGISTER_NUM},
+    trace::trace::Step,
+};
 
-use plonky2::{hash::hash_types::RichField, iop::challenger::Challenger, plonk::config::{PoseidonGoldilocksConfig, GenericConfig}, util::transpose};
 use crate::{cpu::columns as cpu, lookup::permuted_cols};
+use plonky2::{
+    hash::hash_types::RichField,
+    iop::challenger::Challenger,
+    plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    util::transpose,
+};
 
 pub fn generate_cpu_trace<F: RichField>(
     steps: &[Step],
