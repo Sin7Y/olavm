@@ -250,15 +250,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         eval_lookups(vars, yield_constr, COL_PER_ZIP_EXED, COL_PER_ZIP_RAW);
 
         // Only one register used for op0.
-        let sum_s_op0: P = s_op0s.clone().into_iter().sum();
+        let sum_s_op0: P = s_op0s.into_iter().sum();
         yield_constr.constraint(sum_s_op0 * (P::ONES - sum_s_op0));
 
         // Only one register used for op1.
-        let sum_s_op1: P = s_op1s.clone().into_iter().sum();
+        let sum_s_op1: P = s_op1s.into_iter().sum();
         yield_constr.constraint(sum_s_op1 * (P::ONES - sum_s_op1));
 
         // Only one register used for dst.
-        let sum_s_dst: P = s_dsts.clone().into_iter().sum();
+        let sum_s_dst: P = s_dsts.into_iter().sum();
         yield_constr.constraint(sum_s_dst * (P::ONES - sum_s_dst));
 
         // Op and register permutation.

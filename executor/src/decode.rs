@@ -121,7 +121,7 @@ pub fn decode_raw_instruction(
                 let reg1_name = format!("r{}", reg1);
                 instruction += &reg1_name;
             }
-            Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RANGECHECK => {
+            Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RC => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 if imm_flag == 1 {
