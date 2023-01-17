@@ -407,7 +407,7 @@ fn fibo_use_loop_memory_decode() {
         0xc
         0x0000800000400000
         0x0000000000800000",
-        8
+        0x6000
     );
     debug!("program_src:{:?}", program_src);
 
@@ -438,10 +438,10 @@ fn fibo_use_loop_memory_decode() {
         program.trace.exec.len(),
         program.trace.memory.len()
     );
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("fibo_memory.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    // let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+    //
+    // let mut file = File::create("fibo_memory.txt").unwrap();
+    // file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
 #[test]
@@ -451,16 +451,19 @@ fn fibo_use_loop_decode_bench() {
     // mov r2 1
     // mov r3 0
     // EQ r0 r3
-    // cjmp 19
+    // cjmp 24
     // add r4 r1 r2
     // mov r1 r2
     // mov r2 r4
     // mov r4 1
+    // mov r5 1
+    // mov r6 2
+    // add r6 r6 r5
     // add r3 r3 r4
     // jmp 8
     // end
     let program_src = "0x4000000840000000
-        0x10000
+        0x8
         0x4000001040000000
         0x1
         0x4000002040000000
@@ -469,12 +472,17 @@ fn fibo_use_loop_decode_bench() {
         0x0
         0x0020800100000000
         0x4000000010000000
-        0x13
+        0x18
         0x0040408400000000
         0x0000401040000000
         0x0001002040000000
         0x4000008040000000
         0x1
+        0x4000010040000000
+        0x1
+        0x4000020040000000
+        0x2
+        0x0802020400000000
         0x0101004400000000
         0x4000000020000000
         0x8
@@ -500,7 +508,7 @@ fn fibo_use_loop_decode_bench() {
         exec_time.as_secs(),
         program.trace.exec.len()
     );
-    let mut file = File::create("fibo_memory.txt").unwrap();
+    let mut file = File::create("fibo_loop.txt").unwrap();
 
     serde_json::to_writer(file, &program.trace).unwrap();
 }
