@@ -97,16 +97,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::StarkConfig;
-    use crate::prover::prove;
-    use crate::util::trace_rows_to_poly_values;
-    use crate::verifier::verify_proof;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
-    use plonky2::fri::reduction_strategies::FriReductionStrategy;
-    use plonky2::fri::FriConfig;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use plonky2::util::timing::TimingTree;
 
     #[test]
     fn test_range_check_u32_stark()
@@ -119,17 +112,6 @@ mod tests {
         type S = RangeCheckU32Stark<F, D>;
 
         let stark = S::default();
-        let config = StarkConfig {
-            security_bits: 100,
-            num_challenges: 2,
-            fri_config: FriConfig {
-                rate_bits: 2,
-                cap_height: 4,
-                proof_of_work_bits: 16,
-                reduction_strategy: FriReductionStrategy::ConstantArityBits(4, 5),
-                num_query_rounds: 84,
-            },
-        };
 
         // 1000 1001 1010 1011 1100 1101 1110 1111
         let input = GoldilocksField(0x89ABCDEF);

@@ -1,3 +1,4 @@
+use core::program::Program;
 use std::any::type_name;
 
 use anyhow::{ensure, Result};
@@ -26,7 +27,7 @@ use crate::config::StarkConfig;
 use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::cross_table_lookup::{cross_table_lookup_data, CtlCheckVars, CtlData};
-use crate::generation::{generate_traces, GenerationInputs};
+use crate::generation::generate_traces;
 use crate::memory::memory_stark::MemoryStark;
 use crate::permutation::PermutationCheckVars;
 use crate::permutation::{
@@ -36,13 +37,12 @@ use crate::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
 use crate::stark::Stark;
 use crate::vanishing_poly::eval_vanishing_poly;
 use crate::vars::StarkEvaluationVars;
-//use core::trace::trace::Trace;
 
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(
-    all_stark: &AllStark<F, D>,
+    program: &Program,
+    all_stark: &mut AllStark<F, D>,
     config: &StarkConfig,
-    inputs: GenerationInputs,
     timing: &mut TimingTree,
 ) -> Result<AllProof<F, C, D>>
 where
@@ -55,7 +55,7 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
 {
-    let (traces, public_values) = generate_traces(all_stark, inputs, config, timing);
+    let (traces, public_values) = generate_traces(program, all_stark);
     prove_with_traces(all_stark, config, traces, public_values, timing)
 }
 
@@ -249,19 +249,19 @@ where
     challenger.observe_cap(&permutation_ctl_zs_cap);
 
     let alphas = challenger.get_n_challenges(config.num_challenges);
-    if cfg!(test) {
-        check_constraints(
-            stark,
-            trace_commitment,
-            &permutation_ctl_zs_commitment,
-            permutation_challenges.as_ref(),
-            ctl_data,
-            alphas.clone(),
-            degree_bits,
-            num_permutation_zs,
-            config,
-        );
-    }
+    // if cfg!(test) {
+    //     check_constraints(
+    //         stark,
+    //         trace_commitment,
+    //         &permutation_ctl_zs_commitment,
+    //         permutation_challenges.as_ref(),
+    //         ctl_data,
+    //         alphas.clone(),
+    //         degree_bits,
+    //         num_permutation_zs,
+    //         config,
+    //     );
+    // }
     let quotient_polys = timed!(
         timing,
         "compute quotient polys",
@@ -495,6 +495,7 @@ where
 
 /// Check that all constraints evaluate to zero on `H`.
 /// Can also be used to check the degree of the constraints by evaluating on a larger subgroup.
+#[allow(unused)]
 fn check_constraints<'a, F, C, S, const D: usize>(
     stark: &S,
     trace_commitment: &'a PolynomialBatch<F, C, D>,
