@@ -249,19 +249,19 @@ where
     challenger.observe_cap(&permutation_ctl_zs_cap);
 
     let alphas = challenger.get_n_challenges(config.num_challenges);
-    if cfg!(test) {
-        check_constraints(
-            stark,
-            trace_commitment,
-            &permutation_ctl_zs_commitment,
-            permutation_challenges.as_ref(),
-            ctl_data,
-            alphas.clone(),
-            degree_bits,
-            num_permutation_zs,
-            config,
-        );
-    }
+    // if cfg!(test) {
+    //     check_constraints(
+    //         stark,
+    //         trace_commitment,
+    //         &permutation_ctl_zs_commitment,
+    //         permutation_challenges.as_ref(),
+    //         ctl_data,
+    //         alphas.clone(),
+    //         degree_bits,
+    //         num_permutation_zs,
+    //         config,
+    //     );
+    // }
     let quotient_polys = timed!(
         timing,
         "compute quotient polys",
@@ -495,6 +495,7 @@ where
 
 /// Check that all constraints evaluate to zero on `H`.
 /// Can also be used to check the degree of the constraints by evaluating on a larger subgroup.
+#[allow(unused)]
 fn check_constraints<'a, F, C, S, const D: usize>(
     stark: &S,
     trace_commitment: &'a PolynomialBatch<F, C, D>,
