@@ -296,12 +296,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let d_diff_prophet = builder.sub_extension(calculated_diff_prophet, diff_addr_cond);
         let constraint_prophet_cond = builder.mul_extension(region_prophet, d_diff_prophet);
         yield_constr.constraint(builder, constraint_prophet_cond);
-        let cell_poseidon = builder.sub_extension(p, span.clone());
+        let cell_poseidon = builder.sub_extension(p, span);
         let calculated_diff_poseidon = builder.sub_extension(cell_poseidon, addr);
         let d_diff_poseidon = builder.sub_extension(calculated_diff_poseidon, diff_addr_cond);
         let constraint_poseidon_cond = builder.mul_extension(region_poseidon, d_diff_poseidon);
         yield_constr.constraint(builder, constraint_poseidon_cond);
-        let cell_ecdsa = builder.sub_extension(cell_poseidon, span.clone());
+        let cell_ecdsa = builder.sub_extension(cell_poseidon, span);
         let calculated_diff_ecdsa = builder.sub_extension(cell_ecdsa, addr);
         let d_diff_ecdsa = builder.sub_extension(calculated_diff_ecdsa, diff_addr_cond);
         let constraint_ecdsa_cond = builder.mul_extension(region_ecdsa, d_diff_ecdsa);
@@ -368,7 +368,7 @@ mod tests {
             trace: Default::default(),
         };
 
-        for inst in instructions.into_iter() {
+        for inst in instructions {
             program.instructions.push(inst.clone().parse().unwrap());
         }
 

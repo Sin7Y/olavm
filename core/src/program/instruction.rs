@@ -168,7 +168,7 @@ pub enum Opcode {
     MLOAD = 25,
     MSTORE = 24,
     END = 23,
-    RANGECHECK = 22,
+    RC = 22, // RANGE_CHECK
     AND = 21,
     OR = 20,
     XOR = 19,
@@ -194,7 +194,7 @@ impl fmt::Display for Opcode {
             Opcode::MSTORE => write!(f, "mstore"),
             Opcode::ASSERT => write!(f, "assert"),
             Opcode::END => write!(f, "end"),
-            Opcode::RANGECHECK => write!(f, "range"),
+            Opcode::RC => write!(f, "range"),
             Opcode::AND => write!(f, "and"),
             Opcode::OR => write!(f, "or"),
             Opcode::XOR => write!(f, "xor"),
