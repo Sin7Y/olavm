@@ -1,49 +1,59 @@
 //use std::collections::HashMap;
 
+use core::program::Program;
+
 //use eth_trie_utils::partial_trie::PartialTrie;
-//use ethereum_types::*;
 use plonky2::field::extension::Extendable;
 use plonky2::field::polynomial::PolynomialValues;
-//use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
-use plonky2::util::timing::TimingTree;
 use serde::{Deserialize, Serialize};
 
 use crate::all_stark::{AllStark, NUM_TABLES};
-use crate::config::StarkConfig;
 use crate::proof::PublicValues;
 use crate::util::trace_rows_to_poly_values;
+
+use self::builtin::{generate_builtins_bitwise_trace, generate_builtins_cmp_trace, generate_builtins_rangecheck_trace};
+use self::cpu::generate_cpu_trace;
+use self::memory::generate_memory_trace;
+
+pub mod cpu;
+pub mod memory;
+pub mod builtin;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 /// Inputs needed for trace generation.
 pub struct GenerationInputs {}
 
 pub(crate) fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
-    _all_stark: &AllStark<F, D>,
-    _inputs: GenerationInputs,
-    _config: &StarkConfig,
-    _timing: &mut TimingTree,
+    program: &Program,
+    all_stark: &mut AllStark::<F, D>
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
-    // TODO:
-    let cpu_rows: Vec<[F; 1]> = vec![];
+    let (cpu_rows, cpu_beta) =
+        generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
     let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-    let memory_rows: Vec<[F; 1]> = vec![];
+    let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
     let memory_trace = trace_rows_to_poly_values(memory_rows);
-    let bitwise_rows: Vec<[F; 1]> = vec![];
+    let (bitwise_rows, bitwise_beta) =
+        generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
     let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-    let cmp_rows: Vec<[F; 1]> = vec![];
+    let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
     let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-    let rangecheck_rows: Vec<[F; 1]> = vec![];
+    let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
     let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+
+    all_stark.cpu_stark.set_compress_challenge(cpu_beta).unwrap();
+    all_stark.bitwise_stark.set_compress_challenge(bitwise_beta).unwrap();
+
+    let traces = [
+        cpu_trace,
+        memory_trace,
+        bitwise_trace,
+        cmp_trace,
+        rangecheck_trace,
+    ];
     let public_values = PublicValues {};
     (
-        [
-            cpu_trace,
-            memory_trace,
-            bitwise_trace,
-            cmp_trace,
-            rangecheck_trace,
-        ],
+        traces,
         public_values,
     )
 }
