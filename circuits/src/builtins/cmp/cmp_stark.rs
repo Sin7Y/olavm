@@ -62,7 +62,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
 
         yield_constr.constraint(diff - sum);
 
-
         /*eval_lookups(
             vars,
             yield_constr,

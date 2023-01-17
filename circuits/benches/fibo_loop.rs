@@ -1,19 +1,23 @@
-use core::program::Program;
 use circuits::all_stark::AllStark;
 use circuits::config::StarkConfig;
 use circuits::proof::PublicValues;
-use circuits::stark::Stark;
 use circuits::prover::prove_with_traces;
-use circuits::util::{generate_cpu_trace, trace_rows_to_poly_values, generate_memory_trace, generate_builtins_bitwise_trace, generate_builtins_cmp_trace, generate_builtins_rangecheck_trace};
+use circuits::stark::Stark;
+use circuits::util::{
+    generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
+    generate_builtins_rangecheck_trace, generate_cpu_trace, generate_memory_trace,
+    trace_rows_to_poly_values,
+};
 use circuits::verifier::verify_proof;
+use core::program::Program;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::Process;
 use log::{debug, error, info};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
-use plonky2::plonk::config::{PoseidonGoldilocksConfig, GenericConfig};
+use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -25,17 +29,20 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
     // mov r2 1
     // mov r3 0
     // EQ r0 r3
-    // cjmp 19
+    // cjmp 24
     // add r4 r1 r2
     // mov r1 r2
     // mov r2 r4
     // mov r4 1
+    // mov r5 1
+    // mov r6 2
+    // add r6 r6 r5
     // add r3 r3 r4
     // jmp 8
     // end
     let program_src = format!(
         "0x4000000840000000
-        {:#x}
+         {:#x}
         0x4000001040000000
         0x1
         0x4000002040000000
@@ -44,12 +51,17 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
         0x0
         0x0020800100000000
         0x4000000010000000
-        0x13
+        0x18
         0x0040408400000000
         0x0000401040000000
         0x0001002040000000
         0x4000008040000000
         0x1
+        0x4000010040000000
+        0x1
+        0x4000020040000000
+        0x2
+        0x0802020400000000
         0x0101004400000000
         0x4000000020000000
         0x8
@@ -99,17 +111,17 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
         traces,
         public_values,
         &mut TimingTree::default(),
-    ).unwrap();
+    )
+    .unwrap();
     verify_proof(all_stark, proof, &config).unwrap();
 }
 
 fn fibo_loop_benchmark(c: &mut Criterion) {
-    let _ = env_logger::builder()
-        .try_init();
+    let _ = env_logger::builder().try_init();
 
     let mut group = c.benchmark_group("fibo_loop");
 
-    for inst_size in [0x6000, 0x4000, 0x20000] {
+    for inst_size in [0x6000, 0x40000, 0x200000] {
         group.bench_with_input(
             BenchmarkId::from_parameter(inst_size),
             &inst_size,
