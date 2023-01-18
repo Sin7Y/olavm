@@ -2,7 +2,7 @@ use crate::Process;
 use core::program::Program;
 use log::debug;
 use std::fs::File;
-use std::io::{Write};
+use std::io::Write;
 use std::time::Instant;
 
 #[test]
