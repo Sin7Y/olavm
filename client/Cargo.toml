@@ -16,6 +16,7 @@ bench = false
 doctest = false
 
 [dependencies]
+plonky2 = { package = "plonky2", path = "../plonky2/plonky2" }
 env_logger = { version = "0.9"}
 hex = { version = "0.4", optional = true }
 log = { version = "0.4", default-features = false }
