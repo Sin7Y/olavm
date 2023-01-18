@@ -39,3 +39,7 @@ criterion = "0.4"
 [[bench]]
 name = "fibo_loop"
 harness = false
+
+[[bench]]
+name = "fibo_loop_prover"
+harness = false
