@@ -2,7 +2,7 @@ use crate::Process;
 use core::program::Program;
 use log::debug;
 use std::fs::File;
-use std::io::{Write};
+use std::io::Write;
 use std::time::Instant;
 
 #[test]
@@ -145,7 +145,7 @@ fn memory_test() {
 
     let mut process = Process::new();
     process.execute(&mut program, true).unwrap();
-    process.gen_memory_table(&mut program);
+
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
@@ -342,7 +342,6 @@ fn call_test() {
 
     let mut process = Process::new();
     process.execute(&mut program, true).unwrap();
-    process.gen_memory_table(&mut program);
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -429,7 +428,6 @@ fn fibo_use_loop_memory_decode() {
         exec_time.as_millis(),
         program.trace.exec.len()
     );
-    process.gen_memory_table(&mut program);
 
     println!(
         "vm trace steps: {:?}, memory len: {}",
