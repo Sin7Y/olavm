@@ -330,11 +330,11 @@ mod tests {
     use crate::verifier::verify_proof;
     use anyhow::Result;
     use core::program::Program;
+    use std::mem;
     use executor::Process;
     use log::debug;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[allow(dead_code)]
     const D: usize = 2;
@@ -387,6 +387,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        println!("{}", mem::size_of_val(&proof));
         verify_proof(all_stark, proof, &config)
     }
 
@@ -450,6 +451,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        println!("{}", mem::size_of_val(&proof));
         verify_proof(all_stark, proof, &config)
     }
 
@@ -622,16 +624,6 @@ mod tests {
             &mut TimingTree::default(),
         )?;
         verify_proof(all_stark, proof, &config)
-    }
-
-    #[allow(unused)]
-    fn timestamp() -> i64 {
-        let start = SystemTime::now();
-        let since_the_epoch = start
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
-        since_the_epoch.as_secs() as i64 * 1000i64
-            + (since_the_epoch.subsec_nanos() as f64 / 1_000_000.0) as i64
     }
 
     #[test]
