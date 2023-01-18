@@ -1,16 +1,14 @@
+use std::mem;
 use circuits::all_stark::AllStark;
 use circuits::config::StarkConfig;
 use circuits::generation::generate_traces;
-use circuits::proof::PublicValues;
 use circuits::prover::prove_with_traces;
-use circuits::verifier::verify_proof;
 use core::program::Program;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use executor::Process;
-use log::{debug, error, info, logger, LevelFilter};
+use log::{LevelFilter};
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::time::{Duration, Instant};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
