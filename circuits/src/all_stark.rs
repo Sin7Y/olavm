@@ -330,6 +330,7 @@ mod tests {
     use crate::verifier::verify_proof;
     use anyhow::Result;
     use core::program::Program;
+    use std::mem;
     use executor::Process;
     use log::debug;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
@@ -386,6 +387,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        println!("{}", mem::size_of_val(&proof));
         verify_proof(all_stark, proof, &config)
     }
 
@@ -449,6 +451,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        println!("{}", mem::size_of_val(&proof));
         verify_proof(all_stark, proof, &config)
     }
 

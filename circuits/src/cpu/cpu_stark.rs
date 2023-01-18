@@ -97,7 +97,7 @@ pub struct CpuStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> CpuStark<F, D> {
-    pub(crate) fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
+    pub fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
         assert!(self.compress_challenge.is_none(), "already set?");
         self.compress_challenge = Some(challenge);
         Ok(())
