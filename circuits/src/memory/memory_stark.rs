@@ -374,7 +374,7 @@ mod tests {
 
         let mut process = Process::new();
         let _ = process.execute(&mut program, true);
-        process.gen_memory_table(&mut program);
+
         let rows = generate_memory_trace(&program.trace.memory);
         println!(
             "raw trace len:{}, extended len: {}",

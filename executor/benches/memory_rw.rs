@@ -83,7 +83,6 @@ pub(crate) fn bench_memory_rw(inst_size: u64) {
         exec_time.as_millis(),
         program.trace.exec.len()
     );
-    process.gen_memory_table(&mut program);
 }
 
 fn memory_benchmark(c: &mut Criterion) {

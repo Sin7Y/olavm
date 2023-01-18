@@ -75,7 +75,7 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
 
     let start = Instant::now();
     process.execute(&mut program, true);
-    process.gen_memory_table(&mut program);
+
     let exec_time = start.elapsed();
     info!(
         "exec_time: {}, exec steps: {}",
