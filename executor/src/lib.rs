@@ -344,36 +344,6 @@ impl Process {
             let flag_status = self.flag;
             let pc_status = self.pc;
 
-            // let instruct_line = program.instructions[self.pc as usize].trim();
-
-            // let mut instruction = Default::default();
-            // let mut ops = Vec::new();
-            // let mut step = 1;
-            // let mut op_imm1 = GoldilocksField::default();
-            // if decode_flag {
-            //     let mut imm_line = Default::default();
-            //     if (self.pc + 1) < (program.instructions.len() as u64 - 1) {
-            //         imm_line = program.instructions[(self.pc + 1) as usize].trim();
-            //         (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
-            //     } else {
-            //         (instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
-            //     }
-            //     if step == IMM_INSTRUCTION_LEN {
-            //         op_imm1 = GoldilocksField::from_canonical_u64(1);
-            //         let imm_u64 = imm_line.trim_start_matches("0x");
-            //         self.immediate_data = GoldilocksField::from_canonical_u64(
-            //             u64::from_str_radix(imm_u64, 16).unwrap(),
-            //         );
-            //     } else {
-            //         op_imm1 = GoldilocksField::from_canonical_u64(0);
-            //         self.immediate_data = Default::default();
-            //     }
-            //     let inst_u64 = instruct_line.trim_start_matches("0x");
-            //     self.instruction =
-            //         GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
-            // } else {
-            //     instruction = instruct_line.to_string();
-            // }
             let instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
             let ops: Vec<&str> = instruction.0.split(' ').collect();
             let opcode = ops.first().unwrap().to_lowercase();
@@ -829,6 +799,7 @@ impl Process {
                 start = Instant::now();
             }
         }
+        self.gen_memory_table(program);
         Ok(())
     }
 
