@@ -2,17 +2,20 @@ use core::program::REGISTER_NUM;
 use std::ops::Range;
 
 // The Olavm trace for AIR:
-// There are 3 kinds of traces, one for cpu trace, one for memory trace, one for builtin trace.
-// This is cpu trace, memory trace and builtin trace should be under the corresponding directory.
+// There are 3 kinds of traces, one for cpu trace, one for memory trace, one for
+// builtin trace. This is cpu trace, memory trace and builtin trace should be
+// under the corresponding directory.
 
 // Main(CPU) trace.
 // There are 76 columns in cpu trace.
 //
 // Context related columns(12):
 // ┌───────┬───────┬──────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬
-// │  clk  │   pc  │ flag │ reg_0 │ reg_1 │ reg_2 | reg_3 | reg_4 │ reg_5 | reg_6 | reg_7 │ reg_8 │
+// │  clk  │   pc  │ flag │ reg_0 │ reg_1 │ reg_2 | reg_3 | reg_4 │ reg_5 |
+// reg_6 | reg_7 │ reg_8 │
 // ├───────┼───────┼──────┼───────┼───────┼───────┼───────┼───────┼───────┼───────|───────┼───────┼
-// │   1   │   0   │  0   │   0   │   0   │   0   │   0   │   0   │   0   │   0   |   0   │   0   │
+// │   1   │   0   │  0   │   0   │   0   │   0   │   0   │   0   │   0   │   0
+// |   0   │   0   │
 // └───────┴───────┴──────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴
 pub(crate) const COL_CLK: usize = 0;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
@@ -33,9 +36,11 @@ pub(crate) const COL_IMM_VAL: usize = COL_OPCODE + 1;
 
 // Selectors of register related columns(32):
 // ┬───────┬───────┬───────┬───────┬───────┬──────────┬──────────┬─────┬──────────┬──────────┬
-// │  op0  │  op1  │  dst  │  aux0 │  aux1 │ s_op0_r0 │ s_op0_r1 │ ... │ s_op0_r8 │ s_op1_r0 │
+// │  op0  │  op1  │  dst  │  aux0 │  aux1 │ s_op0_r0 │ s_op0_r1 │ ... │
+// s_op0_r8 │ s_op1_r0 │
 // ┼───────┼───────┼───────┼───────┼───────┼──────────┼──────────┼─────┼──────────┼──────────┼
-// │  10   │  123  │   0   │   0   │   0   │     1    │     0    │     │    0     │     0    │
+// │  10   │  123  │   0   │   0   │   0   │     1    │     0    │     │    0
+// │     0    │
 // ┴───────┴───────┴───────┴───────┴───────┴──────────┴──────────┴─────┴──────────┴──────────┴
 // ┬──────────┬─────┬──────────┬──────────┬──────────┬─────┬──────────┬
 // │ s_op1_r1 │ ... │ s_op1_r8 │ s_dst_r0 │ s_dst_r1 │ ... │ s_dst_r8 │
@@ -56,9 +61,11 @@ pub(crate) const COL_S_DST: Range<usize> = COL_S_DST_START..COL_S_DST_START + RE
 
 // Selectors of opcode related columns(12):
 // ┬───────┬───────┬───────┬──────────┬───────┬───────┬────────┬────────┬───────┬─────────┬──────────┬───────┬
-// │ s_add │ s_mul │  s_eq │ s_assert │ s_mov | s_jmp | s_cjmp │ s_call | s_ret | s_mload │ s_mstore │ s_end |
+// │ s_add │ s_mul │  s_eq │ s_assert │ s_mov | s_jmp | s_cjmp │ s_call | s_ret
+// | s_mload │ s_mstore │ s_end |
 // ┼───────┼───────┼───────┼──────────┼───────┼───────┼────────┼────────┼───────|─────────┼──────────┼───────┼
-// │   0   │   0   │   0   │     0    │   0   │   0   │    0   │    0   │   0   |     0   │     0    │   0   │
+// │   0   │   0   │   0   │     0    │   0   │   0   │    0   │    0   │   0
+// |     0   │     0    │   0   │
 // ┴───────┴───────┴───────┴──────────┴───────┴───────┴────────┴────────┴───────┴─────────┴──────────┴───────┴
 pub(crate) const COL_S_ADD: usize = COL_S_DST.end;
 pub(crate) const COL_S_MUL: usize = COL_S_ADD + 1;
@@ -75,9 +82,11 @@ pub(crate) const COL_S_END: usize = COL_S_MSTORE + 1;
 
 // Selectors of Builtins related columns(9):
 // ┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬────────────┬─────────┬
-// │  s_rc │ s_and │ s_or  │ s_xor │ s_not │ s_neq │ s_gte │ s_poseidon │ s_ecdsa │
+// │  s_rc │ s_and │ s_or  │ s_xor │ s_not │ s_neq │ s_gte │ s_poseidon │
+// s_ecdsa │
 // ┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼────────────┼─────────┼
-// │   0   │   1   │   0   │   0   │   0   │   0   │   0   │      0     │    0    │
+// │   0   │   1   │   0   │   0   │   0   │   0   │   0   │      0     │    0
+// │
 // ┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴────────────┴─────────┴
 pub(crate) const COL_S_RC: usize = COL_S_END + 1;
 pub(crate) const COL_S_AND: usize = COL_S_RC + 1;

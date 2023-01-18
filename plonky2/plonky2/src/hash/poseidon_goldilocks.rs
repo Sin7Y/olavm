@@ -284,7 +284,8 @@ mod tests {
         // 2. range 0..WIDTH
         // 3. all -1's
         // 4. random elements of GoldilocksField.
-        // expected output calculated with (modified) hadeshash reference implementation.
+        // expected output calculated with (modified) hadeshash reference
+        // implementation.
 
         let neg_one: u64 = F::NEG_ONE.to_canonical_u64();
 

@@ -145,7 +145,8 @@ fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
 //
 // Bitwise table
 // +-----+-----+-----+-----+------------+------------+-----------+------------+---
-// | tag | op0 | op1 | res | op0_limb_0 | op0_limb_1 |res_limb_2 | op0_limb_3 |...
+// | tag | op0 | op1 | res | op0_limb_0 | op0_limb_1 |res_limb_2 | op0_limb_3
+// |...
 // +-----+-----+-----+-----+------------+------------+-----------+------------+---
 //
 // Filter bitwise from CPU Table

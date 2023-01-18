@@ -31,8 +31,9 @@ pub(crate) const DIFF_LIMB_HI: usize = DIFF_LIMB_LO + 1;
 //pub(crate) const DIFF_LIMB_HI_PERMUTED: usize = DIFF_LIMB_LO_PERMUTED + 1;
 
 //pub(crate) const FIX_RANGE_CHECK_U16: usize = DIFF_LIMB_HI_PERMUTED + 1;
-//pub(crate) const FIX_RANGE_CHECK_U16_PERMUTED_LO: usize = FIX_RANGE_CHECK_U16 + 1;
-//pub(crate) const FIX_RANGE_CHECK_U16_PERMUTED_HI: usize = FIX_RANGE_CHECK_U16_PERMUTED_LO + 1;
+//pub(crate) const FIX_RANGE_CHECK_U16_PERMUTED_LO: usize = FIX_RANGE_CHECK_U16
+// + 1; pub(crate) const FIX_RANGE_CHECK_U16_PERMUTED_HI: usize =
+// FIX_RANGE_CHECK_U16_PERMUTED_LO + 1;
 
 pub(crate) const COL_NUM_CMP: usize = DIFF_LIMB_HI + 1; //6
 

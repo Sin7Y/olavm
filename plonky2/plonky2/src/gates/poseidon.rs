@@ -20,9 +20,9 @@ use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
 /// Evaluates a full Poseidon permutation with 12 state elements.
 ///
-/// This also has some extra features to make it suitable for efficiently verifying Merkle proofs.
-/// It has a flag which can be used to swap the first four inputs with the next four, for ordering
-/// sibling digests.
+/// This also has some extra features to make it suitable for efficiently
+/// verifying Merkle proofs. It has a flag which can be used to swap the first
+/// four inputs with the next four, for ordering sibling digests.
 #[derive(Debug)]
 pub struct PoseidonGate<F: RichField + Extendable<D>, const D: usize> {
     _phantom: PhantomData<F>,
@@ -45,13 +45,15 @@ impl<F: RichField + Extendable<D>, const D: usize> PoseidonGate<F, D> {
         SPONGE_WIDTH + i
     }
 
-    /// If this is set to 1, the first four inputs will be swapped with the next four inputs. This
-    /// is useful for ordering hashes in Merkle proofs. Otherwise, this should be set to 0.
+    /// If this is set to 1, the first four inputs will be swapped with the next
+    /// four inputs. This is useful for ordering hashes in Merkle proofs.
+    /// Otherwise, this should be set to 0.
     pub const WIRE_SWAP: usize = 2 * SPONGE_WIDTH;
 
     const START_DELTA: usize = 2 * SPONGE_WIDTH + 1;
 
-    /// A wire which stores `swap * (input[i + 4] - input[i])`; used to compute the swapped inputs.
+    /// A wire which stores `swap * (input[i + 4] - input[i])`; used to compute
+    /// the swapped inputs.
     fn wire_delta(i: usize) -> usize {
         assert!(i < 4);
         Self::START_DELTA + i
@@ -59,8 +61,8 @@ impl<F: RichField + Extendable<D>, const D: usize> PoseidonGate<F, D> {
 
     const START_FULL_0: usize = Self::START_DELTA + 4;
 
-    /// A wire which stores the input of the `i`-th S-box of the `round`-th round of the first set
-    /// of full rounds.
+    /// A wire which stores the input of the `i`-th S-box of the `round`-th
+    /// round of the first set of full rounds.
     fn wire_full_sbox_0(round: usize, i: usize) -> usize {
         debug_assert!(
             round != 0,
@@ -74,7 +76,8 @@ impl<F: RichField + Extendable<D>, const D: usize> PoseidonGate<F, D> {
     const START_PARTIAL: usize =
         Self::START_FULL_0 + SPONGE_WIDTH * (poseidon::HALF_N_FULL_ROUNDS - 1);
 
-    /// A wire which stores the input of the S-box of the `round`-th round of the partial rounds.
+    /// A wire which stores the input of the S-box of the `round`-th round of
+    /// the partial rounds.
     fn wire_partial_sbox(round: usize) -> usize {
         debug_assert!(round < poseidon::N_PARTIAL_ROUNDS);
         Self::START_PARTIAL + round
@@ -82,8 +85,8 @@ impl<F: RichField + Extendable<D>, const D: usize> PoseidonGate<F, D> {
 
     const START_FULL_1: usize = Self::START_PARTIAL + poseidon::N_PARTIAL_ROUNDS;
 
-    /// A wire which stores the input of the `i`-th S-box of the `round`-th round of the second set
-    /// of full rounds.
+    /// A wire which stores the input of the `i`-th S-box of the `round`-th
+    /// round of the second set of full rounds.
     fn wire_full_sbox_1(round: usize, i: usize) -> usize {
         debug_assert!(round < poseidon::HALF_N_FULL_ROUNDS);
         debug_assert!(i < SPONGE_WIDTH);
@@ -270,7 +273,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for PoseidonGate<F
         builder: &mut CircuitBuilder<F, D>,
         vars: EvaluationTargets<D>,
     ) -> Vec<ExtensionTarget<D>> {
-        // The naive method is more efficient if we have enough routed wires for PoseidonMdsGate.
+        // The naive method is more efficient if we have enough routed wires for
+        // PoseidonMdsGate.
         let use_mds_gate =
             builder.config.num_routed_wires >= PoseidonMdsGate::<F, D>::new().num_wires();
 

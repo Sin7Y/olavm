@@ -78,7 +78,8 @@ pub struct CircuitBuilder<F: RichField + Extendable<D>, const D: usize> {
     /// Memoized results of `arithmetic_extension` calls.
     pub(crate) arithmetic_results: HashMap<ExtensionArithmeticOperation<F, D>, ExtensionTarget<D>>,
 
-    /// Map between gate type and the current gate of this type with available slots.
+    /// Map between gate type and the current gate of this type with available
+    /// slots.
     current_slots: HashMap<GateRef<F, D>, CurrentSlot<F, D>>,
 
     /// List of constant generators used to fill the constant wires.
@@ -144,10 +145,12 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         targets.iter().for_each(|&t| self.register_public_input(t));
     }
 
-    /// Adds a new "virtual" target. This is not an actual wire in the witness, but just a target
-    /// that help facilitate witness generation. In particular, a generator can assign a values to a
-    /// virtual target, which can then be copied to other (virtual or concrete) targets. When we
-    /// generate the final witness (a grid of wire values), these virtual targets will go away.
+    /// Adds a new "virtual" target. This is not an actual wire in the witness,
+    /// but just a target that help facilitate witness generation. In
+    /// particular, a generator can assign a values to a virtual target,
+    /// which can then be copied to other (virtual or concrete) targets. When we
+    /// generate the final witness (a grid of wire values), these virtual
+    /// targets will go away.
     pub fn add_virtual_target(&mut self) -> Target {
         let index = self.virtual_target_index;
         self.virtual_target_index += 1;
@@ -238,9 +241,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
                 },
             ));
 
-        // Note that we can't immediately add this gate's generators, because the list of constants
-        // could be modified later, i.e. in the case of `ConstantGate`. We will add them later in
-        // `build` instead.
+        // Note that we can't immediately add this gate's generators, because the list
+        // of constants could be modified later, i.e. in the case of
+        // `ConstantGate`. We will add them later in `build` instead.
 
         // Register this gate type if we haven't seen it before.
         let gate_ref = GateRef::new(gate_type);
@@ -386,17 +389,19 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         MerkleCapTarget(cap.0.iter().map(|h| self.constant_hash(*h)).collect())
     }
 
-    /// If the given target is a constant (i.e. it was created by the `constant(F)` method), returns
-    /// its constant value. Otherwise, returns `None`.
+    /// If the given target is a constant (i.e. it was created by the
+    /// `constant(F)` method), returns its constant value. Otherwise,
+    /// returns `None`.
     pub fn target_as_constant(&self, target: Target) -> Option<F> {
         self.targets_to_constants.get(&target).cloned()
     }
 
     /// If the given `ExtensionTarget` is a constant (i.e. it was created by the
-    /// `constant_extension(F)` method), returns its constant value. Otherwise, returns `None`.
+    /// `constant_extension(F)` method), returns its constant value. Otherwise,
+    /// returns `None`.
     pub fn target_as_constant_ext(&self, target: ExtensionTarget<D>) -> Option<F::Extension> {
-        // Get a Vec of any coefficients that are constant. If we end up with exactly D of them,
-        // then the `ExtensionTarget` as a whole is constant.
+        // Get a Vec of any coefficients that are constant. If we end up with exactly D
+        // of them, then the `ExtensionTarget` as a whole is constant.
         let const_coeffs: Vec<F> = target
             .0
             .iter()
@@ -418,9 +423,10 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         self.context_log.pop(self.num_gates());
     }
 
-    /// Find an available slot, of the form `(row, op)` for gate `G` using parameters `params`
-    /// and constants `constants`. Parameters are any data used to differentiate which gate should be
-    /// used for the given operation.
+    /// Find an available slot, of the form `(row, op)` for gate `G` using
+    /// parameters `params` and constants `constants`. Parameters are any
+    /// data used to differentiate which gate should be used for the given
+    /// operation.
     pub fn find_slot<G: Gate<F, D> + Clone>(
         &mut self,
         gate: G,
@@ -456,7 +462,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             .fri_params(degree_bits, self.config.zero_knowledge)
     }
 
-    /// The number of (base field) `arithmetic` operations that can be performed in a single gate.
+    /// The number of (base field) `arithmetic` operations that can be performed
+    /// in a single gate.
     pub(crate) fn num_base_arithmetic_ops_per_gate(&self) -> usize {
         if self.config.use_base_arithmetic_gate {
             ArithmeticGate::new_from_config(&self.config).num_ops
@@ -465,14 +472,16 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         }
     }
 
-    /// The number of `arithmetic_extension` operations that can be performed in a single gate.
+    /// The number of `arithmetic_extension` operations that can be performed in
+    /// a single gate.
     pub(crate) fn num_ext_arithmetic_ops_per_gate(&self) -> usize {
         ArithmeticExtensionGate::<D>::new_from_config(&self.config).num_ops
     }
 
-    /// The number of polynomial values that will be revealed per opening, both for the "regular"
-    /// polynomials and for the Z polynomials. Because calculating these values involves a recursive
-    /// dependence (the amount of blinding depends on the degree, which depends on the blinding),
+    /// The number of polynomial values that will be revealed per opening, both
+    /// for the "regular" polynomials and for the Z polynomials. Because
+    /// calculating these values involves a recursive dependence (the amount
+    /// of blinding depends on the degree, which depends on the blinding),
     /// this function takes in an estimate of the degree.
     fn num_blinding_gates(&self, degree_estimate: usize) -> (usize, usize) {
         let degree_bits_estimate = log2_strict(degree_estimate);
@@ -495,9 +504,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         (regular_poly_openings, z_openings)
     }
 
-    /// The number of polynomial values that will be revealed per opening, both for the "regular"
-    /// polynomials (which are opened at only one location) and for the Z polynomials (which are
-    /// opened at two).
+    /// The number of polynomial values that will be revealed per opening, both
+    /// for the "regular" polynomials (which are opened at only one
+    /// location) and for the Z polynomials (which are opened at two).
     fn blinding_counts(&self) -> (usize, usize) {
         let num_gates = self.gate_instances.len();
         let mut degree_estimate = 1 << log2_ceil(num_gates);
@@ -514,7 +523,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
                 return (regular_poly_openings, z_openings);
             }
 
-            // The blinding gates do not fit within our estimated degree; increase our estimate.
+            // The blinding gates do not fit within our estimated degree; increase our
+            // estimate.
             degree_estimate *= 2;
         }
     }
@@ -539,8 +549,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let num_routed_wires = self.config.num_routed_wires;
         let num_wires = self.config.num_wires;
 
-        // For each "regular" blinding factor, we simply add a no-op gate, and insert a random value
-        // for each wire.
+        // For each "regular" blinding factor, we simply add a no-op gate, and insert a
+        // random value for each wire.
         for _ in 0..regular_poly_openings {
             let row = self.add_gate(NoopGate, vec![]);
             for w in 0..num_wires {
@@ -550,8 +560,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             }
         }
 
-        // For each z poly blinding factor, we add two new gates with the same random value, and
-        // enforce a copy constraint between them.
+        // For each z poly blinding factor, we add two new gates with the same random
+        // value, and enforce a copy constraint between them.
         // See https://mirprotocol.org/blog/Adding-zero-knowledge-to-Plonk-Halo
         for _ in 0..z_openings {
             let gate_1 = self.add_gate(NoopGate, vec![]);
@@ -666,8 +676,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let rate_bits = self.config.fri_config.rate_bits;
         let cap_height = self.config.fri_config.cap_height;
 
-        // Hash the public inputs, and route them to a `PublicInputGate` which will enforce that
-        // those hash wires match the claimed public inputs.
+        // Hash the public inputs, and route them to a `PublicInputGate` which will
+        // enforce that those hash wires match the claimed public inputs.
         let num_public_inputs = self.public_inputs.len();
         let public_inputs_hash =
             self.hash_n_to_hash_no_pad::<C::InnerHasher>(self.public_inputs.clone());
@@ -690,7 +700,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             );
         }
 
-        // For each constant-target pair used in the circuit, use a constant generator to fill this target.
+        // For each constant-target pair used in the circuit, use a constant generator
+        // to fill this target.
         for ((c, t), mut const_gen) in self
             .constants_to_targets
             .clone()
@@ -725,7 +736,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
 
         let quotient_degree_factor = self.config.max_quotient_degree_factor;
         let mut gates = self.gates.iter().cloned().collect::<Vec<_>>();
-        // Gates need to be sorted by their degrees (and ID to make the ordering deterministic) to compute the selector polynomials.
+        // Gates need to be sorted by their degrees (and ID to make the ordering
+        // deterministic) to compute the selector polynomials.
         gates.sort_unstable_by_key(|g| (g.0.degree(), g.0.id()));
         let (mut constant_vecs, selectors_info) =
             selector_polynomials(&gates, &self.gate_instances, quotient_degree_factor + 1);
@@ -755,7 +767,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             Some(&fft_root_table),
         );
 
-        // Map between gates where not all generators are used and the gate's number of used generators.
+        // Map between gates where not all generators are used and the gate's number of
+        // used generators.
         let incomplete_gates = self
             .current_slots
             .values()
@@ -854,7 +867,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         }
     }
 
-    /// Builds a "prover circuit", with data needed to generate proofs but not verify them.
+    /// Builds a "prover circuit", with data needed to generate proofs but not
+    /// verify them.
     pub fn build_prover<C: GenericConfig<D, F = F>>(self) -> ProverCircuitData<F, C, D>
     where
         [(); C::Hasher::HASH_SIZE]:,
@@ -864,7 +878,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         circuit_data.prover_data()
     }
 
-    /// Builds a "verifier circuit", with data needed to verify proofs but not generate them.
+    /// Builds a "verifier circuit", with data needed to verify proofs but not
+    /// generate them.
     pub fn build_verifier<C: GenericConfig<D, F = F>>(self) -> VerifierCircuitData<F, C, D>
     where
         [(); C::Hasher::HASH_SIZE]:,

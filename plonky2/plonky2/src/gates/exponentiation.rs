@@ -343,8 +343,8 @@ mod tests {
         type F = <C as GenericConfig<D>>::F;
         type FF = <C as GenericConfig<D>>::FE;
 
-        /// Returns the local wires for an exponentiation gate given the base, power, and power bit
-        /// values.
+        /// Returns the local wires for an exponentiation gate given the base,
+        /// power, and power bit values.
         fn get_wires(base: F, power: u64) -> Vec<FF> {
             let mut power_bits = Vec::new();
             let mut cur_power = power;

@@ -10,8 +10,9 @@ use crate::hash::merkle_proofs::MerkleProof;
 use crate::plonk::config::GenericHashOut;
 use crate::plonk::config::Hasher;
 
-/// The Merkle cap of height `h` of a Merkle tree is the `h`-th layer (from the root) of the tree.
-/// It can be used in place of the root to verify Merkle paths, which are `h` elements shorter.
+/// The Merkle cap of height `h` of a Merkle tree is the `h`-th layer (from the
+/// root) of the tree. It can be used in place of the root to verify Merkle
+/// paths, which are `h` elements shorter.
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(bound = "")]
 pub struct MerkleCap<F: RichField, H: Hasher<F>>(pub Vec<H::Hash>);
@@ -35,14 +36,16 @@ pub struct MerkleTree<F: RichField, H: Hasher<F>> {
     /// The data in the leaves of the Merkle tree.
     pub leaves: Vec<Vec<F>>,
 
-    /// The digests in the tree. Consists of `cap.len()` sub-trees, each corresponding to one
-    /// element in `cap`. Each subtree is contiguous and located at
-    /// `digests[digests.len() / cap.len() * i..digests.len() / cap.len() * (i + 1)]`.
-    /// Within each subtree, siblings are stored next to each other. The layout is,
-    /// left_child_subtree || left_child_digest || right_child_digest || right_child_subtree, where
-    /// left_child_digest and right_child_digest are H::Hash and left_child_subtree and
-    /// right_child_subtree recurse. Observe that the digest of a node is stored by its _parent_.
-    /// Consequently, the digests of the roots are not stored here (they can be found in `cap`).
+    /// The digests in the tree. Consists of `cap.len()` sub-trees, each
+    /// corresponding to one element in `cap`. Each subtree is contiguous
+    /// and located at `digests[digests.len() / cap.len() * i..digests.len()
+    /// / cap.len() * (i + 1)]`. Within each subtree, siblings are stored
+    /// next to each other. The layout is, left_child_subtree ||
+    /// left_child_digest || right_child_digest || right_child_subtree, where
+    /// left_child_digest and right_child_digest are H::Hash and
+    /// left_child_subtree and right_child_subtree recurse. Observe that the
+    /// digest of a node is stored by its _parent_. Consequently, the
+    /// digests of the roots are not stored here (they can be found in `cap`).
     pub digests: Vec<H::Hash>,
 
     /// The Merkle cap.
@@ -53,10 +56,11 @@ fn capacity_up_to_mut<T>(v: &mut Vec<T>, len: usize) -> &mut [MaybeUninit<T>] {
     assert!(v.capacity() >= len);
     let v_ptr = v.as_mut_ptr().cast::<MaybeUninit<T>>();
     unsafe {
-        // SAFETY: `v_ptr` is a valid pointer to a buffer of length at least `len`. Upon return, the
-        // lifetime will be bound to that of `v`. The underlying memory will not be deallocated as
-        // we hold the sole mutable reference to `v`. The contents of the slice may be
-        // uninitialized, but the `MaybeUninit` makes it safe.
+        // SAFETY: `v_ptr` is a valid pointer to a buffer of length at least `len`. Upon
+        // return, the lifetime will be bound to that of `v`. The underlying
+        // memory will not be deallocated as we hold the sole mutable reference
+        // to `v`. The contents of the slice may be uninitialized, but the
+        // `MaybeUninit` makes it safe.
         slice::from_raw_parts_mut(v_ptr, len)
     }
 }
@@ -74,8 +78,8 @@ where
     } else {
         // Layout is: left recursive output || left child digest
         //             || right child digest || right recursive output.
-        // Split `digests_buf` into the two recursive outputs (slices) and two child digests
-        // (references).
+        // Split `digests_buf` into the two recursive outputs (slices) and two child
+        // digests (references).
         let (left_digests_buf, right_digests_buf) = digests_buf.split_at_mut(digests_buf.len() / 2);
         let (left_digest_mem, left_digests_buf) = left_digests_buf.split_last_mut().unwrap();
         let (right_digest_mem, right_digests_buf) = right_digests_buf.split_first_mut().unwrap();
@@ -101,9 +105,10 @@ fn fill_digests_buf<F: RichField, H: Hasher<F>>(
 ) where
     [(); H::HASH_SIZE]:,
 {
-    // Special case of a tree that's all cap. The usual case will panic because we'll try to split
-    // an empty slice into chunks of `0`. (We would not need this if there was a way to split into
-    // `blah` chunks as opposed to chunks _of_ `blah`.)
+    // Special case of a tree that's all cap. The usual case will panic because
+    // we'll try to split an empty slice into chunks of `0`. (We would not need
+    // this if there was a way to split into `blah` chunks as opposed to chunks
+    // _of_ `blah`.)
     if digests_buf.is_empty() {
         debug_assert_eq!(cap_buf.len(), leaves.len());
         cap_buf
@@ -123,9 +128,10 @@ fn fill_digests_buf<F: RichField, H: Hasher<F>>(
     assert_eq!(digests_chunks.len(), leaves_chunks.len());
     digests_chunks.zip(cap_buf).zip(leaves_chunks).for_each(
         |((subtree_digests, subtree_cap), subtree_leaves)| {
-            // We have `1 << cap_height` sub-trees, one for each entry in `cap`. They are totally
-            // independent, so we schedule one task for each. `digests_buf` and `leaves` are split
-            // into `1 << cap_height` slices, one for each sub-tree.
+            // We have `1 << cap_height` sub-trees, one for each entry in `cap`. They are
+            // totally independent, so we schedule one task for each.
+            // `digests_buf` and `leaves` are split into `1 << cap_height`
+            // slices, one for each sub-tree.
             subtree_cap.write(fill_subtree::<F, H>(subtree_digests, subtree_leaves));
         },
     );
@@ -191,15 +197,15 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
                 pair_index >>= 1;
 
                 // The layers' data is interleaved as follows:
-                // [layer 0, layer 1, layer 0, layer 2, layer 0, layer 1, layer 0, layer 3, ...].
-                // Each of the above is a pair of siblings.
+                // [layer 0, layer 1, layer 0, layer 2, layer 0, layer 1, layer 0, layer 3,
+                // ...]. Each of the above is a pair of siblings.
                 // `pair_index` is the index of the pair within layer `i`.
                 // The index of that the pair within `digests` is
                 // `pair_index * 2 ** (i + 1) + (2 ** i - 1)`.
                 let siblings_index = (pair_index << (i + 1)) + (1 << i) - 1;
                 // We have an index for the _pair_, but we want the index of the _sibling_.
-                // Double the pair index to get the index of the left sibling. Conditionally add `1`
-                // if we are to retrieve the right sibling.
+                // Double the pair index to get the index of the left sibling. Conditionally add
+                // `1` if we are to retrieve the right sibling.
                 let sibling_index = 2 * siblings_index + (1 - parity);
                 digest_tree[sibling_index]
             })

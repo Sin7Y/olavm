@@ -11,8 +11,9 @@ use plonky2::plonk::circuit_data::CircuitConfig;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2_field::extension::Extendable;
 
-/// A generator used by the prover to calculate the square root (`x`) of a given value
-/// (`x_squared`), outside of the circuit, in order to supply it as an additional public input.
+/// A generator used by the prover to calculate the square root (`x`) of a given
+/// value (`x_squared`), outside of the circuit, in order to supply it as an
+/// additional public input.
 #[derive(Debug)]
 struct SquareRootGenerator<F: RichField + Extendable<D>, const D: usize> {
     x: Target,

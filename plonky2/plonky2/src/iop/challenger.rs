@@ -12,7 +12,8 @@ use crate::iop::target::Target;
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::config::{AlgebraicHasher, GenericHashOut, Hasher};
 
-/// Observes prover messages, and generates challenges by hashing the transcript, a la Fiat-Shamir.
+/// Observes prover messages, and generates challenges by hashing the
+/// transcript, a la Fiat-Shamir.
 #[derive(Clone)]
 pub struct Challenger<F: RichField, H: Hasher<F>> {
     sponge_state: [F; SPONGE_WIDTH],
@@ -21,14 +22,17 @@ pub struct Challenger<F: RichField, H: Hasher<F>> {
     _phantom: PhantomData<H>,
 }
 
-/// Observes prover messages, and generates verifier challenges based on the transcript.
+/// Observes prover messages, and generates verifier challenges based on the
+/// transcript.
 ///
-/// The implementation is roughly based on a duplex sponge with a Rescue permutation. Note that in
-/// each round, our sponge can absorb an arbitrary number of prover messages and generate an
-/// arbitrary number of verifier challenges. This might appear to diverge from the duplex sponge
-/// design, but it can be viewed as a duplex sponge whose inputs are sometimes zero (when we perform
-/// multiple squeezes) and whose outputs are sometimes ignored (when we perform multiple
-/// absorptions). Thus the security properties of a duplex sponge still apply to our design.
+/// The implementation is roughly based on a duplex sponge with a Rescue
+/// permutation. Note that in each round, our sponge can absorb an arbitrary
+/// number of prover messages and generate an arbitrary number of verifier
+/// challenges. This might appear to diverge from the duplex sponge design, but
+/// it can be viewed as a duplex sponge whose inputs are sometimes zero (when we
+/// perform multiple squeezes) and whose outputs are sometimes ignored (when we
+/// perform multiple absorptions). Thus the security properties of a duplex
+/// sponge still apply to our design.
 impl<F: RichField, H: Hasher<F>> Challenger<F, H> {
     pub fn new() -> Challenger<F, H> {
         Challenger {
@@ -83,8 +87,9 @@ impl<F: RichField, H: Hasher<F>> Challenger<F, H> {
     }
 
     pub fn get_challenge(&mut self) -> F {
-        // If we have buffered inputs, we must perform a duplexing so that the challenge will
-        // reflect them. Or if we've run out of outputs, we must perform a duplexing to get more.
+        // If we have buffered inputs, we must perform a duplexing so that the challenge
+        // will reflect them. Or if we've run out of outputs, we must perform a
+        // duplexing to get more.
         if !self.input_buffer.is_empty() || self.output_buffer.is_empty() {
             self.duplexing();
         }
@@ -127,14 +132,14 @@ impl<F: RichField, H: Hasher<F>> Challenger<F, H> {
             .collect()
     }
 
-    /// Absorb any buffered inputs. After calling this, the input buffer will be empty, and the
-    /// output buffer will be full.
+    /// Absorb any buffered inputs. After calling this, the input buffer will be
+    /// empty, and the output buffer will be full.
     fn duplexing(&mut self) {
         assert!(self.input_buffer.len() <= SPONGE_RATE);
 
-        // Overwrite the first r elements with the inputs. This differs from a standard sponge,
-        // where we would xor or add in the inputs. This is a well-known variant, though,
-        // sometimes called "overwrite mode".
+        // Overwrite the first r elements with the inputs. This differs from a standard
+        // sponge, where we would xor or add in the inputs. This is a well-known
+        // variant, though, sometimes called "overwrite mode".
         for (i, input) in self.input_buffer.drain(..).enumerate() {
             self.sponge_state[i] = input;
         }
@@ -162,9 +167,9 @@ impl<F: RichField, H: AlgebraicHasher<F>> Default for Challenger<F, H> {
     }
 }
 
-/// A recursive version of `Challenger`. The main difference is that `RecursiveChallenger`'s input
-/// buffer can grow beyond `SPONGE_RATE`. This is so that `observe_element` etc do not need access
-/// to the `CircuitBuilder`.
+/// A recursive version of `Challenger`. The main difference is that
+/// `RecursiveChallenger`'s input buffer can grow beyond `SPONGE_RATE`. This is
+/// so that `observe_element` etc do not need access to the `CircuitBuilder`.
 pub struct RecursiveChallenger<F: RichField + Extendable<D>, H: AlgebraicHasher<F>, const D: usize>
 {
     sponge_state: [Target; SPONGE_WIDTH],
@@ -265,17 +270,17 @@ impl<F: RichField + Extendable<D>, H: AlgebraicHasher<F>, const D: usize>
         self.get_n_challenges(builder, D).try_into().unwrap()
     }
 
-    /// Absorb any buffered inputs. After calling this, the input buffer will be empty, and the
-    /// output buffer will be full.
+    /// Absorb any buffered inputs. After calling this, the input buffer will be
+    /// empty, and the output buffer will be full.
     fn absorb_buffered_inputs(&mut self, builder: &mut CircuitBuilder<F, D>) {
         if self.input_buffer.is_empty() {
             return;
         }
 
         for input_chunk in self.input_buffer.chunks(SPONGE_RATE) {
-            // Overwrite the first r elements with the inputs. This differs from a standard sponge,
-            // where we would xor or add in the inputs. This is a well-known variant, though,
-            // sometimes called "overwrite mode".
+            // Overwrite the first r elements with the inputs. This differs from a standard
+            // sponge, where we would xor or add in the inputs. This is a
+            // well-known variant, though, sometimes called "overwrite mode".
             for (i, &input) in input_chunk.iter().enumerate() {
                 self.sponge_state[i] = input;
             }
@@ -336,8 +341,8 @@ mod tests {
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
 
-        // These are mostly arbitrary, but we want to test some rounds with enough inputs/outputs to
-        // trigger multiple absorptions/squeezes.
+        // These are mostly arbitrary, but we want to test some rounds with enough
+        // inputs/outputs to trigger multiple absorptions/squeezes.
         let num_inputs_per_round = vec![2, 5, 3];
         let num_outputs_per_round = vec![1, 2, 4];
 

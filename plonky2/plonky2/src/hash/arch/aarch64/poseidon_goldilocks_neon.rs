@@ -11,14 +11,15 @@ use unroll::unroll_for_loops;
 
 use crate::hash::poseidon::Poseidon;
 
-// ========================================== CONSTANTS ===========================================
+// ========================================== CONSTANTS
+// ===========================================
 
 const WIDTH: usize = 12;
 
 const EPSILON: u64 = 0xffffffff;
 
-// The round constants to be applied by the second set of full rounds. These are just the usual
-// round constants, shifted by one round, with zeros shifted in.
+// The round constants to be applied by the second set of full rounds. These are
+// just the usual round constants, shifted by one round, with zeros shifted in.
 /*
 const fn make_final_round_constants() -> [u64; WIDTH * HALF_N_FULL_ROUNDS] {
     let mut res = [0; WIDTH * HALF_N_FULL_ROUNDS];
@@ -32,10 +33,11 @@ const fn make_final_round_constants() -> [u64; WIDTH * HALF_N_FULL_ROUNDS] {
 const FINAL_ROUND_CONSTANTS: [u64; WIDTH * HALF_N_FULL_ROUNDS] = make_final_round_constants();
 */
 
-// ===================================== COMPILE-TIME CHECKS ======================================
+// ===================================== COMPILE-TIME CHECKS
+// ======================================
 
-/// The MDS matrix multiplication ASM is specific to the MDS matrix below. We want this file to
-/// fail to compile if it has been changed.
+/// The MDS matrix multiplication ASM is specific to the MDS matrix below. We
+/// want this file to fail to compile if it has been changed.
 #[allow(dead_code)]
 const fn check_mds_matrix() -> bool {
     // Can't == two arrays in a const_assert! (:
@@ -54,8 +56,8 @@ const fn check_mds_matrix() -> bool {
 }
 const_assert!(check_mds_matrix());
 
-/// Ensure that the first WIDTH round constants are in canonical* form. This is required because
-/// the first constant layer does not handle double overflow.
+/// Ensure that the first WIDTH round constants are in canonical* form. This is
+/// required because the first constant layer does not handle double overflow.
 /// *: round_const == GoldilocksField::ORDER is safe.
 /*
 #[allow(dead_code)]
@@ -73,7 +75,8 @@ const_assert!(check_round_const_bounds_init());
 */
 // ====================================== SCALAR ARITHMETIC =======================================
 
-/// Addition modulo ORDER accounting for wraparound. Correct only when a + b < 2**64 + ORDER.
+/// Addition modulo ORDER accounting for wraparound. Correct only when a + b <
+/// 2**64 + ORDER.
 #[inline(always)]
 unsafe fn add_with_wraparound(a: u64, b: u64) -> u64 {
     let res: u64;
@@ -96,18 +99,19 @@ unsafe fn add_with_wraparound(a: u64, b: u64) -> u64 {
 #[inline(always)]
 unsafe fn sub_with_wraparound_lsr32(a: u64, b: u64) -> u64 {
     let mut b_hi = b >> 32;
-    // Make sure that LLVM emits two separate instructions for the shift and the subtraction. This
-    // reduces pressure on the execution units with access to the flags, as they are no longer
-    // responsible for the shift. The hack is to insert a fake computation between the two
-    // instructions with an `asm` block to make LLVM think that they can't be merged.
+    // Make sure that LLVM emits two separate instructions for the shift and the
+    // subtraction. This reduces pressure on the execution units with access to
+    // the flags, as they are no longer responsible for the shift. The hack is
+    // to insert a fake computation between the two instructions with an `asm`
+    // block to make LLVM think that they can't be merged.
     asm!(
         "/* {0} */", // Make Rust think we're using the register.
         inlateout(reg) b_hi,
         options(nomem, nostack, preserves_flags, pure),
     );
-    // This could be done with a.overflowing_add(b_hi), but `checked_sub` signals to the compiler
-    // that overflow is unlikely (note: this is a standard library implementation detail, not part
-    // of the spec).
+    // This could be done with a.overflowing_add(b_hi), but `checked_sub` signals to
+    // the compiler that overflow is unlikely (note: this is a standard library
+    // implementation detail, not part of the spec).
     match a.checked_sub(b_hi) {
         Some(res) => res,
         None => {
@@ -145,14 +149,16 @@ unsafe fn multiply(x: u64, y: u64) -> u64 {
 
     let xy_hi_lo_mul_epsilon = mul_epsilon(xy_hi);
 
-    // add_with_wraparound is safe, as xy_hi_lo_mul_epsilon <= 0xfffffffe00000001 <= ORDER.
+    // add_with_wraparound is safe, as xy_hi_lo_mul_epsilon <= 0xfffffffe00000001 <=
+    // ORDER.
     add_with_wraparound(res0, xy_hi_lo_mul_epsilon)
 }
 
-// ==================================== STANDALONE CONST LAYER =====================================
+// ==================================== STANDALONE CONST LAYER
+// =====================================
 
-/// Standalone const layer. Run only once, at the start of round 1. Remaining const layers are fused
-/// with the preceeding MDS matrix multiplication.
+/// Standalone const layer. Run only once, at the start of round 1. Remaining
+/// const layers are fused with the preceeding MDS matrix multiplication.
 /*
 #[inline(always)]
 #[unroll_for_loops]
@@ -175,8 +181,8 @@ unsafe fn const_layer_full(
 #[inline(always)]
 #[unroll_for_loops]
 unsafe fn sbox_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
-    // This is done in scalar. S-boxes in vector are only slightly slower throughput-wise but have
-    // an insane latency (~100 cycles) on the M1.
+    // This is done in scalar. S-boxes in vector are only slightly slower
+    // throughput-wise but have an insane latency (~100 cycles) on the M1.
 
     let mut state2 = [0u64; WIDTH];
     assert!(WIDTH == 12);
@@ -222,7 +228,8 @@ unsafe fn mds_reduce(
     // It remains to fold `hi.bits[48..64]` into `lo`.
     let top = {
         // Extract the top 16 bits of `hi` as a `u32`.
-        // Interpret `hi` as a vector of bytes, so we can use a table lookup instruction.
+        // Interpret `hi` as a vector of bytes, so we can use a table lookup
+        // instruction.
         let hi_u8 = vreinterpretq_u8_u64(hi);
         // Indices defining the permutation. `0xff` is out of bounds, producing `0`.
         let top_idx =
@@ -239,20 +246,22 @@ unsafe fn mds_reduce(
 #[inline(always)]
 unsafe fn mds_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
     // This function performs an MDS multiplication in complex FFT space.
-    // However, instead of performing a width-12 FFT, we perform three width-4 FFTs, which is
-    // cheaper. The 12x12 matrix-vector multiplication (a convolution) becomes two 3x3 real
-    // matrix-vector multiplications and one 3x3 complex matrix-vector multiplication.
+    // However, instead of performing a width-12 FFT, we perform three width-4 FFTs,
+    // which is cheaper. The 12x12 matrix-vector multiplication (a convolution)
+    // becomes two 3x3 real matrix-vector multiplications and one 3x3 complex
+    // matrix-vector multiplication.
 
-    // We split each 64-bit into four chunks of 16 bits. To prevent overflow, each chunk is 32 bits
-    // long. Each NEON vector below represents one field element and consists of four 32-bit chunks:
-    // `elem == vector[0] + vector[1] * 2**16 + vector[2] * 2**32 + vector[3] * 2**48`.
+    // We split each 64-bit into four chunks of 16 bits. To prevent overflow, each
+    // chunk is 32 bits long. Each NEON vector below represents one field
+    // element and consists of four 32-bit chunks: `elem == vector[0] +
+    // vector[1] * 2**16 + vector[2] * 2**32 + vector[3] * 2**48`.
 
     // Constants that we multiply by.
     let mut consts: uint32x4_t = transmute::<[u32; 4], _>([2, 4, 8, 16]);
 
-    // Prevent LLVM from turning fused multiply (by power of 2)-add (1 instruction) into shift and
-    // add (two instructions). This fake `asm` block means that LLVM no longer knows the contents of
-    // `consts`.
+    // Prevent LLVM from turning fused multiply (by power of 2)-add (1 instruction)
+    // into shift and add (two instructions). This fake `asm` block means that
+    // LLVM no longer knows the contents of `consts`.
     asm!("/* {0:v} */", // Make Rust think the register is being used.
          inout(vreg) consts,
          options(pure, nomem, nostack, preserves_flags),
@@ -291,7 +300,8 @@ unsafe fn mds_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
     // `[[ 64,  64, 128],`
     // ` [128,  64,  64],`
     // ` [ 64, 128,  64]]`
-    // The results are divided by 4 (this ends up cancelling out some later computations).
+    // The results are divided by 4 (this ends up cancelling out some later
+    // computations).
     {
         let x0 = state_fft[0];
         let x1 = state_fft[1];
@@ -314,7 +324,8 @@ unsafe fn mds_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
     // `[[ -4,  -8,  32],`
     // ` [-32,  -4,  -8],`
     // ` [  8, -32,  -4]]`
-    // The results are divided by 4 (this ends up cancelling out some later computations).
+    // The results are divided by 4 (this ends up cancelling out some later
+    // computations).
     {
         let x0 = state_fft[3];
         let x1 = state_fft[4];
@@ -329,7 +340,8 @@ unsafe fn mds_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
     // `[[ 4 +  2i,  2 + 32i,  2 -  8i],`
     // ` [-8 -  2i,  4 +  2i,  2 + 32i],`
     // ` [32 -  2i, -8 -  2i,  4 +  2i]]`
-    // The results are divided by 2 (this ends up cancelling out some later computations).
+    // The results are divided by 2 (this ends up cancelling out some later
+    // computations).
     {
         let x0r = state_fft[6];
         let x1r = state_fft[7];
@@ -402,7 +414,8 @@ unsafe fn mds_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
         state_fft[i + 9] = x3;
     }
 
-    // Perform `res[0] += state[0] * 8` for the diagonal component of the MDS matrix.
+    // Perform `res[0] += state[0] * 8` for the diagonal component of the MDS
+    // matrix.
     state_fft[0] = vmlal_laneq_u16::<4>(
         state_fft[0],
         vcreate_u16(state[0]),         // Each 16-bit chunk gets zero-extended.
@@ -419,7 +432,8 @@ unsafe fn mds_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
     res_arr
 }
 
-// ======================================== PARTIAL ROUNDS =========================================
+// ======================================== PARTIAL ROUNDS
+// =========================================
 
 /*
 #[rustfmt::skip]
@@ -866,7 +880,8 @@ unsafe fn partial_round(
 }
 */
 
-// ========================================== GLUE CODE ===========================================
+// ========================================== GLUE CODE
+// ===========================================
 
 /*
 #[inline(always)]

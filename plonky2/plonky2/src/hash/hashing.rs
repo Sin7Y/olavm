@@ -40,9 +40,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
 
         // Absorb all input chunks.
         for input_chunk in inputs.chunks(SPONGE_RATE) {
-            // Overwrite the first r elements with the inputs. This differs from a standard sponge,
-            // where we would xor or add in the inputs. This is a well-known variant, though,
-            // sometimes called "overwrite mode".
+            // Overwrite the first r elements with the inputs. This differs from a standard
+            // sponge, where we would xor or add in the inputs. This is a
+            // well-known variant, though, sometimes called "overwrite mode".
             state[..input_chunk.len()].copy_from_slice(input_chunk);
             state = self.permute::<H>(state);
         }
@@ -61,7 +61,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     }
 }
 
-/// A one-way compression function which takes two ~256 bit inputs and returns a ~256 bit output.
+/// A one-way compression function which takes two ~256 bit inputs and returns a
+/// ~256 bit output.
 pub fn compress<F: RichField, P: PlonkyPermutation<F>>(x: HashOut<F>, y: HashOut<F>) -> HashOut<F> {
     let mut perm_inputs = [F::ZERO; SPONGE_WIDTH];
     perm_inputs[..4].copy_from_slice(&x.elements);
@@ -71,13 +72,15 @@ pub fn compress<F: RichField, P: PlonkyPermutation<F>>(x: HashOut<F>, y: HashOut
     }
 }
 
-/// Permutation that can be used in the sponge construction for an algebraic hash.
+/// Permutation that can be used in the sponge construction for an algebraic
+/// hash.
 pub trait PlonkyPermutation<F: RichField> {
     fn permute(input: [F; SPONGE_WIDTH]) -> [F; SPONGE_WIDTH];
 }
 
-/// Hash a message without any padding step. Note that this can enable length-extension attacks.
-/// However, it is still collision-resistant in cases where the input has a fixed length.
+/// Hash a message without any padding step. Note that this can enable
+/// length-extension attacks. However, it is still collision-resistant in cases
+/// where the input has a fixed length.
 pub fn hash_n_to_m_no_pad<F: RichField, P: PlonkyPermutation<F>>(
     inputs: &[F],
     num_outputs: usize,

@@ -1,7 +1,7 @@
 use crate::types::PrimeField64;
 
-/// Generates a series of non-negative integers less than `modulus` which cover a range of
-/// interesting test values.
+/// Generates a series of non-negative integers less than `modulus` which cover
+/// a range of interesting test values.
 pub fn test_inputs(modulus: u64) -> Vec<u64> {
     const CHUNK_SIZE: u64 = 10;
 

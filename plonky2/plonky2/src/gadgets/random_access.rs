@@ -37,8 +37,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         claimed_element
     }
 
-    /// Checks that an `ExtensionTarget` matches a vector at a non-deterministic index.
-    /// Note: `access_index` is not range-checked.
+    /// Checks that an `ExtensionTarget` matches a vector at a non-deterministic
+    /// index. Note: `access_index` is not range-checked.
     pub fn random_access_extension(
         &mut self,
         access_index: Target,

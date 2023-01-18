@@ -7,7 +7,8 @@ const INIT_MEMORY_DATA: u64 = 0x0;
 
 #[derive(Debug, Default)]
 pub struct MemoryTree {
-    // visit by memory address, MemoryCell vector store memory trace value， the last one is the current status
+    // visit by memory address, MemoryCell vector store memory trace value， the last one is the
+    // current status
     pub trace: BTreeMap<u64, Vec<MemoryCell>>,
 }
 
@@ -24,9 +25,10 @@ impl MemoryTree {
         region_poseidon: GoldilocksField,
         region_ecdsa: GoldilocksField,
     ) -> GoldilocksField {
-        // look up the previous value in the appropriate address trace and add (clk, prev_value)
-        // to it; if this is the first time we access this address, create address trace for it
-        // with entry (clk, [ZERO, 4]). in both cases, return the last value in the address trace.
+        // look up the previous value in the appropriate address trace and add (clk,
+        // prev_value) to it; if this is the first time we access this address,
+        // create address trace for it with entry (clk, [ZERO, 4]). in both
+        // cases, return the last value in the address trace.
         self.trace
             .entry(addr)
             .and_modify(|addr_trace| {
@@ -76,8 +78,8 @@ impl MemoryTree {
         region_ecdsa: GoldilocksField,
         value: GoldilocksField,
     ) {
-        // add a memory access to the appropriate address trace; if this is the first time
-        // we access this address, initialize address trace.
+        // add a memory access to the appropriate address trace; if this is the first
+        // time we access this address, initialize address trace.
         let new_cell = MemoryCell {
             is_rw,
             clk,

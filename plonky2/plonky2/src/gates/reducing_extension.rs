@@ -13,7 +13,8 @@ use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
-/// Computes `sum alpha^i c_i` for a vector `c_i` of `num_coeffs` elements of the extension field.
+/// Computes `sum alpha^i c_i` for a vector `c_i` of `num_coeffs` elements of
+/// the extension field.
 #[derive(Debug, Clone)]
 pub struct ReducingExtensionGate<const D: usize> {
     pub num_coeffs: usize,
@@ -26,7 +27,8 @@ impl<const D: usize> ReducingExtensionGate<D> {
 
     pub fn max_coeffs_len(num_wires: usize, num_routed_wires: usize) -> usize {
         // `3*D` routed wires are used for the output, alpha and old accumulator.
-        // Need `num_coeffs*D` routed wires for coeffs, and `(num_coeffs-1)*D` wires for accumulators.
+        // Need `num_coeffs*D` routed wires for coeffs, and `(num_coeffs-1)*D` wires for
+        // accumulators.
         ((num_routed_wires - 3 * D) / D).min((num_wires - 2 * D) / (D * 2))
     }
 
