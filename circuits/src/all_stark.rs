@@ -329,11 +329,11 @@ mod tests {
     use crate::verifier::verify_proof;
     use anyhow::Result;
     use core::program::Program;
-    use std::mem;
     use executor::Process;
     use log::debug;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
+    use std::mem;
 
     #[allow(dead_code)]
     const D: usize = 2;
