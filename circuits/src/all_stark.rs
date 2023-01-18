@@ -77,7 +77,6 @@ pub enum Table {
 
 pub(crate) const NUM_TABLES: usize = 5;
 
-#[allow(unused)] // TODO: Should be used soon.
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     vec![
         ctl_cpu_memory(),
