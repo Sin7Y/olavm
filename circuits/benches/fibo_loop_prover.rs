@@ -27,7 +27,8 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
         traces,
         public_values,
         &mut TimingTree::default(),
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 fn fibo_loop_prover_benchmark(c: &mut Criterion) {
