@@ -19,7 +19,8 @@ use crate::all_stark::NUM_TABLES;
 use crate::config::StarkConfig;
 use crate::permutation::GrandProductChallengeSet;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
 pub struct AllProof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> {
     pub stark_proofs: [StarkProof<F, C, D>; NUM_TABLES],
     pub public_values: PublicValues,
@@ -50,7 +51,7 @@ pub struct AllProofTarget<const D: usize> {
 }
 
 /// Memory values which are public.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PublicValues {
     // TODO:
     // pub trie_roots_before: TrieRoots,
@@ -100,7 +101,8 @@ pub struct BlockMetadataTarget {
     pub block_base_fee: Target,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
 pub struct StarkProof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> {
     /// Merkle cap of LDEs of trace values.
     pub trace_cap: MerkleCap<F, C::Hasher>,
@@ -172,7 +174,8 @@ pub(crate) struct StarkProofChallengesTarget<const D: usize> {
 }
 
 /// Purported values of each polynomial at the challenge point.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
 pub struct StarkOpeningSet<F: RichField + Extendable<D>, const D: usize> {
     /// Openings of trace polynomials at `zeta`.
     pub local_values: Vec<F::Extension>,
