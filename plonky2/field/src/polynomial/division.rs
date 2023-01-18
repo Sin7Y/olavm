@@ -5,7 +5,8 @@ use crate::types::Field;
 
 impl<F: Field> PolynomialCoeffs<F> {
     /// Polynomial division.
-    /// Returns `(q, r)`, the quotient and remainder of the polynomial division of `a` by `b`.
+    /// Returns `(q, r)`, the quotient and remainder of the polynomial division
+    /// of `a` by `b`.
     pub fn div_rem(&self, b: &Self) -> (Self, Self) {
         let (a_degree_plug_1, b_degree_plus_1) = (self.degree_plus_one(), b.degree_plus_one());
         if a_degree_plug_1 == 0 {
@@ -35,8 +36,9 @@ impl<F: Field> PolynomialCoeffs<F> {
     }
 
     /// Polynomial long division.
-    /// Returns `(q, r)`, the quotient and remainder of the polynomial division of `a` by `b`.
-    /// Generally slower that the equivalent function `Polynomial::polynomial_division`.
+    /// Returns `(q, r)`, the quotient and remainder of the polynomial division
+    /// of `a` by `b`. Generally slower that the equivalent function
+    /// `Polynomial::polynomial_division`.
     pub fn div_rem_long_division(&self, b: &Self) -> (Self, Self) {
         let b = b.trimmed();
 

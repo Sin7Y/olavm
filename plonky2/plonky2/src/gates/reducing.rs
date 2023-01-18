@@ -13,7 +13,8 @@ use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
-/// Computes `sum alpha^i c_i` for a vector `c_i` of `num_coeffs` elements of the base field.
+/// Computes `sum alpha^i c_i` for a vector `c_i` of `num_coeffs` elements of
+/// the base field.
 #[derive(Debug, Clone)]
 pub struct ReducingGate<const D: usize> {
     pub num_coeffs: usize,

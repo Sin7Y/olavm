@@ -98,7 +98,8 @@ where
         all_wires_permutation_partial_products(&witness, &betas, &gammas, prover_data, common_data)
     );
 
-    // Z is expected at the front of our batch; see `zs_range` and `partial_products_range`.
+    // Z is expected at the front of our batch; see `zs_range` and
+    // `partial_products_range`.
     let plonk_z_vecs = partial_products_and_zs
         .iter_mut()
         .map(|partial_products_and_z| partial_products_and_z.pop().unwrap())
@@ -169,9 +170,10 @@ where
     challenger.observe_cap(&quotient_polys_commitment.merkle_tree.cap);
 
     let zeta = challenger.get_extension_challenge::<D>();
-    // To avoid leaking witness data, we want to ensure that our opening locations, `zeta` and
-    // `g * zeta`, are not in our subgroup `H`. It suffices to check `zeta` only, since
-    // `(g * zeta)^n = zeta^n`, where `n` is the order of `g`.
+    // To avoid leaking witness data, we want to ensure that our opening locations,
+    // `zeta` and `g * zeta`, are not in our subgroup `H`. It suffices to check
+    // `zeta` only, since `(g * zeta)^n = zeta^n`, where `n` is the order of
+    // `g`.
     let g = F::Extension::primitive_root_of_unity(common_data.degree_bits());
     ensure!(
         zeta.exp_power_of_2(common_data.degree_bits()) != F::Extension::ONE,
@@ -299,7 +301,8 @@ fn wires_permutation_partial_products_and_zs<
     for quotient_chunk_products in all_quotient_chunk_products {
         let mut partial_products_and_z_gx =
             partial_products_and_z_gx(z_x, &quotient_chunk_products);
-        // The last term is Z(gx), but we replace it with Z(x), otherwise Z would end up shifted.
+        // The last term is Z(gx), but we replace it with Z(x), otherwise Z would end up
+        // shifted.
         swap(&mut z_x, &mut partial_products_and_z_gx[num_prods]);
         all_partial_products_and_zs.push(partial_products_and_z_gx);
     }
@@ -335,11 +338,12 @@ fn compute_quotient_polys<
         If we need this in the future, we can precompute the larger LDE before computing the `PolynomialBatch`s."
     );
 
-    // We reuse the LDE computed in `PolynomialBatch` and extract every `step` points to get
-    // an LDE matching `max_filtered_constraint_degree`.
+    // We reuse the LDE computed in `PolynomialBatch` and extract every `step`
+    // points to get an LDE matching `max_filtered_constraint_degree`.
     let step = 1 << (common_data.config.fri_config.rate_bits - quotient_degree_bits);
-    // When opening the `Z`s polys at the "next" point in Plonk, need to look at the point `next_step`
-    // steps away since we work on an LDE of degree `max_filtered_constraint_degree`.
+    // When opening the `Z`s polys at the "next" point in Plonk, need to look at the
+    // point `next_step` steps away since we work on an LDE of degree
+    // `max_filtered_constraint_degree`.
     let next_step = 1 << quotient_degree_bits;
 
     let points = F::two_adic_subgroup(common_data.degree_bits() + quotient_degree_bits);

@@ -4,8 +4,10 @@ use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::extension::OEF;
 
-/// Let `F_D` be the optimal extension field `F[X]/(X^D-W)`. Then `ExtensionAlgebra<F_D>` is the quotient `F_D[X]/(X^D-W)`.
-/// It's a `D`-dimensional algebra over `F_D` useful to lift the multiplication over `F_D` to a multiplication over `(F_D)^D`.
+/// Let `F_D` be the optimal extension field `F[X]/(X^D-W)`. Then
+/// `ExtensionAlgebra<F_D>` is the quotient `F_D[X]/(X^D-W)`.
+/// It's a `D`-dimensional algebra over `F_D` useful to lift the multiplication
+/// over `F_D` to a multiplication over `(F_D)^D`.
 #[derive(Copy, Clone)]
 pub struct ExtensionAlgebra<F: OEF<D>, const D: usize>(pub [F; D]);
 
@@ -160,7 +162,8 @@ impl<F: OEF<D>, const D: usize> PolynomialCoeffsAlgebra<F, D> {
             .fold(ExtensionAlgebra::ZERO, |acc, &c| acc * x + c)
     }
 
-    /// Evaluate the polynomial at a point given its powers. The first power is the point itself, not 1.
+    /// Evaluate the polynomial at a point given its powers. The first power is
+    /// the point itself, not 1.
     pub fn eval_with_powers(&self, powers: &[ExtensionAlgebra<F, D>]) -> ExtensionAlgebra<F, D> {
         debug_assert_eq!(self.coeffs.len(), powers.len() + 1);
         let acc = self.coeffs[0];
@@ -177,7 +180,8 @@ impl<F: OEF<D>, const D: usize> PolynomialCoeffsAlgebra<F, D> {
             .fold(ExtensionAlgebra::ZERO, |acc, &c| acc.scalar_mul(x) + c)
     }
 
-    /// Evaluate the polynomial at a point given its powers. The first power is the point itself, not 1.
+    /// Evaluate the polynomial at a point given its powers. The first power is
+    /// the point itself, not 1.
     pub fn eval_base_with_powers(&self, powers: &[F]) -> ExtensionAlgebra<F, D> {
         debug_assert_eq!(self.coeffs.len(), powers.len() + 1);
         let acc = self.coeffs[0];
@@ -197,7 +201,8 @@ mod tests {
     use crate::goldilocks_field::GoldilocksField;
     use crate::types::Field;
 
-    /// Tests that the multiplication on the extension algebra lifts that of the field extension.
+    /// Tests that the multiplication on the extension algebra lifts that of the
+    /// field extension.
     fn test_extension_algebra<F: Extendable<D>, const D: usize>() {
         #[derive(Copy, Clone, Debug)]
         enum ZeroOne {

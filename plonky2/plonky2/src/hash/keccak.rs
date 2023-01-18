@@ -9,9 +9,10 @@ use crate::hash::hashing::{PlonkyPermutation, SPONGE_WIDTH};
 use crate::plonk::config::Hasher;
 use crate::util::serialization::Buffer;
 
-/// Keccak-256 pseudo-permutation (not necessarily one-to-one) used in the challenger.
-/// A state `input: [F; 12]` is sent to the field representation of `H(input) || H(H(input)) || H(H(H(input)))`
-/// where `H` is the Keccak-256 hash.
+/// Keccak-256 pseudo-permutation (not necessarily one-to-one) used in the
+/// challenger. A state `input: [F; 12]` is sent to the field representation of
+/// `H(input) || H(H(input)) || H(H(H(input)))` where `H` is the Keccak-256
+/// hash.
 pub struct KeccakPermutation;
 impl<F: RichField> PlonkyPermutation<F> for KeccakPermutation {
     fn permute(input: [F; SPONGE_WIDTH]) -> [F; SPONGE_WIDTH] {
@@ -34,8 +35,8 @@ impl<F: RichField> PlonkyPermutation<F> for KeccakPermutation {
                 .collect_vec()
         });
 
-        // Parse field elements from u64 stream, using rejection sampling such that words that don't
-        // fit in F are ignored.
+        // Parse field elements from u64 stream, using rejection sampling such that
+        // words that don't fit in F are ignored.
         let hash_onion_elems = hash_onion_u64s
             .filter(|&word| word < F::ORDER)
             .map(F::from_canonical_u64);

@@ -23,13 +23,13 @@ use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer
 use crate::stark::Stark;
 use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
-/// A pair of lists of columns, `lhs` and `rhs`, that should be permutations of one another.
-/// In particular, there should exist some permutation `pi` such that for any `i`,
-/// `trace[lhs[i]] = pi(trace[rhs[i]])`. Here `trace` denotes the trace in column-major form, so
-/// `trace[col]` is a column vector.
+/// A pair of lists of columns, `lhs` and `rhs`, that should be permutations of
+/// one another. In particular, there should exist some permutation `pi` such
+/// that for any `i`, `trace[lhs[i]] = pi(trace[rhs[i]])`. Here `trace` denotes
+/// the trace in column-major form, so `trace[col]` is a column vector.
 pub struct PermutationPair {
-    /// Each entry contains two column indices, representing two columns which should be
-    /// permutations of one another.
+    /// Each entry contains two column indices, representing two columns which
+    /// should be permutations of one another.
     pub column_pairs: Vec<(usize, usize)>,
 }
 
@@ -91,7 +91,8 @@ impl GrandProductChallenge<Target> {
     }
 }
 
-/// Like `PermutationChallenge`, but with `num_challenges` copies to boost soundness.
+/// Like `PermutationChallenge`, but with `num_challenges` copies to boost
+/// soundness.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub(crate) struct GrandProductChallengeSet<T: Copy + Eq + PartialEq + Debug> {
     pub(crate) challenges: Vec<GrandProductChallenge<T>>,
@@ -152,8 +153,8 @@ fn compute_permutation_z_poly<F: Field>(
     PolynomialValues::new(partial_products)
 }
 
-/// Computes the reduced polynomial, `\sum beta^i f_i(x) + gamma`, for both the "left" and "right"
-/// sides of a given `PermutationPair`.
+/// Computes the reduced polynomial, `\sum beta^i f_i(x) + gamma`, for both the
+/// "left" and "right" sides of a given `PermutationPair`.
 fn permutation_reduced_polys<F: Field>(
     instance: &PermutationInstance<F>,
     trace_poly_values: &[PolynomialValues<F>],
@@ -173,8 +174,8 @@ fn permutation_reduced_polys<F: Field>(
     (reduced_lhs, reduced_rhs)
 }
 
-/// Computes the elementwise product of a set of polynomials. Assumes that the set is non-empty and
-/// that each polynomial has the same length.
+/// Computes the elementwise product of a set of polynomials. Assumes that the
+/// set is non-empty and that each polynomial has the same length.
 fn poly_product_elementwise<F: Field>(
     mut polys: impl Iterator<Item = PolynomialValues<F>>,
 ) -> PolynomialValues<F> {
@@ -257,11 +258,12 @@ pub(crate) fn get_n_grand_product_challenge_sets_target<
         .collect()
 }
 
-/// Get a list of instances of our batch-permutation argument. These are permutation arguments
-/// where the same `Z(x)` polynomial is used to check more than one permutation.
-/// Before batching, each permutation pair leads to `num_challenges` permutation arguments, so we
-/// start with the cartesian product of `permutation_pairs` and `0..num_challenges`. Then we
-/// chunk these arguments based on our batch size.
+/// Get a list of instances of our batch-permutation argument. These are
+/// permutation arguments where the same `Z(x)` polynomial is used to check more
+/// than one permutation. Before batching, each permutation pair leads to
+/// `num_challenges` permutation arguments, so we start with the cartesian
+/// product of `permutation_pairs` and `0..num_challenges`. Then we chunk these
+/// arguments based on our batch size.
 pub(crate) fn get_permutation_batches<'a, T: Copy + Eq + PartialEq + Debug>(
     permutation_pairs: &'a [PermutationPair],
     permutation_challenge_sets: &[GrandProductChallengeSet<T>],
@@ -423,7 +425,8 @@ pub(crate) fn eval_permutation_checks_circuit<F, S, const D: usize>(
                 .unzip();
         let reduced_lhs_product = builder.mul_many_extension(reduced_lhs);
         let reduced_rhs_product = builder.mul_many_extension(reduced_rhs);
-        // constraint = next_zs[i] * reduced_rhs_product - local_zs[i] * reduced_lhs_product
+        // constraint = next_zs[i] * reduced_rhs_product - local_zs[i] *
+        // reduced_lhs_product
         let constraint = {
             let tmp = builder.mul_extension(local_zs[i], reduced_lhs_product);
             builder.mul_sub_extension(next_zs[i], reduced_rhs_product, tmp)

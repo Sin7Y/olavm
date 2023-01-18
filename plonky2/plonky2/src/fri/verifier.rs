@@ -15,8 +15,8 @@ use crate::plonk::config::{GenericConfig, Hasher};
 use crate::util::reducing::ReducingFactor;
 use crate::util::reverse_bits;
 
-/// Computes P'(x^arity) from {P(x*g^i)}_(i=0..arity), where g is a `arity`-th root of unity
-/// and P' is the FRI reduced polynomial.
+/// Computes P'(x^arity) from {P(x*g^i)}_(i=0..arity), where g is a `arity`-th
+/// root of unity and P' is the FRI reduced polynomial.
 pub(crate) fn compute_evaluation<F: Field + Extendable<D>, const D: usize>(
     x: F,
     x_index_within_coset: usize,
@@ -34,7 +34,8 @@ pub(crate) fn compute_evaluation<F: Field + Extendable<D>, const D: usize>(
     reverse_index_bits_in_place(&mut evals);
     let rev_x_index_within_coset = reverse_bits(x_index_within_coset, arity_bits);
     let coset_start = x * g.exp_u64((arity - rev_x_index_within_coset) as u64);
-    // The answer is gotten by interpolating {(x*g^i, P(x*g^i))} and evaluating at beta.
+    // The answer is gotten by interpolating {(x*g^i, P(x*g^i))} and evaluating at
+    // beta.
     let points = g
         .powers()
         .map(|y| (coset_start * y).into())
@@ -158,8 +159,9 @@ pub(crate) fn fri_combine_initial<
         sum += numerator / denominator;
     }
 
-    // Multiply the final polynomial by `X`, so that `final_poly` has the maximum degree for
-    // which the LDT will pass. See github.com/mir-protocol/plonky2/pull/436 for details.
+    // Multiply the final polynomial by `X`, so that `final_poly` has the maximum
+    // degree for which the LDT will pass. See
+    // github.com/mir-protocol/plonky2/pull/436 for details.
     sum * subgroup_x
 }
 
@@ -186,13 +188,14 @@ where
         &round_proof.initial_trees_proof,
         initial_merkle_caps,
     )?;
-    // `subgroup_x` is `subgroup[x_index]`, i.e., the actual field element in the domain.
+    // `subgroup_x` is `subgroup[x_index]`, i.e., the actual field element in the
+    // domain.
     let log_n = log2_strict(n);
     let mut subgroup_x = F::MULTIPLICATIVE_GROUP_GENERATOR
         * F::primitive_root_of_unity(log_n).exp_u64(reverse_bits(x_index, log_n) as u64);
 
-    // old_eval is the last derived evaluation; it will be checked for consistency with its
-    // committed "parent" value in the next iteration.
+    // old_eval is the last derived evaluation; it will be checked for consistency
+    // with its committed "parent" value in the next iteration.
     let mut old_eval = fri_combine_initial::<F, C, D>(
         instance,
         &round_proof.initial_trees_proof,
@@ -206,7 +209,8 @@ where
         let arity = 1 << arity_bits;
         let evals = &round_proof.steps[i].evals;
 
-        // Split x_index into the index of the coset x is in, and the index of x within that coset.
+        // Split x_index into the index of the coset x is in, and the index of x within
+        // that coset.
         let coset_index = x_index >> arity_bits;
         let x_index_within_coset = x_index & (arity - 1);
 
@@ -235,8 +239,8 @@ where
         x_index = coset_index;
     }
 
-    // Final check of FRI. After all the reductions, we check that the final polynomial is equal
-    // to the one sent by the prover.
+    // Final check of FRI. After all the reductions, we check that the final
+    // polynomial is equal to the one sent by the prover.
     ensure!(
         proof.final_poly.eval(subgroup_x.into()) == old_eval,
         "Final polynomial evaluation is invalid."
@@ -245,8 +249,8 @@ where
     Ok(())
 }
 
-/// For each opening point, holds the reduced (by `alpha`) evaluations of each polynomial that's
-/// opened at that point.
+/// For each opening point, holds the reduced (by `alpha`) evaluations of each
+/// polynomial that's opened at that point.
 #[derive(Clone, Debug)]
 pub(crate) struct PrecomputedReducedOpenings<F: RichField + Extendable<D>, const D: usize> {
     pub reduced_openings_at_point: Vec<F::Extension>,

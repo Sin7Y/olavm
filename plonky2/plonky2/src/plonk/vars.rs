@@ -17,8 +17,8 @@ pub struct EvaluationVars<'a, F: RichField + Extendable<D>, const D: usize> {
 }
 
 /// A batch of evaluation vars, in the base field.
-/// Wires and constants are stored in an evaluation point-major order (that is, wire 0 for all
-/// evaluation points, then wire 1 for all points, and so on).
+/// Wires and constants are stored in an evaluation point-major order (that is,
+/// wire 0 for all evaluation points, then wire 1 for all points, and so on).
 #[derive(Debug, Copy, Clone)]
 pub struct EvaluationVarsBaseBatch<'a, F: Field> {
     batch_size: usize,
@@ -27,7 +27,8 @@ pub struct EvaluationVarsBaseBatch<'a, F: Field> {
     pub public_inputs_hash: &'a HashOut<F>,
 }
 
-/// A view into `EvaluationVarsBaseBatch` for a particular evaluation point. Does not copy the data.
+/// A view into `EvaluationVarsBaseBatch` for a particular evaluation point.
+/// Does not copy the data.
 #[derive(Debug, Copy, Clone)]
 pub struct EvaluationVarsBase<'a, F: Field> {
     pub local_constants: PackedStridedView<'a, F>,
@@ -86,7 +87,8 @@ impl<'a, F: Field> EvaluationVarsBaseBatch<'a, F> {
     }
 
     pub fn view(&self, index: usize) -> EvaluationVarsBase<'a, F> {
-        // We cannot implement `Index` as `EvaluationVarsBase` is a struct, not a reference.
+        // We cannot implement `Index` as `EvaluationVarsBase` is a struct, not a
+        // reference.
         assert!(index < self.len());
         let local_constants = PackedStridedView::new(self.local_constants, self.len(), index);
         let local_wires = PackedStridedView::new(self.local_wires, self.len(), index);
@@ -151,12 +153,13 @@ impl<'a, F: Field> Iterator for EvaluationVarsBaseBatchIter<'a, F> {
     }
 }
 
-/// Iterator of packed views (`EvaluationVarsBasePacked`) into a `EvaluationVarsBaseBatch`.
-/// Note: if the length of `EvaluationVarsBaseBatch` is not a multiple of `P::WIDTH`, then the
-/// leftovers at the end are ignored.
+/// Iterator of packed views (`EvaluationVarsBasePacked`) into a
+/// `EvaluationVarsBaseBatch`. Note: if the length of `EvaluationVarsBaseBatch`
+/// is not a multiple of `P::WIDTH`, then the leftovers at the end are ignored.
 pub struct EvaluationVarsBaseBatchIterPacked<'a, P: PackedField> {
-    /// Index to yield next, in units of `P::Scalar`. E.g. if `P::WIDTH == 4`, then we will yield
-    /// the vars for points `i`, `i + 1`, `i + 2`, and `i + 3`, packed.
+    /// Index to yield next, in units of `P::Scalar`. E.g. if `P::WIDTH == 4`,
+    /// then we will yield the vars for points `i`, `i + 1`, `i + 2`, and `i
+    /// + 3`, packed.
     i: usize,
     vars_batch: EvaluationVarsBaseBatch<'a, P::Scalar>,
 }

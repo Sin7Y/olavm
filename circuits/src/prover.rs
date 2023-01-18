@@ -87,8 +87,9 @@ where
             .iter()
             .map(|trace| {
                 PolynomialBatch::<F, C, D>::from_values(
-                    // TODO: Cloning this isn't great; consider having `from_values` accept a reference,
-                    // or having `compute_permutation_z_polys` read trace values from the `PolynomialBatch`.
+                    // TODO: Cloning this isn't great; consider having `from_values` accept a
+                    // reference, or having `compute_permutation_z_polys` read
+                    // trace values from the `PolynomialBatch`.
                     trace.clone(),
                     rate_bits,
                     false,
@@ -309,9 +310,10 @@ where
     challenger.observe_cap(&quotient_polys_cap);
 
     let zeta = challenger.get_extension_challenge::<D>();
-    // To avoid leaking witness data, we want to ensure that our opening locations, `zeta` and
-    // `g * zeta`, are not in our subgroup `H`. It suffices to check `zeta` only, since
-    // `(g * zeta)^n = zeta^n`, where `n` is the order of `g`.
+    // To avoid leaking witness data, we want to ensure that our opening locations,
+    // `zeta` and `g * zeta`, are not in our subgroup `H`. It suffices to check
+    // `zeta` only, since `(g * zeta)^n = zeta^n`, where `n` is the order of
+    // `g`.
     let g = F::primitive_root_of_unity(degree_bits);
     ensure!(
         zeta.exp_power_of_2(degree_bits) != F::Extension::ONE,
@@ -356,8 +358,8 @@ where
     })
 }
 
-/// Computes the quotient polynomials `(sum alpha^i C_i(x)) / Z_H(x)` for `alpha` in `alphas`,
-/// where the `C_i`s are the Stark constraints.
+/// Computes the quotient polynomials `(sum alpha^i C_i(x)) / Z_H(x)` for
+/// `alpha` in `alphas`, where the `C_i`s are the Stark constraints.
 fn compute_quotient_polys<'a, F, P, C, S, const D: usize>(
     stark: &S,
     trace_commitment: &'a PolynomialBatch<F, C, D>,
@@ -385,7 +387,8 @@ where
         "Having constraints of degree higher than the rate is not supported yet."
     );
     let step = 1 << (rate_bits - quotient_degree_bits);
-    // When opening the `Z`s polys at the "next" point, need to look at the point `next_step` steps away.
+    // When opening the `Z`s polys at the "next" point, need to look at the point
+    // `next_step` steps away.
     let next_step = 1 << quotient_degree_bits;
 
     // Evaluation of the first Lagrange polynomial on the LDE domain.
@@ -413,8 +416,8 @@ where
         size,
     );
 
-    // We will step by `P::WIDTH`, and in each iteration, evaluate the quotient polynomial at
-    // a batch of `P::WIDTH` points.
+    // We will step by `P::WIDTH`, and in each iteration, evaluate the quotient
+    // polynomial at a batch of `P::WIDTH` points.
     let quotient_values = (0..size)
         .into_par_iter()
         .step_by(P::WIDTH)
@@ -494,7 +497,8 @@ where
 }
 
 /// Check that all constraints evaluate to zero on `H`.
-/// Can also be used to check the degree of the constraints by evaluating on a larger subgroup.
+/// Can also be used to check the degree of the constraints by evaluating on a
+/// larger subgroup.
 #[allow(unused)]
 fn check_constraints<'a, F, C, S, const D: usize>(
     stark: &S,

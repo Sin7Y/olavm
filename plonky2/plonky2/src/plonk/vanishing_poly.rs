@@ -17,9 +17,10 @@ use crate::util::reducing::ReducingFactorTarget;
 use crate::util::strided_view::PackedStridedView;
 use crate::with_context;
 
-/// Evaluate the vanishing polynomial at `x`. In this context, the vanishing polynomial is a random
-/// linear combination of gate constraints, plus some other terms relating to the permutation
-/// argument. All such terms should vanish on `H`.
+/// Evaluate the vanishing polynomial at `x`. In this context, the vanishing
+/// polynomial is a random linear combination of gate constraints, plus some
+/// other terms relating to the permutation argument. All such terms should
+/// vanish on `H`.
 pub(crate) fn eval_vanishing_poly<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
@@ -202,9 +203,9 @@ pub(crate) fn eval_vanishing_poly_base_batch<
 
 /// Evaluates all gate constraints.
 ///
-/// `num_gate_constraints` is the largest number of constraints imposed by any gate. It is not
-/// strictly necessary, but it helps performance by ensuring that we allocate a vector with exactly
-/// the capacity that we need.
+/// `num_gate_constraints` is the largest number of constraints imposed by any
+/// gate. It is not strictly necessary, but it helps performance by ensuring
+/// that we allocate a vector with exactly the capacity that we need.
 pub fn evaluate_gate_constraints<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
@@ -236,9 +237,10 @@ pub fn evaluate_gate_constraints<
 
 /// Evaluate all gate constraints in the base field.
 ///
-/// Returns a vector of `num_gate_constraints * vars_batch.len()` field elements. The constraints
-/// corresponding to `vars_batch[i]` are found in `result[i], result[vars_batch.len() + i],
-/// result[2 * vars_batch.len() + i], ...`.
+/// Returns a vector of `num_gate_constraints * vars_batch.len()` field
+/// elements. The constraints corresponding to `vars_batch[i]` are found in
+/// `result[i], result[vars_batch.len() + i], result[2 * vars_batch.len() + i],
+/// ...`.
 pub fn evaluate_gate_constraints_base_batch<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
@@ -299,12 +301,13 @@ pub fn evaluate_gate_constraints_circuit<
     all_gate_constraints
 }
 
-/// Evaluate the vanishing polynomial at `x`. In this context, the vanishing polynomial is a random
-/// linear combination of gate constraints, plus some other terms relating to the permutation
-/// argument. All such terms should vanish on `H`.
+/// Evaluate the vanishing polynomial at `x`. In this context, the vanishing
+/// polynomial is a random linear combination of gate constraints, plus some
+/// other terms relating to the permutation argument. All such terms should
+/// vanish on `H`.
 ///
-/// Assumes `x != 1`; if `x` could be 1 then this is unsound. This is fine if `x` is a random
-/// variable drawn from a sufficiently large domain.
+/// Assumes `x != 1`; if `x` could be 1 then this is unsound. This is fine if
+/// `x` is a random variable drawn from a sufficiently large domain.
 pub(crate) fn eval_vanishing_poly_circuit<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,

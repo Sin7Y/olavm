@@ -245,8 +245,8 @@ mod tests {
         Ok(())
     }
 
-    /// Creates a chain of recursive proofs where the last proof is made as small as reasonably
-    /// possible, using a high rate, high PoW bits, etc.
+    /// Creates a chain of recursive proofs where the last proof is made as
+    /// small as reasonably possible, using a high rate, high PoW bits, etc.
     #[test]
     #[ignore]
     fn test_size_optimized_recursion() -> Result<()> {
@@ -266,7 +266,8 @@ mod tests {
         let (proof, vd, cd) = recursive_proof(proof, vd, cd, &standard_config, None, false, false)?;
         assert_eq!(cd.degree_bits(), 12);
 
-        // A high-rate recursive proof, designed to be verifiable with fewer routed wires.
+        // A high-rate recursive proof, designed to be verifiable with fewer routed
+        // wires.
         let high_rate_config = CircuitConfig {
             fri_config: FriConfig {
                 rate_bits: 7,
@@ -392,9 +393,10 @@ mod tests {
         }
 
         if let Some(min_degree_bits) = min_degree_bits {
-            // We don't want to pad all the way up to 2^min_degree_bits, as the builder will add a
-            // few special gates afterward. So just pad to 2^(min_degree_bits - 1) + 1. Then the
-            // builder will pad to the next power of two, 2^min_degree_bits.
+            // We don't want to pad all the way up to 2^min_degree_bits, as the builder will
+            // add a few special gates afterward. So just pad to
+            // 2^(min_degree_bits - 1) + 1. Then the builder will pad to the
+            // next power of two, 2^min_degree_bits.
             let min_gates = (1 << (min_degree_bits - 1)) + 1;
             for _ in builder.num_gates()..min_gates {
                 builder.add_gate(NoopGate, vec![]);
