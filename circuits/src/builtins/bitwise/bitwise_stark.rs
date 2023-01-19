@@ -33,7 +33,7 @@ impl<F: RichField, const D: usize> BitwiseStark<F, D> {
         Ok(())
     }
 
-    fn get_compress_challenge(&self) -> Option<F> {
+    pub fn get_compress_challenge(&self) -> Option<F> {
         self.compress_challenge
     }
 }

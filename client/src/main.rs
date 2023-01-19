@@ -134,13 +134,7 @@ fn main() {
             let proof_bytes = proof_str.as_bytes();
             println!("Proof loaded, size: {} bytes", proof_bytes.len());
 
-            let mut all_stark = AllStark::<F, D>::default();
-            // TODO: fix by add challenge to StarkProof
-            all_stark.cpu_stark.set_compress_challenge(F::ZERO).unwrap();
-            all_stark
-                .bitwise_stark
-                .set_compress_challenge(F::ZERO)
-                .unwrap();
+            let all_stark = AllStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
             match verify_proof(all_stark, proof, &config) {
                 Err(error) => println!("Verify failed due to: {error}"),
