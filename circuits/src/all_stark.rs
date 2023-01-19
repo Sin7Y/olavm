@@ -387,6 +387,7 @@ mod tests {
             &mut TimingTree::default(),
         )?;
         println!("{}", mem::size_of_val(&proof));
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -451,6 +452,7 @@ mod tests {
             &mut TimingTree::default(),
         )?;
         println!("{}", mem::size_of_val(&proof));
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -509,6 +511,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -575,6 +578,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -622,6 +626,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -669,6 +674,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -716,6 +722,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -802,6 +809,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 }
