@@ -59,7 +59,7 @@ fn main() {
     match matches.subcommand() {
         Some(("run", sub_matches)) => {
             let path = sub_matches.get_one::<String>("input").expect("required");
-            debug!("input file path: {}", path);
+            println!("Input program file path: {}", path);
 
             let mut program: Program = Program {
                 instructions: Vec::new(),
@@ -83,13 +83,14 @@ fn main() {
                 .execute(&mut program, true)
                 .expect("OlaVM execute fail");
             let path = sub_matches.get_one::<String>("output").expect("required");
-            debug!("output file path: {}", path);
+            println!("Output trace file path: {}", path);
             let file = File::create(path).unwrap();
             serde_json::to_writer(file, &program.trace).unwrap();
+            println!("Run done!");
         }
         Some(("prove", sub_matches)) => {
             let path = sub_matches.get_one::<String>("input").expect("required");
-            println!("input file path: {}", path);
+            println!("Input trace file path: {}", path);
 
             let file = File::open(path).unwrap();
             let reader = BufReader::new(file);
@@ -111,18 +112,28 @@ fn main() {
             .unwrap();
 
             let path = sub_matches.get_one::<String>("output").expect("required");
-            println!("output file path: {}", path);
+            println!("Output proof file path: {}", path);
             let file = File::create(path).unwrap();
             serde_json::to_writer(file, &proof).unwrap();
+
+            let proof = serde_json::to_string(&proof).unwrap();
+            let proof = proof.as_bytes();
+            println!("Proof size: {} bytes", proof.len());
+            println!("Prove done!");
         }
         Some(("verify", sub_matches)) => {
+            println!("Loading proof...");
             let path = sub_matches.get_one::<String>("input").expect("required");
-            println!("input file path: {}", path);
+            println!("Input file path: {}", path);
 
             let file = File::open(path).unwrap();
             let reader = BufReader::new(file);
 
             let proof: AllProof<F, C, D> = serde_json::from_reader(reader).unwrap();
+            let proof_str = serde_json::to_string(&proof).unwrap();
+            let proof_bytes = proof_str.as_bytes();
+            println!("Proof loaded, size: {} bytes", proof_bytes.len());
+
             let mut all_stark = AllStark::<F, D>::default();
             // TODO: fix by add challenge to StarkProof
             all_stark.cpu_stark.set_compress_challenge(F::ZERO).unwrap();
@@ -132,8 +143,8 @@ fn main() {
                 .unwrap();
             let config = StarkConfig::standard_fast_config();
             match verify_proof(all_stark, proof, &config) {
-                Err(error) => println!("verify failed {error}"),
-                _ => println!("verify succeed!"),
+                Err(error) => println!("Verify failed due to: {error}"),
+                _ => println!("Verify succeed!"),
             }
         }
         _ => unreachable!(),
