@@ -171,8 +171,17 @@ where
         rangecheck_proof,
     ];
 
+    let compress_challenges = [
+        all_stark.cpu_stark.get_compress_challenge().unwrap(),
+        F::ZERO,
+        all_stark.bitwise_stark.get_compress_challenge().unwrap(),
+        F::ZERO,
+        F::ZERO,
+    ];
+
     Ok(AllProof {
         stark_proofs,
+        compress_challenges,
         public_values,
     })
 }
