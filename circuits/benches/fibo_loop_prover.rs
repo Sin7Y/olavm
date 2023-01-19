@@ -1,4 +1,3 @@
-use std::mem;
 use circuits::all_stark::AllStark;
 use circuits::config::StarkConfig;
 use circuits::generation::generate_traces;
@@ -6,9 +5,10 @@ use circuits::prover::prove_with_traces;
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, Criterion};
 use executor::Process;
-use log::{LevelFilter};
+use log::LevelFilter;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
+use std::mem;
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
