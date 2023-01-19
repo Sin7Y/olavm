@@ -44,13 +44,21 @@ where
     let nums_permutation_zs = all_stark.nums_permutation_zs(config);
 
     let AllStark {
-        cpu_stark,
+        mut cpu_stark,
         memory_stark,
-        bitwise_stark,
+        mut bitwise_stark,
         cmp_stark,
         rangecheck_stark,
         cross_table_lookups,
     } = all_stark;
+
+    if cpu_stark.get_compress_challenge().is_none() {
+        cpu_stark.set_compress_challenge(all_proof.compress_challenges[Table::Cpu as usize]).unwrap();
+    }
+
+    if bitwise_stark.get_compress_challenge().is_none() {
+        bitwise_stark.set_compress_challenge(all_proof.compress_challenges[Table::Bitwise as usize]).unwrap();
+    }
 
     let ctl_vars_per_table = CtlCheckVars::from_proofs(
         &all_proof.stark_proofs,
