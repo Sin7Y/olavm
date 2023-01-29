@@ -92,9 +92,11 @@ pub struct FriQueryRoundTarget<const D: usize> {
 pub struct CompressedFriQueryRounds<F: RichField + Extendable<D>, H: Hasher<F>, const D: usize> {
     /// Query indices.
     pub indices: Vec<usize>,
-    /// Map from initial indices `i` to the `FriInitialProof` for the `i`th leaf.
+    /// Map from initial indices `i` to the `FriInitialProof` for the `i`th
+    /// leaf.
     pub initial_trees_proofs: HashMap<usize, FriInitialTreeProof<F, H>>,
-    /// For each FRI query step, a map from indices `i` to the `FriQueryStep` for the `i`th leaf.
+    /// For each FRI query step, a map from indices `i` to the `FriQueryStep`
+    /// for the `i`th leaf.
     pub steps: Vec<HashMap<usize, FriQueryStep<F, H, D>>>,
 }
 
@@ -133,7 +135,8 @@ pub struct CompressedFriProof<F: RichField + Extendable<D>, H: Hasher<F>, const 
 }
 
 impl<F: RichField + Extendable<D>, H: Hasher<F>, const D: usize> FriProof<F, H, D> {
-    /// Compress all the Merkle paths in the FRI proof and remove duplicate indices.
+    /// Compress all the Merkle paths in the FRI proof and remove duplicate
+    /// indices.
     pub fn compress<C: GenericConfig<D, F = F, Hasher = H>>(
         self,
         indices: &[usize],
@@ -151,7 +154,8 @@ impl<F: RichField + Extendable<D>, H: Hasher<F>, const D: usize> FriProof<F, H, 
         let num_reductions = reduction_arity_bits.len();
         let num_initial_trees = query_round_proofs[0].initial_trees_proof.evals_proofs.len();
 
-        // "Transpose" the query round proofs, so that information for each Merkle tree is collected together.
+        // "Transpose" the query round proofs, so that information for each Merkle tree
+        // is collected together.
         let mut initial_trees_indices = vec![vec![]; num_initial_trees];
         let mut initial_trees_leaves = vec![vec![]; num_initial_trees];
         let mut initial_trees_proofs = vec![vec![]; num_initial_trees];
@@ -239,7 +243,8 @@ impl<F: RichField + Extendable<D>, H: Hasher<F>, const D: usize> FriProof<F, H, 
 }
 
 impl<F: RichField + Extendable<D>, H: Hasher<F>, const D: usize> CompressedFriProof<F, H, D> {
-    /// Decompress all the Merkle paths in the FRI proof and reinsert duplicate indices.
+    /// Decompress all the Merkle paths in the FRI proof and reinsert duplicate
+    /// indices.
     pub(crate) fn decompress<C: GenericConfig<D, F = F, Hasher = H>>(
         self,
         challenges: &ProofChallenges<F, D>,
@@ -272,7 +277,8 @@ impl<F: RichField + Extendable<D>, H: Hasher<F>, const D: usize> CompressedFriPr
             .evals_proofs
             .len();
 
-        // "Transpose" the query round proofs, so that information for each Merkle tree is collected together.
+        // "Transpose" the query round proofs, so that information for each Merkle tree
+        // is collected together.
         let mut initial_trees_indices = vec![vec![]; num_initial_trees];
         let mut initial_trees_leaves = vec![vec![]; num_initial_trees];
         let mut initial_trees_proofs = vec![vec![]; num_initial_trees];
@@ -288,7 +294,8 @@ impl<F: RichField + Extendable<D>, H: Hasher<F>, const D: usize> CompressedFriPr
             })
             .collect::<Vec<_>>();
 
-        // Holds the `evals` vectors that have already been reconstructed at each reduction depth.
+        // Holds the `evals` vectors that have already been reconstructed at each
+        // reduction depth.
         let mut evals_by_depth =
             vec![HashMap::<usize, Vec<_>>::new(); params.reduction_arity_bits.len()];
         for &(mut index) in indices {

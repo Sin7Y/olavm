@@ -27,18 +27,20 @@ pub trait Gate<F: RichField + Extendable<D>, const D: usize>: 'static + Send + S
     /// Like `eval_unfiltered`, but specialized for points in the base field.
     ///
     ///
-    /// `eval_unfiltered_base_batch` calls this method by default. If `eval_unfiltered_base_batch`
-    /// is overridden, then `eval_unfiltered_base_one` is not necessary.
+    /// `eval_unfiltered_base_batch` calls this method by default. If
+    /// `eval_unfiltered_base_batch` is overridden, then
+    /// `eval_unfiltered_base_one` is not necessary.
     ///
-    /// By default, this just calls `eval_unfiltered`, which treats the point as an extension field
-    /// element. This isn't very efficient.
+    /// By default, this just calls `eval_unfiltered`, which treats the point as
+    /// an extension field element. This isn't very efficient.
     fn eval_unfiltered_base_one(
         &self,
         vars_base: EvaluationVarsBase<F>,
         mut yield_constr: StridedConstraintConsumer<F>,
     ) {
-        // Note that this method uses `yield_constr` instead of returning its constraints.
-        // `yield_constr` abstracts out the underlying memory layout.
+        // Note that this method uses `yield_constr` instead of returning its
+        // constraints. `yield_constr` abstracts out the underlying memory
+        // layout.
         let local_constants = &vars_base
             .local_constants
             .iter()
@@ -57,7 +59,8 @@ pub trait Gate<F: RichField + Extendable<D>, const D: usize>: 'static + Send + S
         };
         let values = self.eval_unfiltered(vars);
 
-        // Each value should be in the base field, i.e. only the degree-zero part should be nonzero.
+        // Each value should be in the base field, i.e. only the degree-zero part should
+        // be nonzero.
         values.into_iter().for_each(|value| {
             debug_assert!(F::Extension::is_in_basefield(&value));
             yield_constr.one(value.to_basefield_array()[0])
@@ -102,8 +105,9 @@ pub trait Gate<F: RichField + Extendable<D>, const D: usize>: 'static + Send + S
             .collect()
     }
 
-    /// The result is an array of length `vars_batch.len() * self.num_constraints()`. Constraint `j`
-    /// for point `i` is at index `j * batch_size + i`.
+    /// The result is an array of length `vars_batch.len() *
+    /// self.num_constraints()`. Constraint `j` for point `i` is at index `j
+    /// * batch_size + i`.
     fn eval_filtered_base_batch(
         &self,
         mut vars_batch: EvaluationVarsBaseBatch<F>,
@@ -131,7 +135,8 @@ pub trait Gate<F: RichField + Extendable<D>, const D: usize>: 'static + Send + S
         res_batch
     }
 
-    /// Adds this gate's filtered constraints into the `combined_gate_constraints` buffer.
+    /// Adds this gate's filtered constraints into the
+    /// `combined_gate_constraints` buffer.
     fn eval_filtered_circuit(
         &self,
         builder: &mut CircuitBuilder<F, D>,
@@ -177,17 +182,18 @@ pub trait Gate<F: RichField + Extendable<D>, const D: usize>: 'static + Send + S
             .len()
     }
 
-    /// Enables gates to store some "routed constants", if they have both unused constants and
-    /// unused routed wires.
+    /// Enables gates to store some "routed constants", if they have both unused
+    /// constants and unused routed wires.
     ///
-    /// Each entry in the returned `Vec` has the form `(constant_index, wire_index)`. `wire_index`
-    /// must correspond to a *routed* wire.
+    /// Each entry in the returned `Vec` has the form `(constant_index,
+    /// wire_index)`. `wire_index` must correspond to a *routed* wire.
     fn extra_constant_wires(&self) -> Vec<(usize, usize)> {
         vec![]
     }
 }
 
-/// A wrapper around an `Rc<Gate>` which implements `PartialEq`, `Eq` and `Hash` based on gate IDs.
+/// A wrapper around an `Rc<Gate>` which implements `PartialEq`, `Eq` and `Hash`
+/// based on gate IDs.
 #[derive(Clone)]
 pub struct GateRef<F: RichField + Extendable<D>, const D: usize>(pub(crate) Arc<dyn Gate<F, D>>);
 
@@ -218,8 +224,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Debug for GateRef<F, D> {
 }
 
 /// Map between gate parameters and available slots.
-/// An available slot is of the form `(row, op)`, meaning the current available slot
-/// is at gate index `row` in the `op`-th operation.
+/// An available slot is of the form `(row, op)`, meaning the current available
+/// slot is at gate index `row` in the `op`-th operation.
 #[derive(Clone, Debug, Default)]
 pub struct CurrentSlot<F: RichField + Extendable<D>, const D: usize> {
     pub current_slot: HashMap<Vec<F>, (usize, usize)>,
@@ -232,7 +238,8 @@ pub struct GateInstance<F: RichField + Extendable<D>, const D: usize> {
     pub constants: Vec<F>,
 }
 
-/// Map each gate to a boolean prefix used to construct the gate's selector polynomial.
+/// Map each gate to a boolean prefix used to construct the gate's selector
+/// polynomial.
 #[derive(Debug, Clone)]
 pub struct PrefixedGate<F: RichField + Extendable<D>, const D: usize> {
     pub gate: GateRef<F, D>,

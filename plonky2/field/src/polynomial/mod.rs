@@ -15,8 +15,8 @@ use crate::types::Field;
 
 /// A polynomial in point-value form.
 ///
-/// The points are implicitly `g^i`, where `g` generates the subgroup whose size equals the number
-/// of points.
+/// The points are implicitly `g^i`, where `g` generates the subgroup whose size
+/// equals the number of points.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PolynomialValues<F: Field> {
     pub values: Vec<F>,
@@ -41,7 +41,8 @@ impl<F: Field> PolynomialValues<F> {
         self.values.iter().all(|x| x.is_zero())
     }
 
-    /// Returns the polynomial whole value is one at the given index, and zero elsewhere.
+    /// Returns the polynomial whole value is one at the given index, and zero
+    /// elsewhere.
     pub fn selector(len: usize, index: usize) -> Self {
         let mut result = Self::zero(len);
         result.values[index] = F::ONE;
@@ -57,7 +58,8 @@ impl<F: Field> PolynomialValues<F> {
         ifft(self)
     }
 
-    /// Returns the polynomial whose evaluation on the coset `shift*H` is `self`.
+    /// Returns the polynomial whose evaluation on the coset `shift*H` is
+    /// `self`.
     pub fn coset_ifft(self, shift: F) -> PolynomialCoeffs<F> {
         let mut shifted_coeffs = self.ifft();
         shifted_coeffs
@@ -79,7 +81,8 @@ impl<F: Field> PolynomialValues<F> {
         fft_with_options(coeffs, Some(rate_bits), None)
     }
 
-    /// Low-degree extend `Self` (seen as evaluations over the subgroup) onto a coset.
+    /// Low-degree extend `Self` (seen as evaluations over the subgroup) onto a
+    /// coset.
     pub fn lde_onto_coset(self, rate_bits: usize) -> Self {
         let coeffs = ifft(self).lde(rate_bits);
         coeffs.coset_fft_with_options(F::coset_shift(), Some(rate_bits), None)
@@ -122,7 +125,8 @@ impl<F: Field> PolynomialCoeffs<F> {
         PolynomialCoeffs { coeffs }
     }
 
-    /// The empty list of coefficients, which is the smallest encoding of the zero polynomial.
+    /// The empty list of coefficients, which is the smallest encoding of the
+    /// zero polynomial.
     pub fn empty() -> Self {
         Self::new(Vec::new())
     }
@@ -135,8 +139,8 @@ impl<F: Field> PolynomialCoeffs<F> {
         self.coeffs.iter().all(|x| x.is_zero())
     }
 
-    /// The number of coefficients. This does not filter out any zero coefficients, so it is not
-    /// necessarily related to the degree.
+    /// The number of coefficients. This does not filter out any zero
+    /// coefficients, so it is not necessarily related to the degree.
     pub fn len(&self) -> usize {
         self.coeffs.len()
     }
@@ -159,7 +163,8 @@ impl<F: Field> PolynomialCoeffs<F> {
             .fold(F::ZERO, |acc, &c| acc * x + c)
     }
 
-    /// Evaluate the polynomial at a point given its powers. The first power is the point itself, not 1.
+    /// Evaluate the polynomial at a point given its powers. The first power is
+    /// the point itself, not 1.
     pub fn eval_with_powers(&self, powers: &[F]) -> F {
         debug_assert_eq!(self.coeffs.len(), powers.len() + 1);
         let acc = self.coeffs[0];
@@ -179,7 +184,8 @@ impl<F: Field> PolynomialCoeffs<F> {
             .fold(F::ZERO, |acc, &c| acc.scalar_mul(x) + c)
     }
 
-    /// Evaluate the polynomial at a point given its powers. The first power is the point itself, not 1.
+    /// Evaluate the polynomial at a point given its powers. The first power is
+    /// the point itself, not 1.
     pub fn eval_base_with_powers<const D: usize>(&self, powers: &[F::BaseField]) -> F
     where
         F: FieldExtension<D>,
@@ -222,8 +228,8 @@ impl<F: Field> PolynomialCoeffs<F> {
         self.coeffs.truncate(self.degree_plus_one());
     }
 
-    /// Removes some leading zero coefficients, such that a desired length is reached. Fails if a
-    /// nonzero coefficient is encountered before then.
+    /// Removes some leading zero coefficients, such that a desired length is
+    /// reached. Fails if a nonzero coefficient is encountered before then.
     pub fn trim_to_len(&mut self, len: usize) -> Result<()> {
         ensure!(self.len() >= len);
         ensure!(self.coeffs[len..].iter().all(F::is_zero));
@@ -237,7 +243,8 @@ impl<F: Field> PolynomialCoeffs<F> {
         Self { coeffs }
     }
 
-    /// Degree of the polynomial + 1, or 0 for a polynomial with no non-zero coefficients.
+    /// Degree of the polynomial + 1, or 0 for a polynomial with no non-zero
+    /// coefficients.
     pub fn degree_plus_one(&self) -> usize {
         (0usize..self.len())
             .rev()
@@ -254,7 +261,8 @@ impl<F: Field> PolynomialCoeffs<F> {
             .map_or(F::ZERO, |x| *x)
     }
 
-    /// Reverse the order of the coefficients, not taking into account the leading zero coefficients.
+    /// Reverse the order of the coefficients, not taking into account the
+    /// leading zero coefficients.
     pub(crate) fn rev(&self) -> Self {
         Self::new(self.trimmed().coeffs.into_iter().rev().collect())
     }
@@ -596,8 +604,8 @@ mod tests {
         }
     }
 
-    // Test to see which polynomial division method is faster for divisions of the type
-    // `(X^n - 1)/(X - a)
+    // Test to see which polynomial division method is faster for divisions of the
+    // type `(X^n - 1)/(X - a)
     #[test]
     fn test_division_linear() {
         type F = GoldilocksField;

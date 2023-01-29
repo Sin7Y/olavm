@@ -277,40 +277,43 @@ impl Process {
         program: &mut Program,
         decode_flag: bool,
     ) -> Result<(), ProcessorError> {
-        let mut pc = 0;
+        let instrs_len = program.instructions.len() as u64;
 
         let start = Instant::now();
-        loop {
+        let mut pc: u64 = 0;
+        while pc < instrs_len {
             let instruct_line = program.instructions[pc as usize].trim();
-            let txt_instruction;
-            let step;
+
             program
                 .trace
                 .raw_binary_instructions
                 .push(instruct_line.to_string());
+
             if decode_flag {
-                let imm_flag;
-                let mut imm_line = "";
                 let mut immediate_data = GoldilocksField::ZERO;
-                if (pc + 1) < (program.instructions.len() as u64 - 1) {
-                    imm_line = program.instructions[(pc + 1) as usize].trim();
-                    (txt_instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
+
+                let next_instr = if (instrs_len - 2) > pc {
+                    program.instructions[(pc + 1) as usize].trim()
                 } else {
-                    (txt_instruction, step) = decode_raw_instruction(instruct_line, imm_line)?;
-                }
-                if step == IMM_INSTRUCTION_LEN {
-                    imm_flag = 1;
-                    let imm_u64 = imm_line.trim_start_matches("0x");
+                    ""
+                };
+
+                // Decode instruction from program into trace one.
+                let (txt_instruction, step) = decode_raw_instruction(instruct_line, next_instr)?;
+
+                let imm_flag = if step == IMM_INSTRUCTION_LEN {
+                    let imm_u64 = next_instr.trim_start_matches("0x");
                     immediate_data = GoldilocksField::from_canonical_u64(
                         u64::from_str_radix(imm_u64, 16).unwrap(),
                     );
                     program
                         .trace
                         .raw_binary_instructions
-                        .push(imm_line.to_string());
+                        .push(next_instr.to_string());
+                    1
                 } else {
-                    imm_flag = 0;
-                }
+                    0
+                };
 
                 let instruction = self.decode_instruction(txt_instruction.clone());
                 let inst_u64 = instruct_line.trim_start_matches("0x");
@@ -322,13 +325,9 @@ impl Process {
                 );
                 program.trace.raw_instructions.insert(pc, instruction);
                 pc += step;
-            } else {
-                break;
-            }
-            if pc > (program.instructions.len() as u64 - 1) {
-                break;
             }
         }
+
         let decode_time = start.elapsed();
         debug!("decode_time: {}", decode_time.as_secs());
 
@@ -338,8 +337,8 @@ impl Process {
         );
 
         let mut start = Instant::now();
-        loop {
-            self.register_selector = Default::default();
+        while self.pc < instrs_len {
+            self.register_selector = RegisterSelector::default();
             let registers_status = self.registers;
             let flag_status = self.flag;
             let pc_status = self.pc;
@@ -789,9 +788,7 @@ impl Process {
                 flag_status,
                 self.register_selector.clone(),
             );
-            if self.pc > (program.instructions.len() as u64 - 1) {
-                break;
-            }
+
             self.clk += 1;
             if self.clk % 1000000 == 0 {
                 let decode_time = start.elapsed();
@@ -799,7 +796,9 @@ impl Process {
                 start = Instant::now();
             }
         }
+
         self.gen_memory_table(program);
+
         Ok(())
     }
 

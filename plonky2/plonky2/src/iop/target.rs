@@ -8,9 +8,9 @@ use crate::plonk::circuit_data::CircuitConfig;
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Target {
     Wire(Wire),
-    /// A target that doesn't have any inherent location in the witness (but it can be copied to
-    /// another target that does). This is useful for representing intermediate values in witness
-    /// generation.
+    /// A target that doesn't have any inherent location in the witness (but it
+    /// can be copied to another target that does). This is useful for
+    /// representing intermediate values in witness generation.
     VirtualTarget {
         index: usize,
     },
@@ -47,12 +47,14 @@ impl Target {
     }
 }
 
-/// A `Target` which has already been constrained such that it can only be 0 or 1.
+/// A `Target` which has already been constrained such that it can only be 0 or
+/// 1.
 #[derive(Copy, Clone, Debug)]
 #[allow(clippy::manual_non_exhaustive)]
 pub struct BoolTarget {
     pub target: Target,
-    /// This private field is here to force all instantiations to go through `new_unsafe`.
+    /// This private field is here to force all instantiations to go through
+    /// `new_unsafe`.
     _private: (),
 }
 

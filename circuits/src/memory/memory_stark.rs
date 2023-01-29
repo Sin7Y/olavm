@@ -121,8 +121,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
             (op - op_mload) * (op - op_mstore) * (op - op_call) * (op - op_ret) * is_rw,
         );
 
-        // constraint is_write and op. When write, op can be mstore, call and 0; When read, op can be mload, call, ret.
-        // call can both write and read, does not need a constraint rule.
+        // constraint is_write and op. When write, op can be mstore, call and 0; When
+        // read, op can be mload, call, ret. call can both write and read, does
+        // not need a constraint rule.
         yield_constr
             .constraint((op - op_mload) * (op - op_call) * (op - op_ret) * (P::ONES - is_write));
         yield_constr.constraint(op * (op - op_mstore) * (op - op_call) * is_write);
@@ -138,7 +139,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
             is_rw * (P::ONES - nv_rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
         );
 
-        // for region division: 1. one of four region is selected; 2. binary constraints; 3. diff_addr_cond in different region.
+        // for region division: 1. one of four region is selected; 2. binary
+        // constraints; 3. diff_addr_cond in different region.
         yield_constr.constraint(is_rw + region_prophet + region_poseidon + region_ecdsa - P::ONES);
         yield_constr.constraint(is_rw * (P::ONES - is_rw));
         yield_constr.constraint(region_prophet * (P::ONES - region_prophet));
@@ -246,8 +248,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let op_inter_rw = builder.mul_extension(op_inter_3, is_rw);
         yield_constr.constraint(builder, op_inter_rw);
 
-        // constraint is_write and op. When write, op can be mstore, call and 0; When read, op can be mload, call, ret.
-        // call can both write and read, does not need a constraint rule.
+        // constraint is_write and op. When write, op can be mstore, call and 0; When
+        // read, op can be mload, call, ret. call can both write and read, does
+        // not need a constraint rule.
         let is_write_inter_1 = builder.mul_extension(d_op_mload, d_op_call);
         let is_write_inter_2 = builder.mul_extension(is_write_inter_1, d_op_ret);
         let is_write_inter_3 = builder.mul_extension(is_write_inter_2, one_m_is_write);
@@ -273,7 +276,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let constraint_unchanged = builder.sub_extension(one_m_unchanged, diff_mul_inv);
         yield_constr.constraint(builder, constraint_unchanged);
 
-        // for region division: 1. one of four region is selected; 2. binary constraints; 3. diff_addr_cond in different region.
+        // for region division: 1. one of four region is selected; 2. binary
+        // constraints; 3. diff_addr_cond in different region.
         let sum_rw_prophet = builder.add_extension(is_rw, region_prophet);
         let sum_rw_prophet_poseidon = builder.add_extension(sum_rw_prophet, region_poseidon);
         let sum_rw_prophet_poseidon_ecdsa =

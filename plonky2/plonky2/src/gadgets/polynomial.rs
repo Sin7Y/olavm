@@ -67,7 +67,8 @@ impl<const D: usize> PolynomialCoeffsExtAlgebraTarget<D> {
         acc
     }
 
-    /// Evaluate the polynomial at a point given its powers. The first power is the point itself, not 1.
+    /// Evaluate the polynomial at a point given its powers. The first power is
+    /// the point itself, not 1.
     pub fn eval_with_powers<F>(
         &self,
         builder: &mut CircuitBuilder<F, D>,

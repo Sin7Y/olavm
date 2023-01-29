@@ -19,10 +19,11 @@ use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
-/// One of the instantiations of `InterpolationGate`: allows constraints of variable
-/// degree, up to `1<<subgroup_bits`.
-/// The higher degree is a tradeoff for less gates (`eval_unfiltered_recursively` for
-/// this version uses less gates than `LowDegreeInterpolationGate`).
+/// One of the instantiations of `InterpolationGate`: allows constraints of
+/// variable degree, up to `1<<subgroup_bits`.
+/// The higher degree is a tradeoff for less gates
+/// (`eval_unfiltered_recursively` for this version uses less gates than
+/// `LowDegreeInterpolationGate`).
 #[derive(Copy, Clone, Debug)]
 pub struct HighDegreeInterpolationGate<F: RichField + Extendable<D>, const D: usize> {
     pub subgroup_bits: usize,
@@ -54,7 +55,8 @@ impl<F: RichField + Extendable<D>, const D: usize> HighDegreeInterpolationGate<F
     fn coset(&self, shift: F) -> impl Iterator<Item = F> {
         let g = F::primitive_root_of_unity(self.subgroup_bits);
         let size = 1 << self.subgroup_bits;
-        // Speed matters here, so we avoid `cyclic_subgroup_coset_known_order` which allocates.
+        // Speed matters here, so we avoid `cyclic_subgroup_coset_known_order` which
+        // allocates.
         g.powers().take(size).map(move |x| x * shift)
     }
 
@@ -189,14 +191,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D>
     }
 
     fn degree(&self) -> usize {
-        // The highest power of x is `num_points - 1`, and then multiplication by the coefficient
-        // adds 1.
+        // The highest power of x is `num_points - 1`, and then multiplication by the
+        // coefficient adds 1.
         self.num_points()
     }
 
     fn num_constraints(&self) -> usize {
-        // num_points * D constraints to check for consistency between the coefficients and the
-        // point-value pairs, plus D constraints for the evaluation value.
+        // num_points * D constraints to check for consistency between the coefficients
+        // and the point-value pairs, plus D constraints for the evaluation
+        // value.
         self.num_points() * D + D
     }
 }
@@ -292,8 +295,8 @@ mod tests {
             _phantom: PhantomData,
         };
 
-        // The exact indices aren't really important, but we want to make sure we don't have any
-        // overlaps or gaps.
+        // The exact indices aren't really important, but we want to make sure we don't
+        // have any overlaps or gaps.
         assert_eq!(gate.wire_shift(), 0);
         assert_eq!(gate.wires_value(0), 1..5);
         assert_eq!(gate.wires_value(1), 5..9);
@@ -324,7 +327,8 @@ mod tests {
         type F = <C as GenericConfig<D>>::F;
         type FF = <C as GenericConfig<D>>::FE;
 
-        /// Returns the local wires for an interpolation gate for given coeffs, points and eval point.
+        /// Returns the local wires for an interpolation gate for given coeffs,
+        /// points and eval point.
         fn get_wires(
             gate: &HighDegreeInterpolationGate<F, D>,
             shift: F,

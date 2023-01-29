@@ -75,7 +75,8 @@ impl<F: Extendable<5>> Field for QuinticExtension<F> {
         F::characteristic()
     }
 
-    // Algorithm 11.3.4 in Handbook of Elliptic and Hyperelliptic Curve Cryptography.
+    // Algorithm 11.3.4 in Handbook of Elliptic and Hyperelliptic Curve
+    // Cryptography.
     fn try_inverse(&self) -> Option<Self> {
         if self.is_zero() {
             return None;

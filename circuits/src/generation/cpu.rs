@@ -128,8 +128,9 @@ pub fn generate_cpu_trace<F: RichField>(
                 o if (1_u64 << Opcode::GTE as u8) == o => {
                     row[cpu::COL_S_GTE] = F::from_canonical_u64(1)
                 }
-                // o if (1_u64 << Opcode::PSDN as u8) == o => row[cpu::COL_S_PSDN] = F::from_canonical_u64(1),
-                // o (1_u64 << Opcode::ECDSA as u8) == o => row[cpu::COL_S_ECDSA] = F::from_canonical_u64(1),
+                // o if (1_u64 << Opcode::PSDN as u8) == o => row[cpu::COL_S_PSDN] =
+                // F::from_canonical_u64(1), o (1_u64 << Opcode::ECDSA as u8) == o
+                // => row[cpu::COL_S_ECDSA] = F::from_canonical_u64(1),
                 _ => panic!("unspported opcode!"),
             }
 

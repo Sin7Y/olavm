@@ -16,12 +16,12 @@ use plonky2_field::packed::PackedField;
 ///     `packed_strided_view[2]` is `data[7]`,
 /// and so on.
 ///
-/// Additionally, this view is *packed*, which means that it may yield a packing of the underlying
-/// field slice. With a packing of width 4 and a stride of 5, the accesses are
-///     `packed_strided_view[0]` is `data[0..4]`, transmuted to the packing,
-///     `packed_strided_view[1]` is `data[5..9]`, transmuted to the packing,
-///     `packed_strided_view[2]` is `data[10..14]`, transmuted to the packing,
-/// and so on.
+/// Additionally, this view is *packed*, which means that it may yield a packing
+/// of the underlying field slice. With a packing of width 4 and a stride of 5,
+/// the accesses are     `packed_strided_view[0]` is `data[0..4]`, transmuted to
+/// the packing,     `packed_strided_view[1]` is `data[5..9]`, transmuted to the
+/// packing,     `packed_strided_view[2]` is `data[10..14]`, transmuted to the
+/// packing, and so on.
 #[derive(Debug, Copy, Clone)]
 pub struct PackedStridedView<'a, P: PackedField> {
     // This type has to be a struct, which means that it is not itself a reference (in the sense
@@ -32,8 +32,8 @@ pub struct PackedStridedView<'a, P: PackedField> {
     // (`&[P::Scalar]`). Unfortunately, with a slice, an empty view becomes an edge case that
     // necessitates separate handling. It _could_ be done but it would also be uglier.
     start_ptr: *const P::Scalar,
-    /// This is the total length of elements accessible through the view. In other words, valid
-    /// indices are in `0..length`.
+    /// This is the total length of elements accessible through the view. In
+    /// other words, valid indices are in `0..length`.
     length: usize,
     /// This stride is in units of `P::Scalar` (NOT in bytes and NOT in `P`).
     stride: usize,
@@ -41,9 +41,10 @@ pub struct PackedStridedView<'a, P: PackedField> {
 }
 
 impl<'a, P: PackedField> PackedStridedView<'a, P> {
-    // `wrapping_add` is needed throughout to avoid undefined behavior. Plain `add` causes UB if
-    // '[either] the starting [or] resulting pointer [is neither] in bounds or one byte past the
-    // end of the same allocated object'; the UB results even if the pointer is not dereferenced.
+    // `wrapping_add` is needed throughout to avoid undefined behavior. Plain `add`
+    // causes UB if '[either] the starting [or] resulting pointer [is neither]
+    // in bounds or one byte past the end of the same allocated object'; the UB
+    // results even if the pointer is not dereferenced.
 
     #[inline]
     pub fn new(data: &'a [P::Scalar], stride: usize, offset: usize) -> Self {
@@ -61,8 +62,9 @@ impl<'a, P: PackedField> PackedStridedView<'a, P> {
             stride
         );
 
-        // This requirement means that stride divides data into slices of `data.len() / stride`
-        // elements. Every access must fit entirely within one of those slices.
+        // This requirement means that stride divides data into slices of `data.len() /
+        // stride` elements. Every access must fit entirely within one of those
+        // slices.
         assert!(
             offset + P::WIDTH <= stride,
             "offset (got {}) + P::WIDTH ({}) cannot be greater than stride (got {})",
@@ -71,8 +73,8 @@ impl<'a, P: PackedField> PackedStridedView<'a, P> {
             stride
         );
 
-        // See comment above. `start_ptr` will be more than one byte past the buffer if `data` has
-        // length 0 and `offset` is not 0.
+        // See comment above. `start_ptr` will be more than one byte past the buffer if
+        // `data` has length 0 and `offset` is not 0.
         let start_ptr = data.as_ptr().wrapping_add(offset);
 
         Self {
@@ -101,7 +103,8 @@ impl<'a, P: PackedField> PackedStridedView<'a, P> {
     where
         Self: Viewable<I, View = Self>,
     {
-        // We cannot implement `Index` as `PackedStridedView` is a struct, not a reference.
+        // We cannot implement `Index` as `PackedStridedView` is a struct, not a
+        // reference.
 
         // The `Viewable` trait is needed for overloading.
         // Re-export `Viewable::view` so users don't have to import `Viewable`.
@@ -200,8 +203,9 @@ impl<'a, P: PackedField> Iterator for PackedStridedViewIter<'a, P> {
 
         if self.start != self.end {
             let res = unsafe { &*self.start.cast() };
-            // See comment in `PackedStridedView`. Below will point more than one byte past the end
-            // of the buffer if the offset is not 0 and we've reached the end.
+            // See comment in `PackedStridedView`. Below will point more than one byte past
+            // the end of the buffer if the offset is not 0 and we've reached
+            // the end.
             self.start = self.start.wrapping_add(self.stride);
             Some(res)
         } else {
@@ -220,8 +224,8 @@ impl<'a, P: PackedField> DoubleEndedIterator for PackedStridedViewIter<'a, P> {
         );
 
         if self.start != self.end {
-            // See comment in `PackedStridedView`. `self.end` starts off pointing more than one byte
-            // past the end of the buffer unless `offset` is 0.
+            // See comment in `PackedStridedView`. `self.end` starts off pointing more than
+            // one byte past the end of the buffer unless `offset` is 0.
             self.end = self.end.wrapping_sub(self.stride);
             Some(unsafe { &*self.end.cast() })
         } else {
@@ -231,7 +235,8 @@ impl<'a, P: PackedField> DoubleEndedIterator for PackedStridedViewIter<'a, P> {
 }
 
 pub trait Viewable<F> {
-    // We cannot implement `Index` as `PackedStridedView` is a struct, not a reference.
+    // We cannot implement `Index` as `PackedStridedView` is a struct, not a
+    // reference.
     type View;
     fn view(&self, index: F) -> Self::View;
 }

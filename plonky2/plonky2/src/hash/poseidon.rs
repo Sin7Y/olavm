@@ -153,8 +153,9 @@ pub trait Poseidon: PrimeField64 {
     // times number of rounds.
     const N_ROUND_CONSTANTS: usize = WIDTH * N_ROUNDS;
 
-    // The MDS matrix we use is C + D, where C is the circulant matrix whose first row is given by
-    // `MDS_MATRIX_CIRC`, and D is the diagonal matrix whose diagonal is given by `MDS_MATRIX_DIAG`.
+    // The MDS matrix we use is C + D, where C is the circulant matrix whose first
+    // row is given by `MDS_MATRIX_CIRC`, and D is the diagonal matrix whose
+    // diagonal is given by `MDS_MATRIX_DIAG`.
     const MDS_MATRIX_CIRC: [u64; WIDTH];
     const MDS_MATRIX_DIAG: [u64; WIDTH];
 

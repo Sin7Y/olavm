@@ -3,7 +3,8 @@ use std::time::{Duration, Instant};
 
 use log::{log, Level};
 
-/// The hierarchy of scopes, and the time consumed by each one. Useful for profiling.
+/// The hierarchy of scopes, and the time consumed by each one. Useful for
+/// profiling.
 #[cfg(feature = "timing")]
 pub struct TimingTree {
     /// The name of this scope.
@@ -12,7 +13,8 @@ pub struct TimingTree {
     level: log::Level,
     /// The time when this scope was created.
     enter_time: Instant,
-    /// The time when this scope was destroyed, or None if it has not yet been destroyed.
+    /// The time when this scope was destroyed, or None if it has not yet been
+    /// destroyed.
     exit_time: Option<Instant>,
     /// Any child scopes.
     children: Vec<TimingTree>,

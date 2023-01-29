@@ -6,7 +6,8 @@ use crate::hash::hash_types::RichField;
 use crate::iop::witness::Witness;
 use crate::plonk::config::AlgebraicHasher;
 
-/// Set the targets in a `FriProofTarget` to their corresponding values in a `FriProof`.
+/// Set the targets in a `FriProofTarget` to their corresponding values in a
+/// `FriProof`.
 pub fn set_fri_proof_target<F, W, H, const D: usize>(
     witness: &mut W,
     fri_proof_target: &FriProofTarget<D>,

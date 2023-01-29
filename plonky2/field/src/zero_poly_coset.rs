@@ -1,14 +1,15 @@
 use crate::packed::PackedField;
 use crate::types::Field;
 
-/// Precomputations of the evaluation of `Z_H(X) = X^n - 1` on a coset `gK` with `H <= K`.
+/// Precomputations of the evaluation of `Z_H(X) = X^n - 1` on a coset `gK` with
+/// `H <= K`.
 pub struct ZeroPolyOnCoset<F: Field> {
     /// `n = |H|`.
     n: F,
     /// `rate = |K|/|H|`.
     rate: usize,
-    /// Holds `g^n * (w^n)^i - 1 = g^n * v^i - 1` for `i in 0..rate`, with `w` a generator of `K` and `v` a
-    /// `rate`-primitive root of unity.
+    /// Holds `g^n * (w^n)^i - 1 = g^n * v^i - 1` for `i in 0..rate`, with `w` a
+    /// generator of `K` and `v` a `rate`-primitive root of unity.
     evals: Vec<F>,
     /// Holds the multiplicative inverses of `evals`.
     inverses: Vec<F>,

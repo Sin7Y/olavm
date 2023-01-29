@@ -31,8 +31,9 @@ pub trait Hasher<F: RichField>: Sized + Clone + Debug + Eq + PartialEq {
     /// Permutation used in the sponge construction.
     type Permutation: PlonkyPermutation<F>;
 
-    /// Hash a message without any padding step. Note that this can enable length-extension attacks.
-    /// However, it is still collision-resistant in cases where the input has a fixed length.
+    /// Hash a message without any padding step. Note that this can enable
+    /// length-extension attacks. However, it is still collision-resistant
+    /// in cases where the input has a fixed length.
     fn hash_no_pad(input: &[F]) -> Self::Hash;
 
     /// Pad the message using the `pad10*1` rule, then hash it.
@@ -46,8 +47,8 @@ pub trait Hasher<F: RichField>: Sized + Clone + Debug + Eq + PartialEq {
         Self::hash_no_pad(&padded_input)
     }
 
-    /// Hash the slice if necessary to reduce its length to ~256 bits. If it already fits, this is a
-    /// no-op.
+    /// Hash the slice if necessary to reduce its length to ~256 bits. If it
+    /// already fits, this is a no-op.
     fn hash_or_noop(inputs: &[F]) -> Self::Hash
     where
         [(); Self::HASH_SIZE]:,
@@ -67,13 +68,14 @@ pub trait Hasher<F: RichField>: Sized + Clone + Debug + Eq + PartialEq {
     fn two_to_one(left: Self::Hash, right: Self::Hash) -> Self::Hash;
 }
 
-/// Trait for algebraic hash functions, built from a permutation using the sponge construction.
+/// Trait for algebraic hash functions, built from a permutation using the
+/// sponge construction.
 pub trait AlgebraicHasher<F: RichField>: Hasher<F, Hash = HashOut<F>> {
-    // TODO: Adding a `const WIDTH: usize` here yields a compiler error down the line.
-    // Maybe try again in a while.
+    // TODO: Adding a `const WIDTH: usize` here yields a compiler error down the
+    // line. Maybe try again in a while.
 
-    /// Circuit to conditionally swap two chunks of the inputs (useful in verifying Merkle proofs),
-    /// then apply the permutation.
+    /// Circuit to conditionally swap two chunks of the inputs (useful in
+    /// verifying Merkle proofs), then apply the permutation.
     fn permute_swapped<const D: usize>(
         inputs: [Target; SPONGE_WIDTH],
         swap: BoolTarget,
@@ -93,7 +95,8 @@ pub trait GenericConfig<const D: usize>:
     type FE: FieldExtension<D, BaseField = Self::F>;
     /// Hash function used for building Merkle trees.
     type Hasher: Hasher<Self::F>;
-    /// Algebraic hash function used for the challenger and hashing public inputs.
+    /// Algebraic hash function used for the challenger and hashing public
+    /// inputs.
     type InnerHasher: AlgebraicHasher<Self::F>;
 }
 

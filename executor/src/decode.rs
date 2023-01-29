@@ -144,8 +144,10 @@ pub fn decode_raw_instruction(
 
 #[test]
 fn decode_raw_instruction_test() {
-    // let inst: u64 =  1<<IMM_FLAG_FIELD_BIT_POSITION |0b10000000<<REG2_FIELD_BIT_POSITION |0b100000<<REG1_FIELD_BIT_POSITION| 0b1000<<REG0_FIELD_BIT_POSITION|1 << Opcode::ADD as u8;
-    // let inst_str = format!("0x{:x}", inst);
+    // let inst: u64 =  1<<IMM_FLAG_FIELD_BIT_POSITION
+    // |0b10000000<<REG2_FIELD_BIT_POSITION |0b100000<<REG1_FIELD_BIT_POSITION|
+    // 0b1000<<REG0_FIELD_BIT_POSITION|1 << Opcode::ADD as u8; let inst_str =
+    // format!("0x{:x}", inst);
     let inst_str = "0x4000000840000000";
     let imm = "0x7b";
     let inst_str = decode_raw_instruction(&inst_str, imm);
