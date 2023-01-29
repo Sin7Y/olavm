@@ -27,9 +27,9 @@ pub(crate) fn eval_lookups<F: Field, P: PackedField<Scalar = F>, const COLS: usi
 
     yield_constr.constraint(diff_input_prev * diff_input_table);
 
-    // This is actually constraining the first row, as per the spec, since `diff_input_table`
-    // is a diff of the next row's values. In the context of `constraint_last_row`, the next
-    // row is the first row.
+    // This is actually constraining the first row, as per the spec, since
+    // `diff_input_table` is a diff of the next row's values. In the context of
+    // `constraint_last_row`, the next row is the first row.
     yield_constr.constraint_last_row(diff_input_table);
 }
 
@@ -57,25 +57,25 @@ pub(crate) fn eval_lookups_circuit<
     let diff_product = builder.mul_extension(diff_input_prev, diff_input_table);
     yield_constr.constraint(builder, diff_product);
 
-    // This is actually constraining the first row, as per the spec, since `diff_input_table`
-    // is a diff of the next row's values. In the context of `constraint_last_row`, the next
-    // row is the first row.
+    // This is actually constraining the first row, as per the spec, since
+    // `diff_input_table` is a diff of the next row's values. In the context of
+    // `constraint_last_row`, the next row is the first row.
     yield_constr.constraint_last_row(builder, diff_input_table);
 }
 
-/// Given an input column and a table column, generate the permuted input and permuted table columns
-/// used in the Halo2 permutation argument.
+/// Given an input column and a table column, generate the permuted input and
+/// permuted table columns used in the Halo2 permutation argument.
 pub fn permuted_cols<F: PrimeField64>(inputs: &[F], table: &[F]) -> (Vec<F>, Vec<F>) {
     let n = inputs.len();
 
-    // The permuted inputs do not have to be ordered, but we found that sorting was faster than
-    // hash-based grouping. We also sort the table, as this helps us identify "unused" table
-    // elements efficiently.
+    // The permuted inputs do not have to be ordered, but we found that sorting was
+    // faster than hash-based grouping. We also sort the table, as this helps us
+    // identify "unused" table elements efficiently.
 
-    // To compare elements, e.g. for sorting, we first need them in canonical form. It would be
-    // wasteful to canonicalize in each comparison, as a single element may be involved in many
-    // comparisons. So we will canonicalize once upfront, then use `to_noncanonical_u64` when
-    // comparing elements.
+    // To compare elements, e.g. for sorting, we first need them in canonical form.
+    // It would be wasteful to canonicalize in each comparison, as a single
+    // element may be involved in many comparisons. So we will canonicalize once
+    // upfront, then use `to_noncanonical_u64` when comparing elements.
 
     let sorted_inputs = inputs
         .iter()

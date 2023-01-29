@@ -112,9 +112,9 @@ fn fft_classic_simd<P: PackedField>(
     assert!(lg_packed_width <= 4);
     for lg_half_m in 0..4 {
         if (r..min(lg_n, lg_packed_width)).contains(&lg_half_m) {
-            // Intuitively, we split values into m slices: subarr[0], ..., subarr[m - 1]. Each of
-            // those slices is split into two halves: subarr[j].left, subarr[j].right. We do
-            // (subarr[j].left[k], subarr[j].right[k])
+            // Intuitively, we split values into m slices: subarr[0], ..., subarr[m - 1].
+            // Each of those slices is split into two halves: subarr[j].left,
+            // subarr[j].right. We do (subarr[j].left[k], subarr[j].right[k])
             //   := f(subarr[j].left[k], subarr[j].right[k], omega[k]),
             // where f(u, v, omega) = (u + omega * v, u - omega * v).
             let half_m = 1 << lg_half_m;
@@ -136,7 +136,8 @@ fn fft_classic_simd<P: PackedField>(
         }
     }
 
-    // We've already done the first lg_packed_width (if they were required) iterations.
+    // We've already done the first lg_packed_width (if they were required)
+    // iterations.
     let s = max(r, lg_packed_width);
 
     for lg_half_m in s..lg_n {
@@ -197,8 +198,8 @@ pub(crate) fn fft_classic<F: Field>(values: &mut [F], r: usize, root_table: &Fft
 
     let lg_packed_width = log2_strict(<F as Packable>::Packing::WIDTH);
     if lg_n <= lg_packed_width {
-        // Need the slice to be at least the width of two packed vectors for the vectorized version
-        // to work. Do this tiny problem in scalar.
+        // Need the slice to be at least the width of two packed vectors for the
+        // vectorized version to work. Do this tiny problem in scalar.
         fft_classic_simd::<F>(values, r, lg_n, root_table);
     } else {
         fft_classic_simd::<<F as Packable>::Packing>(values, r, lg_n, root_table);

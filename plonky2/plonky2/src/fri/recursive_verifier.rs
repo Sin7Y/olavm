@@ -23,8 +23,8 @@ use crate::util::reducing::ReducingFactorTarget;
 use crate::with_context;
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
-    /// Computes P'(x^arity) from {P(x*g^i)}_(i=0..arity), where g is a `arity`-th root of unity
-    /// and P' is the FRI reduced polynomial.
+    /// Computes P'(x^arity) from {P(x*g^i)}_(i=0..arity), where g is a
+    /// `arity`-th root of unity and P' is the FRI reduced polynomial.
     fn compute_evaluation<C: GenericConfig<D, F = F>>(
         &mut self,
         x: Target,
@@ -42,14 +42,14 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         // The evaluation vector needs to be reordered first.
         let mut evals = evals.to_vec();
         reverse_index_bits_in_place(&mut evals);
-        // Want `g^(arity - rev_x_index_within_coset)` as in the out-of-circuit version. Compute it
-        // as `(g^-1)^rev_x_index_within_coset`.
+        // Want `g^(arity - rev_x_index_within_coset)` as in the out-of-circuit version.
+        // Compute it as `(g^-1)^rev_x_index_within_coset`.
         let start = self.exp_from_bits_const_base(g_inv, x_index_within_coset_bits.iter().rev());
         let coset_start = self.mul(start, x);
 
-        // The answer is gotten by interpolating {(x*g^i, P(x*g^i))} and evaluating at beta.
-        // `HighDegreeInterpolationGate` has degree `arity`, so we use the low-degree gate if
-        // the arity is too large.
+        // The answer is gotten by interpolating {(x*g^i, P(x*g^i))} and evaluating at
+        // beta. `HighDegreeInterpolationGate` has degree `arity`, so we use the
+        // low-degree gate if the arity is too large.
         if arity > self.config.max_quotient_degree_factor {
             self.interpolate_coset::<LowDegreeInterpolationGate<F, D>>(
                 arity_bits,
@@ -67,9 +67,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         }
     }
 
-    /// Make sure we have enough wires and routed wires to do the FRI checks efficiently. This check
-    /// isn't required -- without it we'd get errors elsewhere in the stack -- but just gives more
-    /// helpful errors.
+    /// Make sure we have enough wires and routed wires to do the FRI checks
+    /// efficiently. This check isn't required -- without it we'd get errors
+    /// elsewhere in the stack -- but just gives more helpful errors.
     fn check_recursion_config<C: GenericConfig<D, F = F>>(&self, max_fri_arity_bits: usize) {
         let random_access = RandomAccessGate::<F, D>::new_from_config(
             &self.config,
@@ -163,9 +163,10 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         );
 
         for (i, round_proof) in proof.query_round_proofs.iter().enumerate() {
-            // To minimize noise in our logs, we will only record a context for a single FRI query.
-            // The very first query will have some extra gates due to constants being registered, so
-            // the second query is a better representative.
+            // To minimize noise in our logs, we will only record a context for a single FRI
+            // query. The very first query will have some extra gates due to
+            // constants being registered, so the second query is a better
+            // representative.
             let level = if i == 1 {
                 log::Level::Debug
             } else {
@@ -260,8 +261,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             sum = self.div_add_extension(numerator, denominator, sum);
         }
 
-        // Multiply the final polynomial by `X`, so that `final_poly` has the maximum degree for
-        // which the LDT will pass. See github.com/mir-protocol/plonky2/pull/436 for details.
+        // Multiply the final polynomial by `X`, so that `final_poly` has the maximum
+        // degree for which the LDT will pass. See
+        // github.com/mir-protocol/plonky2/pull/436 for details.
         self.mul_extension(sum, subgroup_x)
     }
 
@@ -281,8 +283,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     {
         let n_log = log2_strict(n);
 
-        // Note that this `low_bits` decomposition permits non-canonical binary encodings. Here we
-        // verify that this has a negligible impact on soundness error.
+        // Note that this `low_bits` decomposition permits non-canonical binary
+        // encodings. Here we verify that this has a negligible impact on
+        // soundness error.
         Self::assert_noncanonical_indices_ok(&params.config);
         let mut x_index_bits = self.low_bits(x_index, n_log, F::BITS);
 
@@ -299,7 +302,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             )
         );
 
-        // `subgroup_x` is `subgroup[x_index]`, i.e., the actual field element in the domain.
+        // `subgroup_x` is `subgroup[x_index]`, i.e., the actual field element in the
+        // domain.
         let mut subgroup_x = with_context!(self, "compute x from its index", {
             let g = self.constant(F::coset_shift());
             let phi = F::primitive_root_of_unity(n_log);
@@ -308,8 +312,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             self.mul(g, phi)
         });
 
-        // old_eval is the last derived evaluation; it will be checked for consistency with its
-        // committed "parent" value in the next iteration.
+        // old_eval is the last derived evaluation; it will be checked for consistency
+        // with its committed "parent" value in the next iteration.
         let mut old_eval = with_context!(
             self,
             "combine initial oracles",
@@ -326,7 +330,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         for (i, &arity_bits) in params.reduction_arity_bits.iter().enumerate() {
             let evals = &round_proof.steps[i].evals;
 
-            // Split x_index into the index of the coset x is in, and the index of x within that coset.
+            // Split x_index into the index of the coset x is in, and the index of x within
+            // that coset.
             let coset_index_bits = x_index_bits[arity_bits..].to_vec();
             let x_index_within_coset_bits = &x_index_bits[..arity_bits];
             let x_index_within_coset = self.le_sum(x_index_within_coset_bits.iter());
@@ -366,8 +371,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             x_index_bits = coset_index_bits;
         }
 
-        // Final check of FRI. After all the reductions, we check that the final polynomial is equal
-        // to the one sent by the prover.
+        // Final check of FRI. After all the reductions, we check that the final
+        // polynomial is equal to the one sent by the prover.
         let eval = with_context!(
             self,
             &format!(
@@ -379,18 +384,21 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         self.connect_extension(eval, old_eval);
     }
 
-    /// We decompose FRI query indices into bits without verifying that the decomposition given by
-    /// the prover is the canonical one. In particular, if `x_index < 2^field_bits - p`, then the
-    /// prover could supply the binary encoding of either `x_index` or `x_index + p`, since the are
-    /// congruent mod `p`. However, this only occurs with probability
-    ///     p_ambiguous = (2^field_bits - p) / p
+    /// We decompose FRI query indices into bits without verifying that the
+    /// decomposition given by the prover is the canonical one. In
+    /// particular, if `x_index < 2^field_bits - p`, then the prover could
+    /// supply the binary encoding of either `x_index` or `x_index + p`, since
+    /// the are congruent mod `p`. However, this only occurs with
+    /// probability     p_ambiguous = (2^field_bits - p) / p
     /// which is small for the field that we use in practice.
     ///
-    /// In particular, the soundness error of one FRI query is roughly the codeword rate, which
-    /// is much larger than this ambiguous-element probability given any reasonable parameters.
-    /// Thus ambiguous elements contribute a negligible amount to soundness error.
+    /// In particular, the soundness error of one FRI query is roughly the
+    /// codeword rate, which is much larger than this ambiguous-element
+    /// probability given any reasonable parameters. Thus ambiguous elements
+    /// contribute a negligible amount to soundness error.
     ///
-    /// Here we compare the probabilities as a sanity check, to verify the claim above.
+    /// Here we compare the probabilities as a sanity check, to verify the claim
+    /// above.
     fn assert_noncanonical_indices_ok(config: &FriConfig) {
         let num_ambiguous_elems = u64::MAX - F::ORDER + 1;
         let query_error = config.rate();
@@ -475,8 +483,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     }
 }
 
-/// For each opening point, holds the reduced (by `alpha`) evaluations of each polynomial that's
-/// opened at that point.
+/// For each opening point, holds the reduced (by `alpha`) evaluations of each
+/// polynomial that's opened at that point.
 #[derive(Clone)]
 struct PrecomputedReducedOpeningsTarget<const D: usize> {
     reduced_openings_at_point: Vec<ExtensionTarget<D>>,

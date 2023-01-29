@@ -723,8 +723,9 @@ pub(crate) mod testutils {
             default,
         } = ctl;
 
-        // Maps `m` with `(table, i) in m[row]` iff the `i`-th row of `table` is equal to `row` and
-        // the filter is 1. Without default values, the CTL check holds iff `looking_multiset == looked_multiset`.
+        // Maps `m` with `(table, i) in m[row]` iff the `i`-th row of `table` is equal
+        // to `row` and the filter is 1. Without default values, the CTL check
+        // holds iff `looking_multiset == looked_multiset`.
         let mut looking_multiset = MultiSet::<F>::new();
         let mut looked_multiset = MultiSet::<F>::new();
 
@@ -734,8 +735,8 @@ pub(crate) mod testutils {
         process_table(trace_poly_values, looked_table, &mut looked_multiset);
 
         let empty = &vec![];
-        // Check that every row in the looking tables appears in the looked table the same number of times
-        // with some special logic for the default row.
+        // Check that every row in the looking tables appears in the looked table the
+        // same number of times with some special logic for the default row.
         for (row, looking_locations) in &looking_multiset {
             let looked_locations = looked_multiset.get(row).unwrap_or(empty);
             if let Some(default) = default {
@@ -773,7 +774,8 @@ pub(crate) mod testutils {
                     - trace_poly_values[looked_table.table as usize][0].len()
             );
         }
-        // Check that every row in the looked tables appears in the looked table the same number of times.
+        // Check that every row in the looked tables appears in the looked table the
+        // same number of times.
         for (row, looked_locations) in &looked_multiset {
             let looking_locations = looking_multiset.get(row).unwrap_or(empty);
             check_locations(looking_locations, looked_locations, ctl_index, row);

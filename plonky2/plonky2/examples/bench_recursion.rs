@@ -51,13 +51,13 @@ struct Options {
     #[structopt(long, parse(try_from_str = parse_hex_u64))]
     seed: Option<u64>,
 
-    /// Number of compute threads to use. Defaults to number of cores. Can be a single
-    /// value or a rust style range.
+    /// Number of compute threads to use. Defaults to number of cores. Can be a
+    /// single value or a rust style range.
     #[structopt(long, parse(try_from_str = parse_range_usize))]
     threads: Option<RangeInclusive<usize>>,
 
-    /// Log2 gate count of the inner proof. Can be a single value or a rust style
-    /// range.
+    /// Log2 gate count of the inner proof. Can be a single value or a rust
+    /// style range.
     #[structopt(long, default_value="14", parse(try_from_str = parse_range_usize))]
     size: RangeInclusive<usize>,
 }
@@ -70,7 +70,10 @@ fn dummy_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D
 where
     [(); C::Hasher::HASH_SIZE]:,
 {
-    // 'size' is in degree, but we want number of noop gates. A non-zero amount of padding will be added and size will be rounded to the next power of two. To hit our target size, we go just under the previous power of two and hope padding is less than half the proof.
+    // 'size' is in degree, but we want number of noop gates. A non-zero amount of
+    // padding will be added and size will be rounded to the next power of two. To
+    // hit our target size, we go just under the previous power of two and hope
+    // padding is less than half the proof.
     let num_dummy_gates = match log2_size {
         0 => return Err(anyhow!("size must be at least 1")),
         1 => 0,
@@ -244,7 +247,8 @@ fn main() -> Result<()> {
 
     let config = CircuitConfig::standard_recursion_config();
     for log2_inner_size in options.size {
-        // Since the `size` is most likely to be and unbounded range we make that the outer iterator.
+        // Since the `size` is most likely to be and unbounded range we make that the
+        // outer iterator.
         for threads in threads.clone() {
             rayon::ThreadPoolBuilder::new()
                 .num_threads(threads)

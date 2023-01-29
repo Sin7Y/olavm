@@ -17,7 +17,8 @@ use crate::util::timing::TimingTree;
 /// Builds a FRI proof.
 pub fn fri_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     initial_merkle_trees: &[&MerkleTree<F, C::Hasher>],
-    // Coefficients of the polynomial on which the LDT is performed. Only the first `1/rate` coefficients are non-zero.
+    // Coefficients of the polynomial on which the LDT is performed. Only the first `1/rate`
+    // coefficients are non-zero.
     lde_polynomial_coeffs: PolynomialCoeffs<F::Extension>,
     // Evaluation of the polynomial on the large domain.
     lde_polynomial_values: PolynomialValues<F::Extension>,

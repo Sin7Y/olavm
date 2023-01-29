@@ -11,7 +11,8 @@ pub struct ConstraintConsumer<P: PackedField> {
     /// Random values used to combine multiple constraints into one.
     pub alphas: Vec<P::Scalar>,
 
-    /// Running sums of constraints that have been emitted so far, scaled by powers of alpha.
+    /// Running sums of constraints that have been emitted so far, scaled by
+    /// powers of alpha.
     // TODO(JN): This is pub so it can be used in a test. Once we have an API for accessing this
     // result, it should be made private.
     pub constraint_accs: Vec<P>,
@@ -19,12 +20,14 @@ pub struct ConstraintConsumer<P: PackedField> {
     /// The evaluation of `X - g^(n-1)`.
     z_last: P,
 
-    /// The evaluation of the Lagrange basis polynomial which is nonzero at the point associated
-    /// with the first trace row, and zero at other points in the subgroup.
+    /// The evaluation of the Lagrange basis polynomial which is nonzero at the
+    /// point associated with the first trace row, and zero at other points
+    /// in the subgroup.
     lagrange_basis_first: P,
 
-    /// The evaluation of the Lagrange basis polynomial which is nonzero at the point associated
-    /// with the last trace row, and zero at other points in the subgroup.
+    /// The evaluation of the Lagrange basis polynomial which is nonzero at the
+    /// point associated with the last trace row, and zero at other points
+    /// in the subgroup.
     lagrange_basis_last: P,
 }
 
@@ -61,14 +64,14 @@ impl<P: PackedField> ConstraintConsumer<P> {
         }
     }
 
-    /// Add one constraint, but first multiply it by a filter such that it will only apply to the
-    /// first row of the trace.
+    /// Add one constraint, but first multiply it by a filter such that it will
+    /// only apply to the first row of the trace.
     pub fn constraint_first_row(&mut self, constraint: P) {
         self.constraint(constraint * self.lagrange_basis_first);
     }
 
-    /// Add one constraint, but first multiply it by a filter such that it will only apply to the
-    /// last row of the trace.
+    /// Add one constraint, but first multiply it by a filter such that it will
+    /// only apply to the last row of the trace.
     pub fn constraint_last_row(&mut self, constraint: P) {
         self.constraint(constraint * self.lagrange_basis_last);
     }
@@ -78,18 +81,21 @@ pub struct RecursiveConstraintConsumer<F: RichField + Extendable<D>, const D: us
     /// A random value used to combine multiple constraints into one.
     alphas: Vec<Target>,
 
-    /// A running sum of constraints that have been emitted so far, scaled by powers of alpha.
+    /// A running sum of constraints that have been emitted so far, scaled by
+    /// powers of alpha.
     constraint_accs: Vec<ExtensionTarget<D>>,
 
     /// The evaluation of `X - g^(n-1)`.
     z_last: ExtensionTarget<D>,
 
-    /// The evaluation of the Lagrange basis polynomial which is nonzero at the point associated
-    /// with the first trace row, and zero at other points in the subgroup.
+    /// The evaluation of the Lagrange basis polynomial which is nonzero at the
+    /// point associated with the first trace row, and zero at other points
+    /// in the subgroup.
     lagrange_basis_first: ExtensionTarget<D>,
 
-    /// The evaluation of the Lagrange basis polynomial which is nonzero at the point associated
-    /// with the last trace row, and zero at other points in the subgroup.
+    /// The evaluation of the Lagrange basis polynomial which is nonzero at the
+    /// point associated with the last trace row, and zero at other points
+    /// in the subgroup.
     lagrange_basis_last: ExtensionTarget<D>,
 
     _phantom: PhantomData<F>,
@@ -138,8 +144,8 @@ impl<F: RichField + Extendable<D>, const D: usize> RecursiveConstraintConsumer<F
         }
     }
 
-    /// Add one constraint, but first multiply it by a filter such that it will only apply to the
-    /// first row of the trace.
+    /// Add one constraint, but first multiply it by a filter such that it will
+    /// only apply to the first row of the trace.
     pub fn constraint_first_row(
         &mut self,
         builder: &mut CircuitBuilder<F, D>,
@@ -149,8 +155,8 @@ impl<F: RichField + Extendable<D>, const D: usize> RecursiveConstraintConsumer<F
         self.constraint(builder, filtered_constraint);
     }
 
-    /// Add one constraint, but first multiply it by a filter such that it will only apply to the
-    /// last row of the trace.
+    /// Add one constraint, but first multiply it by a filter such that it will
+    /// only apply to the last row of the trace.
     pub fn constraint_last_row(
         &mut self,
         builder: &mut CircuitBuilder<F, D>,

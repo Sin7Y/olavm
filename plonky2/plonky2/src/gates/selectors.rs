@@ -24,9 +24,9 @@ impl SelectorsInfo {
 /// Returns the selector polynomials and related information.
 ///
 /// Selector polynomials are computed as follows:
-/// Partition the gates into (the smallest amount of) groups `{ G_i }`, such that for each group `G`
-/// `|G| + max_{g in G} g.degree() <= max_degree`. These groups are constructed greedily from
-/// the list of gates sorted by degree.
+/// Partition the gates into (the smallest amount of) groups `{ G_i }`, such
+/// that for each group `G` `|G| + max_{g in G} g.degree() <= max_degree`. These
+/// groups are constructed greedily from the list of gates sorted by degree.
 /// We build a selector polynomial `S_i` for each group `G_i`, with
 /// S_i[j] =
 ///     if j-th row gate=g_k in G_i
@@ -81,7 +81,8 @@ pub(crate) fn selector_polynomials<F: RichField + Extendable<D>, const D: usize>
 
     let group = |i| groups.iter().position(|range| range.contains(&i)).unwrap();
 
-    // `selector_indices[i] = j` iff the `i`-th gate uses the `j`-th selector polynomial.
+    // `selector_indices[i] = j` iff the `i`-th gate uses the `j`-th selector
+    // polynomial.
     let selector_indices = (0..num_gates).map(group).collect();
 
     // Placeholder value to indicate that a gate doesn't use a selector polynomial.

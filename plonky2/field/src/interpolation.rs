@@ -4,10 +4,12 @@ use crate::fft::ifft;
 use crate::polynomial::{PolynomialCoeffs, PolynomialValues};
 use crate::types::Field;
 
-/// Computes the unique degree < n interpolant of an arbitrary list of n (point, value) pairs.
+/// Computes the unique degree < n interpolant of an arbitrary list of n (point,
+/// value) pairs.
 ///
-/// Note that the implementation assumes that `F` is two-adic, in particular that
-/// `2^{F::TWO_ADICITY} >= points.len()`. This leads to a simple FFT-based implementation.
+/// Note that the implementation assumes that `F` is two-adic, in particular
+/// that `2^{F::TWO_ADICITY} >= points.len()`. This leads to a simple FFT-based
+/// implementation.
 pub fn interpolant<F: Field>(points: &[(F, F)]) -> PolynomialCoeffs<F> {
     let n = points.len();
     let n_log = log2_ceil(n);
@@ -24,8 +26,8 @@ pub fn interpolant<F: Field>(points: &[(F, F)]) -> PolynomialCoeffs<F> {
     coeffs
 }
 
-/// Interpolate the polynomial defined by an arbitrary set of (point, value) pairs at the given
-/// point `x`.
+/// Interpolate the polynomial defined by an arbitrary set of (point, value)
+/// pairs at the given point `x`.
 pub fn interpolate<F: Field>(points: &[(F, F)], x: F, barycentric_weights: &[F]) -> F {
     // If x is in the list of points, the Lagrange formula would divide by zero.
     for &(x_i, y_i) in points {

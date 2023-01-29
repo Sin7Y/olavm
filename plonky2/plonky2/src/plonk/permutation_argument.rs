@@ -46,7 +46,8 @@ impl Forest {
 
     /// Path compression method, see https://en.wikipedia.org/wiki/Disjoint-set_data_structure#Finding_set_representatives.
     pub fn find(&mut self, mut x_index: usize) -> usize {
-        // Note: We avoid recursion here since the chains can be long, causing stack overflows.
+        // Note: We avoid recursion here since the chains can be long, causing stack
+        // overflows.
 
         // First, find the representative of the set containing `x_index`.
         let mut representative = x_index;
@@ -76,8 +77,8 @@ impl Forest {
         self.parents[y_index] = x_index;
     }
 
-    /// Compress all paths. After calling this, every `parent` value will point to the node's
-    /// representative.
+    /// Compress all paths. After calling this, every `parent` value will point
+    /// to the node's representative.
     pub(crate) fn compress_paths(&mut self) {
         for i in 0..self.parents.len() {
             self.find(i);
@@ -129,12 +130,14 @@ impl WirePartition {
             .collect()
     }
 
-    /// Generates sigma in the context of Plonk, which is a map from `[kn]` to `[kn]`, where `k` is
-    /// the number of routed wires and `n` is the number of gates.
+    /// Generates sigma in the context of Plonk, which is a map from `[kn]` to
+    /// `[kn]`, where `k` is the number of routed wires and `n` is the
+    /// number of gates.
     fn get_sigma_map(&self, degree: usize, num_routed_wires: usize) -> Vec<usize> {
-        // Find a wire's "neighbor" in the context of Plonk's "extended copy constraints" check. In
-        // other words, find the next wire in the given wire's partition. If the given wire is last in
-        // its partition, this will loop around. If the given wire has a partition all to itself, it
+        // Find a wire's "neighbor" in the context of Plonk's "extended copy
+        // constraints" check. In other words, find the next wire in the given
+        // wire's partition. If the given wire is last in its partition, this
+        // will loop around. If the given wire has a partition all to itself, it
         // is considered its own neighbor.
         let mut neighbors = HashMap::new();
         for subset in &self.partition {

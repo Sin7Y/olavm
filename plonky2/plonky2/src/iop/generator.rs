@@ -12,8 +12,8 @@ use crate::iop::witness::{PartialWitness, PartitionWitness, Witness};
 use crate::plonk::circuit_data::{CommonCircuitData, ProverOnlyCircuitData};
 use crate::plonk::config::GenericConfig;
 
-/// Given a `PartitionWitness` that has only inputs set, populates the rest of the witness using the
-/// given set of generators.
+/// Given a `PartitionWitness` that has only inputs set, populates the rest of
+/// the witness using the given set of generators.
 pub(crate) fn generate_partial_witness<
     'a,
     F: RichField + Extendable<D>,
@@ -38,11 +38,12 @@ pub(crate) fn generate_partial_witness<
         witness.set_target(t, v);
     }
 
-    // Build a list of "pending" generators which are queued to be run. Initially, all generators
-    // are queued.
+    // Build a list of "pending" generators which are queued to be run. Initially,
+    // all generators are queued.
     let mut pending_generator_indices: Vec<_> = (0..generators.len()).collect();
 
-    // We also track a list of "expired" generators which have already returned false.
+    // We also track a list of "expired" generators which have already returned
+    // false.
     let mut generator_is_expired = vec![false; generators.len()];
     let mut remaining_generators = generators.len();
 
@@ -63,14 +64,15 @@ pub(crate) fn generate_partial_witness<
                 remaining_generators -= 1;
             }
 
-            // Merge any generated values into our witness, and get a list of newly-populated
-            // targets' representatives.
+            // Merge any generated values into our witness, and get a list of
+            // newly-populated targets' representatives.
             let new_target_reps = buffer
                 .target_values
                 .drain(..)
                 .flat_map(|(t, v)| witness.set_target_returning_rep(t, v));
 
-            // Enqueue unfinished generators that were watching one of the newly populated targets.
+            // Enqueue unfinished generators that were watching one of the newly populated
+            // targets.
             for watch in new_target_reps {
                 let opt_watchers = generator_indices_by_watches.get(&watch);
                 if let Some(watchers) = opt_watchers {
@@ -97,13 +99,14 @@ pub(crate) fn generate_partial_witness<
 
 /// A generator participates in the generation of the witness.
 pub trait WitnessGenerator<F: Field>: 'static + Send + Sync + Debug {
-    /// Targets to be "watched" by this generator. Whenever a target in the watch list is populated,
-    /// the generator will be queued to run.
+    /// Targets to be "watched" by this generator. Whenever a target in the
+    /// watch list is populated, the generator will be queued to run.
     fn watch_list(&self) -> Vec<Target>;
 
-    /// Run this generator, returning a flag indicating whether the generator is finished. If the
-    /// flag is true, the generator will never be run again, otherwise it will be queued for another
-    /// run next time a target in its watch list is populated.
+    /// Run this generator, returning a flag indicating whether the generator is
+    /// finished. If the flag is true, the generator will never be run
+    /// again, otherwise it will be queued for another run next time a
+    /// target in its watch list is populated.
     fn run(&self, witness: &PartitionWitness<F>, out_buffer: &mut GeneratedValues<F>) -> bool;
 }
 
@@ -203,7 +206,8 @@ impl<F: Field> GeneratedValues<F> {
     }
 }
 
-/// A generator which runs once after a list of dependencies is present in the witness.
+/// A generator which runs once after a list of dependencies is present in the
+/// witness.
 pub trait SimpleGenerator<F: Field>: 'static + Send + Sync + Debug {
     fn dependencies(&self) -> Vec<Target>;
 

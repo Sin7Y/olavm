@@ -4,16 +4,16 @@ use plonky2::fri::{FriConfig, FriParams};
 pub struct StarkConfig {
     pub security_bits: usize,
 
-    /// The number of challenge points to generate, for IOPs that have soundness errors of (roughly)
-    /// `degree / |F|`.
+    /// The number of challenge points to generate, for IOPs that have soundness
+    /// errors of (roughly) `degree / |F|`.
     pub num_challenges: usize,
 
     pub fri_config: FriConfig,
 }
 
 impl StarkConfig {
-    /// A typical configuration with a rate of 2, resulting in fast but large proofs.
-    /// Targets ~100 bit conjectured security.
+    /// A typical configuration with a rate of 2, resulting in fast but large
+    /// proofs. Targets ~100 bit conjectured security.
     // TODO: check the params
     pub fn standard_fast_config() -> Self {
         Self {
