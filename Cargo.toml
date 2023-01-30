@@ -8,6 +8,7 @@ members = [
     "plonky2/field",
     "plonky2/util",
     "plonky2/maybe_rayon",
+    "assembler",
 ]
 
 [profile.release]

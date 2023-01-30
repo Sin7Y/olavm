@@ -60,7 +60,7 @@ for inst in instructions.into_iter() {
 
 // execute the program with no inputs
 let mut process = Process::new();
-process.execute(&mut program, true).expect("OlaVM execute fail");
+process.execute(&mut program).expect("OlaVM execute fail");
 
 ```
 
