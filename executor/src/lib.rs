@@ -1,7 +1,8 @@
-use crate::decode::{decode_raw_instruction, IMM_INSTRUCTION_LEN};
+use crate::decode::decode_raw_instruction;
 use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
 //use core::program::instruction::ImmediateOrRegName::Immediate;
+use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{
     Add, And, Assert, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload,
     Mov, Mstore, Mul, Neq, Not, Opcode, Or, Range, Ret, Sub, Xor,
@@ -90,7 +91,11 @@ impl Process {
         let instuction = match opcode.as_str() {
             "mov" | "assert" | "eq" | "neq" | "not" | "gte" => {
                 debug!("opcode: mov");
-                assert!(ops.len() == 3, "mov params len is 2");
+                assert!(
+                    ops.len() == 3,
+                    "{}",
+                    format!("{} params len is 2", opcode.as_str())
+                );
                 let dst_index = self.get_reg_index(ops[1]);
                 let value = self.get_index_value(ops[2]);
                 match opcode.as_str() {
@@ -121,71 +126,29 @@ impl Process {
                     _ => panic!("not match opcode:{}", opcode),
                 }
             }
-            // "assert" => {
-            //     debug!("opcode: assert");
-            //     assert!(ops.len() == 3, "eq params len is 2");
-            //     let dst_index = self.get_reg_index(&ops[1]);
-            //     let value = self.get_index_value(&ops[2]);
-            //     Instruction::ASSERT(Assert {
-            //         ri: dst_index as u8,
-            //         a: value.1,
-            //     })
-            // }
-            // "eq" => {
-            //     debug!("opcode: eq");
-            //     assert!(ops.len() == 3, "eq params len is 2");
-            //     let dst_index = self.get_reg_index(&ops[1]);
-            //     let value = self.get_index_value(&ops[2]);
-            //     Instruction::EQ(Equal {
-            //         ri: dst_index as u8,
-            //         a: value.1,
-            //     })
-            // }
-            // "neq" => {
-            //     debug!("opcode: neq");
-            //     assert!(ops.len() == 3, "neq params len is 2");
-            //     let dst_index = self.get_reg_index(&ops[1]);
-            //     let value = self.get_index_value(&ops[2]);
-            //     Instruction::NEQ(Neq {
-            //         ri: dst_index as u8,
-            //         a: value.1,
-            //     })
-            // }
-            // "not" => {
-            //     debug!("opcode: not");
-            //     assert!(ops.len() == 3, "not params len is 2");
-            //     let dst_index = self.get_reg_index(&ops[1]);
-            //     let value = self.get_index_value(&ops[2]);
-            //     Instruction::NOT(Not {
-            //         ri: dst_index as u8,
-            //         a: value.1,
-            //     })
-            // }
-            // "gte" => {
-            //     debug!("opcode: gte");
-            //     assert!(ops.len() == 3, "gte params len is 2");
-            //     let dst_index = self.get_reg_index(&ops[1]);
-            //     let value = self.get_index_value(&ops[2]);
-            //     Instruction::GTE(Gte {
-            //         ri: dst_index as u8,
-            //         a: value.1,
-            //     })
-            // }
-            "cjmp" => {
-                debug!("opcode: cjmp");
-                assert!(ops.len() == 2, "cjmp params len is 1");
+            "cjmp" | "jmp" | "call" | "range" => {
+                debug!("opcode: {}", opcode.as_str());
+                assert!(
+                    ops.len() == 2,
+                    "{}",
+                    format!("{} params len is 1", opcode.as_str())
+                );
                 let value = self.get_index_value(ops[1]);
-                Instruction::CJMP(CJmp { a: value.1 })
-            }
-            "jmp" => {
-                debug!("opcode: jmp");
-                assert!(ops.len() == 2, "jmp params len is 1");
-                let value = self.get_index_value(ops[1]);
-                Instruction::JMP(Jmp { a: value.1 })
+                match opcode.as_str() {
+                    "cjmp" => Instruction::CJMP(CJmp { a: value.1 }),
+                    "jmp" => Instruction::JMP(Jmp { a: value.1 }),
+                    "call" => Instruction::CALL(Call { ri: value.1 }),
+                    "range" => Instruction::RANGE(Range { ri: value.1 }),
+                    _ => panic!("not match opcode:{}", opcode),
+                }
             }
             "add" | "sub" | "mul" | "and" | "or" | "xor" => {
                 debug!("opcode: arithmatic");
-                assert!(ops.len() == 4, "arithmatic params len is 3");
+                assert!(
+                    ops.len() == 4,
+                    "{}",
+                    format!("{} params len is 3", opcode.as_str())
+                );
                 let dst_index = self.get_reg_index(ops[1]);
                 let op1_index = self.get_reg_index(ops[2]);
                 let op2_value = self.get_index_value(ops[3]);
@@ -223,12 +186,6 @@ impl Process {
                     _ => panic!("not match opcode:{}", opcode),
                 }
             }
-            "call" => {
-                debug!("opcode: call");
-                assert!(ops.len() == 2, "call params len is 1");
-                let call_addr = self.get_index_value(ops[1]);
-                Instruction::CALL(Call { ri: call_addr.1 })
-            }
             "ret" => {
                 debug!("opcode: ret");
                 assert!(ops.len() == 1, "ret params len is 0");
@@ -236,7 +193,11 @@ impl Process {
             }
             "mstore" => {
                 debug!("opcode: mstore");
-                assert!(ops.len() == 3, "mstore params len is 2");
+                assert!(
+                    ops.len() == 3,
+                    "{}",
+                    format!("{} params len is 2", opcode.as_str())
+                );
                 let op1_value = self.get_index_value(ops[1]);
                 let op2_index = self.get_reg_index(ops[2]);
                 Instruction::MSTORE(Mstore {
@@ -246,20 +207,16 @@ impl Process {
             }
             "mload" => {
                 debug!("opcode: mload");
-                assert!(ops.len() == 3, "mload params len is 2");
+                assert!(
+                    ops.len() == 3,
+                    "{}",
+                    format!("{} params len is 2", opcode.as_str())
+                );
                 let op2_value = self.get_index_value(ops[2]);
                 let op1_index = self.get_reg_index(ops[1]);
                 Instruction::MLOAD(Mload {
                     ri: op1_index as u8,
                     rj: op2_value.1,
-                })
-            }
-            "range" => {
-                debug!("opcode: range");
-                assert!(ops.len() == 2, "range params len is 1");
-                let input_value = self.get_reg_index(ops[1]);
-                Instruction::RANGE(Range {
-                    ri: input_value as u8,
                 })
             }
             "end" => {
@@ -272,11 +229,7 @@ impl Process {
         instuction
     }
 
-    pub fn execute(
-        &mut self,
-        program: &mut Program,
-        decode_flag: bool,
-    ) -> Result<(), ProcessorError> {
+    pub fn execute(&mut self, program: &mut Program) -> Result<(), ProcessorError> {
         let instrs_len = program.instructions.len() as u64;
 
         let start = Instant::now();
@@ -289,43 +242,40 @@ impl Process {
                 .raw_binary_instructions
                 .push(instruct_line.to_string());
 
-            if decode_flag {
-                let mut immediate_data = GoldilocksField::ZERO;
+            let mut immediate_data = GoldilocksField::ZERO;
 
-                let next_instr = if (instrs_len - 2) > pc {
-                    program.instructions[(pc + 1) as usize].trim()
-                } else {
-                    ""
-                };
+            let next_instr = if (instrs_len - 2) > pc {
+                program.instructions[(pc + 1) as usize].trim()
+            } else {
+                ""
+            };
 
-                // Decode instruction from program into trace one.
-                let (txt_instruction, step) = decode_raw_instruction(instruct_line, next_instr)?;
+            // Decode instruction from program into trace one.
+            let (txt_instruction, step) = decode_raw_instruction(instruct_line, next_instr)?;
 
-                let imm_flag = if step == IMM_INSTRUCTION_LEN {
-                    let imm_u64 = next_instr.trim_start_matches("0x");
-                    immediate_data = GoldilocksField::from_canonical_u64(
-                        u64::from_str_radix(imm_u64, 16).unwrap(),
-                    );
-                    program
-                        .trace
-                        .raw_binary_instructions
-                        .push(next_instr.to_string());
-                    1
-                } else {
-                    0
-                };
+            let imm_flag = if step == IMM_INSTRUCTION_LEN {
+                let imm_u64 = next_instr.trim_start_matches("0x");
+                immediate_data =
+                    GoldilocksField::from_canonical_u64(u64::from_str_radix(imm_u64, 16).unwrap());
+                program
+                    .trace
+                    .raw_binary_instructions
+                    .push(next_instr.to_string());
+                1
+            } else {
+                0
+            };
 
-                let instruction = self.decode_instruction(txt_instruction.clone());
-                let inst_u64 = instruct_line.trim_start_matches("0x");
-                let inst_encode =
-                    GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
-                program.trace.instructions.insert(
-                    pc,
-                    (txt_instruction, imm_flag, step, inst_encode, immediate_data),
-                );
-                program.trace.raw_instructions.insert(pc, instruction);
-                pc += step;
-            }
+            let instruction = self.decode_instruction(txt_instruction.clone());
+            let inst_u64 = instruct_line.trim_start_matches("0x");
+            let inst_encode =
+                GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
+            program.trace.instructions.insert(
+                pc,
+                (txt_instruction, imm_flag, step, inst_encode, immediate_data),
+            );
+            program.trace.raw_instructions.insert(pc, instruction);
+            pc += step;
         }
 
         let decode_time = start.elapsed();
@@ -337,7 +287,7 @@ impl Process {
         );
 
         let mut start = Instant::now();
-        while self.pc < instrs_len {
+        loop {
             self.register_selector = RegisterSelector::default();
             let registers_status = self.registers;
             let flag_status = self.flag;
@@ -354,7 +304,11 @@ impl Process {
                 //todo: not need move to arithmatic library
                 "mov" | "not" => {
                     debug!("opcode: mov or not");
-                    assert!(ops.len() == 3, "mov or not params len is 2");
+                    assert!(
+                        ops.len() == 3,
+                        "{}",
+                        format!("{} params len is 2", opcode.as_str())
+                    );
                     let dst_index = self.get_reg_index(ops[1]);
                     let value = self.get_index_value(ops[2]);
                     self.register_selector.op1 = value.0;
@@ -385,7 +339,11 @@ impl Process {
                 }
                 "eq" | "neq" | "assert" => {
                     debug!("opcode: eq or neq or assert");
-                    assert!(ops.len() == 3, "eq params len is 2");
+                    assert!(
+                        ops.len() == 3,
+                        "{}",
+                        format!("{} params len is 2", opcode.as_str())
+                    );
                     let op0_index = self.get_reg_index(ops[1]);
                     // let src_index = self.get_reg_index(&ops[2]);
                     let value = self.get_index_value(ops[2]);
@@ -435,7 +393,11 @@ impl Process {
                 }
                 "cjmp" => {
                     debug!("opcode: cjmp");
-                    assert!(ops.len() == 2, "cjmp params len is 1");
+                    assert!(
+                        ops.len() == 2,
+                        "{}",
+                        format!("{} params len is 1", opcode.as_str())
+                    );
                     let value = self.get_index_value(ops[1]);
                     if self.flag {
                         // fixme: use flag need reset?
@@ -453,7 +415,11 @@ impl Process {
                 }
                 "jmp" => {
                     debug!("opcode: jmp");
-                    assert!(ops.len() == 2, "jmp params len is 1");
+                    assert!(
+                        ops.len() == 2,
+                        "{}",
+                        format!("{} params len is 1", opcode.as_str())
+                    );
                     let value = self.get_index_value(ops[1]);
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::JMP as u8);
                     self.pc = value.0 .0;
@@ -465,7 +431,11 @@ impl Process {
                 }
                 "add" | "mul" | "sub" => {
                     debug!("opcode: field arithmatic");
-                    assert!(ops.len() == 4, "arithmatic params len is 3");
+                    assert!(
+                        ops.len() == 4,
+                        "{}",
+                        format!("{} params len is 3", opcode.as_str())
+                    );
                     let dst_index = self.get_reg_index(ops[1]);
                     let op0_index = self.get_reg_index(ops[2]);
                     let op1_value = self.get_index_value(ops[3]);
@@ -507,7 +477,11 @@ impl Process {
                 }
                 "call" => {
                     debug!("opcode: call");
-                    assert!(ops.len() == 2, "call params len is 1");
+                    assert!(
+                        ops.len() == 2,
+                        "{}",
+                        format!("{} params len is 1", opcode.as_str())
+                    );
                     let call_addr = self.get_index_value(ops[1]);
                     self.memory.write(
                         self.registers[FP_REG_INDEX].0 - 1,
@@ -582,7 +556,11 @@ impl Process {
                 }
                 "mstore" => {
                     debug!("opcode: mstore");
-                    assert!(ops.len() == 3, "mstore params len is 2");
+                    assert!(
+                        ops.len() == 3,
+                        "{}",
+                        format!("{} params len is 2", opcode.as_str())
+                    );
                     let op1_value = self.get_index_value(ops[1]);
                     let op0_index = self.get_reg_index(ops[2]);
                     self.register_selector.op0 = self.registers[op0_index];
@@ -613,7 +591,11 @@ impl Process {
                 }
                 "mload" => {
                     debug!("opcode: mload");
-                    assert!(ops.len() == 3, "mload params len is 2");
+                    assert!(
+                        ops.len() == 3,
+                        "{}",
+                        format!("{} params len is 2", opcode.as_str())
+                    );
                     let dst_index = self.get_reg_index(ops[1]);
                     let op1_value = self.get_index_value(ops[2]);
                     self.register_selector.op1 = op1_value.0;
@@ -643,7 +625,11 @@ impl Process {
                 }
                 "range" => {
                     debug!("opcode: range");
-                    assert!(ops.len() == 2, "range params len is 1");
+                    assert!(
+                        ops.len() == 2,
+                        "{}",
+                        format!("{} params len is 1", opcode.as_str())
+                    );
                     let op1_index = self.get_reg_index(ops[1]);
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
                     self.register_selector.op1 = self.registers[op1_index];
@@ -662,7 +648,11 @@ impl Process {
                 }
                 "and" | "or" | "xor" => {
                     debug!("opcode: bitwise");
-                    assert!(ops.len() == 4, "bitwise params len is 3");
+                    assert!(
+                        ops.len() == 4,
+                        "{}",
+                        format!("{} params len is 3", opcode.as_str())
+                    );
                     let dst_index = self.get_reg_index(ops[1]);
                     let op0_index = self.get_reg_index(ops[2]);
                     let op1_value = self.get_index_value(ops[3]);
@@ -715,7 +705,11 @@ impl Process {
                 }
                 "gte" => {
                     debug!("opcode: comparison");
-                    assert!(ops.len() == 3, "comparison params len is 2");
+                    assert!(
+                        ops.len() == 3,
+                        "{}",
+                        format!("{} params len is 2", opcode.as_str())
+                    );
                     let op0_index = self.get_reg_index(ops[1]);
                     let value = self.get_index_value(ops[2]);
 
@@ -788,6 +782,10 @@ impl Process {
                 flag_status,
                 self.register_selector.clone(),
             );
+
+            if self.pc >= instrs_len {
+                break;
+            }
 
             self.clk += 1;
             if self.clk % 1000000 == 0 {

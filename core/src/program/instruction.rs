@@ -1,8 +1,23 @@
 use num_enum::TryFromPrimitive;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
-//use std::convert::TryFrom;
 use std::fmt;
+
+pub const NO_IMM_INSTRUCTION_LEN: u64 = 1;
+pub const IMM_INSTRUCTION_LEN: u64 = 2;
+pub const OPCODE_FLAG_FIELD_LEN: u64 = 19;
+pub const REG_FIELD_BIT_LEN: u64 = 9;
+
+pub const OPCODE_FLAG_FIELD_BIT_POSITION: u64 = 16;
+pub const REG0_FIELD_BIT_POSITION: u64 = OPCODE_FLAG_FIELD_BIT_POSITION + OPCODE_FLAG_FIELD_LEN;
+pub const REG1_FIELD_BIT_POSITION: u64 = REG0_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
+pub const REG2_FIELD_BIT_POSITION: u64 = REG1_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
+pub const IMM_FLAG_FIELD_BIT_POSITION: u64 = REG2_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
+
+pub const REG_FIELD_BITS_MASK: u64 = 0x1ff;
+pub const IMM_FLAG_FIELD_BITS_MASK: u64 = 0x1;
+pub const OPCODE_FIELD_BITS_MASK: u64 = 0x7_ffff_ffff;
+
 #[warn(non_camel_case_types)]
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ImmediateOrRegName {
@@ -86,7 +101,7 @@ pub struct End {}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Range {
-    pub ri: u8,
+    pub ri: ImmediateOrRegName,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
