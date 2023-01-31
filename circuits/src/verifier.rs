@@ -53,11 +53,15 @@ where
     } = all_stark;
 
     if cpu_stark.get_compress_challenge().is_none() {
-        cpu_stark.set_compress_challenge(all_proof.compress_challenges[Table::Cpu as usize]).unwrap();
+        cpu_stark
+            .set_compress_challenge(all_proof.compress_challenges[Table::Cpu as usize])
+            .unwrap();
     }
 
     if bitwise_stark.get_compress_challenge().is_none() {
-        bitwise_stark.set_compress_challenge(all_proof.compress_challenges[Table::Bitwise as usize]).unwrap();
+        bitwise_stark
+            .set_compress_challenge(all_proof.compress_challenges[Table::Bitwise as usize])
+            .unwrap();
     }
 
     let ctl_vars_per_table = CtlCheckVars::from_proofs(

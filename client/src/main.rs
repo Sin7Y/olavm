@@ -10,7 +10,6 @@ use core::program::Program;
 use core::trace::trace::Trace;
 use executor::Process;
 use log::debug;
-use plonky2::field::types::Field;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::fs::File;
@@ -79,9 +78,7 @@ fn main() {
             }
 
             let mut process = Process::new();
-            process
-                .execute(&mut program, true)
-                .expect("OlaVM execute fail");
+            process.execute(&mut program).expect("OlaVM execute fail");
             let path = sub_matches.get_one::<String>("output").expect("required");
             println!("Output trace file path: {}", path);
             let file = File::create(path).unwrap();
