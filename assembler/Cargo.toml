@@ -1,10 +1,13 @@
 [package]
-name = "executor"
+name = "assembler"
 version = "0.1.0"
-description = "OlaVM executor"
+description = "Olavm core components"
 readme = "README.md"
 license = "MIT"
 edition = "2021"
+
+[lib]
+doctest = false
 
 [dependencies]
 core = { package = "core", path = "../core", version = "0.1.0"}
@@ -13,14 +16,3 @@ env_logger = "0.6"
 serde_json = "1"
 serde = {version = "1" }
 serde_derive = {version = "1"}
-plonky2 = { path = "../plonky2/plonky2" }
-
-criterion = "0.4"
-
-[[bench]]
-name = "fibo_loop"
-harness = false
-
-[[bench]]
-name = "memory_rw"
-harness = false

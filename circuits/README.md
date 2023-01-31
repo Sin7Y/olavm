@@ -86,7 +86,7 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
 
     // execute the fibonacci program
     let mut process = Process::new();
-    process.execute(&mut program, true);
+    process.execute(&mut program);
     
 
     // generate trace for all starks

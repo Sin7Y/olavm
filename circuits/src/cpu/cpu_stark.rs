@@ -413,7 +413,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
