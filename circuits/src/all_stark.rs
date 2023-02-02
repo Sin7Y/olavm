@@ -144,7 +144,8 @@ fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
 //
 // Bitwise table
 // +-----+-----+-----+-----+------------+------------+-----------+------------+---
-// | tag | op0 | op1 | res | op0_limb_0 | op0_limb_1 |res_limb_2 | op0_limb_3 |...
+// | tag | op0 | op1 | res | op0_limb_0 | op0_limb_1 |res_limb_2 | op0_limb_3
+// |...
 // +-----+-----+-----+-----+------------+------------+-----------+------------+---
 //
 // Filter bitwise from CPU Table
@@ -374,7 +375,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
@@ -387,6 +388,7 @@ mod tests {
             &mut TimingTree::default(),
         )?;
         println!("{}", mem::size_of_val(&proof));
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -438,7 +440,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
@@ -451,6 +453,7 @@ mod tests {
             &mut TimingTree::default(),
         )?;
         println!("{}", mem::size_of_val(&proof));
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -497,7 +500,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
@@ -509,6 +512,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -563,7 +567,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
@@ -575,6 +579,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -610,7 +615,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
@@ -622,6 +627,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -657,7 +663,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
@@ -669,6 +675,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -704,7 +711,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
@@ -716,6 +723,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 
@@ -790,7 +798,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
@@ -802,6 +810,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
+        let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
 }

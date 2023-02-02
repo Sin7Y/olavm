@@ -24,7 +24,8 @@ fn main() -> Result<()> {
         cur_target = builder.mul(cur_target, i_target);
     }
 
-    // Public inputs are the initial value (provided below) and the result (which is generated).
+    // Public inputs are the initial value (provided below) and the result (which is
+    // generated).
     builder.register_public_input(initial);
     builder.register_public_input(cur_target);
 

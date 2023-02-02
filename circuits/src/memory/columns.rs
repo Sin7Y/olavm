@@ -1,9 +1,11 @@
 // Memory Trace.
 // ┌───────┬──────┬─────┬────┬──────────┬───────┬───────────┬───────────────┬──────────┬────────────────┬
-// │ is_rw │ addr │ clk │ op │ is_write │ value │ diff_addr │ diff_addr_inv │ diff_clk │ diff_addr_cond │
+// │ is_rw │ addr │ clk │ op │ is_write │ value │ diff_addr │ diff_addr_inv │
+// diff_clk │ diff_addr_cond │
 // └───────┴──────┴─────┴────┴──────────┴───────┴───────────┴───────────────┴──────────┴────────────────┴
 // ┬────────────────────────┬───────────────────┬────────────────┬─────────────────┬──────────────┬──────────┬───────────────────┐
-// │ filter_looked_for_main │ rw_addr_unchanged │ region_prophet │ region_poseidon │ region_ecdsa │ rc_value │ filter_looking_rc │
+// │ filter_looked_for_main │ rw_addr_unchanged │ region_prophet │
+// region_poseidon │ region_ecdsa │ rc_value │ filter_looking_rc │
 // ┴────────────────────────┴───────────────────┴────────────────┴─────────────────┴──────────────┴──────────┴───────────────────┘
 pub(crate) const COL_MEM_IS_RW: usize = 0;
 pub(crate) const COL_MEM_ADDR: usize = COL_MEM_IS_RW + 1;

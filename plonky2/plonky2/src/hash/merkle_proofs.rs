@@ -13,7 +13,8 @@ use crate::plonk::config::{AlgebraicHasher, Hasher};
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(bound = "")]
 pub struct MerkleProof<F: RichField, H: Hasher<F>> {
-    /// The Merkle digest of each sibling subtree, staying from the bottommost layer.
+    /// The Merkle digest of each sibling subtree, staying from the bottommost
+    /// layer.
     pub siblings: Vec<H::Hash>,
 }
 
@@ -25,12 +26,13 @@ impl<F: RichField, H: Hasher<F>> MerkleProof<F, H> {
 
 #[derive(Clone, Debug)]
 pub struct MerkleProofTarget {
-    /// The Merkle digest of each sibling subtree, staying from the bottommost layer.
+    /// The Merkle digest of each sibling subtree, staying from the bottommost
+    /// layer.
     pub siblings: Vec<HashOutTarget>,
 }
 
-/// Verifies that the given leaf data is present at the given index in the Merkle tree with the
-/// given root.
+/// Verifies that the given leaf data is present at the given index in the
+/// Merkle tree with the given root.
 pub fn verify_merkle_proof<F: RichField, H: Hasher<F>>(
     leaf_data: Vec<F>,
     leaf_index: usize,
@@ -44,8 +46,8 @@ where
     verify_merkle_proof_to_cap(leaf_data, leaf_index, &merkle_cap, proof)
 }
 
-/// Verifies that the given leaf data is present at the given index in the Merkle tree with the
-/// given cap.
+/// Verifies that the given leaf data is present at the given index in the
+/// Merkle tree with the given cap.
 pub fn verify_merkle_proof_to_cap<F: RichField, H: Hasher<F>>(
     leaf_data: Vec<F>,
     leaf_index: usize,
@@ -75,8 +77,9 @@ where
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
-    /// Verifies that the given leaf data is present at the given index in the Merkle tree with the
-    /// given root. The index is given by its little-endian bits.
+    /// Verifies that the given leaf data is present at the given index in the
+    /// Merkle tree with the given root. The index is given by its
+    /// little-endian bits.
     pub fn verify_merkle_proof<H: AlgebraicHasher<F>>(
         &mut self,
         leaf_data: Vec<Target>,
@@ -88,8 +91,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         self.verify_merkle_proof_to_cap::<H>(leaf_data, leaf_index_bits, &merkle_cap, proof);
     }
 
-    /// Verifies that the given leaf data is present at the given index in the Merkle tree with the
-    /// given cap. The index is given by its little-endian bits.
+    /// Verifies that the given leaf data is present at the given index in the
+    /// Merkle tree with the given cap. The index is given by its
+    /// little-endian bits.
     pub fn verify_merkle_proof_to_cap<H: AlgebraicHasher<F>>(
         &mut self,
         leaf_data: Vec<Target>,
@@ -107,8 +111,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         );
     }
 
-    /// Same as `verify_merkle_proof_to_cap`, except with the final "cap index" as separate parameter,
-    /// rather than being contained in `leaf_index_bits`.
+    /// Same as `verify_merkle_proof_to_cap`, except with the final "cap index"
+    /// as separate parameter, rather than being contained in
+    /// `leaf_index_bits`.
     pub(crate) fn verify_merkle_proof_to_cap_with_cap_index<H: AlgebraicHasher<F>>(
         &mut self,
         leaf_data: Vec<Target>,

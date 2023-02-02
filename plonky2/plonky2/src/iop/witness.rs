@@ -131,8 +131,8 @@ pub trait Witness<F: Field> {
         self.set_target(target.target, F::from_bool(value))
     }
 
-    /// Set the targets in a `ProofWithPublicInputsTarget` to their corresponding values in a
-    /// `ProofWithPublicInputs`.
+    /// Set the targets in a `ProofWithPublicInputsTarget` to their
+    /// corresponding values in a `ProofWithPublicInputs`.
     fn set_proof_with_pis_target<C: GenericConfig<D, F = F>, const D: usize>(
         &mut self,
         proof_with_pis_target: &ProofWithPublicInputsTarget<D>,
@@ -158,7 +158,8 @@ pub trait Witness<F: Field> {
         self.set_proof_target(pt, proof);
     }
 
-    /// Set the targets in a `ProofTarget` to their corresponding values in a `Proof`.
+    /// Set the targets in a `ProofTarget` to their corresponding values in a
+    /// `Proof`.
     fn set_proof_target<C: GenericConfig<D, F = F>, const D: usize>(
         &mut self,
         proof_target: &ProofTarget<D>,
@@ -280,8 +281,9 @@ impl<F: Field> Witness<F> for PartialWitness<F> {
     }
 }
 
-/// `PartitionWitness` holds a disjoint-set forest of the targets respecting a circuit's copy constraints.
-/// The value of a target is defined to be the value of its root in the forest.
+/// `PartitionWitness` holds a disjoint-set forest of the targets respecting a
+/// circuit's copy constraints. The value of a target is defined to be the value
+/// of its root in the forest.
 #[derive(Clone)]
 pub struct PartitionWitness<'a, F: Field> {
     pub values: Vec<Option<F>>,
@@ -300,8 +302,8 @@ impl<'a, F: Field> PartitionWitness<'a, F> {
         }
     }
 
-    /// Set a `Target`. On success, returns the representative index of the newly-set target. If the
-    /// target was already set, returns `None`.
+    /// Set a `Target`. On success, returns the representative index of the
+    /// newly-set target. If the target was already set, returns `None`.
     pub(crate) fn set_target_returning_rep(&mut self, target: Target, value: F) -> Option<usize> {
         let rep_index = self.representative_map[self.target_index(target)];
         let rep_value = &mut self.values[rep_index];

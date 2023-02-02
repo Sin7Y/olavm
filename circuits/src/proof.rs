@@ -23,6 +23,7 @@ use crate::permutation::GrandProductChallengeSet;
 #[serde(bound = "")]
 pub struct AllProof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> {
     pub stark_proofs: [StarkProof<F, C, D>; NUM_TABLES],
+    pub compress_challenges: [F; NUM_TABLES],
     pub public_values: PublicValues,
 }
 
@@ -40,7 +41,8 @@ pub(crate) struct AllProofChallenges<F: RichField + Extendable<D>, const D: usiz
 #[allow(unused)] // TODO: should be used soon
 pub(crate) struct AllChallengerState<F: RichField + Extendable<D>, const D: usize> {
     /// Sponge state of the challenger before starting each proof,
-    /// along with the final state after all proofs are done. This final state isn't strictly needed.
+    /// along with the final state after all proofs are done. This final state
+    /// isn't strictly needed.
     pub states: [[F; SPONGE_WIDTH]; NUM_TABLES + 1],
     pub ctl_challenges: GrandProductChallengeSet<F>,
 }
@@ -78,7 +80,8 @@ pub struct BlockMetadata {
 }
 
 /// Memory values which are public.
-/// Note: All the larger integers are encoded with 32-bit limbs in little-endian order.
+/// Note: All the larger integers are encoded with 32-bit limbs in little-endian
+/// order.
 pub struct PublicValuesTarget {
     pub trie_roots_before: TrieRootsTarget,
     pub trie_roots_after: TrieRootsTarget,
@@ -181,9 +184,11 @@ pub struct StarkOpeningSet<F: RichField + Extendable<D>, const D: usize> {
     pub local_values: Vec<F::Extension>,
     /// Openings of trace polynomials at `g * zeta`.
     pub next_values: Vec<F::Extension>,
-    /// Openings of permutations and cross-table lookups `Z` polynomials at `zeta`.
+    /// Openings of permutations and cross-table lookups `Z` polynomials at
+    /// `zeta`.
     pub permutation_ctl_zs: Vec<F::Extension>,
-    /// Openings of permutations and cross-table lookups `Z` polynomials at `g * zeta`.
+    /// Openings of permutations and cross-table lookups `Z` polynomials at `g *
+    /// zeta`.
     pub permutation_ctl_zs_next: Vec<F::Extension>,
     /// Openings of cross-table lookups `Z` polynomials at `g^-1`.
     pub ctl_zs_last: Vec<F>,

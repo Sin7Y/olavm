@@ -40,7 +40,8 @@ impl<F: RichField + Extendable<D> + Poseidon, const D: usize> PoseidonMdsGate<F,
         (SPONGE_WIDTH + i) * D..(SPONGE_WIDTH + i + 1) * D
     }
 
-    // Following are methods analogous to ones in `Poseidon`, but for extension algebras.
+    // Following are methods analogous to ones in `Poseidon`, but for extension
+    // algebras.
 
     /// Same as `mds_row_shf` for an extension algebra of `F`.
     fn mds_row_shf_algebra(

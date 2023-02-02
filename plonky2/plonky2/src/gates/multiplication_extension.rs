@@ -14,8 +14,9 @@ use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::circuit_data::CircuitConfig;
 use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
-/// A gate which can perform a weighted multiplication, i.e. `result = c0 x y`. If the config
-/// supports enough routed wires, it can support several such operations in one gate.
+/// A gate which can perform a weighted multiplication, i.e. `result = c0 x y`.
+/// If the config supports enough routed wires, it can support several such
+/// operations in one gate.
 #[derive(Debug, Clone)]
 pub struct MulExtensionGate<const D: usize> {
     /// Number of multiplications performed by the gate.
@@ -29,7 +30,8 @@ impl<const D: usize> MulExtensionGate<D> {
         }
     }
 
-    /// Determine the maximum number of operations that can fit in one gate for the given config.
+    /// Determine the maximum number of operations that can fit in one gate for
+    /// the given config.
     pub(crate) fn num_ops(config: &CircuitConfig) -> usize {
         let wires_per_op = 3 * D;
         config.num_routed_wires / wires_per_op

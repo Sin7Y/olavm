@@ -407,8 +407,10 @@ pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
     //ary[cmp::DIFF_LIMB_LO_PERMUTED] = input[cmp::DIFF_LIMB_LO_PERMUTED];
     //ary[cmp::DIFF_LIMB_HI_PERMUTED] = input[cmp::DIFF_LIMB_HI_PERMUTED];
     //ary[cmp::FIX_RANGE_CHECK_U16] = input[cmp::FIX_RANGE_CHECK_U16];
-    //ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO];
-    //ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] = input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI];
+    //ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO] =
+    // input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_LO];
+    // ary[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI] =
+    // input[cmp::FIX_RANGE_CHECK_U16_PERMUTED_HI];
 
     ary
 }

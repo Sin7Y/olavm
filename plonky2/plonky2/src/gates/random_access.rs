@@ -21,7 +21,8 @@ use crate::plonk::vars::{
     EvaluationVarsBasePacked,
 };
 
-/// A gate for checking that a particular element of a list matches a given value.
+/// A gate for checking that a particular element of a list matches a given
+/// value.
 #[derive(Copy, Clone, Debug)]
 pub struct RandomAccessGate<F: RichField + Extendable<D>, const D: usize> {
     /// Number of bits in the index (log2 of the list size).
@@ -104,8 +105,8 @@ impl<F: RichField + Extendable<D>, const D: usize> RandomAccessGate<F, D> {
         self.start_extra_constants() + self.num_extra_constants
     }
 
-    /// An intermediate wire where the prover gives the (purported) binary decomposition of the
-    /// index.
+    /// An intermediate wire where the prover gives the (purported) binary
+    /// decomposition of the index.
     pub fn wire_bit(&self, i: usize, copy: usize) -> usize {
         debug_assert!(i < self.bits);
         debug_assert!(copy < self.num_copies);
@@ -143,8 +144,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for RandomAccessGa
                 .fold(F::Extension::ZERO, |acc, &b| acc.double() + b);
             constraints.push(reconstructed_index - access_index);
 
-            // Repeatedly fold the list, selecting the left or right item from each pair based on
-            // the corresponding bit.
+            // Repeatedly fold the list, selecting the left or right item from each pair
+            // based on the corresponding bit.
             for b in bits {
                 list_items = list_items
                     .iter()
@@ -208,8 +209,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for RandomAccessGa
                 .fold(zero, |acc, &b| builder.mul_add_extension(acc, two, b));
             constraints.push(builder.sub_extension(reconstructed_index, access_index));
 
-            // Repeatedly fold the list, selecting the left or right item from each pair based on
-            // the corresponding bit.
+            // Repeatedly fold the list, selecting the left or right item from each pair
+            // based on the corresponding bit.
             for b in bits {
                 list_items = list_items
                     .iter()
@@ -218,7 +219,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for RandomAccessGa
                     .collect()
             }
 
-            // Check that the one remaining element after the folding is the claimed element.
+            // Check that the one remaining element after the folding is the claimed
+            // element.
             debug_assert_eq!(list_items.len(), 1);
             constraints.push(builder.sub_extension(list_items[0], claimed_element));
         }
@@ -301,8 +303,8 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D>
             let reconstructed_index = bits.iter().rev().fold(P::ZEROS, |acc, &b| acc + acc + b);
             yield_constr.one(reconstructed_index - access_index);
 
-            // Repeatedly fold the list, selecting the left or right item from each pair based on
-            // the corresponding bit.
+            // Repeatedly fold the list, selecting the left or right item from each pair
+            // based on the corresponding bit.
             for b in bits {
                 list_items = list_items
                     .iter()
@@ -410,8 +412,8 @@ mod tests {
         type F = <C as GenericConfig<D>>::F;
         type FF = <C as GenericConfig<D>>::FE;
 
-        /// Returns the local wires for a random access gate given the vectors, elements to compare,
-        /// and indices.
+        /// Returns the local wires for a random access gate given the vectors,
+        /// elements to compare, and indices.
         fn get_wires(
             bits: usize,
             lists: Vec<Vec<F>>,

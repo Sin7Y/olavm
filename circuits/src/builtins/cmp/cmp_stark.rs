@@ -29,11 +29,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
     // if op0 >= op1 is true
     //    diff = op0 - op1  is in [0, U32)
     // if op0 >= op1 is false
-    //    diff = op0 - op1 < 0; as this is in finite field, so diff = P + (op0 - op1)
-    // As P =  2^64 - 2^32 + 1; op0 - op1 in (-U32, 0)
+    //    diff = op0 - op1 < 0; as this is in finite field, so diff = P + (op0 -
+    // op1) As P =  2^64 - 2^32 + 1; op0 - op1 in (-U32, 0)
     // So P + (op0 - op1) > U32
-    // so if we Constraint the diff is U32, RC(diff), we could get the GTE relation between op0, op1
-    // The constraints is should be:
+    // so if we Constraint the diff is U32, RC(diff), we could get the GTE relation
+    // between op0, op1 The constraints is should be:
     // 1. addition check
     //       op0 = diff + op1
     // 2. rangecheck for diff

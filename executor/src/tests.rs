@@ -35,7 +35,7 @@ fn add_mul_decode() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -92,7 +92,7 @@ fn fibo_use_loop_decode() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -144,7 +144,7 @@ fn memory_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -185,7 +185,7 @@ fn range_check_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -234,7 +234,7 @@ fn bitwise_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -282,7 +282,7 @@ fn comparison_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -341,7 +341,7 @@ fn call_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -421,7 +421,7 @@ fn fibo_use_loop_memory_decode() {
 
     let mut process = Process::new();
     let start = Instant::now();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
     let exec_time = start.elapsed();
     println!(
         "exec_time: {}, exec steps: {}",
@@ -497,7 +497,7 @@ fn fibo_use_loop_decode_bench() {
 
     let mut process = Process::new();
     let start = Instant::now();
-    process.execute(&mut program, true).unwrap();
+    process.execute(&mut program).unwrap();
     let exec_time = start.elapsed();
     println!(
         "exec_time: {}, exec steps: {}",

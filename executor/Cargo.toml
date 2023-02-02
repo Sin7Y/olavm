@@ -7,7 +7,7 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
-core = { package = "core", path = "../core", version = "0.1.0", default-features = false }
+core = { package = "core", path = "../core", version = "0.1.0"}
 log = "0.4"
 env_logger = "0.6"
 serde_json = "1"

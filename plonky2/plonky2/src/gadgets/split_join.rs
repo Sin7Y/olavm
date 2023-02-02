@@ -9,10 +9,10 @@ use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
-    /// Split the given integer into a list of wires, where each one represents a
-    /// bit of the integer, with little-endian ordering.
-    /// Verifies that the decomposition is correct by using `k` `BaseSum<2>` gates
-    /// with `k` such that `k * num_routed_wires >= num_bits`.
+    /// Split the given integer into a list of wires, where each one represents
+    /// a bit of the integer, with little-endian ordering.
+    /// Verifies that the decomposition is correct by using `k` `BaseSum<2>`
+    /// gates with `k` such that `k * num_routed_wires >= num_bits`.
     pub fn split_le(&mut self, integer: Target, num_bits: usize) -> Vec<BoolTarget> {
         if num_bits == 0 {
             return Vec::new();
@@ -26,7 +26,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let mut bits = Vec::with_capacity(num_bits);
         for &gate in &gates {
             for limb_column in gate_type.limbs() {
-                // `new_unsafe` is safe here because BaseSumGate::<2> forces it to be in `{0, 1}`.
+                // `new_unsafe` is safe here because BaseSumGate::<2> forces it to be in `{0,
+                // 1}`.
                 bits.push(BoolTarget::new_unsafe(Target::wire(gate, limb_column)));
             }
         }
@@ -98,8 +99,9 @@ impl<F: RichField> SimpleGenerator<F> for WireSplitGenerator {
         for &gate in &self.gates {
             let sum = Target::wire(gate, BaseSumGate::<2>::WIRE_SUM);
 
-            // If num_limbs >= 64, we don't need to truncate since `integer_value` is already
-            // limited to 64 bits, and trying to do so would cause overflow. Hence the conditional.
+            // If num_limbs >= 64, we don't need to truncate since `integer_value` is
+            // already limited to 64 bits, and trying to do so would cause
+            // overflow. Hence the conditional.
             let mut truncated_value = integer_value;
             if self.num_limbs < 64 {
                 truncated_value = integer_value & ((1 << self.num_limbs) - 1);

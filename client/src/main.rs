@@ -10,7 +10,6 @@ use core::program::Program;
 use core::trace::trace::Trace;
 use executor::Process;
 use log::debug;
-use plonky2::field::types::Field;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::fs::File;
@@ -79,9 +78,7 @@ fn main() {
             }
 
             let mut process = Process::new();
-            process
-                .execute(&mut program, true)
-                .expect("OlaVM execute fail");
+            process.execute(&mut program).expect("OlaVM execute fail");
             let path = sub_matches.get_one::<String>("output").expect("required");
             println!("Output trace file path: {}", path);
             let file = File::create(path).unwrap();
@@ -134,13 +131,7 @@ fn main() {
             let proof_bytes = proof_str.as_bytes();
             println!("Proof loaded, size: {} bytes", proof_bytes.len());
 
-            let mut all_stark = AllStark::<F, D>::default();
-            // TODO: fix by add challenge to StarkProof
-            all_stark.cpu_stark.set_compress_challenge(F::ZERO).unwrap();
-            all_stark
-                .bitwise_stark
-                .set_compress_challenge(F::ZERO)
-                .unwrap();
+            let all_stark = AllStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
             match verify_proof(all_stark, proof, &config) {
                 Err(error) => println!("Verify failed due to: {error}"),

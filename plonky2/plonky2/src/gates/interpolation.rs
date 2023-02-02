@@ -8,9 +8,10 @@ use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::target::Target;
 use crate::plonk::circuit_builder::CircuitBuilder;
 
-/// Trait for gates which interpolate a polynomial, whose points are a (base field) coset of the multiplicative subgroup
-/// with the given size, and whose values are extension field elements, given by input wires.
-/// Outputs the evaluation of the interpolant at a given (extension field) evaluation point.
+/// Trait for gates which interpolate a polynomial, whose points are a (base
+/// field) coset of the multiplicative subgroup with the given size, and whose
+/// values are extension field elements, given by input wires. Outputs the
+/// evaluation of the interpolant at a given (extension field) evaluation point.
 pub(crate) trait InterpolationGate<F: RichField + Extendable<D>, const D: usize>:
     Gate<F, D> + Copy
 {
@@ -58,8 +59,9 @@ pub(crate) trait InterpolationGate<F: RichField + Extendable<D>, const D: usize>
         self.start_evaluation_value() + D
     }
 
-    /// The number of routed wires required in the typical usage of this gate, where the points to
-    /// interpolate, the evaluation point, and the corresponding value are all routed.
+    /// The number of routed wires required in the typical usage of this gate,
+    /// where the points to interpolate, the evaluation point, and the
+    /// corresponding value are all routed.
     fn num_routed_wires(&self) -> usize {
         self.start_coeffs()
     }
@@ -77,8 +79,9 @@ pub(crate) trait InterpolationGate<F: RichField + Extendable<D>, const D: usize>
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
-    /// Interpolates a polynomial, whose points are a coset of the multiplicative subgroup with the
-    /// given size, and whose values are given. Returns the evaluation of the interpolant at
+    /// Interpolates a polynomial, whose points are a coset of the
+    /// multiplicative subgroup with the given size, and whose values are
+    /// given. Returns the evaluation of the interpolant at
     /// `evaluation_point`.
     pub(crate) fn interpolate_coset<G: InterpolationGate<F, D>>(
         &mut self,

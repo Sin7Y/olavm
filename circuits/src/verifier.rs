@@ -44,13 +44,25 @@ where
     let nums_permutation_zs = all_stark.nums_permutation_zs(config);
 
     let AllStark {
-        cpu_stark,
+        mut cpu_stark,
         memory_stark,
-        bitwise_stark,
+        mut bitwise_stark,
         cmp_stark,
         rangecheck_stark,
         cross_table_lookups,
     } = all_stark;
+
+    if cpu_stark.get_compress_challenge().is_none() {
+        cpu_stark
+            .set_compress_challenge(all_proof.compress_challenges[Table::Cpu as usize])
+            .unwrap();
+    }
+
+    if bitwise_stark.get_compress_challenge().is_none() {
+        bitwise_stark
+            .set_compress_challenge(all_proof.compress_challenges[Table::Bitwise as usize])
+            .unwrap();
+    }
 
     let ctl_vars_per_table = CtlCheckVars::from_proofs(
         &all_proof.stark_proofs,
@@ -168,14 +180,17 @@ where
     );
     let vanishing_polys_zeta = consumer.accumulators();
 
-    // Check each polynomial identity, of the form `vanishing(x) = Z_H(x) quotient(x)`, at zeta.
+    // Check each polynomial identity, of the form `vanishing(x) = Z_H(x)
+    // quotient(x)`, at zeta.
     let zeta_pow_deg = challenges.stark_zeta.exp_power_of_2(degree_bits);
     let z_h_zeta = zeta_pow_deg - F::Extension::ONE;
-    // `quotient_polys_zeta` holds `num_challenges * quotient_degree_factor` evaluations.
-    // Each chunk of `quotient_degree_factor` holds the evaluations of `t_0(zeta),...,t_{quotient_degree_factor-1}(zeta)`
-    // where the "real" quotient polynomial is `t(X) = t_0(X) + t_1(X)*X^n + t_2(X)*X^{2n} + ...`.
-    // So to reconstruct `t(zeta)` we can compute `reduce_with_powers(chunk, zeta^n)` for each
-    // `quotient_degree_factor`-sized chunk of the original evaluations.
+    // `quotient_polys_zeta` holds `num_challenges * quotient_degree_factor`
+    // evaluations. Each chunk of `quotient_degree_factor` holds the evaluations
+    // of `t_0(zeta),...,t_{quotient_degree_factor-1}(zeta)` where the "real"
+    // quotient polynomial is `t(X) = t_0(X) + t_1(X)*X^n + t_2(X)*X^{2n} + ...`.
+    // So to reconstruct `t(zeta)` we can compute `reduce_with_powers(chunk,
+    // zeta^n)` for each `quotient_degree_factor`-sized chunk of the original
+    // evaluations.
     for (i, chunk) in quotient_polys
         .chunks(stark.quotient_degree_factor())
         .enumerate()
@@ -263,7 +278,8 @@ where
 
 /// Evaluate the Lagrange polynomials `L_0` and `L_(n-1)` at a point `x`.
 /// `L_0(x) = (x^n - 1)/(n * (x - 1))`
-/// `L_(n-1)(x) = (x^n - 1)/(n * (g * x - 1))`, with `g` the first element of the subgroup.
+/// `L_(n-1)(x) = (x^n - 1)/(n * (g * x - 1))`, with `g` the first element of
+/// the subgroup.
 fn eval_l_0_and_l_last<F: Field>(log_n: usize, x: F) -> (F, F) {
     let n = F::from_canonical_usize(1 << log_n);
     let g = F::primitive_root_of_unity(log_n);

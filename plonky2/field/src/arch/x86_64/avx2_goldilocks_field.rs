@@ -10,11 +10,12 @@ use crate::ops::Square;
 use crate::packed::PackedField;
 use crate::types::{Field, Field64};
 
-// Ideally `Avx2GoldilocksField` would wrap `__m256i`. Unfortunately, `__m256i` has an alignment of
-// 32B, which would preclude us from casting `[GoldilocksField; 4]` (alignment 8B) to
-// `Avx2GoldilocksField`. We need to ensure that `Avx2GoldilocksField` has the same alignment as
-// `GoldilocksField`. Thus we wrap `[GoldilocksField; 4]` and use the `new` and `get` methods to
-// convert to and from `__m256i`.
+// Ideally `Avx2GoldilocksField` would wrap `__m256i`. Unfortunately, `__m256i`
+// has an alignment of 32B, which would preclude us from casting
+// `[GoldilocksField; 4]` (alignment 8B) to `Avx2GoldilocksField`. We need to
+// ensure that `Avx2GoldilocksField` has the same alignment as
+// `GoldilocksField`. Thus we wrap `[GoldilocksField; 4]` and use the `new` and
+// `get` methods to convert to and from `__m256i`.
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct Avx2GoldilocksField(pub [GoldilocksField; 4]);
@@ -249,41 +250,42 @@ impl Sum for Avx2GoldilocksField {
 // 1. Intel Intrinsics Guide for explanation of each intrinsic:
 //    https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 // 2. uops.info lists micro-ops for each instruction: https://uops.info/table.html
-// 3. Intel optimization manual for introduction to x86 vector extensions and best practices:
-//    https://software.intel.com/content/www/us/en/develop/download/intel-64-and-ia-32-architectures-optimization-reference-manual.html
+// 3. Intel optimization manual for introduction to x86 vector extensions and
+// best practices:    https://software.intel.com/content/www/us/en/develop/download/intel-64-and-ia-32-architectures-optimization-reference-manual.html
 
 // Preliminary knowledge:
-// 1. Vector code usually avoids branching. Instead of branches, we can do input selection with
-//    _mm256_blendv_epi8 or similar instruction. If all we're doing is conditionally zeroing a
-//    vector element then _mm256_and_si256 or _mm256_andnot_si256 may be used and are cheaper.
+// 1. Vector code usually avoids branching. Instead of branches, we can do input
+// selection with    _mm256_blendv_epi8 or similar instruction. If all we're
+// doing is conditionally zeroing a    vector element then _mm256_and_si256 or
+// _mm256_andnot_si256 may be used and are cheaper.
 //
-// 2. AVX does not support addition with carry but 128-bit (2-word) addition can be easily
-//    emulated. The method recognizes that for a + b overflowed iff (a + b) < a:
-//        i. res_lo = a_lo + b_lo
+// 2. AVX does not support addition with carry but 128-bit (2-word) addition can
+// be easily    emulated. The method recognizes that for a + b overflowed iff (a
+// + b) < a:        i. res_lo = a_lo + b_lo
 //       ii. carry_mask = res_lo < a_lo
 //      iii. res_hi = a_hi + b_hi - carry_mask
-//    Notice that carry_mask is subtracted, not added. This is because AVX comparison instructions
-//    return -1 (all bits 1) for true and 0 for false.
+//    Notice that carry_mask is subtracted, not added. This is because AVX
+// comparison instructions    return -1 (all bits 1) for true and 0 for false.
 //
-// 3. AVX does not have unsigned 64-bit comparisons. Those can be emulated with signed comparisons
-//    by recognizing that a <u b iff a + (1 << 63) <s b + (1 << 63), where the addition wraps around
-//    and the comparisons are unsigned and signed respectively. The shift function adds/subtracts
-//    1 << 63 to enable this trick.
-//      Example: addition with carry.
+// 3. AVX does not have unsigned 64-bit comparisons. Those can be emulated with
+// signed comparisons    by recognizing that a <u b iff a + (1 << 63) <s b + (1
+// << 63), where the addition wraps around    and the comparisons are unsigned
+// and signed respectively. The shift function adds/subtracts    1 << 63 to
+// enable this trick.      Example: addition with carry.
 //        i. a_lo_s = shift(a_lo)
 //       ii. res_lo_s = a_lo_s + b_lo
 //      iii. carry_mask = res_lo_s <s a_lo_s
 //       iv. res_lo = shift(res_lo_s)
 //        v. res_hi = a_hi + b_hi - carry_mask
-//    The suffix _s denotes a value that has been shifted by 1 << 63. The result of addition is
-//    shifted if exactly one of the operands is shifted, as is the case on line ii. Line iii.
-//    performs a signed comparison res_lo_s <s a_lo_s on shifted values to emulate unsigned
-//    comparison res_lo <u a_lo on unshifted values. Finally, line iv. reverses the shift so the
-//    result can be returned.
-//      When performing a chain of calculations, we can often save instructions by letting the shift
-//    propagate through and only undoing it when necessary. For example, to compute the addition of
-//    three two-word (128-bit) numbers we can do:
-//        i. a_lo_s = shift(a_lo)
+//    The suffix _s denotes a value that has been shifted by 1 << 63. The result
+// of addition is    shifted if exactly one of the operands is shifted, as is
+// the case on line ii. Line iii.    performs a signed comparison res_lo_s <s
+// a_lo_s on shifted values to emulate unsigned    comparison res_lo <u a_lo on
+// unshifted values. Finally, line iv. reverses the shift so the    result can
+// be returned.      When performing a chain of calculations, we can often save
+// instructions by letting the shift    propagate through and only undoing it
+// when necessary. For example, to compute the addition of    three two-word
+// (128-bit) numbers we can do:        i. a_lo_s = shift(a_lo)
 //       ii. tmp_lo_s = a_lo_s + b_lo
 //      iii. tmp_carry_mask = tmp_lo_s <s a_lo_s
 //       iv. tmp_hi = a_hi + b_hi - tmp_carry_mask
@@ -291,25 +293,25 @@ impl Sum for Avx2GoldilocksField {
 //       vi. res_carry_mask = res_lo_s <s tmp_lo_s
 //      vii. res_lo = shift(res_lo_s)
 //     viii. res_hi = tmp_hi + c_hi - res_carry_mask
-//    Notice that the above 3-value addition still only requires two calls to shift, just like our
-//    2-value addition.
+//    Notice that the above 3-value addition still only requires two calls to
+// shift, just like our    2-value addition.
 
 const SIGN_BIT: __m256i = unsafe { transmute([i64::MIN; 4]) };
 const SHIFTED_FIELD_ORDER: __m256i =
     unsafe { transmute([GoldilocksField::ORDER ^ (i64::MIN as u64); 4]) };
 const EPSILON: __m256i = unsafe { transmute([GoldilocksField::ORDER.wrapping_neg(); 4]) };
 
-/// Add 2^63 with overflow. Needed to emulate unsigned comparisons (see point 3. in
-/// packed_prime_field.rs).
+/// Add 2^63 with overflow. Needed to emulate unsigned comparisons (see point 3.
+/// in packed_prime_field.rs).
 #[inline]
 pub unsafe fn shift(x: __m256i) -> __m256i {
     _mm256_xor_si256(x, SIGN_BIT)
 }
 
 /// Convert to canonical representation.
-/// The argument is assumed to be shifted by 1 << 63 (i.e. x_s = x + 1<<63, where x is the field
-///   value). The returned value is similarly shifted by 1 << 63 (i.e. we return y_s = y + (1<<63),
-///   where 0 <= y < FIELD_ORDER).
+/// The argument is assumed to be shifted by 1 << 63 (i.e. x_s = x + 1<<63,
+/// where x is the field   value). The returned value is similarly shifted by 1
+/// << 63 (i.e. we return y_s = y + (1<<63),   where 0 <= y < FIELD_ORDER).
 #[inline]
 unsafe fn canonicalize_s(x_s: __m256i) -> __m256i {
     // If x >= FIELD_ORDER then corresponding mask bits are all 0; otherwise all 1.
@@ -319,8 +321,8 @@ unsafe fn canonicalize_s(x_s: __m256i) -> __m256i {
     _mm256_add_epi64(x_s, wrapback_amt)
 }
 
-/// Addition u64 + u64 -> u64. Assumes that x + y < 2^64 + FIELD_ORDER. The second argument is
-/// pre-shifted by 1 << 63. The result is similarly shifted.
+/// Addition u64 + u64 -> u64. Assumes that x + y < 2^64 + FIELD_ORDER. The
+/// second argument is pre-shifted by 1 << 63. The result is similarly shifted.
 #[inline]
 unsafe fn add_no_double_overflow_64_64s_s(x: __m256i, y_s: __m256i) -> __m256i {
     let res_wrapped_s = _mm256_add_epi64(x, y_s);
@@ -355,17 +357,19 @@ unsafe fn neg(y: __m256i) -> __m256i {
     _mm256_sub_epi64(SHIFTED_FIELD_ORDER, canonicalize_s(y_s))
 }
 
-/// Full 64-bit by 64-bit multiplication. This emulated multiplication is 1.33x slower than the
-/// scalar instruction, but may be worth it if we want our data to live in vector registers.
+/// Full 64-bit by 64-bit multiplication. This emulated multiplication is 1.33x
+/// slower than the scalar instruction, but may be worth it if we want our data
+/// to live in vector registers.
 #[inline]
 unsafe fn mul64_64(x: __m256i, y: __m256i) -> (__m256i, __m256i) {
-    // We want to move the high 32 bits to the low position. The multiplication instruction ignores
-    // the high 32 bits, so it's ok to just duplicate it into the low position. This duplication can
-    // be done on port 5; bitshifts run on ports 0 and 1, competing with multiplication.
-    //   This instruction is only provided for 32-bit floats, not integers. Idk why Intel makes the
-    // distinction; the casts are free and it guarantees that the exact bit pattern is preserved.
-    // Using a swizzle instruction of the wrong domain (float vs int) does not increase latency
-    // since Haswell.
+    // We want to move the high 32 bits to the low position. The multiplication
+    // instruction ignores the high 32 bits, so it's ok to just duplicate it
+    // into the low position. This duplication can be done on port 5; bitshifts
+    // run on ports 0 and 1, competing with multiplication.   This instruction
+    // is only provided for 32-bit floats, not integers. Idk why Intel makes the
+    // distinction; the casts are free and it guarantees that the exact bit pattern
+    // is preserved. Using a swizzle instruction of the wrong domain (float vs
+    // int) does not increase latency since Haswell.
     let x_hi = _mm256_castps_si256(_mm256_movehdup_ps(_mm256_castsi256_ps(x)));
     let y_hi = _mm256_castps_si256(_mm256_movehdup_ps(_mm256_castsi256_ps(y)));
 
@@ -389,15 +393,16 @@ unsafe fn mul64_64(x: __m256i, y: __m256i) -> (__m256i, __m256i) {
     let t1_hi = _mm256_srli_epi64::<32>(t1);
     let res_hi = _mm256_add_epi64(t2, t1_hi);
 
-    // Form res_lo by combining the low half of mul_ll with the low half of t1 (shifted into high
-    // position).
+    // Form res_lo by combining the low half of mul_ll with the low half of t1
+    // (shifted into high position).
     let t1_lo = _mm256_castps_si256(_mm256_moveldup_ps(_mm256_castsi256_ps(t1)));
     let res_lo = _mm256_blend_epi32::<0xaa>(mul_ll, t1_lo);
 
     (res_hi, res_lo)
 }
 
-/// Full 64-bit squaring. This routine is 1.2x faster than the scalar instruction.
+/// Full 64-bit squaring. This routine is 1.2x faster than the scalar
+/// instruction.
 #[inline]
 unsafe fn square64(x: __m256i) -> (__m256i, __m256i) {
     // Get high 32 bits of x. See comment in mul64_64_s.
@@ -414,43 +419,49 @@ unsafe fn square64(x: __m256i) -> (__m256i, __m256i) {
     let t0_hi = _mm256_srli_epi64::<31>(t0);
     let res_hi = _mm256_add_epi64(mul_hh, t0_hi);
 
-    // Form low result by adding the mul_ll and the low 31 bits of mul_lh (shifted to the high
-    // position).
+    // Form low result by adding the mul_ll and the low 31 bits of mul_lh (shifted
+    // to the high position).
     let mul_lh_lo = _mm256_slli_epi64::<33>(mul_lh);
     let res_lo = _mm256_add_epi64(mul_ll, mul_lh_lo);
 
     (res_hi, res_lo)
 }
 
-/// Goldilocks addition of a "small" number. `x_s` is pre-shifted by 2**63. `y` is assumed to be <=
-/// `0xffffffff00000000`. The result is shifted by 2**63.
+/// Goldilocks addition of a "small" number. `x_s` is pre-shifted by 2**63. `y`
+/// is assumed to be <= `0xffffffff00000000`. The result is shifted by 2**63.
 #[inline]
 unsafe fn add_small_64s_64_s(x_s: __m256i, y: __m256i) -> __m256i {
     let res_wrapped_s = _mm256_add_epi64(x_s, y);
-    // 32-bit compare is faster than 64-bit. It's safe as long as x > res_wrapped iff x >> 32 >
-    // res_wrapped >> 32. The case of x >> 32 > res_wrapped >> 32 is trivial and so is <. The case
-    // where x >> 32 = res_wrapped >> 32 remains. If x >> 32 = res_wrapped >> 32, then y >> 32 =
-    // 0xffffffff and the addition of the low 32 bits generated a carry. This can never occur if y
+    // 32-bit compare is faster than 64-bit. It's safe as long as x > res_wrapped
+    // iff x >> 32 > res_wrapped >> 32. The case of x >> 32 > res_wrapped >> 32
+    // is trivial and so is <. The case where x >> 32 = res_wrapped >> 32
+    // remains. If x >> 32 = res_wrapped >> 32, then y >> 32 = 0xffffffff and
+    // the addition of the low 32 bits generated a carry. This can never occur if y
     // <= 0xffffffff00000000: if y >> 32 = 0xffffffff, then no carry can occur.
     let mask = _mm256_cmpgt_epi32(x_s, res_wrapped_s); // -1 if overflowed else 0.
-                                                       // The mask contains 0xffffffff in the high 32 bits if wraparound occured and 0 otherwise.
+                                                       // The mask contains 0xffffffff in the high 32 bits if wraparound occured and 0
+                                                       // otherwise.
     let wrapback_amt = _mm256_srli_epi64::<32>(mask); // -FIELD_ORDER if overflowed else 0.
     let res_s = _mm256_add_epi64(res_wrapped_s, wrapback_amt);
     res_s
 }
 
-/// Goldilocks subtraction of a "small" number. `x_s` is pre-shifted by 2**63. `y` is assumed to be
-/// <= `0xffffffff00000000`. The result is shifted by 2**63.
+/// Goldilocks subtraction of a "small" number. `x_s` is pre-shifted by 2**63.
+/// `y` is assumed to be <= `0xffffffff00000000`. The result is shifted by
+/// 2**63.
 #[inline]
 unsafe fn sub_small_64s_64_s(x_s: __m256i, y: __m256i) -> __m256i {
     let res_wrapped_s = _mm256_sub_epi64(x_s, y);
-    // 32-bit compare is faster than 64-bit. It's safe as long as res_wrapped > x iff res_wrapped >>
-    // 32 > x >> 32. The case of res_wrapped >> 32 > x >> 32 is trivial and so is <. The case where
-    // res_wrapped >> 32 = x >> 32 remains. If res_wrapped >> 32 = x >> 32, then y >> 32 =
-    // 0xffffffff and the subtraction of the low 32 bits generated a borrow. This can never occur if
-    // y <= 0xffffffff00000000: if y >> 32 = 0xffffffff, then no borrow can occur.
+    // 32-bit compare is faster than 64-bit. It's safe as long as res_wrapped > x
+    // iff res_wrapped >> 32 > x >> 32. The case of res_wrapped >> 32 > x >> 32
+    // is trivial and so is <. The case where res_wrapped >> 32 = x >> 32
+    // remains. If res_wrapped >> 32 = x >> 32, then y >> 32 = 0xffffffff and
+    // the subtraction of the low 32 bits generated a borrow. This can never occur
+    // if y <= 0xffffffff00000000: if y >> 32 = 0xffffffff, then no borrow can
+    // occur.
     let mask = _mm256_cmpgt_epi32(res_wrapped_s, x_s); // -1 if underflowed else 0.
-                                                       // The mask contains 0xffffffff in the high 32 bits if wraparound occured and 0 otherwise.
+                                                       // The mask contains 0xffffffff in the high 32 bits if wraparound occured and 0
+                                                       // otherwise.
     let wrapback_amt = _mm256_srli_epi64::<32>(mask); // -FIELD_ORDER if underflowed else 0.
     let res_s = _mm256_sub_epi64(res_wrapped_s, wrapback_amt);
     res_s
@@ -493,15 +504,16 @@ unsafe fn interleave2(x: __m256i, y: __m256i) -> (__m256i, __m256i) {
 
     // 1 places y_lo in the high half of x; 0 would place it in the lower half.
     let a = _mm256_inserti128_si256::<1>(x, y_lo);
-    // NB: _mm256_permute2x128_si256 could be used here as well but _mm256_inserti128_si256 has
-    // lower latency on Zen 3 processors.
+    // NB: _mm256_permute2x128_si256 could be used here as well but
+    // _mm256_inserti128_si256 has lower latency on Zen 3 processors.
 
     // Each nibble of the constant has the following semantics:
     // 0 => src1[low 128 bits]
     // 1 => src1[high 128 bits]
     // 2 => src2[low 128 bits]
     // 3 => src2[high 128 bits]
-    // The low (resp. high) nibble chooses the low (resp. high) 128 bits of the result.
+    // The low (resp. high) nibble chooses the low (resp. high) 128 bits of the
+    // result.
     let b = _mm256_permute2x128_si256::<0x31>(x, y);
 
     (a, b)

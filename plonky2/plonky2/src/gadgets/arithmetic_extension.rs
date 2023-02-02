@@ -53,7 +53,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             // Otherwise, we use an arithmetic gate.
             self.compute_arithmetic_extension_operation(operation)
         };
-        // Otherwise, we must actually perform the operation using an ArithmeticExtensionGate slot.
+        // Otherwise, we must actually perform the operation using an
+        // ArithmeticExtensionGate slot.
         self.arithmetic_results.insert(operation, result);
         result
     }
@@ -384,13 +385,15 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         self.arithmetic_extension(F::ONE, F::NEG_ONE, a_ext, b, c)
     }
 
-    /// Returns `a * b`, where `b` is in the extension field and `a` is in the base field.
+    /// Returns `a * b`, where `b` is in the extension field and `a` is in the
+    /// base field.
     pub fn scalar_mul_ext(&mut self, a: Target, b: ExtensionTarget<D>) -> ExtensionTarget<D> {
         let a_ext = self.convert_to_ext(a);
         self.mul_extension(a_ext, b)
     }
 
-    /// Returns `a * b + c`, where `b, c` are in the extension algebra and `a` in the extension field.
+    /// Returns `a * b + c`, where `b, c` are in the extension algebra and `a`
+    /// in the extension field.
     pub fn scalar_mul_add_ext_algebra(
         &mut self,
         a: ExtensionTarget<D>,
@@ -403,7 +406,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         c
     }
 
-    /// Returns `a * b`, where `b` is in the extension algebra and `a` in the extension field.
+    /// Returns `a * b`, where `b` is in the extension algebra and `a` in the
+    /// extension field.
     pub fn scalar_mul_ext_algebra(
         &mut self,
         a: ExtensionTarget<D>,
@@ -517,7 +521,8 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
     }
 }
 
-/// An iterator over the powers of a certain base element `b`: `b^0, b^1, b^2, ...`.
+/// An iterator over the powers of a certain base element `b`: `b^0, b^1, b^2,
+/// ...`.
 #[derive(Clone)]
 pub struct PowersTarget<const D: usize> {
     base: ExtensionTarget<D>,
@@ -556,7 +561,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     }
 }
 
-/// Represents an extension arithmetic operation in the circuit. Used to memoize results.
+/// Represents an extension arithmetic operation in the circuit. Used to memoize
+/// results.
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub(crate) struct ExtensionArithmeticOperation<F: Field64 + Extendable<D>, const D: usize> {
     const_0: F,

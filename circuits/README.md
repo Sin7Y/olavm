@@ -86,7 +86,7 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
 
     // execute the fibonacci program
     let mut process = Process::new();
-    process.execute(&mut program, true);
+    process.execute(&mut program);
     
 
     // generate trace for all starks
@@ -111,7 +111,7 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
     ];
 
     // generate the proof with traces from the execution of the fibonacci program
-    let all_stark = AllStark::new(cpu_beta, bitwise_beta);
+    let all_stark = AllStark::default();
     let config = StarkConfig::standard_fast_config();
     let public_values = PublicValues::default();
     let proof = prove_with_traces::<F, C, D>(
