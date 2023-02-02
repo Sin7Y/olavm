@@ -27,10 +27,11 @@ pub trait Stark<F: RichField + Extendable<D>, const D: usize>: Sync {
 
     /// Evaluate constraints at a vector of points.
     ///
-    /// The points are elements of a field `FE`, a degree `D2` extension of `F`. This lets us
-    /// evaluate constraints over a larger domain if desired. This can also be called with `FE = F`
-    /// and `D2 = 1`, in which case we are using the trivial extension, i.e. just evaluating
-    /// constraints over `F`.
+    /// The points are elements of a field `FE`, a degree `D2` extension of `F`.
+    /// This lets us evaluate constraints over a larger domain if desired.
+    /// This can also be called with `FE = F` and `D2 = 1`, in which case we
+    /// are using the trivial extension, i.e. just evaluating constraints
+    /// over `F`.
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
         vars: StarkEvaluationVars<FE, P, { Self::COLUMNS }>,
@@ -48,7 +49,8 @@ pub trait Stark<F: RichField + Extendable<D>, const D: usize>: Sync {
         self.eval_packed_generic(vars, yield_constr)
     }
 
-    /// Evaluate constraints at a single point from the degree `D` extension field.
+    /// Evaluate constraints at a single point from the degree `D` extension
+    /// field.
     fn eval_ext(
         &self,
         vars: StarkEvaluationVars<F::Extension, F::Extension, { Self::COLUMNS }>,
@@ -57,9 +59,10 @@ pub trait Stark<F: RichField + Extendable<D>, const D: usize>: Sync {
         self.eval_packed_generic(vars, yield_constr)
     }
 
-    /// Evaluate constraints at a vector of points from the degree `D` extension field. This is like
-    /// `eval_ext`, except in the context of a recursive circuit.
-    /// Note: constraints must be added through`yeld_constr.constraint(builder, constraint)` in the
+    /// Evaluate constraints at a vector of points from the degree `D` extension
+    /// field. This is like `eval_ext`, except in the context of a recursive
+    /// circuit. Note: constraints must be added
+    /// through`yeld_constr.constraint(builder, constraint)` in the
     /// same order as they are given in `eval_packed_generic`.
     fn eval_ext_circuit(
         &self,
@@ -207,8 +210,9 @@ pub trait Stark<F: RichField + Extendable<D>, const D: usize>: Sync {
         }
     }
 
-    /// Pairs of lists of columns that should be permutations of one another. A permutation argument
-    /// will be used for each such pair. Empty by default.
+    /// Pairs of lists of columns that should be permutations of one another. A
+    /// permutation argument will be used for each such pair. Empty by
+    /// default.
     fn permutation_pairs(&self) -> Vec<PermutationPair> {
         vec![]
     }
@@ -217,12 +221,14 @@ pub trait Stark<F: RichField + Extendable<D>, const D: usize>: Sync {
         !self.permutation_pairs().is_empty()
     }
 
-    /// The number of permutation argument instances that can be combined into a single constraint.
+    /// The number of permutation argument instances that can be combined into a
+    /// single constraint.
     fn permutation_batch_size(&self) -> usize {
         // The permutation argument constraints look like
         //     Z(x) \prod(...) = Z(g x) \prod(...)
-        // where each product has a number of terms equal to the batch size. So our batch size
-        // should be one less than our constraint degree, which happens to be our quotient degree.
+        // where each product has a number of terms equal to the batch size. So our
+        // batch size should be one less than our constraint degree, which
+        // happens to be our quotient degree.
         self.quotient_degree_factor()
     }
 

@@ -131,7 +131,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     }
 }
 
-/// Flatten the slice by sending every extension target to its D-sized canonical representation.
+/// Flatten the slice by sending every extension target to its D-sized canonical
+/// representation.
 pub fn flatten_target<const D: usize>(l: &[ExtensionTarget<D>]) -> Vec<Target> {
     l.iter()
         .flat_map(|x| x.to_target_array().to_vec())

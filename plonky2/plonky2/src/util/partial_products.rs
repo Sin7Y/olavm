@@ -22,8 +22,9 @@ pub(crate) fn quotient_chunk_products<F: Field>(
         .collect()
 }
 
-/// Compute partial products of the original vector `v` such that all products consist of `max_degree`
-/// or less elements. This is done until we've computed the product `P` of all elements in the vector.
+/// Compute partial products of the original vector `v` such that all products
+/// consist of `max_degree` or less elements. This is done until we've computed
+/// the product `P` of all elements in the vector.
 pub(crate) fn partial_products_and_z_gx<F: Field>(z_x: F, quotient_chunk_products: &[F]) -> Vec<F> {
     assert!(!quotient_chunk_products.is_empty());
     let mut res = Vec::new();
@@ -35,19 +36,21 @@ pub(crate) fn partial_products_and_z_gx<F: Field>(z_x: F, quotient_chunk_product
     res
 }
 
-/// Returns the length of the output of `partial_products()` on a vector of length `n`.
+/// Returns the length of the output of `partial_products()` on a vector of
+/// length `n`.
 pub(crate) fn num_partial_products(n: usize, max_degree: usize) -> usize {
     debug_assert!(max_degree > 1);
     let chunk_size = max_degree;
-    // We'll split the product into `ceil_div_usize(n, chunk_size)` chunks, but the last chunk will
-    // be associated with Z(gx) itself. Thus we subtract one to get the chunks associated with
-    // partial products.
+    // We'll split the product into `ceil_div_usize(n, chunk_size)` chunks, but the
+    // last chunk will be associated with Z(gx) itself. Thus we subtract one to
+    // get the chunks associated with partial products.
     ceil_div_usize(n, chunk_size) - 1
 }
 
-/// Checks the relationship between each pair of partial product accumulators. In particular, this
-/// sequence of accumulators starts with `Z(x)`, then contains each partial product polynomials
-/// `p_i(x)`, and finally `Z(g x)`. See the partial products section of the Plonky2 paper.
+/// Checks the relationship between each pair of partial product accumulators.
+/// In particular, this sequence of accumulators starts with `Z(x)`, then
+/// contains each partial product polynomials `p_i(x)`, and finally `Z(g x)`.
+/// See the partial products section of the Plonky2 paper.
 pub(crate) fn check_partial_products<F: Field>(
     numerators: &[F],
     denominators: &[F],
@@ -74,9 +77,10 @@ pub(crate) fn check_partial_products<F: Field>(
         .collect()
 }
 
-/// Checks the relationship between each pair of partial product accumulators. In particular, this
-/// sequence of accumulators starts with `Z(x)`, then contains each partial product polynomials
-/// `p_i(x)`, and finally `Z(g x)`. See the partial products section of the Plonky2 paper.
+/// Checks the relationship between each pair of partial product accumulators.
+/// In particular, this sequence of accumulators starts with `Z(x)`, then
+/// contains each partial product polynomials `p_i(x)`, and finally `Z(g x)`.
+/// See the partial products section of the Plonky2 paper.
 pub(crate) fn check_partial_products_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     numerators: &[ExtensionTarget<D>],

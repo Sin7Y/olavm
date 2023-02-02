@@ -37,7 +37,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         multiplicand_1: Target,
         addend: Target,
     ) -> Target {
-        // If we're not configured to use the base arithmetic gate, just call arithmetic_extension.
+        // If we're not configured to use the base arithmetic gate, just call
+        // arithmetic_extension.
         if !self.config.use_base_arithmetic_gate {
             let multiplicand_0_ext = self.convert_to_ext(multiplicand_0);
             let multiplicand_1_ext = self.convert_to_ext(multiplicand_1);
@@ -73,7 +74,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             return result;
         }
 
-        // Otherwise, we must actually perform the operation using an ArithmeticExtensionGate slot.
+        // Otherwise, we must actually perform the operation using an
+        // ArithmeticExtensionGate slot.
         let result = self.add_base_arithmetic_operation(operation);
         self.base_arithmetic_results.insert(operation, result);
         result
@@ -235,7 +237,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     }
 
     // TODO: Test
-    /// Exponentiate `base` to the power of `exponent`, given by its little-endian bits.
+    /// Exponentiate `base` to the power of `exponent`, given by its
+    /// little-endian bits.
     pub fn exp_from_bits(
         &mut self,
         base: Target,
@@ -260,7 +263,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     }
 
     // TODO: Test
-    /// Exponentiate `base` to the power of `exponent`, where `exponent < 2^num_bits`.
+    /// Exponentiate `base` to the power of `exponent`, where `exponent <
+    /// 2^num_bits`.
     pub fn exp(&mut self, base: Target, exponent: Target, num_bits: usize) -> Target {
         let exponent_bits = self.split_le(exponent, num_bits);
 
@@ -387,7 +391,8 @@ impl<F: RichField> SimpleGenerator<F> for EqualityGenerator {
     }
 }
 
-/// Represents a base arithmetic operation in the circuit. Used to memoize results.
+/// Represents a base arithmetic operation in the circuit. Used to memoize
+/// results.
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub(crate) struct BaseArithmeticOperation<F: Field64> {
     const_0: F,

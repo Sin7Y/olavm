@@ -20,9 +20,10 @@ use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 
-/// One of the instantiations of `InterpolationGate`: all constraints are degree <= 2.
-/// The lower degree is a tradeoff for more gates (`eval_unfiltered_recursively` for
-/// this version uses more gates than `LowDegreeInterpolationGate`).
+/// One of the instantiations of `InterpolationGate`: all constraints are degree
+/// <= 2. The lower degree is a tradeoff for more gates
+/// (`eval_unfiltered_recursively` for this version uses more gates than
+/// `LowDegreeInterpolationGate`).
 #[derive(Copy, Clone, Debug)]
 pub struct LowDegreeInterpolationGate<F: RichField + Extendable<D>, const D: usize> {
     pub subgroup_bits: usize,
@@ -54,7 +55,8 @@ impl<F: RichField + Extendable<D>, const D: usize> LowDegreeInterpolationGate<F,
         self.end_coeffs() + i - 2
     }
 
-    /// `powers_evalutation_point(i)` is the wire index of `evalutation_point^i`.
+    /// `powers_evalutation_point(i)` is the wire index of
+    /// `evalutation_point^i`.
     pub fn powers_evaluation_point(&self, i: usize) -> Range<usize> {
         debug_assert!(0 < i && i < self.num_points());
         if i == 1 {
@@ -73,7 +75,8 @@ impl<F: RichField + Extendable<D>, const D: usize> LowDegreeInterpolationGate<F,
     fn coset(&self, shift: F) -> impl Iterator<Item = F> {
         let g = F::primitive_root_of_unity(self.subgroup_bits);
         let size = 1 << self.subgroup_bits;
-        // Speed matters here, so we avoid `cyclic_subgroup_coset_known_order` which allocates.
+        // Speed matters here, so we avoid `cyclic_subgroup_coset_known_order` which
+        // allocates.
         g.powers().take(size).map(move |x| x * shift)
     }
 }
@@ -250,8 +253,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for LowDegreeInter
         let evaluation_value = vars.get_local_ext_algebra(self.wires_evaluation_value());
         let computed_evaluation_value =
             interpolant.eval_with_powers(builder, &evaluation_point_powers);
-        // let evaluation_point = vars.get_local_ext_algebra(self.wires_evaluation_point());
-        // let evaluation_value = vars.get_local_ext_algebra(self.wires_evaluation_value());
+        // let evaluation_point =
+        // vars.get_local_ext_algebra(self.wires_evaluation_point());
+        // let evaluation_value =
+        // vars.get_local_ext_algebra(self.wires_evaluation_value());
         // let computed_evaluation_value = interpolant.eval(builder, evaluation_point);
         constraints.extend(
             builder
@@ -284,9 +289,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for LowDegreeInter
     }
 
     fn num_constraints(&self) -> usize {
-        // `num_points * D` constraints to check for consistency between the coefficients and the
-        // point-value pairs, plus `D` constraints for the evaluation value, plus `(D+1)*(num_points-2)`
-        // to check power constraints for evaluation point and shift.
+        // `num_points * D` constraints to check for consistency between the
+        // coefficients and the point-value pairs, plus `D` constraints for the
+        // evaluation value, plus `(D+1)*(num_points-2)` to check power
+        // constraints for evaluation point and shift.
         self.num_points() * D + D + (D + 1) * (self.num_points() - 2)
     }
 }
@@ -415,7 +421,8 @@ mod tests {
         type FF = QuadraticExtension<GoldilocksField>;
         const D: usize = 2;
 
-        /// Returns the local wires for an interpolation gate for given coeffs, points and eval point.
+        /// Returns the local wires for an interpolation gate for given coeffs,
+        /// points and eval point.
         fn get_wires(
             gate: &LowDegreeInterpolationGate<F, D>,
             shift: F,

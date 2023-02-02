@@ -16,8 +16,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         self.permute_swapped::<H>(inputs, _false)
     }
 
-    /// Conditionally swap two chunks of the inputs (useful in verifying Merkle proofs), then apply
-    /// a cryptographic permutation.
+    /// Conditionally swap two chunks of the inputs (useful in verifying Merkle
+    /// proofs), then apply a cryptographic permutation.
     pub(crate) fn permute_swapped<H: AlgebraicHasher<F>>(
         &mut self,
         inputs: [Target; SPONGE_WIDTH],

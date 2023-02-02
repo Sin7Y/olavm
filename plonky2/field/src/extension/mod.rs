@@ -8,8 +8,8 @@ pub mod quartic;
 pub mod quintic;
 
 /// Optimal extension field trait.
-/// A degree `d` field extension is optimal if there exists a base field element `W`,
-/// such that the extension is `F[X]/(X^d-W)`.
+/// A degree `d` field extension is optimal if there exists a base field element
+/// `W`, such that the extension is `F[X]/(X^d-W)`.
 #[allow(clippy::upper_case_acronyms)]
 pub trait OEF<const D: usize>: FieldExtension<D> {
     // Element W of BaseField, such that `X^d - W` is irreducible over BaseField.
@@ -27,7 +27,8 @@ impl<F: Field> OEF<1> for F {
 }
 
 pub trait Frobenius<const D: usize>: OEF<D> {
-    /// FrobeniusField automorphisms: x -> x^p, where p is the order of BaseField.
+    /// FrobeniusField automorphisms: x -> x^p, where p is the order of
+    /// BaseField.
     fn frobenius(&self) -> Self {
         self.repeated_frobenius(1)
     }
@@ -68,13 +69,15 @@ pub trait Extendable<const D: usize>: Field + Sized {
 
     const DTH_ROOT: Self;
 
-    /// Chosen so that when raised to the power `(p^D - 1) >> F::Extension::TWO_ADICITY)`
-    /// we obtain F::EXT_POWER_OF_TWO_GENERATOR.
+    /// Chosen so that when raised to the power `(p^D - 1) >>
+    /// F::Extension::TWO_ADICITY)` we obtain F::EXT_POWER_OF_TWO_GENERATOR.
     const EXT_MULTIPLICATIVE_GROUP_GENERATOR: [Self; D];
 
-    /// Chosen so that when raised to the power `1<<(Self::TWO_ADICITY-Self::BaseField::TWO_ADICITY)`,
-    /// we get `Self::BaseField::POWER_OF_TWO_GENERATOR`. This makes `primitive_root_of_unity` coherent
-    /// with the base field which implies that the FFT commutes with field inclusion.
+    /// Chosen so that when raised to the power
+    /// `1<<(Self::TWO_ADICITY-Self::BaseField::TWO_ADICITY)`,
+    /// we get `Self::BaseField::POWER_OF_TWO_GENERATOR`. This makes
+    /// `primitive_root_of_unity` coherent with the base field which implies
+    /// that the FFT commutes with field inclusion.
     const EXT_POWER_OF_TWO_GENERATOR: [Self; D];
 }
 
@@ -124,7 +127,8 @@ impl<F: Field> FieldExtension<1> for F {
     }
 }
 
-/// Flatten the slice by sending every extension field element to its D-sized canonical representation.
+/// Flatten the slice by sending every extension field element to its D-sized
+/// canonical representation.
 pub fn flatten<F: Field, const D: usize>(l: &[F::Extension]) -> Vec<F>
 where
     F: Extendable<D>,

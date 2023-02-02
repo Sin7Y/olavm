@@ -156,7 +156,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         )
     }
 
-    /// Computes all coset elements that can be inferred in the FRI reduction steps.
+    /// Computes all coset elements that can be inferred in the FRI reduction
+    /// steps.
     pub(crate) fn get_inferred_elements(
         &self,
         challenges: &ProofChallenges<F, D>,
@@ -183,7 +184,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         );
         let log_n = common_data.degree_bits() + common_data.config.fri_config.rate_bits;
         // Simulate the proof verification and collect the inferred elements.
-        // The content of the loop is basically the same as the `fri_verifier_query_round` function.
+        // The content of the loop is basically the same as the
+        // `fri_verifier_query_round` function.
         for &(mut x_index) in fri_query_indices {
             let mut subgroup_x = F::MULTIPLICATIVE_GROUP_GENERATOR
                 * F::primitive_root_of_unity(log_n).exp_u64(reverse_bits(x_index, log_n) as u64);

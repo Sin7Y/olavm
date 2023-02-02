@@ -22,8 +22,8 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     for i in 0..w {
         transposed[i].reserve_exact(l);
         unsafe {
-            // After .reserve_exact(l), transposed[i] will have capacity at least l. Hence, set_len
-            // will not cause the buffer to overrun.
+            // After .reserve_exact(l), transposed[i] will have capacity at least l. Hence,
+            // set_len will not cause the buffer to overrun.
             transposed[i].set_len(l);
         }
     }

@@ -103,7 +103,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         Ok(())
     }
 
-    fn get_compress_challenge(&self) -> Option<F> {
+    pub fn get_compress_challenge(&self) -> Option<F> {
         self.compress_challenge
     }
 }
@@ -413,7 +413,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, true);
+        let _ = process.execute(&mut program);
 
         let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);

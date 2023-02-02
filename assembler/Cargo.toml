@@ -1,0 +1,18 @@
+[package]
+name = "assembler"
+version = "0.1.0"
+description = "Olavm core components"
+readme = "README.md"
+license = "MIT"
+edition = "2021"
+
+[lib]
+doctest = false
+
+[dependencies]
+core = { package = "core", path = "../core", version = "0.1.0"}
+log = "0.4"
+env_logger = "0.6"
+serde_json = "1"
+serde = {version = "1" }
+serde_derive = {version = "1"}

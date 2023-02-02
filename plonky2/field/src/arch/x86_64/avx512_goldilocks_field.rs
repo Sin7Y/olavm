@@ -10,11 +10,12 @@ use crate::ops::Square;
 use crate::packed::PackedField;
 use crate::types::{Field, Field64};
 
-// Ideally `Avx512GoldilocksField` would wrap `__m512i`. Unfortunately, `__m512i` has an alignment
-// of 64B, which would preclude us from casting `[GoldilocksField; 8]` (alignment 8B) to
-// `Avx512GoldilocksField`. We need to ensure that `Avx512GoldilocksField` has the same alignment as
-// `GoldilocksField`. Thus we wrap `[GoldilocksField; 8]` and use the `new` and `get` methods to
-// convert to and from `__m512i`.
+// Ideally `Avx512GoldilocksField` would wrap `__m512i`. Unfortunately,
+// `__m512i` has an alignment of 64B, which would preclude us from casting
+// `[GoldilocksField; 8]` (alignment 8B) to `Avx512GoldilocksField`. We need to
+// ensure that `Avx512GoldilocksField` has the same alignment as
+// `GoldilocksField`. Thus we wrap `[GoldilocksField; 8]` and use the `new` and
+// `get` methods to convert to and from `__m512i`.
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct Avx512GoldilocksField(pub [GoldilocksField; 8]);
@@ -290,13 +291,14 @@ const LO_32_BITS_MASK: __mmask16 = unsafe { transmute(0b0101010101010101u16) };
 
 #[inline]
 unsafe fn mul64_64(x: __m512i, y: __m512i) -> (__m512i, __m512i) {
-    // We want to move the high 32 bits to the low position. The multiplication instruction ignores
-    // the high 32 bits, so it's ok to just duplicate it into the low position. This duplication can
-    // be done on port 5; bitshifts run on port 0, competing with multiplication.
-    //   This instruction is only provided for 32-bit floats, not integers. Idk why Intel makes the
-    // distinction; the casts are free and it guarantees that the exact bit pattern is preserved.
-    // Using a swizzle instruction of the wrong domain (float vs int) does not increase latency
-    // since Haswell.
+    // We want to move the high 32 bits to the low position. The multiplication
+    // instruction ignores the high 32 bits, so it's ok to just duplicate it
+    // into the low position. This duplication can be done on port 5; bitshifts
+    // run on port 0, competing with multiplication.   This instruction is only
+    // provided for 32-bit floats, not integers. Idk why Intel makes the
+    // distinction; the casts are free and it guarantees that the exact bit pattern
+    // is preserved. Using a swizzle instruction of the wrong domain (float vs
+    // int) does not increase latency since Haswell.
     let x_hi = _mm512_castps_si512(_mm512_movehdup_ps(_mm512_castsi512_ps(x)));
     let y_hi = _mm512_castps_si512(_mm512_movehdup_ps(_mm512_castsi512_ps(y)));
 
@@ -320,8 +322,8 @@ unsafe fn mul64_64(x: __m512i, y: __m512i) -> (__m512i, __m512i) {
     let t1_hi = _mm512_srli_epi64::<32>(t1);
     let res_hi = _mm512_add_epi64(t2, t1_hi);
 
-    // Form res_lo by combining the low half of mul_ll with the low half of t1 (shifted into high
-    // position).
+    // Form res_lo by combining the low half of mul_ll with the low half of t1
+    // (shifted into high position).
     let t1_lo = _mm512_castps_si512(_mm512_moveldup_ps(_mm512_castsi512_ps(t1)));
     let res_lo = _mm512_mask_blend_epi32(LO_32_BITS_MASK, t1_lo, mul_ll);
 
@@ -344,8 +346,8 @@ unsafe fn square64(x: __m512i) -> (__m512i, __m512i) {
     let t0_hi = _mm512_srli_epi64::<31>(t0);
     let res_hi = _mm512_add_epi64(mul_hh, t0_hi);
 
-    // Form low result by adding the mul_ll and the low 31 bits of mul_lh (shifted to the high
-    // position).
+    // Form low result by adding the mul_ll and the low 31 bits of mul_lh (shifted
+    // to the high position).
     let mul_lh_lo = _mm512_slli_epi64::<33>(mul_lh);
     let res_lo = _mm512_add_epi64(mul_ll, mul_lh_lo);
 

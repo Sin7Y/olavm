@@ -1,21 +1,6 @@
 use crate::error::ProcessorError;
-use core::program::instruction::Opcode;
+use core::program::instruction::{Opcode, *};
 use log::debug;
-
-pub const NO_IMM_INSTRUCTION_LEN: u64 = 1;
-pub const IMM_INSTRUCTION_LEN: u64 = 2;
-pub const OPCODE_FLAG_FIELD_LEN: u64 = 19;
-pub const REG_FIELD_BIT_LEN: u64 = 9;
-
-pub const OPCODE_FLAG_FIELD_BIT_POSITION: u64 = 16;
-pub const REG0_FIELD_BIT_POSITION: u64 = OPCODE_FLAG_FIELD_BIT_POSITION + OPCODE_FLAG_FIELD_LEN;
-pub const REG1_FIELD_BIT_POSITION: u64 = REG0_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
-pub const REG2_FIELD_BIT_POSITION: u64 = REG1_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
-pub const IMM_FLAG_FIELD_BIT_POSITION: u64 = REG2_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
-
-pub const REG_FIELD_BITS_MASK: u64 = 0x1ff;
-pub const IMM_FLAG_FIELD_BITS_MASK: u64 = 0x1;
-pub const OPCODE_FIELD_BITS_MASK: u64 = 0x7_ffff_ffff;
 
 fn parse_hex_str(hex_str: &str) -> Result<u64, ProcessorError> {
     let res = u64::from_str_radix(hex_str, 16);
@@ -144,8 +129,10 @@ pub fn decode_raw_instruction(
 
 #[test]
 fn decode_raw_instruction_test() {
-    // let inst: u64 =  1<<IMM_FLAG_FIELD_BIT_POSITION |0b10000000<<REG2_FIELD_BIT_POSITION |0b100000<<REG1_FIELD_BIT_POSITION| 0b1000<<REG0_FIELD_BIT_POSITION|1 << Opcode::ADD as u8;
-    // let inst_str = format!("0x{:x}", inst);
+    // let inst: u64 =  1<<IMM_FLAG_FIELD_BIT_POSITION
+    // |0b10000000<<REG2_FIELD_BIT_POSITION |0b100000<<REG1_FIELD_BIT_POSITION|
+    // 0b1000<<REG0_FIELD_BIT_POSITION|1 << Opcode::ADD as u8; let inst_str =
+    // format!("0x{:x}", inst);
     let inst_str = "0x4000000840000000";
     let imm = "0x7b";
     let inst_str = decode_raw_instruction(&inst_str, imm);

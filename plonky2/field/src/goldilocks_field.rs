@@ -161,7 +161,8 @@ impl PrimeField64 for GoldilocksField {
     #[inline]
     fn to_canonical_u64(&self) -> u64 {
         let mut c = self.0;
-        // We only need one condition subtraction, since 2 * ORDER would not fit in a u64.
+        // We only need one condition subtraction, since 2 * ORDER would not fit in a
+        // u64.
         if c >= Self::ORDER {
             c -= Self::ORDER;
         }
@@ -196,13 +197,13 @@ impl Add for GoldilocksField {
         let (sum, over) = self.0.overflowing_add(rhs.0);
         let (mut sum, over) = sum.overflowing_add((over as u64) * EPSILON);
         if over {
-            // NB: self.0 > Self::ORDER && rhs.0 > Self::ORDER is necessary but not sufficient for
-            // double-overflow.
+            // NB: self.0 > Self::ORDER && rhs.0 > Self::ORDER is necessary but not
+            // sufficient for double-overflow.
             // This assume does two things:
-            //  1. If compiler knows that either self.0 or rhs.0 <= ORDER, then it can skip this
-            //     check.
-            //  2. Hints to the compiler how rare this double-overflow is (thus handled better with
-            //     a branch).
+            //  1. If compiler knows that either self.0 or rhs.0 <= ORDER, then it can skip
+            // this     check.
+            //  2. Hints to the compiler how rare this double-overflow is (thus handled
+            // better with     a branch).
             assume(self.0 > Self::ORDER && rhs.0 > Self::ORDER);
             branch_hint();
             sum += EPSILON; // Cannot overflow.
@@ -233,13 +234,13 @@ impl Sub for GoldilocksField {
         let (diff, under) = self.0.overflowing_sub(rhs.0);
         let (mut diff, under) = diff.overflowing_sub((under as u64) * EPSILON);
         if under {
-            // NB: self.0 < EPSILON - 1 && rhs.0 > Self::ORDER is necessary but not sufficient for
-            // double-underflow.
+            // NB: self.0 < EPSILON - 1 && rhs.0 > Self::ORDER is necessary but not
+            // sufficient for double-underflow.
             // This assume does two things:
-            //  1. If compiler knows that either self.0 >= EPSILON - 1 or rhs.0 <= ORDER, then it
-            //     can skip this check.
-            //  2. Hints to the compiler how rare this double-underflow is (thus handled better
-            //     with a branch).
+            //  1. If compiler knows that either self.0 >= EPSILON - 1 or rhs.0 <= ORDER,
+            // then it     can skip this check.
+            //  2. Hints to the compiler how rare this double-underflow is (thus handled
+            // better     with a branch).
             assume(self.0 < EPSILON - 1 && rhs.0 > Self::ORDER);
             branch_hint();
             diff -= EPSILON; // Cannot underflow.
@@ -295,8 +296,9 @@ impl DivAssign for GoldilocksField {
 /// Fast addition modulo ORDER for x86-64.
 /// This function is marked unsafe for the following reasons:
 ///   - It is only correct if x + y < 2**64 + ORDER = 0x1ffffffff00000001.
-///   - It is only faster in some circumstances. In particular, on x86 it overwrites both inputs in
-///     the registers, so its use is not recommended when either input will be used again.
+///   - It is only faster in some circumstances. In particular, on x86 it
+///     overwrites both inputs in the registers, so its use is not recommended
+///     when either input will be used again.
 #[inline(always)]
 #[cfg(target_arch = "x86_64")]
 unsafe fn add_no_canonicalize_trashing_input(x: u64, y: u64) -> u64 {
@@ -329,12 +331,13 @@ unsafe fn add_no_canonicalize_trashing_input(x: u64, y: u64) -> u64 {
 #[cfg(not(target_arch = "x86_64"))]
 unsafe fn add_no_canonicalize_trashing_input(x: u64, y: u64) -> u64 {
     let (res_wrapped, carry) = x.overflowing_add(y);
-    // Below cannot overflow unless the assumption if x + y < 2**64 + ORDER is incorrect.
+    // Below cannot overflow unless the assumption if x + y < 2**64 + ORDER is
+    // incorrect.
     res_wrapped + EPSILON * (carry as u64)
 }
 
-/// Reduces to a 64-bit value. The result might not be in canonical form; it could be in between the
-/// field order and `2^64`.
+/// Reduces to a 64-bit value. The result might not be in canonical form; it
+/// could be in between the field order and `2^64`.
 #[inline]
 fn reduce128(x: u128) -> GoldilocksField {
     let (x_lo, x_hi) = split(x); // This is a no-op

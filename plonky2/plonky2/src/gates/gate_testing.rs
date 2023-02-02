@@ -18,8 +18,8 @@ use crate::util::transpose;
 const WITNESS_SIZE: usize = 1 << 5;
 const WITNESS_DEGREE: usize = WITNESS_SIZE - 1;
 
-/// Tests that the constraints imposed by the given gate are low-degree by applying them to random
-/// low-degree witness polynomials.
+/// Tests that the constraints imposed by the given gate are low-degree by
+/// applying them to random low-degree witness polynomials.
 pub fn test_low_degree<F: RichField + Extendable<D>, G: Gate<F, D>, const D: usize>(gate: G) {
     let rate_bits = log2_ceil(gate.degree() + 1);
 
@@ -71,7 +71,8 @@ fn random_low_degree_matrix<F: Field>(num_polys: usize, rate_bits: usize) -> Vec
         .collect::<Vec<_>>();
 
     if polys.is_empty() {
-        // We want a Vec of many empty Vecs, whereas transpose would just give an empty Vec.
+        // We want a Vec of many empty Vecs, whereas transpose would just give an empty
+        // Vec.
         vec![Vec::new(); WITNESS_SIZE << rate_bits]
     } else {
         transpose(&polys)

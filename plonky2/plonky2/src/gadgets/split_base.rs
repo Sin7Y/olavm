@@ -12,8 +12,9 @@ use crate::iop::witness::{PartitionWitness, Witness};
 use crate::plonk::circuit_builder::CircuitBuilder;
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
-    /// Split the given element into a list of targets, where each one represents a
-    /// base-B limb of the element, with little-endian ordering.
+    /// Split the given element into a list of targets, where each one
+    /// represents a base-B limb of the element, with little-endian
+    /// ordering.
     pub fn split_le_base<const B: usize>(&mut self, x: Target, num_limbs: usize) -> Vec<Target> {
         let gate_type = BaseSumGate::<B>::new(num_limbs);
         let gate = self.add_gate(gate_type, vec![]);
@@ -23,7 +24,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         Target::wires_from_range(gate, gate_type.limbs())
     }
 
-    /// Asserts that `x`'s big-endian bit representation has at least `leading_zeros` leading zeros.
+    /// Asserts that `x`'s big-endian bit representation has at least
+    /// `leading_zeros` leading zeros.
     pub(crate) fn assert_leading_zeros(&mut self, x: Target, leading_zeros: u32) {
         self.range_check(x, (64 - leading_zeros) as usize);
     }
