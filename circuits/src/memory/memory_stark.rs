@@ -216,14 +216,18 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let nv_is_write = nv[COL_MEM_IS_WRITE];
         let filter_looked_for_main = lv[COL_MEM_FILTER_LOOKED_FOR_MAIN];
         let addr = lv[COL_MEM_ADDR];
-        let diff_addr = nv[COL_MEM_DIFF_ADDR];
-        let diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
+        let nv_diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
         let nv_addr = nv[COL_MEM_ADDR];
+        let diff_addr = lv[COL_MEM_DIFF_ADDR];
         let nv_diff_addr = nv[COL_MEM_DIFF_ADDR];
         let rw_addr_unchanged = lv[COL_MEM_RW_ADDR_UNCHANGED];
+        let nv_rw_addr_unchanged = nv[COL_MEM_RW_ADDR_UNCHANGED];
         let diff_addr_cond = lv[COL_MEM_DIFF_ADDR_COND];
         let value = lv[COL_MEM_VALUE];
         let nv_value = lv[COL_MEM_VALUE];
+        let diff_clk = lv[COL_MEM_DIFF_CLK];
+        let rc_value = lv[COL_MEM_RC_VALUE];
+        let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
 
         let op_mload =
             builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(25)));
@@ -268,13 +272,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         // addr'-addr-diff_addr'= 0
         let calculated_diff_addr = builder.sub_extension(nv_addr, addr);
         let constraint_diff_addr = builder.sub_extension(calculated_diff_addr, nv_diff_addr);
-        yield_constr.constraint(builder, constraint_diff_addr);
+        yield_constr.constraint_transition(builder, constraint_diff_addr);
         // for rw_addr_unchanged
         yield_constr.constraint_first_row(builder, rw_addr_unchanged);
-        let diff_mul_inv = builder.mul_extension(diff_addr, diff_addr_inv);
-        let one_m_unchanged = builder.sub_extension(one, rw_addr_unchanged);
-        let constraint_unchanged = builder.sub_extension(one_m_unchanged, diff_mul_inv);
-        yield_constr.constraint(builder, constraint_unchanged);
+        let nv_diff_mul_inv = builder.mul_extension(nv_diff_addr, nv_diff_addr_inv);
+        let one_m_unchanged = builder.sub_extension(one, nv_rw_addr_unchanged);
+        let constraint_unchanged = builder.sub_extension(one_m_unchanged, nv_diff_mul_inv);
+        yield_constr.constraint_transition(builder, constraint_unchanged);
 
         // for region division: 1. one of four region is selected; 2. binary
         // constraints; 3. diff_addr_cond in different region.
@@ -319,14 +323,14 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let inc_poseidon = builder.sub_extension(nv_region_poseidon, region_poseidon);
         let one_m_inc_poseidon = builder.sub_extension(one, inc_poseidon);
         let inc_addr = builder.sub_extension(nv_addr, addr);
-        let one_m_inc_addr = builder.sub_extension(one, inc_addr);
+        let one_m_inc_addr = builder.sub_extension(inc_addr, one);
         let write_once_inter_1 = builder.mul_extension(one_m_rw, one_m_inc_prophet);
         let write_once_inter_2 = builder.mul_extension(write_once_inter_1, one_m_inc_poseidon);
         let write_once_inter_3 = builder.mul_extension(write_once_inter_2, one_m_inc_addr);
         let constraint_write_once_addr_change = builder.mul_extension(write_once_inter_3, inc_addr);
-        yield_constr.constraint(builder, constraint_write_once_addr_change);
+        yield_constr.constraint_transition(builder, constraint_write_once_addr_change);
         let constraint_write_once = builder.mul_extension(write_once_inter_3, nv_is_write);
-        yield_constr.constraint(builder, constraint_write_once);
+        yield_constr.constraint_transition(builder, constraint_write_once);
 
         // read/write constraint:
         // 1. first operation for each addr must be write;
@@ -334,10 +338,29 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         yield_constr.constraint_first_row(builder, one_m_is_write);
         let one_m_nv_is_write = builder.sub_extension(one, nv_is_write);
         let constraint_addr_write_for_first = builder.mul_extension(inc_addr, one_m_nv_is_write);
-        yield_constr.constraint(builder, constraint_addr_write_for_first);
+        yield_constr.constraint_transition(builder, constraint_addr_write_for_first);
         let inc_value = builder.sub_extension(nv_value, value);
         let constraint_value_read = builder.mul_extension(one_m_nv_is_write, inc_value);
-        yield_constr.constraint(builder, constraint_value_read);
+        yield_constr.constraint_transition(builder, constraint_value_read);
+
+        // rc_value constraint:
+        let rc_inter_1 = builder.add_extension(diff_addr, diff_clk);
+        let rc_inter_2 = builder.sub_extension(rc_inter_1, rc_value);
+        let constraint_rc_rw = builder.mul_extension(is_rw, rc_inter_2);
+        yield_constr.constraint(builder, constraint_rc_rw);
+        let rc_inter_2_1 = builder.sub_extension(diff_addr_cond, rc_value);
+        let constraint_rc_write_once = builder.mul_extension(one_m_rw, rc_inter_2_1);
+        yield_constr.constraint(builder, constraint_rc_write_once);
+
+        // filter_looking_rc constraints:
+        // 1. read write segment filter_looking_rc must be 1.
+        // 2. in write once segment, when reading filter_looking_rc must be 1.
+        let one_m_filter_rc = builder.sub_extension(one, filter_looking_rc);
+        let constraint_filter_rw = builder.mul_extension(is_rw, one_m_filter_rc);
+        yield_constr.constraint(builder, constraint_filter_rw);
+        let filter_inter_1 = builder.mul_extension(one_m_rw, one_m_is_write);
+        let constraint_filter_write_once = builder.mul_extension(filter_inter_1, one_m_filter_rc);
+        yield_constr.constraint(builder, constraint_filter_write_once);
     }
 
     fn constraint_degree(&self) -> usize {
