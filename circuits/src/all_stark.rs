@@ -325,11 +325,10 @@ mod tests {
     use crate::generation::memory::generate_memory_trace;
     use crate::proof::PublicValues;
     use crate::prover::prove_with_traces;
+    use crate::serialization::Buffer;
     use crate::stark::Stark;
     use crate::util::trace_rows_to_poly_values;
     use crate::verifier::verify_proof;
-    use crate::serialization::*;
-    use plonky2::util::serialization::Buffer;
     use anyhow::Result;
     use core::program::Program;
     use executor::Process;
@@ -391,19 +390,18 @@ mod tests {
         )?;
         // println!("{}", mem::size_of_val(&proof));
 
-        let origin_proof = &proof.stark_proofs[0];
         let mut buffer = Buffer::new(Vec::new());
-        write_stark_proof(&mut buffer, origin_proof)?;
+        buffer.write_all_proof(&proof)?;
 
         println!("serialized cpu stark proof size: {}", buffer.len());
-        // println!("bytes: {:?}", buffer.bytes());
+        // println!("serialized bytes: {:?}", buffer.bytes());
 
-        let columns = 76;
-        let deserialized_proof = read_stark_proof::<F,C,D>(&mut buffer, &config, columns)?;
-        println!("proof: {:?}", deserialized_proof);
+        let mut de_buffer = Buffer::new(buffer.bytes());
+        let de_proof = de_buffer.read_all_proof::<F, C, D>()?;
+        // println!("deserialized_proof: {:?}", de_proof);
 
         let all_stark = AllStark::default();
-        verify_proof(all_stark, proof, &config)
+        verify_proof(all_stark, de_proof, &config)
     }
 
     #[test]

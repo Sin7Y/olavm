@@ -10,6 +10,7 @@ use crate::fri::proof::{
     CompressedFriProof, CompressedFriQueryRounds, FriInitialTreeProof, FriProof, FriQueryRound,
     FriQueryStep,
 };
+use crate::fri::FriParams;
 use crate::hash::hash_types::RichField;
 use crate::hash::merkle_proofs::MerkleProof;
 use crate::hash::merkle_tree::MerkleCap;
@@ -19,7 +20,6 @@ use crate::plonk::plonk_common::salt_size;
 use crate::plonk::proof::{
     CompressedProof, CompressedProofWithPublicInputs, OpeningSet, Proof, ProofWithPublicInputs,
 };
-use crate::fri::FriParams;
 
 #[derive(Debug)]
 pub struct Buffer(Cursor<Vec<u8>>);
@@ -279,7 +279,8 @@ impl Buffer {
         let trace_p = self.read_merkle_proof()?;
         evals_proofs.push((trace_v, trace_p));
 
-        let permutation_ctl_zs_v = self.read_field_vec((degree + salt) << fri_params.config.rate_bits)?;
+        let permutation_ctl_zs_v =
+            self.read_field_vec((degree + salt) << fri_params.config.rate_bits)?;
         let permutation_ctl_zs_p = self.read_merkle_proof()?;
         evals_proofs.push((permutation_ctl_zs_v, permutation_ctl_zs_p));
 
@@ -371,7 +372,8 @@ impl Buffer {
     ) -> Result<Vec<FriQueryRound<F, C::Hasher, D>>> {
         let mut fqrs = Vec::with_capacity(fri_params.config.num_query_rounds);
         for _ in 0..fri_params.config.num_query_rounds {
-            let initial_trees_proof = self.read_stark_fri_initial_proof::<F,C,D>(fri_params, degree)?;
+            let initial_trees_proof =
+                self.read_stark_fri_initial_proof::<F, C, D>(fri_params, degree)?;
             let steps = fri_params
                 .reduction_arity_bits
                 .iter()
@@ -385,7 +387,11 @@ impl Buffer {
         Ok(fqrs)
     }
 
-    pub fn write_fri_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+    pub fn write_fri_proof<
+        F: RichField + Extendable<D>,
+        C: GenericConfig<D, F = F>,
+        const D: usize,
+    >(
         &mut self,
         fp: &FriProof<F, C::Hasher, D>,
     ) -> Result<()> {
@@ -397,7 +403,11 @@ impl Buffer {
         self.write_field(fp.pow_witness)
     }
 
-    pub fn read_fri_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+    pub fn read_fri_proof<
+        F: RichField + Extendable<D>,
+        C: GenericConfig<D, F = F>,
+        const D: usize,
+    >(
         &mut self,
         common_data: &CommonCircuitData<F, C, D>,
     ) -> Result<FriProof<F, C::Hasher, D>> {
@@ -418,7 +428,11 @@ impl Buffer {
         })
     }
 
-    pub fn read_stark_fri_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+    pub fn read_stark_fri_proof<
+        F: RichField + Extendable<D>,
+        C: GenericConfig<D, F = F>,
+        const D: usize,
+    >(
         &mut self,
         fri_params: &FriParams,
         degree: usize,
@@ -427,10 +441,9 @@ impl Buffer {
         let commit_phase_merkle_caps = (0..fri_params.reduction_arity_bits.len())
             .map(|_| self.read_merkle_cap(fri_config.cap_height))
             .collect::<Result<Vec<_>>>()?;
-        let query_round_proofs = self.read_stark_fri_query_rounds::<F,C,D>(fri_params, degree)?;
-        let final_poly = PolynomialCoeffs::new(
-            self.read_field_ext_vec::<F, D>(fri_params.final_poly_len())?,
-        );
+        let query_round_proofs = self.read_stark_fri_query_rounds::<F, C, D>(fri_params, degree)?;
+        let final_poly =
+            PolynomialCoeffs::new(self.read_field_ext_vec::<F, D>(fri_params.final_poly_len())?);
         let pow_witness = self.read_field()?;
         Ok(FriProof {
             commit_phase_merkle_caps,
