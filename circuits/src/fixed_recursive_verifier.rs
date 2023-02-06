@@ -1,19 +1,20 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, ops::Range};
 
+use num::iter::Range;
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,
     iop::target::{BoolTarget, Target},
     plonk::{
         circuit_data::{CircuitData, VerifierCircuitTarget},
-        config::GenericConfig,
+        config::{GenericConfig, AlgebraicHasher},
         proof::{Proof, ProofWithPublicInputsTarget},
     },
 };
 
 use crate::{
-    all_stark::NUM_TABLES,
-    recursive_verifier::{PlonkWrapperCirCuit, StarkWrapperCircuit},
+    all_stark::{NUM_TABLES, AllStark, Table},
+    recursive_verifier::{PlonkWrapperCirCuit, StarkWrapperCircuit}, config::StarkConfig, stark::Stark, cross_table_lookup::CrossTableLookup,
 };
 
 /// The recursion threshold. We end a chain of recursive proofs once we reach
@@ -30,9 +31,12 @@ where
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
 {
+    /// The EVM root circuit, which aggregates the (shrunk) per-table recursive proofs.
     pub root: RootCircuitData<F, C, D>,
     pub aggregation: AggregationCircuitData<F, C, D>,
+    /// The block circuit, which verifies an aggregation root proof and a previous block proof.
     pub block: BlockCircuitData<F, C, D>,
+    /// Holds chains of circuits for each table and for each initial `degree_bits`.
     by_tables: [RecursiveCircuitsForTable<F, C, D>; NUM_TABLES],
 }
 
@@ -87,12 +91,35 @@ where
     cyclic_vk: VerifierCircuitTarget,
 }
 
+impl<F, C, const D: usize> AllRecursiveCircuits<F, C, D>
+where
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F> + 'static,
+    C::Hasher: AlgebraicHasher<F>,
+{
+    /// Preprocess all recursive circuits used by the system.
+    pub fn new(all_stark: &AllStark<F, D>, degree_bits_range: Range<usize>, stark_config: &StarkConfig) -> Self {
+        let cpu = RecursiveCircuitsForTable::new();
+    }
+}
+
 struct RecursiveCircuitsForTable<F, C, const D: usize>
 where
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
 {
     by_stark_size: BTreeMap<usize, RecursiveCircuitsForTableSize<F, C, D>>,
+}
+
+impl<F, C, const D: usize> RecursiveCircuitsForTable<F, C, D>
+where
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    C::Hasher: AlgebraicHasher<F>,
+{
+    fn new<S: Stark<F, D>>(table: Table, stark: &S, degree_bits_range: Range<usize>, all_ctls: &[CrossTableLookup<F>], stark_config: &StarkConfig) -> Self {
+
+    }
 }
 
 struct RecursiveCircuitsForTableSize<F, C, const D: usize>
@@ -102,4 +129,15 @@ where
 {
     initial_wrapper: StarkWrapperCircuit<F, C, D>,
     shrinking_wrappers: Vec<PlonkWrapperCirCuit<F, C, D>>,
+}
+
+impl<F, C, const D: usize> RecursiveCircuitsForTableSize<F, C, D>
+where
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    C::Hasher: AlgebraicHasher<F>,
+{
+    fn new() -> Self {
+        let initial_wrapper = 
+    }
 }
