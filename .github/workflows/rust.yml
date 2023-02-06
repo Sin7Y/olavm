@@ -19,6 +19,12 @@ jobs:
       - name: check
         run:
           cargo check --all-features
+      - name: fmt-check
+        run:
+          cargo fmt --all -- --check
+      - name: Clippy
+        run:
+          cargo check --all-features
       - name: Build
         run: cargo build
       - name: Run tests
