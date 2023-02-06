@@ -6,7 +6,19 @@ Olavm comand:
 Execute an input raw-code file.
 
 subcommand:
-run
+
+* asm
+
+parameters:
+
+-i: input the file contain Ola-lang assemble code.
+-o: output the file contain OlaVM executable instruction code.
+
+```
+ola asm -i assembler/testdata/fibo.asm -o fibo.json
+```
+
+* run
 
 parameters:
 
@@ -14,5 +26,5 @@ parameters:
 -o: output trace_table json file
 
 ```
-ola run -i fibo_memory_code.txt -o trace_table.txt
+ola run -i fibo.json -o trace_table.txt
 ```

@@ -1,2 +1,2 @@
-mod encode;
+pub mod encode;
 mod error;
