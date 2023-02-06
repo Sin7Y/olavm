@@ -90,10 +90,16 @@ fn main() {
             let mut fout = BufWriter::new(file);
 
             for line in raw_insts {
-                fout.write_all((line + "\n").as_bytes());
+                let res = fout.write_all((line + "\n").as_bytes());
+                if res.is_err() {
+                    debug!("file write_all err: {:?}", res);
+                }
             }
 
-            fout.flush();
+            let res = fout.flush();
+            if res.is_err() {
+                debug!("file flush res: {:?}", res);
+            }
             println!("Asm done!");
         }
         Some(("run", sub_matches)) => {
