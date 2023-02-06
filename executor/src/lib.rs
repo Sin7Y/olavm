@@ -14,7 +14,7 @@ use core::trace::trace::{
 use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::{Field, Field64};
+use plonky2::field::types::{Field, Field64, PrimeField64};
 use std::collections::BTreeMap;
 use std::time::Instant;
 
@@ -452,17 +452,23 @@ impl Process {
 
                     match opcode.as_str() {
                         "add" => {
-                            self.registers[dst_index] = self.registers[op0_index] + op1_value.0;
+                            self.registers[dst_index] = GoldilocksField::from_canonical_u64(
+                                (self.registers[op0_index] + op1_value.0).to_canonical_u64(),
+                            );
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::ADD as u8);
                         }
                         "mul" => {
-                            self.registers[dst_index] = self.registers[op0_index] * op1_value.0;
+                            self.registers[dst_index] = GoldilocksField::from_canonical_u64(
+                                (self.registers[op0_index] * op1_value.0).to_canonical_u64(),
+                            );
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::MUL as u8);
                         }
                         "sub" => {
-                            self.registers[dst_index] = self.registers[op0_index] - op1_value.0;
+                            self.registers[dst_index] = GoldilocksField::from_canonical_u64(
+                                (self.registers[op0_index] - op1_value.0).to_canonical_u64(),
+                            );
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::SUB as u8);
                         }
