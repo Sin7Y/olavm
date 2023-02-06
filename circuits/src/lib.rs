@@ -16,6 +16,7 @@ pub mod permutation;
 pub mod program;
 pub mod proof;
 pub mod prover;
+pub mod serialization;
 pub mod stark;
 pub mod util;
 pub mod vanishing_poly;
