@@ -2,8 +2,8 @@ extern crate clap;
 
 use circuits::all_stark::AllStark;
 use circuits::config::StarkConfig;
-use circuits::proof::AllProof;
 use circuits::prover::prove;
+use circuits::serialization::Buffer;
 use circuits::verifier::verify_proof;
 use clap::{arg, Command};
 use core::program::Program;
@@ -12,9 +12,8 @@ use executor::Process;
 use log::debug;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-//use std::path::PathBuf;
+use std::fs::{metadata, File};
+use std::io::{BufRead, BufReader, Read, Write};
 
 #[allow(dead_code)]
 const D: usize = 2;
@@ -110,12 +109,13 @@ fn main() {
 
             let path = sub_matches.get_one::<String>("output").expect("required");
             println!("Output proof file path: {}", path);
-            let file = File::create(path).unwrap();
-            serde_json::to_writer(file, &proof).unwrap();
+            let mut file = File::create(path).unwrap();
+            let mut buffer = Buffer::new(Vec::new());
+            buffer.write_all_proof(&proof).unwrap();
+            let se_proof = buffer.bytes();
+            file.write_all(&se_proof).unwrap();
 
-            let proof = serde_json::to_string(&proof).unwrap();
-            let proof = proof.as_bytes();
-            println!("Proof size: {} bytes", proof.len());
+            println!("Proof size: {} bytes", se_proof.len());
             println!("Prove done!");
         }
         Some(("verify", sub_matches)) => {
@@ -123,17 +123,22 @@ fn main() {
             let path = sub_matches.get_one::<String>("input").expect("required");
             println!("Input file path: {}", path);
 
-            let file = File::open(path).unwrap();
-            let reader = BufReader::new(file);
+            let mut file = File::open(path).unwrap();
+            let metadata = metadata(&path).expect("unable to read metadata");
+            let mut buffer = vec![0; metadata.len() as usize];
+            file.read(&mut buffer).expect("buffer overflow");
 
-            let proof: AllProof<F, C, D> = serde_json::from_reader(reader).unwrap();
-            let proof_str = serde_json::to_string(&proof).unwrap();
-            let proof_bytes = proof_str.as_bytes();
-            println!("Proof loaded, size: {} bytes", proof_bytes.len());
+            let mut de_buffer = Buffer::new(buffer);
+            let de_proof = de_buffer.read_all_proof::<F, C, D>();
+            if de_proof.is_err() {
+                println!("Deserialize proof failed!");
+                return;
+            }
+            let de_proof = de_proof.unwrap();
 
             let all_stark = AllStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
-            match verify_proof(all_stark, proof, &config) {
+            match verify_proof(all_stark, de_proof, &config) {
                 Err(error) => println!("Verify failed due to: {error}"),
                 _ => println!("Verify succeed!"),
             }
