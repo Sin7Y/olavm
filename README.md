@@ -33,7 +33,14 @@ This project consists of several crates:
 
 ## Performance
 
-// todo benchmarks cases and results.
+| VM cycles | Execution time | Proving time | RAM consumed | Proof size |
+|-----------|----------------|--------------|--------------|------------|
+| 2^10      | todo           |              |              |            |
+| 2^12      | todo           |              |              |            |
+| 2^14      | todo           |              |              |            |
+| 2^16      | todo           |              |              |            |
+| 2^18      | todo           |              |              |            |
+| 2^20      | todo           |              |              |            |
 
 ## References
 
