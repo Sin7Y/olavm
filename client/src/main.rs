@@ -1,5 +1,6 @@
 extern crate clap;
 
+use assembler::encode::Encoder;
 use circuits::all_stark::AllStark;
 use circuits::config::StarkConfig;
 use circuits::prover::prove;
@@ -13,7 +14,7 @@ use log::debug;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::fs::{metadata, File};
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 
 #[allow(dead_code)]
 const D: usize = 2;
@@ -28,6 +29,15 @@ fn main() {
         .subcommand_required(true)
         .arg_required_else_help(true)
         .allow_external_subcommands(true)
+        .subcommand(
+            Command::new("asm")
+                .about("Run assembler to generate executable instruction code")
+                .args(&[
+                    arg!(-i --input <INPUT> "Must set a input file for Ola-lang assemble language"),
+                    arg!(-o --output <OUTPUT> "Must set a output file for OlaVM executable instruction code"),
+                ])
+                .arg_required_else_help(true),
+        )
         .subcommand(
             Command::new("run")
                 .about("Run an program from an input code file")
@@ -55,6 +65,37 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
+        Some(("asm", sub_matches)) => {
+            let path = sub_matches.get_one::<String>("input").expect("required");
+            println!("Input assemble file path: {}", path);
+            let file = File::open(path).unwrap();
+
+            let mut encoder: Encoder = Default::default();
+            let mut input_lines = BufReader::new(file).lines();
+            let mut asm_codes = Vec::new();
+            loop {
+                let asm = input_lines.next();
+                if let Some(asm) = asm {
+                    debug!("asm code:{:?}", asm);
+                    asm_codes.push(asm.unwrap());
+                } else {
+                    break;
+                }
+            }
+
+            let raw_insts = encoder.assemble_link(asm_codes);
+            let path = sub_matches.get_one::<String>("output").expect("required");
+            println!("Output olavm raw codes file path: {}", path);
+            let file = File::create(path).unwrap();
+            let mut fout = BufWriter::new(file);
+
+            for line in raw_insts {
+                fout.write_all((line + "\n").as_bytes());
+            }
+
+            fout.flush();
+            println!("Asm done!");
+        }
         Some(("run", sub_matches)) => {
             let path = sub_matches.get_one::<String>("input").expect("required");
             println!("Input program file path: {}", path);
