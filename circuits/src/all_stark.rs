@@ -328,6 +328,8 @@ mod tests {
     use crate::stark::Stark;
     use crate::util::trace_rows_to_poly_values;
     use crate::verifier::verify_proof;
+    use crate::serialization::*;
+    use plonky2::util::serialization::Buffer;
     use anyhow::Result;
     use core::program::Program;
     use executor::Process;
@@ -387,7 +389,19 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
-        println!("{}", mem::size_of_val(&proof));
+        // println!("{}", mem::size_of_val(&proof));
+
+        let origin_proof = &proof.stark_proofs[0];
+        let mut buffer = Buffer::new(Vec::new());
+        write_stark_proof(&mut buffer, origin_proof)?;
+
+        println!("serialized cpu stark proof size: {}", buffer.len());
+        // println!("bytes: {:?}", buffer.bytes());
+
+        let columns = 76;
+        let deserialized_proof = read_stark_proof::<F,C,D>(&mut buffer, &config, columns)?;
+        println!("proof: {:?}", deserialized_proof);
+
         let all_stark = AllStark::default();
         verify_proof(all_stark, proof, &config)
     }
