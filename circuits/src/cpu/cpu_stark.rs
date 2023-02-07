@@ -1,10 +1,11 @@
 use anyhow::Result;
+use plonky2::iop::ext_target::ExtensionTarget;
 
 use {
     super::{columns::*, *},
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
     crate::cross_table_lookup::Column,
-    crate::lookup::eval_lookups,
+    crate::lookup::{eval_lookups, eval_lookups_circuit},
     crate::stark::Stark,
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     core::program::REGISTER_NUM,
@@ -371,10 +372,384 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
     fn eval_ext_circuit(
         &self,
-        _builder: &mut CircuitBuilder<F, D>,
-        _vars: StarkEvaluationTargets<D, NUM_CPU_COLS>,
-        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        builder: &mut CircuitBuilder<F, D>,
+        vars: StarkEvaluationTargets<D, NUM_CPU_COLS>,
+        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
+        let lv = vars.local_values;
+        let nv = vars.next_values;
+        let one = builder.one_extension();
+        let zero = builder.zero_extension();
+
+        // op_imm should be binary.
+        let op1_imm_boolean = builder.sub_extension(one, lv[COL_OP1_IMM]);
+        let op1_imm_boolean_cs = builder.mul_extension(lv[COL_OP1_IMM], op1_imm_boolean);
+        yield_constr.constraint(builder, op1_imm_boolean_cs);
+
+        // op0, op1, dst selectors should be binary.
+        let s_op0s: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_OP0].try_into().unwrap();
+        let _ = s_op0s
+            .iter()
+            .map(|s| {
+                let s_boolean = builder.sub_extension(one, *s);
+                let s_boolean_cs = builder.mul_extension(*s, s_boolean);
+                yield_constr.constraint(builder, s_boolean_cs);
+            })
+            .collect::<()>();
+        let s_op1s: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_OP1].try_into().unwrap();
+        let _ = s_op1s
+            .iter()
+            .map(|s| {
+                let s_boolean = builder.sub_extension(one, *s);
+                let s_boolean_cs = builder.mul_extension(*s, s_boolean);
+                yield_constr.constraint(builder, s_boolean_cs);
+            })
+            .collect::<()>();
+        let s_dsts: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_DST].try_into().unwrap();
+        let _ = s_dsts
+            .iter()
+            .map(|s| {
+                let s_boolean = builder.sub_extension(one, *s);
+                let s_boolean_cs = builder.mul_extension(*s, s_boolean);
+                yield_constr.constraint(builder, s_boolean_cs);
+            })
+            .collect::<()>();
+
+        // Selectors of Opcode and builtins should be binary.
+        let op_selectors = [
+            lv[COL_S_ADD],
+            lv[COL_S_MUL],
+            lv[COL_S_EQ],
+            lv[COL_S_ASSERT],
+            lv[COL_S_MOV],
+            lv[COL_S_JMP],
+            lv[COL_S_CJMP],
+            lv[COL_S_CALL],
+            lv[COL_S_RET],
+            lv[COL_S_MLOAD],
+            lv[COL_S_MSTORE],
+            lv[COL_S_END],
+            lv[COL_S_RC],
+            lv[COL_S_AND],
+            lv[COL_S_OR],
+            lv[COL_S_XOR],
+            lv[COL_S_NOT],
+            lv[COL_S_NEQ],
+            lv[COL_S_GTE],
+            lv[COL_S_PSDN],
+            lv[COL_S_ECDSA],
+        ];
+        let _ = op_selectors
+            .iter()
+            .map(|s| {
+                let s_boolean = builder.sub_extension(one, *s);
+                let s_boolean_cs = builder.mul_extension(*s, s_boolean);
+                yield_constr.constraint(builder, s_boolean_cs);
+            })
+            .collect::<()>();
+
+        // Constrain opcode encoding.
+        let add_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(34)));
+        let mul_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(33)));
+        let eq_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(32)));
+        let assert_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(31)));
+        let mov_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(30)));
+        let jmp_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(29)));
+        let cjmp_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(28)));
+        let call_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(27)));
+        let ret_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(26)));
+        let mload_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(25)));
+        let mstore_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(24)));
+        let end_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(23)));
+        let rc_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(22)));
+        let and_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(21)));
+        let or_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(20)));
+        let xor_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(19)));
+        let not_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(18)));
+        let neq_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(17)));
+        let gte_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(16)));
+        let psdn_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(15)));
+        let ecdsa_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(14)));
+        let add_opcode = builder.mul_extension(lv[COL_S_ADD], add_shift);
+        let mul_opcode = builder.mul_extension(lv[COL_S_MUL], mul_shift);
+        let eq_opcode = builder.mul_extension(lv[COL_S_EQ], eq_shift);
+        let assert_opcode = builder.mul_extension(lv[COL_S_ASSERT], assert_shift);
+        let mov_opcode = builder.mul_extension(lv[COL_S_MOV], mov_shift);
+        let jmp_opcode = builder.mul_extension(lv[COL_S_JMP], jmp_shift);
+        let cjmp_opcode = builder.mul_extension(lv[COL_S_CJMP], cjmp_shift);
+        let call_opcode = builder.mul_extension(lv[COL_S_CALL], call_shift);
+        let ret_opcode = builder.mul_extension(lv[COL_S_RET], ret_shift);
+        let mload_opcode = builder.mul_extension(lv[COL_S_MLOAD], mload_shift);
+        let mstore_opcode = builder.mul_extension(lv[COL_S_MSTORE], mstore_shift);
+        let end_opcode = builder.mul_extension(lv[COL_S_END], end_shift);
+        let rc_opcode = builder.mul_extension(lv[COL_S_RC], rc_shift);
+        let and_opcode = builder.mul_extension(lv[COL_S_AND], and_shift);
+        let or_opcode = builder.mul_extension(lv[COL_S_OR], or_shift);
+        let xor_opcode = builder.mul_extension(lv[COL_S_XOR], xor_shift);
+        let not_opcode = builder.mul_extension(lv[COL_S_NOT], not_shift);
+        let neq_opcode = builder.mul_extension(lv[COL_S_NEQ], neq_shift);
+        let gte_opcode = builder.mul_extension(lv[COL_S_GTE], gte_shift);
+        let psdn_opcode = builder.mul_extension(lv[COL_S_PSDN], psdn_shift);
+        let ecdsa_opcode = builder.mul_extension(lv[COL_S_ECDSA], ecdsa_shift);
+        let opcodes = [
+            add_opcode,
+            mul_opcode,
+            eq_opcode,
+            assert_opcode,
+            mov_opcode,
+            jmp_opcode,
+            cjmp_opcode,
+            call_opcode,
+            ret_opcode,
+            mload_opcode,
+            mstore_opcode,
+            end_opcode,
+            rc_opcode,
+            and_opcode,
+            or_opcode,
+            xor_opcode,
+            not_opcode,
+            neq_opcode,
+            gte_opcode,
+            psdn_opcode,
+            ecdsa_opcode,
+        ];
+        let opcodes_cs = builder.add_many_extension(opcodes);
+        yield_constr.constraint(builder, opcodes_cs);
+
+        // Constrain instruction encoding.
+        let op1_imm_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(62)));
+        let mut instruction = builder.mul_extension(lv[COL_OP1_IMM], op1_imm_shift);
+
+        // The order of COL_S_OP0, COL_S_OP1, COL_S_DST is r8, r7, .. r0.
+        let op0_start_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(61)));
+        for (index, s) in s_op0s.iter().rev().enumerate() {
+            let idx = builder
+                .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
+            let shift = builder.div_extension(op0_start_shift, idx);
+            instruction = builder.mul_add_extension(*s, shift, instruction);
+        }
+
+        let op1_start_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(52)));
+        for (index, s) in s_op1s.iter().rev().enumerate() {
+            let idx = builder
+                .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
+            let shift = builder.div_extension(op1_start_shift, idx);
+            instruction = builder.mul_add_extension(*s, shift, instruction);
+        }
+
+        let dst_start_shift =
+            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(43)));
+        for (index, s) in s_dsts.iter().rev().enumerate() {
+            let idx = builder
+                .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
+            let shift = builder.div_extension(dst_start_shift, idx);
+            instruction = builder.mul_add_extension(*s, shift, instruction);
+        }
+
+        instruction = builder.add_extension(lv[COL_OPCODE], instruction);
+        let inst_cs = builder.sub_extension(lv[COL_INST], instruction);
+        yield_constr.constraint(builder, inst_cs);
+
+        // We constrain raw inst and inst.
+        // First constrain compress consistency
+        let beta = builder.constant_extension(F::Extension::from_basefield(
+            self.get_compress_challenge().unwrap(),
+        ));
+        let raw_cs = builder.mul_add_extension(lv[COL_RAW_INST], beta, lv[COL_RAW_PC]);
+        let raw_cs = builder.sub_extension(raw_cs, lv[COL_ZIP_RAW]);
+        yield_constr.constraint(builder, raw_cs);
+
+        let inst_cs = builder.mul_add_extension(lv[COL_INST], beta, lv[COL_PC]);
+        let inst_cs = builder.sub_extension(inst_cs, lv[COL_ZIP_EXED]);
+        yield_constr.constraint(builder, inst_cs);
+
+        // Then check raw inst and inst's lookup logic.
+        eval_lookups_circuit(
+            builder,
+            vars,
+            yield_constr,
+            COL_PER_ZIP_EXED,
+            COL_PER_ZIP_RAW,
+        );
+
+        // Only one register used for op0.
+        let sum_s_op0 = s_op0s
+            .iter()
+            .fold(zero, |acc, s| builder.add_extension(acc, *s));
+        let sum_s_op0_boolean = builder.sub_extension(one, sum_s_op0);
+        let sum_s_op0_cs = builder.mul_extension(sum_s_op0, sum_s_op0_boolean);
+        yield_constr.constraint(builder, sum_s_op0_cs);
+
+        // Only one register used for op1.
+        let sum_s_op1 = s_op1s
+            .iter()
+            .fold(zero, |acc, s| builder.add_extension(acc, *s));
+        let sum_s_op1_boolean = builder.sub_extension(one, sum_s_op1);
+        let sum_s_op1_cs = builder.mul_extension(sum_s_op1, sum_s_op1_boolean);
+        yield_constr.constraint(builder, sum_s_op1_cs);
+
+        // Only one register used for dst.
+        let sum_s_dst = s_dsts
+            .iter()
+            .fold(zero, |acc, s| builder.add_extension(acc, *s));
+        let sum_s_dst_boolean = builder.sub_extension(one, sum_s_dst);
+        let sum_s_dst_cs = builder.mul_extension(sum_s_dst, sum_s_dst_boolean);
+        yield_constr.constraint(builder, sum_s_dst_cs);
+
+        // Op and register permutation.
+        // Register should be next line.
+        let regs: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_REGS].try_into().unwrap();
+        let op0_sum = s_op0s
+            .iter()
+            .zip(regs.iter())
+            .map(|(s, r)| builder.mul_extension(*s, *r))
+            .collect::<Vec<_>>();
+        let op0_sum = op0_sum
+            .iter()
+            .fold(zero, |acc, s| builder.add_extension(acc, *s));
+        let op0_sum_cs = builder.sub_extension(lv[COL_OP0], op0_sum);
+        let op0_sum_cs = builder.mul_extension(sum_s_op0, op0_sum_cs);
+        yield_constr.constraint(builder, op0_sum_cs);
+
+        let op1_sum = s_op1s
+            .iter()
+            .zip(regs.iter())
+            .map(|(s, r)| builder.mul_extension(*s, *r))
+            .collect::<Vec<_>>();
+        let op1_sum = op1_sum
+            .iter()
+            .fold(zero, |acc, s| builder.add_extension(acc, *s));
+        let op1_sum_cs = builder.sub_extension(lv[COL_OP1], op1_sum);
+        let op1_sum_cs = builder.mul_extension(sum_s_op1, op1_sum_cs);
+        yield_constr.constraint(builder, op1_sum_cs);
+
+        let n_regs: [ExtensionTarget<D>; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
+        let dst_sum = s_dsts
+            .iter()
+            .zip(n_regs.iter())
+            .map(|(s, r)| builder.mul_extension(*s, *r))
+            .collect::<Vec<_>>();
+        let dst_sum = dst_sum
+            .iter()
+            .fold(zero, |acc, s| builder.add_extension(acc, *s));
+        let dst_sum_cs = builder.sub_extension(lv[COL_DST], dst_sum);
+        let dst_sum_cs = builder.mul_extension(sum_s_dst, dst_sum_cs);
+        yield_constr.constraint(builder, dst_sum_cs);
+
+        // Last row's 'next row' (AKA first row) regs should be all zeros.
+        let _ = n_regs
+            .iter()
+            .map(|nr| yield_constr.constraint_last_row(builder, *nr))
+            .collect::<()>();
+
+        // When oprand exists, op1 is imm.
+        let op1_imm_val_cs = builder.sub_extension(lv[COL_OP1], lv[COL_IMM_VAL]);
+        let op1_imm_val_cs = builder.mul_extension(lv[COL_OP1_IMM], op1_imm_val_cs);
+        yield_constr.constraint(builder, op1_imm_val_cs);
+
+        // Only one opcode selector enabled.
+        let sum_s_op = op_selectors
+            .iter()
+            .fold(zero, |acc, s| builder.add_extension(acc, *s));
+        let sum_s_op_cs = builder.sub_extension(one, sum_s_op);
+        yield_constr.constraint(builder, sum_s_op_cs);
+
+        // 2. Constrain state changing.
+        // clk
+        // if instruction is end, we don't need to contrain clk.
+        let clk_cs = builder.add_extension(lv[COL_CLK], one);
+        let clk_cs = builder.sub_extension(nv[COL_CLK], clk_cs);
+        let end_boolean = builder.sub_extension(one, lv[COL_S_END]);
+        let clk_cs = builder.mul_extension(end_boolean, clk_cs);
+        yield_constr.constraint(builder, clk_cs);
+
+        // flag
+        let flag_boolean = builder.sub_extension(one, lv[COL_FLAG]);
+        let flag_boolean_cs = builder.mul_extension(lv[COL_FLAG], flag_boolean);
+        yield_constr.constraint(builder, flag_boolean_cs);
+        let s_cmp = [
+            lv[COL_S_EQ],
+            lv[COL_S_NEQ],
+            lv[COL_S_GTE],
+            lv[COL_S_CJMP],
+            lv[COL_S_END],
+        ]
+        .iter()
+        .fold(zero, |acc, s| builder.add_extension(acc, *s));
+        let flag_diff = builder.sub_extension(nv[COL_FLAG], lv[COL_FLAG]);
+        let s_cmp_boolean = builder.sub_extension(one, s_cmp);
+        let flag_cs = builder.mul_extension(s_cmp_boolean, flag_diff);
+        yield_constr.constraint(builder, flag_cs);
+
+        // reg
+        for (dst, l_r, n_r) in izip!(
+            &s_dsts[..REGISTER_NUM - 1],
+            &regs[..REGISTER_NUM - 1],
+            &n_regs[..REGISTER_NUM - 1]
+        ) {
+            let r_diff = builder.sub_extension(*n_r, *l_r);
+            let dst_boolean = builder.sub_extension(one, *dst);
+            let reg_cs = builder.mul_extension(dst_boolean, r_diff);
+            yield_constr.constraint_transition(builder, reg_cs);
+        }
+
+        // fp
+        let ret_cs = builder.sub_extension(n_regs[REGISTER_NUM - 1], lv[COL_AUX1]);
+        let ret_cs = builder.mul_extension(lv[COL_S_RET], ret_cs);
+        let ret_boolean = builder.sub_extension(one, lv[COL_S_RET]);
+        let fp_boolean = builder.sub_extension(one, s_dsts[REGISTER_NUM - 1]);
+        let fp_diff = builder.sub_extension(n_regs[REGISTER_NUM - 1], regs[REGISTER_NUM - 1]);
+        let fp_cs = builder.mul_many_extension([ret_boolean, fp_boolean, fp_diff]);
+        let fp_cs = builder.add_extension(ret_cs, fp_cs);
+        yield_constr.constraint(builder, fp_cs);
+
+        // pc
+        // if instruction is end, we don't need to constrain pc.
+        let pc_sum = builder.add_many_extension([
+            lv[COL_S_JMP],
+            lv[COL_S_CJMP],
+            lv[COL_S_CALL],
+            lv[COL_S_RET],
+        ]);
+        let pc_sum_boolean = builder.sub_extension(one, pc_sum);
+        let pc_incr = builder.add_many_extension([lv[COL_PC], one, lv[COL_OP1_IMM]]);
+        let pc_incr_cs = builder.mul_extension(pc_sum_boolean, pc_incr);
+        let pc_jmp = builder.mul_extension(lv[COL_S_JMP], lv[COL_OP1]);
+        let flag_boolean = builder.sub_extension(one, lv[COL_FLAG]);
+        let flag_op1 = builder.mul_extension(lv[COL_FLAG], lv[COL_OP1]);
+        let pc_cjmp = builder.mul_add_extension(flag_boolean, pc_incr, flag_op1);
+        let pc_cjmp_cs = builder.mul_extension(lv[COL_S_CJMP], pc_cjmp);
+        let pc_call = builder.mul_extension(lv[COL_S_CALL], lv[COL_OP1]);
+        let pc_ret = builder.mul_extension(lv[COL_S_RET], lv[COL_DST]);
+        let end_boolean = builder.sub_extension(one, lv[COL_S_END]);
+        let pc_part_cs =
+            builder.add_many_extension([pc_incr_cs, pc_jmp, pc_cjmp_cs, pc_call, pc_ret]);
+        let pc_diff = builder.sub_extension(nv[COL_PC], pc_part_cs);
+        let pc_cs = builder.mul_extension(end_boolean, pc_diff);
+        yield_constr.constraint(builder, pc_cs);
+
+        // opcode
+        // TODO
+
+        // Last row must be `END`
+        let last_end_cs = builder.sub_extension(lv[COL_S_END], one);
+        yield_constr.constraint(builder, last_end_cs);
+
+        // Padding row must be `END`
+        let next_end_boolean = builder.sub_extension(nv[COL_S_END], one);
+        let next_end_cs = builder.mul_extension(lv[COL_S_END], next_end_boolean);
+        yield_constr.constraint(builder, next_end_cs);
     }
 
     fn constraint_degree(&self) -> usize {
