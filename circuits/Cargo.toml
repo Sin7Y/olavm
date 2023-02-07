@@ -35,6 +35,7 @@ rlp-derive = "0.1.0"
 sha2 = "0.10.2"
 tiny-keccak = "2.0.2"
 criterion = "0.4"
+sysinfo = "0.27.7"
 
 [[bench]]
 name = "fibo_loop"

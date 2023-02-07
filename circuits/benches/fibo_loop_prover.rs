@@ -8,7 +8,8 @@ use executor::Process;
 use log::LevelFilter;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::mem;
+use std::io::{self, BufRead, Write};
+use sysinfo::{System, SystemExt};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -27,6 +28,8 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
         &mut TimingTree::default(),
     )
     .unwrap();
+
+    printSysInfo();
 }
 
 fn fibo_loop_prover_benchmark(c: &mut Criterion) {
@@ -75,6 +78,8 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
     let mut process = Process::new();
     process.execute(&mut program);
 
+    printSysInfo();
+
     let mut group = c.benchmark_group("fibo_loop_prover");
 
     group.bench_function("fibo_loop_prover", |b| {
@@ -84,6 +89,35 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
     });
 
     group.finish();
+
+    printSysInfo();
+}
+
+fn printSysInfo() {
+    let mut sys = System::new_all();
+    writeln!(
+        &mut io::stdout(),
+        "total memory: {} KB",
+        sys.total_memory() / 1_000
+    );
+    writeln!(
+        &mut io::stdout(),
+        "used memory : {} KB",
+        sys.used_memory() / 1_000
+    );
+    writeln!(
+        &mut io::stdout(),
+        "total swap  : {} KB",
+        sys.total_swap() / 1_000
+    );
+    writeln!(
+        &mut io::stdout(),
+        "used swap   : {} KB",
+        sys.used_swap() / 1_000
+    );
+
+    let pid = sysinfo::get_current_pid().expect("failed to get PID");
+    writeln!(&mut io::stdout(), "PID: {}", pid);
 }
 
 criterion_group![
