@@ -288,7 +288,7 @@ impl Encoder {
     }
 
     pub fn relocate(&mut self) {
-        let mut init_asm_len = self.asm_code.len();
+        let init_asm_len = self.asm_code.len();
         let mut cur_asm_len = init_asm_len;
         let mut index = 0;
         loop {
