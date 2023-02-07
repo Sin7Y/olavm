@@ -128,20 +128,17 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // op0, op1, dst selectors should be binary.
         let s_op0s: [P; REGISTER_NUM] = lv[COL_S_OP0].try_into().unwrap();
-        let _ = s_op0s
+        s_op0s
             .iter()
-            .map(|s| yield_constr.constraint(*s * (P::ONES - *s)))
-            .collect::<()>();
+            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
         let s_op1s: [P; REGISTER_NUM] = lv[COL_S_OP1].try_into().unwrap();
-        let _ = s_op1s
+        s_op1s
             .iter()
-            .map(|s| yield_constr.constraint(*s * (P::ONES - *s)))
-            .collect::<()>();
+            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
         let s_dsts: [P; REGISTER_NUM] = lv[COL_S_DST].try_into().unwrap();
-        let _ = s_dsts
+        s_dsts
             .iter()
-            .map(|s| yield_constr.constraint(*s * (P::ONES - *s)))
-            .collect::<()>();
+            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
 
         // Selector of Opcode should be binary.
         yield_constr.constraint(lv[COL_S_ADD] * (P::ONES - lv[COL_S_ADD]));
@@ -277,10 +274,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr.constraint_transition(sum_s_dst * (lv[COL_DST] - dst_sum));
 
         // Last row's 'next row' (AKA first row) regs should be all zeros.
-        let _ = n_regs
+        n_regs
             .iter()
-            .map(|nr| yield_constr.constraint_last_row(*nr))
-            .collect::<()>();
+            .for_each(|nr| yield_constr.constraint_last_row(*nr));
 
         // When oprand exists, op1 is imm.
         yield_constr.constraint(lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL]));
@@ -387,32 +383,23 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // op0, op1, dst selectors should be binary.
         let s_op0s: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_OP0].try_into().unwrap();
-        let _ = s_op0s
-            .iter()
-            .map(|s| {
-                let s_boolean = builder.sub_extension(one, *s);
-                let s_boolean_cs = builder.mul_extension(*s, s_boolean);
-                yield_constr.constraint(builder, s_boolean_cs);
-            })
-            .collect::<()>();
+        s_op0s.iter().for_each(|s| {
+            let s_boolean = builder.sub_extension(one, *s);
+            let s_boolean_cs = builder.mul_extension(*s, s_boolean);
+            yield_constr.constraint(builder, s_boolean_cs);
+        });
         let s_op1s: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_OP1].try_into().unwrap();
-        let _ = s_op1s
-            .iter()
-            .map(|s| {
-                let s_boolean = builder.sub_extension(one, *s);
-                let s_boolean_cs = builder.mul_extension(*s, s_boolean);
-                yield_constr.constraint(builder, s_boolean_cs);
-            })
-            .collect::<()>();
+        s_op1s.iter().for_each(|s| {
+            let s_boolean = builder.sub_extension(one, *s);
+            let s_boolean_cs = builder.mul_extension(*s, s_boolean);
+            yield_constr.constraint(builder, s_boolean_cs);
+        });
         let s_dsts: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_DST].try_into().unwrap();
-        let _ = s_dsts
-            .iter()
-            .map(|s| {
-                let s_boolean = builder.sub_extension(one, *s);
-                let s_boolean_cs = builder.mul_extension(*s, s_boolean);
-                yield_constr.constraint(builder, s_boolean_cs);
-            })
-            .collect::<()>();
+        s_dsts.iter().for_each(|s| {
+            let s_boolean = builder.sub_extension(one, *s);
+            let s_boolean_cs = builder.mul_extension(*s, s_boolean);
+            yield_constr.constraint(builder, s_boolean_cs);
+        });
 
         // Selectors of Opcode and builtins should be binary.
         let op_selectors = [
@@ -438,14 +425,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             lv[COL_S_PSDN],
             lv[COL_S_ECDSA],
         ];
-        let _ = op_selectors
-            .iter()
-            .map(|s| {
-                let s_boolean = builder.sub_extension(one, *s);
-                let s_boolean_cs = builder.mul_extension(*s, s_boolean);
-                yield_constr.constraint(builder, s_boolean_cs);
-            })
-            .collect::<()>();
+        op_selectors.iter().for_each(|s| {
+            let s_boolean = builder.sub_extension(one, *s);
+            let s_boolean_cs = builder.mul_extension(*s, s_boolean);
+            yield_constr.constraint(builder, s_boolean_cs);
+        });
 
         // Constrain opcode encoding.
         let add_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(34)));
@@ -647,10 +631,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr.constraint(builder, dst_sum_cs);
 
         // Last row's 'next row' (AKA first row) regs should be all zeros.
-        let _ = n_regs
+        n_regs
             .iter()
-            .map(|nr| yield_constr.constraint_last_row(builder, *nr))
-            .collect::<()>();
+            .for_each(|nr| yield_constr.constraint_last_row(builder, *nr));
 
         // When oprand exists, op1 is imm.
         let op1_imm_val_cs = builder.sub_extension(lv[COL_OP1], lv[COL_IMM_VAL]);
