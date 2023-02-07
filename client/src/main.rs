@@ -1,9 +1,10 @@
 extern crate clap;
 
+use assembler::encode::Encoder;
 use circuits::all_stark::AllStark;
 use circuits::config::StarkConfig;
-use circuits::proof::AllProof;
 use circuits::prover::prove;
+use circuits::serialization::Buffer;
 use circuits::verifier::verify_proof;
 use clap::{arg, Command};
 use core::program::Program;
@@ -12,9 +13,8 @@ use executor::Process;
 use log::debug;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-//use std::path::PathBuf;
+use std::fs::{metadata, File};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 
 #[allow(dead_code)]
 const D: usize = 2;
@@ -29,6 +29,15 @@ fn main() {
         .subcommand_required(true)
         .arg_required_else_help(true)
         .allow_external_subcommands(true)
+        .subcommand(
+            Command::new("asm")
+                .about("Run assembler to generate executable instruction code")
+                .args(&[
+                    arg!(-i --input <INPUT> "Must set a input file for Ola-lang assemble language"),
+                    arg!(-o --output <OUTPUT> "Must set a output file for OlaVM executable instruction code"),
+                ])
+                .arg_required_else_help(true),
+        )
         .subcommand(
             Command::new("run")
                 .about("Run an program from an input code file")
@@ -56,6 +65,43 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
+        Some(("asm", sub_matches)) => {
+            let path = sub_matches.get_one::<String>("input").expect("required");
+            println!("Input assemble file path: {}", path);
+            let file = File::open(path).unwrap();
+
+            let mut encoder: Encoder = Default::default();
+            let mut input_lines = BufReader::new(file).lines();
+            let mut asm_codes = Vec::new();
+            loop {
+                let asm = input_lines.next();
+                if let Some(asm) = asm {
+                    debug!("asm code:{:?}", asm);
+                    asm_codes.push(asm.unwrap());
+                } else {
+                    break;
+                }
+            }
+
+            let raw_insts = encoder.assemble_link(asm_codes);
+            let path = sub_matches.get_one::<String>("output").expect("required");
+            println!("Output olavm raw codes file path: {}", path);
+            let file = File::create(path).unwrap();
+            let mut fout = BufWriter::new(file);
+
+            for line in raw_insts {
+                let res = fout.write_all((line + "\n").as_bytes());
+                if res.is_err() {
+                    debug!("file write_all err: {:?}", res);
+                }
+            }
+
+            let res = fout.flush();
+            if res.is_err() {
+                debug!("file flush res: {:?}", res);
+            }
+            println!("Asm done!");
+        }
         Some(("run", sub_matches)) => {
             let path = sub_matches.get_one::<String>("input").expect("required");
             println!("Input program file path: {}", path);
@@ -110,12 +156,13 @@ fn main() {
 
             let path = sub_matches.get_one::<String>("output").expect("required");
             println!("Output proof file path: {}", path);
-            let file = File::create(path).unwrap();
-            serde_json::to_writer(file, &proof).unwrap();
+            let mut file = File::create(path).unwrap();
+            let mut buffer = Buffer::new(Vec::new());
+            buffer.write_all_proof(&proof).unwrap();
+            let se_proof = buffer.bytes();
+            file.write_all(&se_proof).unwrap();
 
-            let proof = serde_json::to_string(&proof).unwrap();
-            let proof = proof.as_bytes();
-            println!("Proof size: {} bytes", proof.len());
+            println!("Proof size: {} bytes", se_proof.len());
             println!("Prove done!");
         }
         Some(("verify", sub_matches)) => {
@@ -123,17 +170,22 @@ fn main() {
             let path = sub_matches.get_one::<String>("input").expect("required");
             println!("Input file path: {}", path);
 
-            let file = File::open(path).unwrap();
-            let reader = BufReader::new(file);
+            let mut file = File::open(path).unwrap();
+            let metadata = metadata(&path).expect("unable to read metadata");
+            let mut buffer = vec![0; metadata.len() as usize];
+            file.read(&mut buffer).expect("buffer overflow");
 
-            let proof: AllProof<F, C, D> = serde_json::from_reader(reader).unwrap();
-            let proof_str = serde_json::to_string(&proof).unwrap();
-            let proof_bytes = proof_str.as_bytes();
-            println!("Proof loaded, size: {} bytes", proof_bytes.len());
+            let mut de_buffer = Buffer::new(buffer);
+            let de_proof = de_buffer.read_all_proof::<F, C, D>();
+            if de_proof.is_err() {
+                println!("Deserialize proof failed!");
+                return;
+            }
+            let de_proof = de_proof.unwrap();
 
             let all_stark = AllStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
-            match verify_proof(all_stark, proof, &config) {
+            match verify_proof(all_stark, de_proof, &config) {
                 Err(error) => println!("Verify failed due to: {error}"),
                 _ => println!("Verify succeed!"),
             }

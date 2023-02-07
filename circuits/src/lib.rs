@@ -18,6 +18,7 @@ pub mod program;
 pub mod proof;
 pub mod prover;
 pub mod recursive_verifier;
+pub mod serialization;
 pub mod stark;
 pub mod util;
 pub mod vanishing_poly;
