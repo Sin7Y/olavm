@@ -41,4 +41,4 @@ This project consists of several crates:
 
 ## License
 
-his project is [MIT licensed](./LICENSE).
+This project is under [MIT licensed](./LICENSE).
