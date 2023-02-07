@@ -1,6 +1,3 @@
-use anyhow::Result;
-use plonky2::iop::ext_target::ExtensionTarget;
-
 use {
     super::{columns::*, *},
     crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -8,6 +5,7 @@ use {
     crate::lookup::{eval_lookups, eval_lookups_circuit},
     crate::stark::Stark,
     crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
+    anyhow::Result,
     core::program::REGISTER_NUM,
     itertools::izip,
     itertools::Itertools,
@@ -15,6 +13,7 @@ use {
     plonky2::field::packed::PackedField,
     plonky2::field::types::Field,
     plonky2::hash::hash_types::RichField,
+    plonky2::iop::ext_target::ExtensionTarget,
     plonky2::plonk::circuit_builder::CircuitBuilder,
     std::marker::PhantomData,
 };
@@ -740,7 +739,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr.constraint(builder, pc_cs);
 
         // opcode
-        // TODO
+        add::eval_ext_circuit(builder, lv, nv, yield_constr);
+        mul::eval_ext_circuit(builder, lv, nv, yield_constr);
+        cmp::eval_ext_circuit(builder, lv, nv, yield_constr);
+        assert::eval_ext_circuit(builder, lv, nv, yield_constr);
+        mov::eval_ext_circuit(builder, lv, nv, yield_constr);
+        jmp::eval_ext_circuit(builder, lv, nv, yield_constr);
+        cjmp::eval_ext_circuit(builder, lv, nv, yield_constr);
+        call::eval_ext_circuit(builder, lv, nv, yield_constr);
+        ret::eval_ext_circuit(builder, lv, nv, yield_constr);
 
         // Last row must be `END`
         let last_end_cs = builder.sub_extension(lv[COL_S_END], one);
@@ -880,27 +887,27 @@ mod tests {
     #[test]
     fn test_call() {
         let program_src = "0x4000000020000000
-                             0x7
-                            0x4020008200000000
-                            0xa
-                            0x0200208400000000
-                            0x0001000840000000
-                            0x0000000004000000
-                            0x4000000840000000
-                            0x8
-                            0x4000001040000000
-                            0x2
-                            0x4000080040000000
-                            0x100010000
-                            0x6000040400000000
-                            0xfffffffeffffffff
-                            0x4000020040000000
-                            0x100000000
-                            0x0808000001000000
-                            0x4000000008000000
-                            0x2
-                            0x0020200c00000000
-                            0x0000000000800000";
+            0x7
+        0x4020008200000000
+        0xa
+        0x0200208400000000
+        0x0001000840000000
+        0x0000000004000000
+        0x4000000840000000
+        0x8
+        0x4000001040000000
+        0x2
+        0x4000080040000000
+        0x100010000
+        0x6000040400000000
+        0xfffffffeffffffff
+        0x4000020040000000
+        0x100000000
+        0x0808000001000000
+        0x4000000008000000
+        0x2
+        0x0020200c00000000
+        0x0000000000800000";
 
         test_cpu_stark(program_src);
     }
