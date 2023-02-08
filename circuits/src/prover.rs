@@ -290,7 +290,7 @@ where
             config,
         )
     );
-    let all_quotient_chunks = timed!(
+    let all_quotient_chunks: Vec<PolynomialCoeffs<F>> = timed!(
         timing,
         "split quotient polys",
         quotient_polys
