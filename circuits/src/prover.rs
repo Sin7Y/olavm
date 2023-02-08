@@ -117,15 +117,15 @@ where
         &mut challenger,
     );
 
-    // let cpu_proof = prove_single_table(
-    //     &all_stark.cpu_stark,
-    //     config,
-    //     &trace_poly_values[Table::Cpu as usize],
-    //     &trace_commitments[Table::Cpu as usize],
-    //     &ctl_data_per_table[Table::Cpu as usize],
-    //     &mut challenger,
-    //     timing,
-    // )?;
+    let cpu_proof = prove_single_table(
+        &all_stark.cpu_stark,
+        config,
+        &trace_poly_values[Table::Cpu as usize],
+        &trace_commitments[Table::Cpu as usize],
+        &ctl_data_per_table[Table::Cpu as usize],
+        &mut challenger,
+        timing,
+    )?;
     // let memory_proof = prove_single_table(
     //     &all_stark.memory_stark,
     //     config,
@@ -275,99 +275,100 @@ where
     //         config,
     //     );
     // }
-    let quotient_polys = timed!(
-        timing,
-        "compute quotient polys",
-        compute_quotient_polys::<F, <F as Packable>::Packing, C, S, D>(
-            stark,
-            trace_commitment,
-            &permutation_ctl_zs_commitment,
-            permutation_challenges.as_ref(),
-            ctl_data,
-            alphas,
-            degree_bits,
-            num_permutation_zs,
-            config,
-        )
-    );
-    let all_quotient_chunks = timed!(
-        timing,
-        "split quotient polys",
-        quotient_polys
-            .into_par_iter()
-            .flat_map(|mut quotient_poly| {
-                quotient_poly
-                    .trim_to_len(degree * stark.quotient_degree_factor())
-                    .expect(
-                        "Quotient has failed, the vanishing polynomial is not divisible by Z_H",
-                    );
-                // Split quotient into degree-n chunks.
-                quotient_poly.chunks(degree)
-            })
-            .collect()
-    );
-    let quotient_commitment = timed!(
-        timing,
-        "compute quotient commitment",
-        PolynomialBatch::from_coeffs(
-            all_quotient_chunks,
-            rate_bits,
-            false,
-            config.fri_config.cap_height,
-            timing,
-            None,
-        )
-    );
-    let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
-    challenger.observe_cap(&quotient_polys_cap);
+    // let quotient_polys = timed!(
+    //     timing,
+    //     "compute quotient polys",
+    //     compute_quotient_polys::<F, <F as Packable>::Packing, C, S, D>(
+    //         stark,
+    //         trace_commitment,
+    //         &permutation_ctl_zs_commitment,
+    //         permutation_challenges.as_ref(),
+    //         ctl_data,
+    //         alphas,
+    //         degree_bits,
+    //         num_permutation_zs,
+    //         config,
+    //     )
+    // );
+    // let all_quotient_chunks = timed!(
+    //     timing,
+    //     "split quotient polys",
+    //     quotient_polys
+    //         .into_par_iter()
+    //         .flat_map(|mut quotient_poly| {
+    //             quotient_poly
+    //                 .trim_to_len(degree * stark.quotient_degree_factor())
+    //                 .expect(
+    //                     "Quotient has failed, the vanishing polynomial is not divisible by Z_H",
+    //                 );
+    //             // Split quotient into degree-n chunks.
+    //             quotient_poly.chunks(degree)
+    //         })
+    //         .collect()
+    // );
+    // let quotient_commitment = timed!(
+    //     timing,
+    //     "compute quotient commitment",
+    //     PolynomialBatch::from_coeffs(
+    //         all_quotient_chunks,
+    //         rate_bits,
+    //         false,
+    //         config.fri_config.cap_height,
+    //         timing,
+    //         None,
+    //     )
+    // );
+    // let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
+    // challenger.observe_cap(&quotient_polys_cap);
 
-    let zeta = challenger.get_extension_challenge::<D>();
-    // To avoid leaking witness data, we want to ensure that our opening locations,
-    // `zeta` and `g * zeta`, are not in our subgroup `H`. It suffices to check
-    // `zeta` only, since `(g * zeta)^n = zeta^n`, where `n` is the order of
-    // `g`.
-    let g = F::primitive_root_of_unity(degree_bits);
-    ensure!(
-        zeta.exp_power_of_2(degree_bits) != F::Extension::ONE,
-        "Opening point is in the subgroup."
-    );
+    // let zeta = challenger.get_extension_challenge::<D>();
+    // // To avoid leaking witness data, we want to ensure that our opening locations,
+    // // `zeta` and `g * zeta`, are not in our subgroup `H`. It suffices to check
+    // // `zeta` only, since `(g * zeta)^n = zeta^n`, where `n` is the order of
+    // // `g`.
+    // let g = F::primitive_root_of_unity(degree_bits);
+    // ensure!(
+    //     zeta.exp_power_of_2(degree_bits) != F::Extension::ONE,
+    //     "Opening point is in the subgroup."
+    // );
 
-    let openings = StarkOpeningSet::new(
-        zeta,
-        g,
-        trace_commitment,
-        &permutation_ctl_zs_commitment,
-        &quotient_commitment,
-        degree_bits,
-        stark.num_permutation_batches(config),
-    );
-    challenger.observe_openings(&openings.to_fri_openings());
+    // let openings = StarkOpeningSet::new(
+    //     zeta,
+    //     g,
+    //     trace_commitment,
+    //     &permutation_ctl_zs_commitment,
+    //     &quotient_commitment,
+    //     degree_bits,
+    //     stark.num_permutation_batches(config),
+    // );
+    // challenger.observe_openings(&openings.to_fri_openings());
 
-    let initial_merkle_trees = vec![
-        trace_commitment,
-        &permutation_ctl_zs_commitment,
-        &quotient_commitment,
-    ];
+    // let initial_merkle_trees = vec![
+    //     trace_commitment,
+    //     &permutation_ctl_zs_commitment,
+    //     &quotient_commitment,
+    // ];
 
-    let opening_proof = timed!(
-        timing,
-        "compute openings proof",
-        PolynomialBatch::prove_openings(
-            &stark.fri_instance(zeta, g, degree_bits, ctl_data.len(), config),
-            &initial_merkle_trees,
-            challenger,
-            &fri_params,
-            timing,
-        )
-    );
+    // let opening_proof = timed!(
+    //     timing,
+    //     "compute openings proof",
+    //     PolynomialBatch::prove_openings(
+    //         &stark.fri_instance(zeta, g, degree_bits, ctl_data.len(), config),
+    //         &initial_merkle_trees,
+    //         challenger,
+    //         &fri_params,
+    //         timing,
+    //     )
+    // );
 
-    Ok(StarkProof {
-        trace_cap: trace_commitment.merkle_tree.cap.clone(),
-        permutation_ctl_zs_cap,
-        quotient_polys_cap,
-        openings,
-        opening_proof,
-    })
+    // Ok(StarkProof {
+    //     trace_cap: trace_commitment.merkle_tree.cap.clone(),
+    //     permutation_ctl_zs_cap,
+    //     quotient_polys_cap,
+    //     openings,
+    //     opening_proof,
+    // })
+    Err(anyhow::Error::msg("message"))
 }
 
 /// Computes the quotient polynomials `(sum alpha^i C_i(x)) / Z_H(x)` for
