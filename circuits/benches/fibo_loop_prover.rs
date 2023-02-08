@@ -29,7 +29,6 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
     )
     .unwrap();
 
-    printSysInfo();
 }
 
 fn fibo_loop_prover_benchmark(c: &mut Criterion) {
@@ -37,7 +36,7 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
         .filter_level(LevelFilter::Info)
         .try_init();
 
-    // 0x5d00, 0xb800, 0x17200
+    // 0x5d00, 0xb800, 0x17200, 0x2e8b0, 0x5d170, 0xba2e0
     let program_src = format!(
         "0x4000000840000000
         0x5d00
@@ -89,8 +88,6 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
     });
 
     group.finish();
-
-    printSysInfo();
 }
 
 fn printSysInfo() {
