@@ -77,29 +77,29 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
 {
-    let rate_bits = config.fri_config.rate_bits;
-    let cap_height = config.fri_config.cap_height;
+    // let rate_bits = config.fri_config.rate_bits;
+    // let cap_height = config.fri_config.cap_height;
 
-    let trace_commitments = timed!(
-        timing,
-        "compute trace commitments",
-        trace_poly_values
-            .iter()
-            .map(|trace| {
-                PolynomialBatch::<F, C, D>::from_values(
-                    // TODO: Cloning this isn't great; consider having `from_values` accept a
-                    // reference, or having `compute_permutation_z_polys` read
-                    // trace values from the `PolynomialBatch`.
-                    trace.clone(),
-                    rate_bits,
-                    false,
-                    cap_height,
-                    timing,
-                    None,
-                )
-            })
-            .collect::<Vec<_>>()
-    );
+    // let trace_commitments = timed!(
+    //     timing,
+    //     "compute trace commitments",
+    //     trace_poly_values
+    //         .iter()
+    //         .map(|trace| {
+    //             PolynomialBatch::<F, C, D>::from_values(
+    //                 // TODO: Cloning this isn't great; consider having `from_values` accept a
+    //                 // reference, or having `compute_permutation_z_polys` read
+    //                 // trace values from the `PolynomialBatch`.
+    //                 trace.clone(),
+    //                 rate_bits,
+    //                 false,
+    //                 cap_height,
+    //                 timing,
+    //                 None,
+    //             )
+    //         })
+    //         .collect::<Vec<_>>()
+    // );
 
     // let trace_caps = trace_commitments
     //     .iter()
