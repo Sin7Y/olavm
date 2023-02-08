@@ -306,7 +306,7 @@ where
             })
             .collect()
     );
-    // let quotient_commitment = timed!(
+    // let quotient_commitment: PolynomialBatch<F, C, D> = timed!(
     //     timing,
     //     "compute quotient commitment",
     //     PolynomialBatch::from_coeffs(
