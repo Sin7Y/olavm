@@ -101,21 +101,21 @@ where
             .collect::<Vec<_>>()
     );
 
-    // let trace_caps = trace_commitments
-    //     .iter()
-    //     .map(|c| c.merkle_tree.cap.clone())
-    //     .collect::<Vec<_>>();
-    // let mut challenger = Challenger::<F, C::Hasher>::new();
-    // for cap in &trace_caps {
-    //     challenger.observe_cap(cap);
-    // }
+    let trace_caps = trace_commitments
+        .iter()
+        .map(|c| c.merkle_tree.cap.clone())
+        .collect::<Vec<_>>();
+    let mut challenger = Challenger::<F, C::Hasher>::new();
+    for cap in &trace_caps {
+        challenger.observe_cap(cap);
+    }
 
-    // let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
-    //     config,
-    //     &trace_poly_values,
-    //     &all_stark.cross_table_lookups,
-    //     &mut challenger,
-    // );
+    let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
+        config,
+        &trace_poly_values,
+        &all_stark.cross_table_lookups,
+        &mut challenger,
+    );
 
     // let cpu_proof = prove_single_table(
     //     &all_stark.cpu_stark,
