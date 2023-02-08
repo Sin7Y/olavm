@@ -275,49 +275,49 @@ where
     //         config,
     //     );
     // }
-    // let quotient_polys: Vec<PolynomialCoeffs<F>> = timed!(
-    //     timing,
-    //     "compute quotient polys",
-    //     compute_quotient_polys::<F, <F as Packable>::Packing, C, S, D>(
-    //         stark,
-    //         trace_commitment,
-    //         &permutation_ctl_zs_commitment,
-    //         permutation_challenges.as_ref(),
-    //         ctl_data,
-    //         alphas,
-    //         degree_bits,
-    //         num_permutation_zs,
-    //         config,
-    //     )
-    // );
-    // let all_quotient_chunks: Vec<PolynomialCoeffs<F>> = timed!(
-    //     timing,
-    //     "split quotient polys",
-    //     quotient_polys
-    //         .into_par_iter()
-    //         .flat_map(|mut quotient_poly| {
-    //             quotient_poly
-    //                 .trim_to_len(degree * stark.quotient_degree_factor())
-    //                 .expect(
-    //                     "Quotient has failed, the vanishing polynomial is not divisible by Z_H",
-    //                 );
-    //             // Split quotient into degree-n chunks.
-    //             quotient_poly.chunks(degree)
-    //         })
-    //         .collect()
-    // );
-    // let quotient_commitment: PolynomialBatch<F, C, D> = timed!(
-    //     timing,
-    //     "compute quotient commitment",
-    //     PolynomialBatch::from_coeffs(
-    //         all_quotient_chunks,
-    //         rate_bits,
-    //         false,
-    //         config.fri_config.cap_height,
-    //         timing,
-    //         None,
-    //     )
-    // );
+    let quotient_polys: Vec<PolynomialCoeffs<F>> = timed!(
+        timing,
+        "compute quotient polys",
+        compute_quotient_polys::<F, <F as Packable>::Packing, C, S, D>(
+            stark,
+            trace_commitment,
+            &permutation_ctl_zs_commitment,
+            permutation_challenges.as_ref(),
+            ctl_data,
+            alphas,
+            degree_bits,
+            num_permutation_zs,
+            config,
+        )
+    );
+    let all_quotient_chunks: Vec<PolynomialCoeffs<F>> = timed!(
+        timing,
+        "split quotient polys",
+        quotient_polys
+            .into_par_iter()
+            .flat_map(|mut quotient_poly| {
+                quotient_poly
+                    .trim_to_len(degree * stark.quotient_degree_factor())
+                    .expect(
+                        "Quotient has failed, the vanishing polynomial is not divisible by Z_H",
+                    );
+                // Split quotient into degree-n chunks.
+                quotient_poly.chunks(degree)
+            })
+            .collect()
+    );
+    let quotient_commitment: PolynomialBatch<F, C, D> = timed!(
+        timing,
+        "compute quotient commitment",
+        PolynomialBatch::from_coeffs(
+            all_quotient_chunks,
+            rate_bits,
+            false,
+            config.fri_config.cap_height,
+            timing,
+            None,
+        )
+    );
     // let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
     // challenger.observe_cap(&quotient_polys_cap);
 
