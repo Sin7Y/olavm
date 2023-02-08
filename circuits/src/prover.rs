@@ -343,32 +343,31 @@ where
     );
     challenger.observe_openings(&openings.to_fri_openings());
 
-    // let initial_merkle_trees = vec![
-    //     trace_commitment,
-    //     &permutation_ctl_zs_commitment,
-    //     &quotient_commitment,
-    // ];
+    let initial_merkle_trees = vec![
+        trace_commitment,
+        &permutation_ctl_zs_commitment,
+        &quotient_commitment,
+    ];
 
-    // let opening_proof = timed!(
-    //     timing,
-    //     "compute openings proof",
-    //     PolynomialBatch::prove_openings(
-    //         &stark.fri_instance(zeta, g, degree_bits, ctl_data.len(), config),
-    //         &initial_merkle_trees,
-    //         challenger,
-    //         &fri_params,
-    //         timing,
-    //     )
-    // );
+    let opening_proof = timed!(
+        timing,
+        "compute openings proof",
+        PolynomialBatch::prove_openings(
+            &stark.fri_instance(zeta, g, degree_bits, ctl_data.len(), config),
+            &initial_merkle_trees,
+            challenger,
+            &fri_params,
+            timing,
+        )
+    );
 
-    // Ok(StarkProof {
-    //     trace_cap: trace_commitment.merkle_tree.cap.clone(),
-    //     permutation_ctl_zs_cap,
-    //     quotient_polys_cap,
-    //     openings,
-    //     opening_proof,
-    // })
-    Err(anyhow::Error::msg("message"))
+    Ok(StarkProof {
+        trace_cap: trace_commitment.merkle_tree.cap.clone(),
+        permutation_ctl_zs_cap,
+        quotient_polys_cap,
+        openings,
+        opening_proof,
+    })
 }
 
 /// Computes the quotient polynomials `(sum alpha^i C_i(x)) / Z_H(x)` for
