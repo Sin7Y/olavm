@@ -1,7 +1,7 @@
 use core::program::Program;
 use std::any::type_name;
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Result, Ok};
 use maybe_rayon::*;
 use plonky2::field::extension::Extendable;
 use plonky2::field::packable::Packable;
@@ -101,90 +101,93 @@ where
             .collect::<Vec<_>>()
     );
 
-    let trace_caps = trace_commitments
-        .iter()
-        .map(|c| c.merkle_tree.cap.clone())
-        .collect::<Vec<_>>();
-    let mut challenger = Challenger::<F, C::Hasher>::new();
-    for cap in &trace_caps {
-        challenger.observe_cap(cap);
-    }
+    // let trace_caps = trace_commitments
+    //     .iter()
+    //     .map(|c| c.merkle_tree.cap.clone())
+    //     .collect::<Vec<_>>();
+    // let mut challenger = Challenger::<F, C::Hasher>::new();
+    // for cap in &trace_caps {
+    //     challenger.observe_cap(cap);
+    // }
 
-    let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
-        config,
-        &trace_poly_values,
-        &all_stark.cross_table_lookups,
-        &mut challenger,
-    );
+    // let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
+    //     config,
+    //     &trace_poly_values,
+    //     &all_stark.cross_table_lookups,
+    //     &mut challenger,
+    // );
 
-    let cpu_proof = prove_single_table(
-        &all_stark.cpu_stark,
-        config,
-        &trace_poly_values[Table::Cpu as usize],
-        &trace_commitments[Table::Cpu as usize],
-        &ctl_data_per_table[Table::Cpu as usize],
-        &mut challenger,
-        timing,
-    )?;
-    let memory_proof = prove_single_table(
-        &all_stark.memory_stark,
-        config,
-        &trace_poly_values[Table::Memory as usize],
-        &trace_commitments[Table::Memory as usize],
-        &ctl_data_per_table[Table::Memory as usize],
-        &mut challenger,
-        timing,
-    )?;
+    // let cpu_proof = prove_single_table(
+    //     &all_stark.cpu_stark,
+    //     config,
+    //     &trace_poly_values[Table::Cpu as usize],
+    //     &trace_commitments[Table::Cpu as usize],
+    //     &ctl_data_per_table[Table::Cpu as usize],
+    //     &mut challenger,
+    //     timing,
+    // )?;
+    // let memory_proof = prove_single_table(
+    //     &all_stark.memory_stark,
+    //     config,
+    //     &trace_poly_values[Table::Memory as usize],
+    //     &trace_commitments[Table::Memory as usize],
+    //     &ctl_data_per_table[Table::Memory as usize],
+    //     &mut challenger,
+    //     timing,
+    // )?;
 
-    let bitwise_proof = prove_single_table(
-        &all_stark.bitwise_stark,
-        config,
-        &trace_poly_values[Table::Bitwise as usize],
-        &trace_commitments[Table::Bitwise as usize],
-        &ctl_data_per_table[Table::Bitwise as usize],
-        &mut challenger,
-        timing,
-    )?;
-    let cmp_proof = prove_single_table(
-        &all_stark.cmp_stark,
-        config,
-        &trace_poly_values[Table::Cmp as usize],
-        &trace_commitments[Table::Cmp as usize],
-        &ctl_data_per_table[Table::Cmp as usize],
-        &mut challenger,
-        timing,
-    )?;
-    let rangecheck_proof = prove_single_table(
-        &all_stark.rangecheck_stark,
-        config,
-        &trace_poly_values[Table::RangeCheck as usize],
-        &trace_commitments[Table::RangeCheck as usize],
-        &ctl_data_per_table[Table::RangeCheck as usize],
-        &mut challenger,
-        timing,
-    )?;
+    // let bitwise_proof = prove_single_table(
+    //     &all_stark.bitwise_stark,
+    //     config,
+    //     &trace_poly_values[Table::Bitwise as usize],
+    //     &trace_commitments[Table::Bitwise as usize],
+    //     &ctl_data_per_table[Table::Bitwise as usize],
+    //     &mut challenger,
+    //     timing,
+    // )?;
+    // let cmp_proof = prove_single_table(
+    //     &all_stark.cmp_stark,
+    //     config,
+    //     &trace_poly_values[Table::Cmp as usize],
+    //     &trace_commitments[Table::Cmp as usize],
+    //     &ctl_data_per_table[Table::Cmp as usize],
+    //     &mut challenger,
+    //     timing,
+    // )?;
+    // let rangecheck_proof = prove_single_table(
+    //     &all_stark.rangecheck_stark,
+    //     config,
+    //     &trace_poly_values[Table::RangeCheck as usize],
+    //     &trace_commitments[Table::RangeCheck as usize],
+    //     &ctl_data_per_table[Table::RangeCheck as usize],
+    //     &mut challenger,
+    //     timing,
+    // )?;
 
-    let stark_proofs = [
-        cpu_proof,
-        memory_proof,
-        bitwise_proof,
-        cmp_proof,
-        rangecheck_proof,
-    ];
+    // let stark_proofs = [
+    //     cpu_proof,
+    //     memory_proof,
+    //     bitwise_proof,
+    //     cmp_proof,
+    //     rangecheck_proof,
+    // ];
 
-    let compress_challenges = [
-        all_stark.cpu_stark.get_compress_challenge().unwrap(),
-        F::ZERO,
-        all_stark.bitwise_stark.get_compress_challenge().unwrap(),
-        F::ZERO,
-        F::ZERO,
-    ];
+    // let compress_challenges = [
+    //     all_stark.cpu_stark.get_compress_challenge().unwrap(),
+    //     F::ZERO,
+    //     all_stark.bitwise_stark.get_compress_challenge().unwrap(),
+    //     F::ZERO,
+    //     F::ZERO,
+    // ];
 
-    Ok(AllProof {
-        stark_proofs,
-        compress_challenges,
-        public_values,
-    })
+    // Ok(AllProof {
+    //     stark_proofs,
+    //     compress_challenges,
+    //     public_values,
+    // })
+
+    Err(anyhow::Error::msg("none"))
+
 }
 
 /// Compute proof for a single STARK table.
