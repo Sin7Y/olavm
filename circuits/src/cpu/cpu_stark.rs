@@ -16,6 +16,7 @@ use {
     plonky2::iop::ext_target::ExtensionTarget,
     plonky2::plonk::circuit_builder::CircuitBuilder,
     std::marker::PhantomData,
+    std::ops::Range,
 };
 
 pub fn ctl_data_cpu_mem_mstore<F: Field>() -> Vec<Column<F>> {
@@ -97,6 +98,12 @@ pub struct CpuStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> CpuStark<F, D> {
+    pub const OPCODE_SHIFTS: Range<u32> = 14..35;
+    pub const OP1_IMM_SHIFT: u32 = 62;
+    pub const OP0_SHIFT_START: u32 = 61;
+    pub const OP1_SHIFT_START: u32 = 52;
+    pub const DST_SHIFT_START: u32 = 43;
+
     pub fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
         assert!(self.compress_challenge.is_none(), "already set?");
         self.compress_challenge = Some(challenge);
@@ -140,96 +147,67 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             .iter()
             .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
 
-        // Selector of Opcode should be binary.
-        yield_constr.constraint(lv[COL_S_ADD] * (P::ONES - lv[COL_S_ADD]));
-        yield_constr.constraint(lv[COL_S_MUL] * (P::ONES - lv[COL_S_MUL]));
-        yield_constr.constraint(lv[COL_S_EQ] * (P::ONES - lv[COL_S_EQ]));
-        yield_constr.constraint(lv[COL_S_ASSERT] * (P::ONES - lv[COL_S_ASSERT]));
-        yield_constr.constraint(lv[COL_S_MOV] * (P::ONES - lv[COL_S_MOV]));
-        yield_constr.constraint(lv[COL_S_JMP] * (P::ONES - lv[COL_S_JMP]));
-        yield_constr.constraint(lv[COL_S_CJMP] * (P::ONES - lv[COL_S_CJMP]));
-        yield_constr.constraint(lv[COL_S_CALL] * (P::ONES - lv[COL_S_CALL]));
-        yield_constr.constraint(lv[COL_S_RET] * (P::ONES - lv[COL_S_RET]));
-        yield_constr.constraint(lv[COL_S_MLOAD] * (P::ONES - lv[COL_S_MLOAD]));
-        yield_constr.constraint(lv[COL_S_MSTORE] * (P::ONES - lv[COL_S_MSTORE]));
-        yield_constr.constraint(lv[COL_S_END] * (P::ONES - lv[COL_S_END]));
+        // Selector of opcode and builtins should be binary.
+        let op_selectors = [
+            lv[COL_S_ADD],
+            lv[COL_S_MUL],
+            lv[COL_S_EQ],
+            lv[COL_S_ASSERT],
+            lv[COL_S_MOV],
+            lv[COL_S_JMP],
+            lv[COL_S_CJMP],
+            lv[COL_S_CALL],
+            lv[COL_S_RET],
+            lv[COL_S_MLOAD],
+            lv[COL_S_MSTORE],
+            lv[COL_S_END],
+            lv[COL_S_RC],
+            lv[COL_S_AND],
+            lv[COL_S_OR],
+            lv[COL_S_XOR],
+            lv[COL_S_NOT],
+            lv[COL_S_NEQ],
+            lv[COL_S_GTE],
+            lv[COL_S_PSDN],
+            lv[COL_S_ECDSA],
+        ];
 
-        // Selector of builtins should be binary.
-        yield_constr.constraint(lv[COL_S_RC] * (P::ONES - lv[COL_S_RC]));
-        yield_constr.constraint(lv[COL_S_AND] * (P::ONES - lv[COL_S_AND]));
-        yield_constr.constraint(lv[COL_S_OR] * (P::ONES - lv[COL_S_OR]));
-        yield_constr.constraint(lv[COL_S_XOR] * (P::ONES - lv[COL_S_XOR]));
-        yield_constr.constraint(lv[COL_S_NOT] * (P::ONES - lv[COL_S_NOT]));
-        yield_constr.constraint(lv[COL_S_NEQ] * (P::ONES - lv[COL_S_NEQ]));
-        yield_constr.constraint(lv[COL_S_GTE] * (P::ONES - lv[COL_S_GTE]));
-        yield_constr.constraint(lv[COL_S_PSDN] * (P::ONES - lv[COL_S_PSDN]));
-        yield_constr.constraint(lv[COL_S_ECDSA] * (P::ONES - lv[COL_S_ECDSA]));
+        op_selectors
+            .iter()
+            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
 
         // Constrain opcode encoding.
-        let add_shift = P::Scalar::from_canonical_u64(2_u64.pow(34));
-        let mul_shift = P::Scalar::from_canonical_u64(2_u64.pow(33));
-        let eq_shift = P::Scalar::from_canonical_u64(2_u64.pow(32));
-        let assert_shift = P::Scalar::from_canonical_u64(2_u64.pow(31));
-        let mov_shift = P::Scalar::from_canonical_u64(2_u64.pow(30));
-        let jmp_shift = P::Scalar::from_canonical_u64(2_u64.pow(29));
-        let cjmp_shift = P::Scalar::from_canonical_u64(2_u64.pow(28));
-        let call_shift = P::Scalar::from_canonical_u64(2_u64.pow(27));
-        let ret_shift = P::Scalar::from_canonical_u64(2_u64.pow(26));
-        let mload_shift = P::Scalar::from_canonical_u64(2_u64.pow(25));
-        let mstore_shift = P::Scalar::from_canonical_u64(2_u64.pow(24));
-        let end_shift = P::Scalar::from_canonical_u64(2_u64.pow(23));
-        let rc_shift = P::Scalar::from_canonical_u64(2_u64.pow(22));
-        let and_shift = P::Scalar::from_canonical_u64(2_u64.pow(21));
-        let or_shift = P::Scalar::from_canonical_u64(2_u64.pow(20));
-        let xor_shift = P::Scalar::from_canonical_u64(2_u64.pow(19));
-        let not_shift = P::Scalar::from_canonical_u64(2_u64.pow(18));
-        let neq_shift = P::Scalar::from_canonical_u64(2_u64.pow(17));
-        let gte_shift = P::Scalar::from_canonical_u64(2_u64.pow(16));
-        let psdn_shift = P::Scalar::from_canonical_u64(2_u64.pow(15));
-        let ecdsa_shift = P::Scalar::from_canonical_u64(2_u64.pow(14));
-        let opcode = lv[COL_S_ADD] * add_shift
-            + lv[COL_S_MUL] * mul_shift
-            + lv[COL_S_EQ] * eq_shift
-            + lv[COL_S_ASSERT] * assert_shift
-            + lv[COL_S_MOV] * mov_shift
-            + lv[COL_S_JMP] * jmp_shift
-            + lv[COL_S_CJMP] * cjmp_shift
-            + lv[COL_S_CALL] * call_shift
-            + lv[COL_S_RET] * ret_shift
-            + lv[COL_S_MLOAD] * mload_shift
-            + lv[COL_S_MSTORE] * mstore_shift
-            + lv[COL_S_END] * end_shift
-            + lv[COL_S_RC] * rc_shift
-            + lv[COL_S_AND] * and_shift
-            + lv[COL_S_OR] * or_shift
-            + lv[COL_S_XOR] * xor_shift
-            + lv[COL_S_NOT] * not_shift
-            + lv[COL_S_NEQ] * neq_shift
-            + lv[COL_S_GTE] * gte_shift
-            + lv[COL_S_PSDN] * psdn_shift
-            + lv[COL_S_ECDSA] * ecdsa_shift;
+        let opcode_shift = Self::OPCODE_SHIFTS
+            .rev()
+            .map(|i| P::Scalar::from_canonical_u64(2_u64.pow(i)))
+            .collect::<Vec<_>>();
+        let opcode: P = op_selectors
+            .iter()
+            .zip(opcode_shift.iter())
+            .map(|(selector, shift)| *selector * *shift)
+            .sum();
         yield_constr.constraint(lv[COL_OPCODE] - opcode);
 
         // Constrain instruction encoding.
-        let op1_imm_shift = P::Scalar::from_canonical_u64(2_u64.pow(62));
+        let op1_imm_shift = P::Scalar::from_canonical_u64(2_u64.pow(Self::OP1_IMM_SHIFT));
         let mut instruction = lv[COL_OP1_IMM] * op1_imm_shift;
 
         // The order of COL_S_OP0, COL_S_OP1, COL_S_DST is r8, r7, .. r0.
-        let op0_start_shift = 2_u64.pow(61);
+        let op0_start_shift = 2_u64.pow(Self::OP0_SHIFT_START);
         for (index, s) in s_op0s.iter().rev().enumerate() {
             let shift = op0_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
             instruction += *s * shift;
         }
 
-        let op1_start_shift = 2_u64.pow(52);
+        let op1_start_shift = 2_u64.pow(Self::OP1_SHIFT_START);
         for (index, s) in s_op1s.iter().rev().enumerate() {
             let shift = op1_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
             instruction += *s * shift;
         }
 
-        let dst_start_shift = 2_u64.pow(43);
+        let dst_start_shift = 2_u64.pow(Self::DST_SHIFT_START);
         for (index, s) in s_dsts.iter().rev().enumerate() {
             let shift = dst_start_shift / 2_u64.pow(index as u32);
             let shift = P::Scalar::from_canonical_u64(shift);
@@ -282,27 +260,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr.constraint(lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL]));
 
         // Only one opcode selector enabled.
-        let sum_s_op = lv[COL_S_ADD]
-            + lv[COL_S_MUL]
-            + lv[COL_S_EQ]
-            + lv[COL_S_ASSERT]
-            + lv[COL_S_MOV]
-            + lv[COL_S_JMP]
-            + lv[COL_S_CJMP]
-            + lv[COL_S_CALL]
-            + lv[COL_S_RET]
-            + lv[COL_S_MLOAD]
-            + lv[COL_S_MSTORE]
-            + lv[COL_S_END]
-            + lv[COL_S_RC]
-            + lv[COL_S_AND]
-            + lv[COL_S_OR]
-            + lv[COL_S_XOR]
-            + lv[COL_S_NOT]
-            + lv[COL_S_NEQ]
-            + lv[COL_S_GTE]
-            + lv[COL_S_PSDN]
-            + lv[COL_S_ECDSA];
+        let sum_s_op: P = op_selectors.into_iter().sum();
         yield_constr.constraint(P::ONES - sum_s_op);
 
         // 2. Constrain state changing.
@@ -432,89 +390,30 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         });
 
         // Constrain opcode encoding.
-        let add_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(34)));
-        let mul_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(33)));
-        let eq_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(32)));
-        let assert_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(31)));
-        let mov_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(30)));
-        let jmp_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(29)));
-        let cjmp_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(28)));
-        let call_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(27)));
-        let ret_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(26)));
-        let mload_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(25)));
-        let mstore_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(24)));
-        let end_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(23)));
-        let rc_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(22)));
-        let and_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(21)));
-        let or_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(20)));
-        let xor_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(19)));
-        let not_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(18)));
-        let neq_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(17)));
-        let gte_shift = builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(16)));
-        let psdn_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(15)));
-        let ecdsa_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(14)));
-        let add_opcode = builder.mul_extension(lv[COL_S_ADD], add_shift);
-        let mul_opcode = builder.mul_extension(lv[COL_S_MUL], mul_shift);
-        let eq_opcode = builder.mul_extension(lv[COL_S_EQ], eq_shift);
-        let assert_opcode = builder.mul_extension(lv[COL_S_ASSERT], assert_shift);
-        let mov_opcode = builder.mul_extension(lv[COL_S_MOV], mov_shift);
-        let jmp_opcode = builder.mul_extension(lv[COL_S_JMP], jmp_shift);
-        let cjmp_opcode = builder.mul_extension(lv[COL_S_CJMP], cjmp_shift);
-        let call_opcode = builder.mul_extension(lv[COL_S_CALL], call_shift);
-        let ret_opcode = builder.mul_extension(lv[COL_S_RET], ret_shift);
-        let mload_opcode = builder.mul_extension(lv[COL_S_MLOAD], mload_shift);
-        let mstore_opcode = builder.mul_extension(lv[COL_S_MSTORE], mstore_shift);
-        let end_opcode = builder.mul_extension(lv[COL_S_END], end_shift);
-        let rc_opcode = builder.mul_extension(lv[COL_S_RC], rc_shift);
-        let and_opcode = builder.mul_extension(lv[COL_S_AND], and_shift);
-        let or_opcode = builder.mul_extension(lv[COL_S_OR], or_shift);
-        let xor_opcode = builder.mul_extension(lv[COL_S_XOR], xor_shift);
-        let not_opcode = builder.mul_extension(lv[COL_S_NOT], not_shift);
-        let neq_opcode = builder.mul_extension(lv[COL_S_NEQ], neq_shift);
-        let gte_opcode = builder.mul_extension(lv[COL_S_GTE], gte_shift);
-        let psdn_opcode = builder.mul_extension(lv[COL_S_PSDN], psdn_shift);
-        let ecdsa_opcode = builder.mul_extension(lv[COL_S_ECDSA], ecdsa_shift);
-        let opcodes = [
-            add_opcode,
-            mul_opcode,
-            eq_opcode,
-            assert_opcode,
-            mov_opcode,
-            jmp_opcode,
-            cjmp_opcode,
-            call_opcode,
-            ret_opcode,
-            mload_opcode,
-            mstore_opcode,
-            end_opcode,
-            rc_opcode,
-            and_opcode,
-            or_opcode,
-            xor_opcode,
-            not_opcode,
-            neq_opcode,
-            gte_opcode,
-            psdn_opcode,
-            ecdsa_opcode,
-        ];
-        let opcodes_cs = builder.add_many_extension(opcodes);
+        let opcode_shift = Self::OPCODE_SHIFTS
+            .rev()
+            .map(|i| builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(i))))
+            .collect::<Vec<_>>();
+        let opcodes = op_selectors
+            .iter()
+            .zip(opcode_shift.iter())
+            .map(|(selector, shift)| builder.mul_extension(*selector, *shift))
+            .collect::<Vec<_>>();
+        let opcodes_cs = opcodes
+            .iter()
+            .fold(zero, |acc, s| builder.add_extension(acc, *s));
         yield_constr.constraint(builder, opcodes_cs);
 
         // Constrain instruction encoding.
-        let op1_imm_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(62)));
+        let op1_imm_shift = builder.constant_extension(F::Extension::from_canonical_u64(
+            2_u64.pow(Self::OP1_IMM_SHIFT),
+        ));
         let mut instruction = builder.mul_extension(lv[COL_OP1_IMM], op1_imm_shift);
 
         // The order of COL_S_OP0, COL_S_OP1, COL_S_DST is r8, r7, .. r0.
-        let op0_start_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(61)));
+        let op0_start_shift = builder.constant_extension(F::Extension::from_canonical_u64(
+            2_u64.pow(Self::OP0_SHIFT_START),
+        ));
         for (index, s) in s_op0s.iter().rev().enumerate() {
             let idx = builder
                 .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
@@ -522,8 +421,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             instruction = builder.mul_add_extension(*s, shift, instruction);
         }
 
-        let op1_start_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(52)));
+        let op1_start_shift = builder.constant_extension(F::Extension::from_canonical_u64(
+            2_u64.pow(Self::OP1_SHIFT_START),
+        ));
         for (index, s) in s_op1s.iter().rev().enumerate() {
             let idx = builder
                 .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
@@ -531,8 +431,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             instruction = builder.mul_add_extension(*s, shift, instruction);
         }
 
-        let dst_start_shift =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(43)));
+        let dst_start_shift = builder.constant_extension(F::Extension::from_canonical_u64(
+            2_u64.pow(Self::DST_SHIFT_START),
+        ));
         for (index, s) in s_dsts.iter().rev().enumerate() {
             let idx = builder
                 .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
