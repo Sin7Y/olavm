@@ -20,14 +20,13 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
     let (traces, public_values) = generate_traces(&program, &mut all_stark);
     let config = StarkConfig::standard_fast_config();
 
-    let proof = prove_with_traces::<F, C, D>(
+    prove_with_traces::<F, C, D>(
         &all_stark,
         &config,
         traces,
         public_values,
         &mut TimingTree::default(),
-    )
-    .unwrap();
+    );
 
 }
 
