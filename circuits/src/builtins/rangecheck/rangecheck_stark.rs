@@ -41,9 +41,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
         let limb_lo = vars.local_values[LIMB_LO];
         let limb_hi = vars.local_values[LIMB_HI];
 
-        // Addition checl for op0, op1, diff
+        // Addition check for op0, op1, diff
         let base = P::Scalar::from_canonical_usize(Self::BASE);
-        let sum = limb_lo.add(limb_hi.mul(base));
+        let sum = limb_lo + limb_hi * base;
 
         yield_constr.constraint(val - sum);
 
@@ -63,10 +63,34 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckSta
 
     fn eval_ext_circuit(
         &self,
-        _builder: &mut CircuitBuilder<F, D>,
-        _vars: StarkEvaluationTargets<D, { COL_NUM_RC }>,
-        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        builder: &mut CircuitBuilder<F, D>,
+        vars: StarkEvaluationTargets<D, { COL_NUM_RC }>,
+        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
+        let val = vars.local_values[VAL];
+        let limb_lo = vars.local_values[LIMB_LO];
+        let limb_hi = vars.local_values[LIMB_HI];
+
+        // Addition check for op0, op1, diff
+        let base = builder.constant_extension(F::Extension::from_canonical_usize(Self::BASE));
+        let sum = builder.mul_add_extension(limb_hi, base, limb_lo);
+        let val_sum_diff = builder.sub_extension(val, sum);
+        yield_constr.constraint(builder, val_sum_diff);
+
+        eval_lookups_circuit(
+            builder,
+            vars,
+            yield_constr,
+            LIMB_LO_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED_LO,
+        );
+        eval_lookups_circuit(
+            builder,
+            vars,
+            yield_constr,
+            LIMB_HI_PERMUTED,
+            FIX_RANGE_CHECK_U16_PERMUTED_HI,
+        );
     }
 
     fn constraint_degree(&self) -> usize {
