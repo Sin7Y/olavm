@@ -126,7 +126,7 @@ Alan Szepieniec's STARK tutorials:
 
 [Sin7Y](https://twitter.com/Sin7y_Labs)'s STARK explaination:
 
-- [STARK - An Indepth Technical Analysis]((https://hackmd.io/@sin7y/HktwgoeKq))
+- [STARK - An Indepth Technical Analysis](https://hackmd.io/@sin7y/HktwgoeKq)
 - [The Stark Proof System of Miden V1](https://hackmd.io/@sin7y/HkIELMUu9)
 
 ## License
