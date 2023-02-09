@@ -50,15 +50,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
         let op1 = vars.local_values[OP1];
         let diff = vars.local_values[DIFF];
 
-        // Addition checl for op0, op1, diff
+        // Addition check for op0, op1, diff
         yield_constr.constraint(op0 - (op1 + diff));
 
         let limb_lo = vars.local_values[DIFF_LIMB_LO];
         let limb_hi = vars.local_values[DIFF_LIMB_HI];
 
-        // Addition checl for op0, op1, diff
+        // Addition check for op0, op1, diff
         let base = P::Scalar::from_canonical_usize(Self::BASE);
-        let sum = limb_lo.add(limb_hi.mul(base));
+        let sum = limb_lo + limb_hi * base;
 
         yield_constr.constraint(diff - sum);
 
@@ -78,10 +78,26 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CmpStark<F, D
 
     fn eval_ext_circuit(
         &self,
-        _builder: &mut CircuitBuilder<F, D>,
-        _vars: StarkEvaluationTargets<D, { COL_NUM_CMP }>,
-        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        builder: &mut CircuitBuilder<F, D>,
+        vars: StarkEvaluationTargets<D, { COL_NUM_CMP }>,
+        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
+        let op0 = vars.local_values[OP0];
+        let op1 = vars.local_values[OP1];
+        let diff = vars.local_values[DIFF];
+
+        let op1_diff_sum = builder.add_extension(op1, diff);
+        let op0_op1_diff = builder.sub_extension(op0, op1_diff_sum);
+        yield_constr.constraint(builder, op0_op1_diff);
+
+        let limb_lo = vars.local_values[DIFF_LIMB_LO];
+        let limb_hi = vars.local_values[DIFF_LIMB_HI];
+
+        // Addition check for op0, op1, diff
+        let base = builder.constant_extension(F::Extension::from_canonical_usize(Self::BASE));
+        let sum = builder.mul_add_extension(limb_hi, base, limb_lo);
+        let sum_diff = builder.sub_extension(diff, sum);
+        yield_constr.constraint(builder, sum_diff);
     }
 
     fn constraint_degree(&self) -> usize {
