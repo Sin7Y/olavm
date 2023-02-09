@@ -12,19 +12,19 @@ OlaVM is a STARK-Based ZK-Friendly ZKVM, it builds on a **small finite field** w
 
 OlaVM is a turing complete VM which means that it can execute any computation on it and as the same time it could generate a valid proof for it. For getting a smaller prove time, we have many powerful designs that relevant with ZK-Friendly.
 
-- if you want to know more about ZK-friendly and VM designs, check out the [doc];
+- if you want to know more about ZK-friendly and VM designs, check out the [doc/olavm](https://github.com/Sin7Y/olavm/blob/main/docs/olavm/olavm_sepc.pdf);
 - if you want to know more about the circuit design, check out [circuit](circuits) crate;
 - if you want to know more about the performance of OlaVM, check out [Performance](#performance) section;
 - if you want to know more about STARKS, check out [References](#references) section;
 
-### KeyFeatures
+### Key Features
 
 There are a lot of tricks to get a very ZK-friendly ZKVM in OlaVM. We would like to highlight a few of them:
 
 - **Algebraic RISC**. The property of instruction set of OlaVM is Algebraic RISC: "Algebraic" refers to the supported operation are field operation, "RISC" refers to the minimality of the instruction set. We can achieve a succinct transition constraints based on this, check out [circuit/cpu](https://github.com/Sin7Y/olavm/tree/main/circuits/src/cpu) to learn more;
 - **Small finite field**. The word defined in OlaVM is a finite field, [Goldilocks]((https://github.com/mir-protocol/plonky2/blob/main/field/src/goldilocks_field.rs)). The prime of Goldilicks is p = 2^64 - 2^32 + 1 which is less than 64 bits. The computation based on those field elements could be [exected much faster](https://twitter.com/rel_zeta_tech/status/1622984483359129601) that other big finite field;
-- **Builtins**. As the cyclic group size is limited, so it would be better of the trace table could contain more transactions as much as possible. That means that if there some computation cost a large trace rows in transation logic, we should remove it from main trace table and add a specific sub trace table to store them, this is the reason that introduce Builtins, like hash, bitwise operation and so on, check out the [doc] for more details;
-- **Prophets**. This is designed for non-deterministic computation which means "implementation is expensive, verify is cheap". So up to a point, prophets is more like a external helper. It helps you compute the results of some non-deterministic computation and then you check the results by using the instruction sets, should be note that this check is execute by VM, not constraits which is different with Builtins, check out the [doc] for more details;
+- **Builtins**. As the cyclic group size is limited, so it would be better of the trace table could contain more transactions as much as possible. That means that if there some computation cost a large trace rows in transation logic, we should remove it from main trace table and add a specific sub trace table to store them, this is the reason that introduce Builtins, like hash, bitwise operation and so on, check out the [doc/olavm](https://github.com/Sin7Y/olavm/blob/main/docs/olavm/olavm_sepc.pdf) for more details;
+- **Prophets**. This is designed for non-deterministic computation which means "implementation is expensive, verify is cheap". So up to a point, prophets is more like a external helper. It helps you compute the results of some non-deterministic computation and then you check the results by using the instruction sets, should be note that this check is execute by VM, not constraits which is different with Builtins, check out the [doc/olavm](https://github.com/Sin7Y/olavm/blob/main/docs/olavm/olavm_sepc.pdf) for more details;
 
 ### Status
 
