@@ -55,7 +55,7 @@ fn permute<F: Field>(v: &mut [F]) {
         #[cfg(feature = "parallel")]
         concurrent::permute(v);
     } else {
-        // serial::permute(v);
+        serial::permute(v);
     }
 }
 
@@ -67,4 +67,11 @@ fn permute_index(size: usize, index: usize) -> usize {
     debug_assert!(size.is_power_of_two());
     let bits = size.trailing_zeros() as usize;
     index.reverse_bits() >> (USIZE_BITS - bits)
+}
+
+#[allow(clippy::uninit_vec)]
+pub unsafe fn uninit_vector<T>(length: usize) -> Vec<T> {
+    let mut vector = Vec::with_capacity(length);
+    vector.set_len(length);
+    vector
 }

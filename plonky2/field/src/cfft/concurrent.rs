@@ -4,6 +4,8 @@ use rayon::prelude::*;
 
 use crate::types::Field;
 
+use super::uninit_vector;
+
 pub fn evaluate_poly<F: Field>(p: &mut [F], twiddles: &[F]) {
     split_radix_fft(p, twiddles);
     permute(p);
@@ -59,7 +61,7 @@ where
         .par_chunks_mut(batch_size)
         .enumerate()
         .for_each(|(i, batch)| {
-            let mut offset = domain_offset.exp(((i * batch_size) as u64).into()) * inv_len;
+            let mut offset = domain_offset.exp_u64(((i * batch_size) as u64).into()) * inv_len;
             for coeff in batch.iter_mut() {
                 *coeff = *coeff * offset;
                 offset = offset * domain_offset;
@@ -192,11 +194,4 @@ fn clone_and_shift<F: Field>(source: &[F], destination: &mut [F], offset: F) {
                 factor = factor * offset;
             }
         });
-}
-
-#[allow(clippy::uninit_vec)]
-pub unsafe fn uninit_vector<T>(length: usize) -> Vec<T> {
-    let mut vector = Vec::with_capacity(length);
-    vector.set_len(length);
-    vector
 }
