@@ -8,6 +8,7 @@ use log::debug;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use log::Level::Debug;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ImmediateFlag {
@@ -304,6 +305,55 @@ impl Encoder {
                 self.asm_code.remove(index);
                 cur_asm_len -= 1;
                 continue;
+            } else if  item.contains("//"){
+                self.asm_code.remove(index);
+                cur_asm_len -= 1;
+                continue;
+            } else if item.contains("[") {
+                // not r5 3
+                // add r5 r5 1
+                // add r5 r8 r5
+                // mstore r5, r4
+                //mstore [r8,-3] r4
+                let inst = item.trim();
+                let ops: Vec<&str> = inst.split(" ").collect();
+                let mut offset_asm = Default::default();
+                let mut reg_name = Default::default();
+                if ops[0].eq("mload") {
+                    let mut fp_offset = ops.get(2).unwrap().to_string();
+                    fp_offset = fp_offset.replace("[","").replace("]","");
+                    let mut base_offset: Vec<&str> = fp_offset.split(",").collect();
+                    let mut offset = 0;
+                    if (*base_offset.get(0).unwrap()).eq("r8") {
+                        offset = i32::from_str_radix(base_offset.get(1).unwrap(), 10).unwrap();
+                    }
+                    offset_asm = format!("not r6 {}", offset.abs());
+                    reg_name = format!("mload {} r6", ops[1].clone().to_string());
+                } else if ops[0].eq("mstore") {
+                    let mut fp_offset = ops.get(1).unwrap().to_string();
+                    fp_offset = fp_offset.replace("[","").replace("]","");
+                    let mut base_offset: Vec<&str> = fp_offset.split(",").collect();
+                    let mut offset = 0;
+                    if (*base_offset.get(0).unwrap()).eq("r8") {
+                        offset = i32::from_str_radix(base_offset.get(1).unwrap(), 10).unwrap();
+                    }
+                    offset_asm = format!("not r6 {}", offset.abs());
+                    reg_name = format!("mstore r6 {}", ops[2].clone().to_string());
+                } else {
+                    panic!("unknown instruction")
+                }
+
+                self.asm_code.insert(index+1, offset_asm);
+                cur_asm_len += 1;
+                self.asm_code.insert(index+2, format!("add r6 r6 1"));
+                cur_asm_len += 1;
+                self.asm_code.insert(index+3, format!("add r6 r8 r6"));
+                cur_asm_len += 1;
+                self.asm_code.insert(index+4, reg_name);
+                cur_asm_len += 1;
+                self.asm_code.remove(index);
+                cur_asm_len -= 1;
+                continue;
             }
             let len = self.get_inst_len(&item).unwrap();
             self.pc += len;
@@ -316,7 +366,9 @@ impl Encoder {
 
         self.asm_code = asm_codes;
         self.relocate();
-
+        for item in &self.asm_code {
+            println!("{}", item);
+        }
         for raw_code in self.asm_code.clone().into_iter() {
             let raw_inst = self.encode_instruction(&raw_code).unwrap();
             raw_insts.extend(raw_inst);
@@ -625,6 +677,53 @@ mod tests {
             } else {
                 panic!("err raw_inst: {:?}", raw_inst);
             }
+        }
+    }
+
+    #[test]
+    fn mload_mstore_expansion() {
+        let asm_codes = "main:
+                             .LBL_0_0:
+                               add r8 r8 4
+                               mov r4 100
+                               // not r5 3
+                               // add r5 r5 1
+                               // add r5 r8 r5
+                               // mstore r5, r4
+                               mstore [r8,-3] r4
+                               mov r4 1
+                               // not r6 2
+                               // add r6 r6 1
+                               // add r6 r8 r6
+                               // mstore r6, r4
+                               mstore [r8,-2] r4
+                               mov r4 2
+                               // not r7 1
+                               // add r7 r7 1
+                               // add r7 r8 r7
+                               // mstore r7 r4
+                               mstore [r8,-1] r4
+                               // mload r4 r6
+                               // mload r1 r7
+                               // mload r0 r5
+                               mload r0 [r8,-3]
+                               mload r1 [r8,-2]
+                               mload r4 [r8,-1]
+                               add r4 r4 r1
+                               mul r4 r4 r0
+                               mstore r5 r4
+                               mload r0 r5
+                               not r4 4
+                               add r4 r4 1
+                               add r8 r8 r4
+                               end ";
+
+        let mut encoder: Encoder = Default::default();
+        let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
+
+        let raw_insts = encoder.assemble_link(asm_codes);
+        for item in raw_insts {
+            println!("{}", item);
         }
     }
 }
