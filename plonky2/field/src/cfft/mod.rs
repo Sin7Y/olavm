@@ -10,6 +10,39 @@ mod serial;
 const USIZE_BITS: usize = 0_usize.count_zeros() as usize;
 const MIN_CONCURRENT_SIZE: usize = 1024;
 
+pub fn interpolate_poly<F>(evaluations: &mut [F], inv_twiddles: &[F])
+where
+    F: Field,
+{
+    assert!(
+        evaluations.len().is_power_of_two(),
+        "number of evaluations must be a power of 2, but was {}",
+        evaluations.len()
+    );
+    assert_eq!(
+        evaluations.len(),
+        inv_twiddles.len() * 2,
+        "invalid number of twiddles: expected {} but received {}",
+        evaluations.len() / 2,
+        inv_twiddles.len()
+    );
+    assert!(
+        log2_strict(evaluations.len()) <= F::TWO_ADICITY,
+        "multiplicative subgroup of size {} does not exist in the specified base field",
+        evaluations.len()
+    );
+
+    // when `concurrent` feature is enabled, run the concurrent version of
+    // interpolate_poly; unless the number of evaluations is small, then don't
+    // bother with the concurrent version
+    if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
+        #[cfg(feature = "parallel")]
+        concurrent::interpolate_poly(evaluations, inv_twiddles);
+    } else {
+        serial::interpolate_poly(evaluations, inv_twiddles);
+    }
+}
+
 pub fn interpolate_poly_with_offset<F>(evaluations: &mut [F], inv_twiddles: &[F], domain_offset: F)
 where
     F: Field,
