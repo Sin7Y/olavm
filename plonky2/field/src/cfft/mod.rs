@@ -10,6 +10,57 @@ mod serial;
 const USIZE_BITS: usize = 0_usize.count_zeros() as usize;
 const MIN_CONCURRENT_SIZE: usize = 1024;
 
+pub fn evaluate_poly_with_offset<F>(
+    p: &[F],
+    twiddles: &[F],
+    domain_offset: F,
+    blowup_factor: usize,
+) -> Vec<F>
+where
+    F: Field,
+{
+    assert!(
+        p.len().is_power_of_two(),
+        "number of coefficients must be a power of 2"
+    );
+    assert!(
+        blowup_factor.is_power_of_two(),
+        "blowup factor must be a power of 2"
+    );
+    assert_eq!(
+        p.len(),
+        twiddles.len() * 2,
+        "invalid number of twiddles: expected {} but received {}",
+        p.len() / 2,
+        twiddles.len()
+    );
+    assert!(
+        log2_strict(p.len() * blowup_factor) <= F::TWO_ADICITY,
+        "multiplicative subgroup of size {} does not exist in the specified base field",
+        p.len() * blowup_factor
+    );
+    assert_ne!(domain_offset, F::ZERO, "domain offset cannot be zero");
+
+    // assign a dummy value here to make the compiler happy
+    #[allow(unused_assignments)]
+    let mut result = Vec::new();
+
+    // when `concurrent` feature is enabled, run the concurrent version of the
+    // function; unless the polynomial is small, then don't bother with the
+    // concurrent version
+    if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
+        #[cfg(feature = "parallel")]
+        {
+            result =
+                concurrent::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+        }
+    } else {
+        result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+    }
+
+    result
+}
+
 pub fn interpolate_poly<F>(evaluations: &mut [F], inv_twiddles: &[F])
 where
     F: Field,
