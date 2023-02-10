@@ -10,6 +10,40 @@ mod serial;
 const USIZE_BITS: usize = 0_usize.count_zeros() as usize;
 const MIN_CONCURRENT_SIZE: usize = 1024;
 
+pub fn interpolate_poly_with_offset<F>(evaluations: &mut [F], inv_twiddles: &[F], domain_offset: F)
+where
+    F: Field,
+{
+    assert!(
+        evaluations.len().is_power_of_two(),
+        "number of evaluations must be a power of 2, but was {}",
+        evaluations.len()
+    );
+    assert_eq!(
+        evaluations.len(),
+        inv_twiddles.len() * 2,
+        "invalid number of twiddles: expected {} but received {}",
+        evaluations.len() / 2,
+        inv_twiddles.len()
+    );
+    assert!(
+        log2_strict(evaluations.len()) <= F::TWO_ADICITY,
+        "multiplicative subgroup of size {} does not exist in the specified base field",
+        evaluations.len()
+    );
+    assert_ne!(domain_offset, F::ZERO, "domain offset cannot be zero");
+
+    // when `concurrent` feature is enabled, run the concurrent version of the
+    // function; unless the polynomial is small, then don't bother with the
+    // concurrent version
+    if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
+        #[cfg(feature = "parallel")]
+        concurrent::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
+    } else {
+        serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
+    }
+}
+
 pub fn get_twiddles<F>(domain_size: usize) -> Vec<F>
 where
     F: Field,
