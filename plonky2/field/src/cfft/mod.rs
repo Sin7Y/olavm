@@ -10,6 +10,38 @@ mod serial;
 const USIZE_BITS: usize = 0_usize.count_zeros() as usize;
 const MIN_CONCURRENT_SIZE: usize = 1024;
 
+pub fn evaluate_poly<F>(p: &mut [F], twiddles: &[F])
+where
+    F: Field,
+{
+    assert!(
+        p.len().is_power_of_two(),
+        "number of coefficients must be a power of 2"
+    );
+    assert_eq!(
+        p.len(),
+        twiddles.len() * 2,
+        "invalid number of twiddles: expected {} but received {}",
+        p.len() / 2,
+        twiddles.len()
+    );
+    assert!(
+        log2_strict(p.len()) <= F::TWO_ADICITY,
+        "multiplicative subgroup of size {} does not exist in the specified base field",
+        p.len()
+    );
+
+    // when `concurrent` feature is enabled, run the concurrent version of the
+    // function; unless the polynomial is small, then don't bother with the
+    // concurrent version
+    if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
+        #[cfg(feature = "parallel")]
+        concurrent::evaluate_poly(p, twiddles);
+    } else {
+        serial::evaluate_poly(p, twiddles);
+    }
+}
+
 pub fn evaluate_poly_with_offset<F>(
     p: &[F],
     twiddles: &[F],
