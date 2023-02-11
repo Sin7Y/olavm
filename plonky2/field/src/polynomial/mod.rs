@@ -483,13 +483,17 @@ impl<F: Field> Mul for &PolynomialCoeffs<F> {
         let a_evals = a.fft();
         let b_evals = b.fft();
 
-        let mul_evals: Vec<F> = a_evals
+        let mut mul_evals: Vec<F> = a_evals
             .values
             .into_iter()
             .zip(b_evals.values)
             .map(|(pa, pb)| pa * pb)
             .collect();
-        ifft(mul_evals.into())
+        // ifft(mul_evals.into())
+        // TODO: fft
+        let inv_twiddles = get_inv_twiddles::<F>(mul_evals.len());
+        interpolate_poly(&mut mul_evals, &inv_twiddles);
+        PolynomialCoeffs { coeffs: mul_evals }
     }
 }
 
