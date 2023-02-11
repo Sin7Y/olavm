@@ -5,13 +5,13 @@ use plonky2::iop::challenger::{Challenger, RecursiveChallenger};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::config::{AlgebraicHasher, GenericConfig};
 
-use crate::all_stark::{AllStark, NUM_TABLES};
-use crate::config::StarkConfig;
-use crate::permutation::{
+use super::all_stark::{AllStark, NUM_TABLES};
+use super::config::StarkConfig;
+use super::permutation::{
     get_grand_product_challenge_set, get_n_grand_product_challenge_sets,
     get_n_grand_product_challenge_sets_target,
 };
-use crate::proof::*;
+use super::proof::*;
 
 impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> AllProof<F, C, D> {
     /// Computes all Fiat-Shamir challenges used in the STARK proof.

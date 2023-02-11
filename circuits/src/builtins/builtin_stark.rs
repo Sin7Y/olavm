@@ -1,9 +1,9 @@
 use {
     super::*,
-    crate::columns::*,
-    crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
-    crate::stark::Stark,
-    crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
+    crate::stark::columns::*,
+    crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    crate::stark::stark::Stark,
+    crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     itertools::izip,
     plonky2::field::extension::{Extendable, FieldExtension},
     plonky2::field::packed::PackedField,

@@ -6,22 +6,22 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::config::{GenericConfig, Hasher};
 use plonky2::plonk::plonk_common::reduce_with_powers;
 
-use crate::all_stark::{AllStark, Table};
+use super::all_stark::{AllStark, Table};
+use super::config::StarkConfig;
+use super::constraint_consumer::ConstraintConsumer;
+use super::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
+use super::permutation::PermutationCheckVars;
+use super::proof::{
+    AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges,
+};
+use super::stark::Stark;
+use super::vanishing_poly::eval_vanishing_poly;
+use super::vars::StarkEvaluationVars;
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
-use crate::config::StarkConfig;
-use crate::constraint_consumer::ConstraintConsumer;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
 use crate::memory::memory_stark::MemoryStark;
-use crate::permutation::PermutationCheckVars;
-use crate::proof::{
-    AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges,
-};
-use crate::stark::Stark;
-use crate::vanishing_poly::eval_vanishing_poly;
-use crate::vars::StarkEvaluationVars;
 
 pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     all_stark: AllStark<F, D>,
@@ -295,7 +295,7 @@ mod tests {
     use plonky2::field::polynomial::PolynomialValues;
     use plonky2::field::types::Field;
 
-    use crate::verifier::eval_l_0_and_l_last;
+    use crate::stark::verifier::eval_l_0_and_l_last;
 
     #[test]
     fn test_eval_l_0_and_l_last() {

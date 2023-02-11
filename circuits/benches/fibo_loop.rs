@@ -1,9 +1,9 @@
-use circuits::all_stark::AllStark;
-use circuits::config::StarkConfig;
 use circuits::generation::generate_traces;
-use circuits::proof::PublicValues;
-use circuits::prover::prove_with_traces;
-use circuits::verifier::verify_proof;
+use circuits::stark::all_stark::AllStark;
+use circuits::stark::config::StarkConfig;
+use circuits::stark::proof::PublicValues;
+use circuits::stark::prover::prove_with_traces;
+use circuits::stark::verifier::verify_proof;
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::Process;

@@ -8,9 +8,9 @@ use plonky2::field::polynomial::PolynomialValues;
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
-use crate::all_stark::{AllStark, NUM_TABLES};
-use crate::proof::PublicValues;
-use crate::util::trace_rows_to_poly_values;
+use crate::stark::all_stark::{AllStark, NUM_TABLES};
+use crate::stark::proof::PublicValues;
+use crate::stark::util::trace_rows_to_poly_values;
 
 use self::builtin::{
     generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
