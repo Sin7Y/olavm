@@ -9,6 +9,7 @@ use itertools::Itertools;
 use plonky2_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
+use crate::cfft::{get_inv_twiddles, interpolate_poly, interpolate_poly_with_offset};
 use crate::extension::{Extendable, FieldExtension};
 use crate::fft::{fft, fft_with_options, ifft, FftRootTable};
 use crate::types::Field;
@@ -55,21 +56,33 @@ impl<F: Field> PolynomialValues<F> {
     }
 
     pub fn ifft(self) -> PolynomialCoeffs<F> {
-        ifft(self)
+        // TODO: fft
+        // ifft(self)
+
+        let mut v = self.values.clone();
+        let inv_twiddles = get_inv_twiddles::<F>(v.len());
+        interpolate_poly(&mut v, &inv_twiddles);
+        PolynomialCoeffs { coeffs: v }
     }
 
     /// Returns the polynomial whose evaluation on the coset `shift*H` is
     /// `self`.
     pub fn coset_ifft(self, shift: F) -> PolynomialCoeffs<F> {
-        let mut shifted_coeffs = self.ifft();
-        shifted_coeffs
-            .coeffs
-            .iter_mut()
-            .zip(shift.inverse().powers())
-            .for_each(|(c, r)| {
-                *c *= r;
-            });
-        shifted_coeffs
+        // TODO: fft
+        // let mut shifted_coeffs = self.ifft();
+        // shifted_coeffs
+        //     .coeffs
+        //     .iter_mut()
+        //     .zip(shift.inverse().powers())
+        //     .for_each(|(c, r)| {
+        //         *c *= r;
+        //     });
+        // shifted_coeffs
+
+        let mut v = self.values.clone();
+        let inv_twiddles = get_inv_twiddles::<F>(v.len());
+        interpolate_poly_with_offset(&mut v, &inv_twiddles, shift);
+        PolynomialCoeffs { coeffs: v }
     }
 
     pub fn lde_multiple(polys: Vec<Self>, rate_bits: usize) -> Vec<Self> {
