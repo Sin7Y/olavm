@@ -7,6 +7,9 @@ mod concurrent;
 
 mod serial;
 
+#[cfg(test)]
+mod tests;
+
 const USIZE_BITS: usize = 0_usize.count_zeros() as usize;
 const MIN_CONCURRENT_SIZE: usize = 1024;
 
