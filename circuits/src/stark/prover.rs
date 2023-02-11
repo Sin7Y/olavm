@@ -18,25 +18,25 @@ use plonky2::util::timing::TimingTree;
 use plonky2::util::transpose;
 use plonky2_util::{log2_ceil, log2_strict};
 
-use crate::all_stark::{AllStark, Table, NUM_TABLES};
+use super::all_stark::{AllStark, Table, NUM_TABLES};
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 //use crate::columns::NUM_CPU_COLS;
-use crate::config::StarkConfig;
-use crate::constraint_consumer::ConstraintConsumer;
-use crate::cpu::cpu_stark::CpuStark;
-use crate::cross_table_lookup::{cross_table_lookup_data, CtlCheckVars, CtlData};
-use crate::generation::generate_traces;
-use crate::memory::memory_stark::MemoryStark;
-use crate::permutation::PermutationCheckVars;
-use crate::permutation::{
+use super::config::StarkConfig;
+use super::constraint_consumer::ConstraintConsumer;
+use super::cross_table_lookup::{cross_table_lookup_data, CtlCheckVars, CtlData};
+use super::permutation::PermutationCheckVars;
+use super::permutation::{
     compute_permutation_z_polys, get_n_grand_product_challenge_sets, GrandProductChallengeSet,
 };
-use crate::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
-use crate::stark::Stark;
-use crate::vanishing_poly::eval_vanishing_poly;
-use crate::vars::StarkEvaluationVars;
+use super::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
+use super::stark::Stark;
+use super::vanishing_poly::eval_vanishing_poly;
+use super::vars::StarkEvaluationVars;
+use crate::cpu::cpu_stark::CpuStark;
+use crate::generation::generate_traces;
+use crate::memory::memory_stark::MemoryStark;
 
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(

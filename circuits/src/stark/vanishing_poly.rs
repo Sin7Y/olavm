@@ -4,18 +4,18 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::config::GenericConfig;
 
-use crate::config::StarkConfig;
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::cross_table_lookup::{
+use super::config::StarkConfig;
+use super::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use super::cross_table_lookup::{
     eval_cross_table_lookup_checks, eval_cross_table_lookup_checks_circuit, CtlCheckVars,
     CtlCheckVarsTarget,
 };
-use crate::permutation::{
+use super::permutation::{
     eval_permutation_checks, eval_permutation_checks_circuit, PermutationCheckDataTarget,
     PermutationCheckVars,
 };
-use crate::stark::Stark;
-use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use super::stark::Stark;
+use super::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
 pub(crate) fn eval_vanishing_poly<F, FE, P, C, S, const D: usize, const D2: usize>(
     stark: &S,

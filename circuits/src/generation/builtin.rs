@@ -9,7 +9,7 @@ use plonky2::util::transpose;
 use crate::builtins::bitwise::columns as bitwise;
 use crate::builtins::cmp::columns as cmp;
 use crate::builtins::rangecheck::columns as rangecheck;
-use crate::lookup::permuted_cols;
+use crate::stark::lookup::permuted_cols;
 
 // add by xb 2023-1-5
 // case 1:
