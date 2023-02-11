@@ -1,7 +1,7 @@
-use circuits::all_stark::AllStark;
-use circuits::config::StarkConfig;
 use circuits::generation::generate_traces;
-use circuits::prover::prove_with_traces;
+use circuits::stark::all_stark::AllStark;
+use circuits::stark::config::StarkConfig;
+use circuits::stark::prover::prove_with_traces;
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, Criterion};
 use executor::Process;

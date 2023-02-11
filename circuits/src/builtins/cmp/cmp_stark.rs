@@ -1,10 +1,10 @@
 use crate::builtins::cmp::columns::*;
 use itertools::Itertools;
 
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::cross_table_lookup::Column;
-use crate::stark::Stark;
-use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::stark::cross_table_lookup::Column;
+use crate::stark::stark::Stark;
+use crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;

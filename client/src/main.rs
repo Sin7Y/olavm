@@ -1,11 +1,11 @@
 extern crate clap;
 
 use assembler::encode::Encoder;
-use circuits::all_stark::AllStark;
-use circuits::config::StarkConfig;
-use circuits::prover::prove;
-use circuits::serialization::Buffer;
-use circuits::verifier::verify_proof;
+use circuits::stark::all_stark::AllStark;
+use circuits::stark::config::StarkConfig;
+use circuits::stark::prover::prove;
+use circuits::stark::serialization::Buffer;
+use circuits::stark::verifier::verify_proof;
 use clap::{arg, Command};
 use core::program::Program;
 use core::trace::trace::Trace;
