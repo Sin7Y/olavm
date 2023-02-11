@@ -9,7 +9,9 @@ use itertools::Itertools;
 use plonky2_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
-use crate::cfft::{get_inv_twiddles, interpolate_poly, interpolate_poly_with_offset};
+use crate::cfft::{
+    evaluate_poly, get_inv_twiddles, get_twiddles, interpolate_poly, interpolate_poly_with_offset,
+};
 use crate::extension::{Extendable, FieldExtension};
 use crate::fft::{fft, fft_with_options, ifft, FftRootTable};
 use crate::types::Field;
@@ -90,8 +92,15 @@ impl<F: Field> PolynomialValues<F> {
     }
 
     pub fn lde(self, rate_bits: usize) -> Self {
-        let coeffs = ifft(self).lde(rate_bits);
-        fft_with_options(coeffs, Some(rate_bits), None)
+        // let coeffs = ifft(self).lde(rate_bits);
+        // fft_with_options(coeffs, Some(rate_bits), None)
+
+        // TODO: fft
+        let coeffs = self.ifft().lde(rate_bits);
+        let mut v = coeffs.coeffs;
+        let twiddles = get_twiddles::<F>(v.len());
+        evaluate_poly(&mut v, &twiddles);
+        PolynomialValues { values: v }
     }
 
     /// Low-degree extend `Self` (seen as evaluations over the subgroup) onto a
