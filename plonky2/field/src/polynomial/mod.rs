@@ -10,7 +10,8 @@ use plonky2_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
 use crate::cfft::{
-    evaluate_poly, get_inv_twiddles, get_twiddles, interpolate_poly, interpolate_poly_with_offset,
+    evaluate_poly, evaluate_poly_with_offset, get_inv_twiddles, get_twiddles, interpolate_poly,
+    interpolate_poly_with_offset,
 };
 use crate::extension::{Extendable, FieldExtension};
 use crate::fft::{fft, fft_with_options, ifft, FftRootTable};
@@ -106,8 +107,16 @@ impl<F: Field> PolynomialValues<F> {
     /// Low-degree extend `Self` (seen as evaluations over the subgroup) onto a
     /// coset.
     pub fn lde_onto_coset(self, rate_bits: usize) -> Self {
-        let coeffs = ifft(self).lde(rate_bits);
-        coeffs.coset_fft_with_options(F::coset_shift(), Some(rate_bits), None)
+        // let coeffs = ifft(self).lde(rate_bits);
+        // coeffs.coset_fft_with_options(F::coset_shift(), Some(rate_bits), None)
+
+        // TODO: fft
+        let coeffs = self.ifft();
+        let mut v = coeffs.coeffs;
+        let blowup_factor = 1 << rate_bits;
+        let twiddles = get_twiddles::<F>(v.len());
+        let v = evaluate_poly_with_offset(&mut v, &twiddles, F::coset_shift(), blowup_factor);
+        PolynomialValues { values: v }
     }
 
     pub fn degree(&self) -> usize {
