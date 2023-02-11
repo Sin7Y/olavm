@@ -299,7 +299,13 @@ impl<F: Field> PolynomialCoeffs<F> {
     }
 
     pub fn fft(self) -> PolynomialValues<F> {
-        fft(self)
+        // fft(self)
+
+        // TODO: fft
+        let mut v = self.coeffs;
+        let twiddles = get_twiddles::<F>(v.len());
+        evaluate_poly(&mut v, &twiddles);
+        PolynomialValues { values: v }
     }
 
     pub fn fft_with_options(
@@ -307,7 +313,13 @@ impl<F: Field> PolynomialCoeffs<F> {
         zero_factor: Option<usize>,
         root_table: Option<&FftRootTable<F>>,
     ) -> PolynomialValues<F> {
-        fft_with_options(self, zero_factor, root_table)
+        // fft_with_options(self, zero_factor, root_table)
+
+        // TODO: fft
+        let mut v = self.coeffs;
+        let twiddles = get_twiddles::<F>(v.len());
+        evaluate_poly(&mut v, &twiddles);
+        PolynomialValues { values: v }
     }
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
