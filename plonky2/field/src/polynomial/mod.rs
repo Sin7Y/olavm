@@ -334,13 +334,19 @@ impl<F: Field> PolynomialCoeffs<F> {
         zero_factor: Option<usize>,
         root_table: Option<&FftRootTable<F>>,
     ) -> PolynomialValues<F> {
-        let modified_poly: Self = shift
-            .powers()
-            .zip(&self.coeffs)
-            .map(|(r, &c)| r * c)
-            .collect::<Vec<_>>()
-            .into();
-        modified_poly.fft_with_options(zero_factor, root_table)
+        // let modified_poly: Self = shift
+        //     .powers()
+        //     .zip(&self.coeffs)
+        //     .map(|(r, &c)| r * c)
+        //     .collect::<Vec<_>>()
+        //     .into();
+        // modified_poly.fft_with_options(zero_factor, root_table)
+
+        // TODO: fft
+        let mut v = self.coeffs.clone();
+        let twiddles = get_twiddles::<F>(v.len());
+        let v = evaluate_poly_with_offset(&mut v, &twiddles, shift, 1);
+        PolynomialValues { values: v }
     }
 
     pub fn to_extension<const D: usize>(&self) -> PolynomialCoeffs<F::Extension>
