@@ -10,11 +10,11 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2_util::ceil_div_usize;
 
-use crate::config::StarkConfig;
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::permutation::PermutationPair;
-use crate::vars::StarkEvaluationTargets;
-use crate::vars::StarkEvaluationVars;
+use super::config::StarkConfig;
+use super::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use super::permutation::PermutationPair;
+use super::vars::StarkEvaluationTargets;
+use super::vars::StarkEvaluationVars;
 
 const TRACE_ORACLE_INDEX: usize = 0;
 const PERMUTATION_CTL_ORACLE_INDEX: usize = 1;

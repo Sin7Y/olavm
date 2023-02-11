@@ -7,8 +7,8 @@ use plonky2::field::types::{Field, PrimeField64};
 use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
 pub(crate) fn eval_lookups<F: Field, P: PackedField<Scalar = F>, const COLS: usize>(
     vars: StarkEvaluationVars<F, P, COLS>,

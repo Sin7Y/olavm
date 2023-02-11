@@ -2,12 +2,12 @@ use std::ops::Sub;
 
 use plonky2::field::types::Field;
 
-use crate::cross_table_lookup::Column;
+use crate::stark::cross_table_lookup::Column;
 use {
     super::columns::*,
-    crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
-    crate::stark::Stark,
-    crate::vars::{StarkEvaluationTargets, StarkEvaluationVars},
+    crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    crate::stark::stark::Stark,
+    crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     plonky2::field::extension::{Extendable, FieldExtension},
     plonky2::field::packed::PackedField,
     plonky2::hash::hash_types::RichField,
@@ -369,11 +369,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 }
 
 mod tests {
-    use crate::constraint_consumer::ConstraintConsumer;
     use crate::generation::memory::generate_memory_trace;
     use crate::memory::memory_stark::MemoryStark;
-    use crate::stark::Stark;
-    use crate::vars::StarkEvaluationVars;
+    use crate::stark::constraint_consumer::ConstraintConsumer;
+    use crate::stark::stark::Stark;
+    use crate::stark::vars::StarkEvaluationVars;
     use core::program::Program;
     use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;

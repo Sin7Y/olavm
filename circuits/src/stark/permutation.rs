@@ -18,10 +18,10 @@ use plonky2::plonk::plonk_common::{
 };
 use plonky2::util::reducing::{ReducingFactor, ReducingFactorTarget};
 
-use crate::config::StarkConfig;
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::stark::Stark;
-use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use super::config::StarkConfig;
+use super::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use super::stark::Stark;
+use super::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 
 /// A pair of lists of columns, `lhs` and `rhs`, that should be permutations of
 /// one another. In particular, there should exist some permutation `pi` such
