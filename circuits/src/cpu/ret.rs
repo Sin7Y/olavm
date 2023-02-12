@@ -1,5 +1,5 @@
 use super::columns::*;
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use plonky2::{
     field::{extension::Extendable, packed::PackedField},
     hash::hash_types::RichField,
