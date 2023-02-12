@@ -63,12 +63,12 @@ In the benchmarks below, the VM executes the same Fibonacci calculator program f
 
 | VM cycles | Execution time | Proving time | RAM consumed | Proof size |
 |-----------|----------------|--------------|--------------|------------|
-| 2^18      | 81.115 ms      | 6.791 s      | 5.6 GB       | 478 KB     |
-| 2^19      | 159.80 ms      | 14.688 s     | 11.1 GB      | 496 KB     |
-| 2^20      | 318.08 ms      | 29.766 s     | 23.2 GB      | 515 KB     |
-| 2^21      | 627.38 ms      | 65.057 s     | 45.3 GB      | 533 KB     |
-| 2^22      | 1240.4 ms      | 133.08 s     | 86.6 GB      | 576 KB     |
-| 2^23      | 2453.8 ms      | 271.04 s     | 176 GB       | 597 KB     |
+| 2^18      | 81.115 ms      | 6.095 s      | 5.6 GB       | 478 KB     |
+| 2^19      | 159.80 ms      | 12.528 s     | 11.1 GB      | 496 KB     |
+| 2^20      | 318.08 ms      | 25.226 s     | 23.2 GB      | 515 KB     |
+| 2^21      | 627.38 ms      | 56.862 s     | 45.3 GB      | 533 KB     |
+| 2^22      | 1240.4 ms      | 116.62 s     | 86.6 GB      | 576 KB     |
+| 2^23      | 2453.8 ms      | 238.56 s     | 176 GB       | 597 KB     |
 
 Overall, we don't expect the benchmarks to change significantly, but there will definitely be some deviation from the below numbers in the future.
 
