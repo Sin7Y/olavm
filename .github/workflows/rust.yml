@@ -2,9 +2,9 @@ name: CI checks
 
 on:
   push:
-    branches: [ "peinlcy/test", "dev/pierre" ]
+    branches: [ "peinlcy/prover", "dev/pierre" ]
   pull_request:
-    branches: [ "peinlcy/test", "dev/pierre" ]
+    branches: [ "peinlcy/prover", "dev/pierre" ]
 
 env:
   CARGO_TERM_COLOR: always
