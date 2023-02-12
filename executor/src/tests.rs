@@ -561,3 +561,116 @@ fn fibo_use_loop_decode_bench() {
 
     serde_json::to_writer(file, &program.trace).unwrap();
 }
+
+#[test]
+fn fp_expansion_decode() {
+    //main:
+    //     .LBL_0_0:
+    //       add r8 r8 4
+    //       mov r4 100
+    //       // not r5 3
+    //       // add r5 r5 1
+    //       // add r5 r8 r5
+    //       // mstore r5, r4
+    //       mstore [r8,-3] r4
+    //       mov r4 1
+    //       // not r6 2
+    //       // add r6 r6 1
+    //       // add r6 r8 r6
+    //       // mstore r6, r4
+    //       mstore [r8,-2] r4
+    //       mov r4 2
+    //       // not r7 1
+    //       // add r7 r7 1
+    //       // add r7 r8 r7
+    //       // mstore r7 r4
+    //       mstore [r8,-1] r4
+    //       // mload r4 r6
+    //       // mload r1 r7
+    //       // mload r0 r5
+    //       mload r0 [r8,-3]
+    //       mload r1 [r8,-2]
+    //       mload r4 [r8,-1]
+    //       add r4 r4 r1
+    //       mul r4 r4 r0
+    //       mstore r5 r4
+    //       mload r0 r5
+    //       not r4 4
+    //       add r4 r4 1
+    //       add r8 r8 r4
+    //       end
+    let program_src = "0x6000080400000000
+                             0x4
+                             0x4000008040000000
+                             0x64
+                             0x4000020000040000
+                             0x3
+                             0x4800020400000000
+                             0x1
+                             0x2004020400000000
+                             0x0204000001000000
+                             0x4000008040000000
+                             0x1
+                             0x4000020000040000
+                             0x2
+                             0x4800020400000000
+                             0x1
+                             0x2004020400000000
+                             0x0204000001000000
+                             0x4000008040000000
+                             0x2
+                             0x4000020000040000
+                             0x1
+                             0x4800020400000000
+                             0x1
+                             0x2004020400000000
+                             0x0204000001000000
+                             0x4000020000040000
+                             0x3
+                             0x4800020400000000
+                             0x1
+                             0x2004020400000000
+                             0x0004000802000000
+                             0x4000020000040000
+                             0x2
+                             0x4800020400000000
+                             0x1
+                             0x2004020400000000
+                             0x0004001002000000
+                             0x4000020000040000
+                             0x1
+                             0x4800020400000000
+                             0x1
+                             0x2004020400000000
+                             0x0004008002000000
+                             0x0200208400000000
+                             0x0200108200000000
+                             0x0202000001000000
+                             0x0002000802000000
+                             0x4000008000040000
+                             0x4
+                             0x4200008400000000
+                             0x1
+                             0x2001080400000000
+                             0x0000000000800000";
+
+    let instructions = program_src.split('\n');
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+    debug!("instructions:{:?}", program.instructions);
+
+    for inst in instructions.into_iter() {
+        program.instructions.push(inst.clone().parse().unwrap());
+    }
+
+    let mut process = Process::new();
+    process.execute(&mut program).unwrap();
+
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("mul_trace_1.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
