@@ -62,7 +62,7 @@ impl<F: Field> PolynomialValues<F> {
         // TODO: fft
         // ifft(self)
 
-        let mut v = self.values.clone();
+        let mut v = self.values;
         let inv_twiddles = get_inv_twiddles::<F>(v.len());
         interpolate_poly(&mut v, &inv_twiddles);
         PolynomialCoeffs { coeffs: v }
@@ -324,7 +324,7 @@ impl<F: Field> PolynomialCoeffs<F> {
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
     pub fn coset_fft(&self, shift: F) -> PolynomialValues<F> {
-        self.coset_fft_with_options(shift, None, None)
+        self.coset_fft_with_options(shift, None, None, 1)
     }
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
@@ -333,6 +333,7 @@ impl<F: Field> PolynomialCoeffs<F> {
         shift: F,
         zero_factor: Option<usize>,
         root_table: Option<&FftRootTable<F>>,
+        blowup_factor: usize,
     ) -> PolynomialValues<F> {
         // let modified_poly: Self = shift
         //     .powers()
@@ -345,7 +346,7 @@ impl<F: Field> PolynomialCoeffs<F> {
         // TODO: fft
         let mut v = self.coeffs.clone();
         let twiddles = get_twiddles::<F>(v.len());
-        let v = evaluate_poly_with_offset(&mut v, &twiddles, shift, 1);
+        let v = evaluate_poly_with_offset(&mut v, &twiddles, shift, blowup_factor);
         PolynomialValues { values: v }
     }
 
