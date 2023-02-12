@@ -11,7 +11,7 @@ use plonky2::hash::merkle_proofs::MerkleProof;
 use plonky2::hash::merkle_tree::MerkleCap;
 use plonky2::plonk::config::{GenericConfig, GenericHashOut, Hasher};
 
-use crate::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
+use super::proof::{AllProof, PublicValues, StarkOpeningSet, StarkProof};
 
 #[derive(Debug)]
 pub struct Buffer(Cursor<Vec<u8>>);

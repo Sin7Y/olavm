@@ -1,15 +1,15 @@
+use super::config::StarkConfig;
+use super::cross_table_lookup::{CrossTableLookup, TableWithColumns};
+use super::stark::Stark;
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
-use crate::config::StarkConfig;
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use crate::memory::memory_stark::{
     ctl_data as mem_ctl_data, ctl_data_mem_rc, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc,
     MemoryStark,
 };
-use crate::stark::Stark;
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
@@ -314,8 +314,6 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
 
 #[allow(unused_imports)]
 mod tests {
-    use crate::all_stark::AllStark;
-    use crate::config::StarkConfig;
     use crate::generation::builtin::{
         generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
         generate_builtins_rangecheck_trace,
@@ -323,12 +321,14 @@ mod tests {
     use crate::generation::cpu::generate_cpu_trace;
     use crate::generation::generate_traces;
     use crate::generation::memory::generate_memory_trace;
-    use crate::proof::PublicValues;
-    use crate::prover::prove_with_traces;
-    use crate::serialization::Buffer;
-    use crate::stark::Stark;
-    use crate::util::trace_rows_to_poly_values;
-    use crate::verifier::verify_proof;
+    use crate::stark::all_stark::AllStark;
+    use crate::stark::config::StarkConfig;
+    use crate::stark::proof::PublicValues;
+    use crate::stark::prover::prove_with_traces;
+    use crate::stark::serialization::Buffer;
+    use crate::stark::stark::Stark;
+    use crate::stark::util::trace_rows_to_poly_values;
+    use crate::stark::verifier::verify_proof;
     use anyhow::Result;
     use core::program::Program;
     use executor::Process;

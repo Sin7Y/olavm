@@ -3,7 +3,7 @@ use core::{
     trace::trace::Step,
 };
 
-use crate::{cpu::columns as cpu, lookup::permuted_cols};
+use crate::{cpu::columns as cpu, stark::lookup::permuted_cols};
 use plonky2::{
     hash::hash_types::RichField,
     iop::challenger::Challenger,

@@ -1,12 +1,11 @@
 use crate::builtins::rangecheck_small_limbs::columns::*;
-use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-use crate::stark::Stark;
-use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::stark::stark::Stark;
+use crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::packed::PackedField;
-//use plonky2::field::types::Field;
+use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
 use std::marker::PhantomData;
@@ -49,6 +48,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
         let input = vars.local_values[Self::COL_INPUT];
         let limbs: Vec<_> = vars.local_values[self.range_limbs()].to_vec();
         let computed_sum = reduce_with_powers(&limbs, P::Scalar::from_canonical_usize(Self::BASE));
+        yield_constr.constraint(computed_sum - input);
+
         for limb in limbs {
             yield_constr.constraint(
                 (0..Self::BASE)
@@ -56,7 +57,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
                     .product(),
             )
         }
-        yield_constr.constraint(computed_sum - input)
     }
 
     fn eval_ext_circuit(
@@ -66,6 +66,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
         yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
         let base = builder.constant(F::from_canonical_usize(Self::BASE));
+        let one = builder.one_extension();
         let input = vars.local_values[Self::COL_INPUT];
         let limbs = vars.local_values[self.range_limbs()].to_vec();
 
@@ -73,20 +74,20 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for RangeCheckU32
         let sum_constraint = builder.sub_extension(computed_sum, input);
         yield_constr.constraint(builder, sum_constraint);
 
-        let mut limb_range_check_constraints: Vec<ExtensionTarget<D>> = Vec::new();
-        for limb in limbs {
-            let mut acc = builder.one_extension();
-            (0..Self::BASE).for_each(|i| {
-                let neg_i = -F::from_canonical_usize(i);
-                // acc' = acc * (limb - i)
-                acc = builder.arithmetic_extension(F::ONE, neg_i, acc, limb, acc)
-            });
-            // limb * (limb - 1) ... (limb - base + 1)
-            limb_range_check_constraints.push(acc)
-        }
-        for limb_range_check_constraint in limb_range_check_constraints {
-            yield_constr.constraint(builder, limb_range_check_constraint)
-        }
+        let bases = (0..Self::BASE)
+            .map(|i| builder.constant_extension(F::Extension::from_canonical_usize(i)))
+            .collect::<Vec<_>>();
+
+        limbs.iter().for_each(|limb| {
+            let limb_diffs = bases
+                .iter()
+                .map(|b| builder.sub_extension(*limb, *b))
+                .collect::<Vec<_>>();
+            let product = limb_diffs
+                .iter()
+                .fold(one, |acc, s| builder.mul_extension(acc, *s));
+            yield_constr.constraint(builder, product);
+        });
     }
 
     fn constraint_degree(&self) -> usize {
