@@ -331,7 +331,7 @@ impl Process {
                         _ => panic!("not match opcode:{}", opcode),
                     };
 
-                    self.register_selector.dst = value.0;
+                    self.register_selector.dst = self.registers[dst_index];
                     self.register_selector.dst_reg_sel[dst_index] =
                         GoldilocksField::from_canonical_u64(1);
 
