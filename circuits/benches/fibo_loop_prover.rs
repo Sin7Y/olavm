@@ -2,6 +2,7 @@ use circuits::generation::generate_traces;
 use circuits::stark::all_stark::AllStark;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::prover::prove_with_traces;
+use circuits::stark::serialization::Buffer;
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, Criterion};
 use executor::Process;
@@ -27,6 +28,9 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
         &mut TimingTree::default(),
     )
     .unwrap();
+    let mut buffer = Buffer::new(Vec::new());
+    buffer.write_all_proof(&proof).unwrap();
+    println!("proof_size: {}", buffer.bytes().len());
 }
 
 fn fibo_loop_prover_benchmark(c: &mut Criterion) {
