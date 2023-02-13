@@ -4,7 +4,7 @@
 [![CI checks](https://github.com/Sin7Y/olavm/actions/workflows/rust.yml/badge.svg)](https://github.com/Sin7Y/olavm/actions/workflows/unit_test.yml)
 [![issues](https://img.shields.io/github/issues/Sin7Y/olavm)](https://github.com/Sin7Y/olavm/issues?q=is%3Aopen)
 
-OlaVM is a STARK-based ZK-friendly ZKVM, it is built on a **small finite field** called [Goldilocks field](https://github.com/mir-protocol/plonky2/blob/main/field/src/goldilocks_field.rs). As the most important component of the Ola system, OlaVM is mainly used to execute a program and generate a valid proof for the **programmable scalable** case and the  **programmable private** case.
+OlaVM is a STARK-based ZK-friendly ZKVM, it is built on a **small finite field** called [Goldilocks field](https://github.com/mir-protocol/plonky2/blob/main/field/src/goldilocks_field.rs). As the most important component of the Ola system, OlaVM is mainly used to execute a program and generate a valid proof for the **programmable scalable** case and the **programmable private** case.
 
 **Warning: This repository shouldn't be used for production case, as it is still in development phase and has not been audited, so it might contain many bugs and security holes.**.
 
@@ -25,9 +25,9 @@ There are a lot of tricks to get a very ZK-friendly ZKVM in OlaVM. We would like
 
 - **Small finite field**. The word defined in OlaVM is a finite field, [Goldilocks](https://github.com/mir-protocol/plonky2/blob/main/field/src/goldilocks_field.rs). The prime of Goldilocks is p = 2^64 - 2^32 + 1, which is less than 64 bits. The computation based on these field elements could be expected to be [much faster]((https://twitter.com/rel_zeta_tech/status/1622984483359129601)) than other large finite fields;
 
-- **Builtins**. Since the cyclic group size is limited, it would be better if the trace table could contain as many transactions as possible. This means that if there are some computation cost a large trace lines in transation logic, we should remove them from the main trace table and add a special sub-trace table to store them, this is the reason that introduce builtins, like hash, bitwise operation and so on, check the [doc/olavm](https://github.com/Sin7Y/olavm/blob/main/docs/olavm/olavm_sepc.pdf) for more details;
+- **Builtins**. Since the cyclic group size is limited, it would be better if the trace table could contain as many transactions as possible. This means that if there are some computation cost a large trace lines in transaction logic, we should remove them from the main trace table and add a special sub-trace table to store them, this is the reason that introduce builtins, like hash, bitwise operation and so on, check the [doc/olavm](https://github.com/Sin7Y/olavm/blob/main/docs/olavm/olavm_sepc.pdf) for more details;
 
-- **Prophets**. It is designed for non-deterministic computation, which means "implementation is expensive, verification is cheap". So to some extent Prophets is more like an external helper. It helps you compute the results of some non-deterministic computation and then you verify the results using the instruction sets, should note that this verification is done by the VM, not by constraints which is different with builtins, see the [doc/olavm](https://github.com/Sin7Y/olavm/blob/main/docs/olavm/olavm_sepc.pdf) for more details;
+- **Prophets**. It is designed for non-deterministic computation, which means "implementation is expensive, verification is cheap". So to some extent Prophets is more like an external helper. It helps you compute the results of some non-deterministic computation, and then you verify the results using the instruction sets, should note that this verification is done by the VM, not by constraints which is different with builtins, see the [doc/olavm](https://github.com/Sin7Y/olavm/blob/main/docs/olavm/olavm_sepc.pdf) for more details;
 
 ### Status
 
@@ -80,7 +80,7 @@ A few general notes on performance:
 Software:
 
 - Support the fastest hash algorithm, [Blake3 Hash](https://github.com/BLAKE3-team/BLAKE3-specs/blob/master/blake3.pdf)
-- Support [parallel fft](https://github.com/facebook/winterfell/tree/main/math/src/fft)
+- Support [parallel FFT](https://github.com/facebook/winterfell/tree/main/math/src/fft)
 - Support [parallel polynomial evaluation](https://github.com/facebook/winterfell/tree/main/math/src/fft)
 - Support parallel proof
 
@@ -97,11 +97,11 @@ OlaVM runs based on the Goldilocks field and uses STARK to generate proofs for t
 
 ### Goldilocks field & plonky2
 
-- [Goldilocks field used in winterfell](https://github.com/novifinancial/winterfell/blob/main/math/src/field/f64/mod.rs)
+- [Goldilocks field used in Winterfell](https://github.com/novifinancial/winterfell/blob/main/math/src/field/f64/mod.rs)
 - [Goldilocks field used in plonky2](https://github.com/mir-protocol/plonky2/blob/main/field/src/goldilocks_field.rs)
 - [Goldilocks field used in Polygon-Hermez](https://github.com/0xPolygonHermez/goldilocks)
-- [Goldilock field paraments and extension Goldilocks](https://cronokirby.com/notes/2022/09/the-goldilocks-field/)
-- [U32 implemention in Goldilocks](https://hackmd.io/@bobbinth/H1aCWWy7F)
+- [Goldilocks field and extension Goldilocks](https://cronokirby.com/notes/2022/09/the-goldilocks-field/)
+- [U32 implementation in Goldilocks](https://hackmd.io/@bobbinth/H1aCWWy7F)
 - [Plonky2 whitepaper](https://github.com/mir-protocol/plonky2/blob/main/plonky2/plonky2.pdf)
 
 ### STARK
@@ -127,7 +127,7 @@ Alan Szepieniec's STARK tutorials:
 - [Part-5](https://aszepieniec.github.io/stark-anatomy/rescue-prime): A Rescue-Prime STARK
 - [Part-6](https://aszepieniec.github.io/stark-anatomy/faster): Speeding Things Up
 
-[Sin7Y](https://twitter.com/Sin7y_Labs)'s STARK explaination:
+[Sin7Y](https://twitter.com/Sin7y_Labs)'s STARK explanation:
 
 - [STARK - An Indepth Technical Analysis](https://hackmd.io/@sin7y/HktwgoeKq)
 - [The Stark Proof System of Miden V1](https://hackmd.io/@sin7y/HkIELMUu9)
