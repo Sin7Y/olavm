@@ -9,3 +9,5 @@ mod jmp;
 mod mov;
 mod mul;
 mod ret;
+mod mload;
+mod mstore;

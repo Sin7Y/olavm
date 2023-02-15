@@ -20,7 +20,7 @@ use {
 };
 
 pub fn ctl_data_cpu_mem_mstore<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_OP0]).collect_vec()
+    Column::singles([COL_CLK, COL_OPCODE, COL_AUX1, COL_OP0]).collect_vec()
 }
 
 pub fn ctl_filter_cpu_mem_mstore<F: Field>() -> Column<F> {
@@ -28,7 +28,7 @@ pub fn ctl_filter_cpu_mem_mstore<F: Field>() -> Column<F> {
 }
 
 pub fn ctl_data_cpu_mem_mload<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_DST]).collect_vec()
+    Column::singles([COL_CLK, COL_OPCODE, COL_AUX1, COL_DST]).collect_vec()
 }
 
 pub fn ctl_filter_cpu_mem_mload<F: Field>() -> Column<F> {
@@ -315,6 +315,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         cjmp::eval_packed_generic(lv, nv, yield_constr);
         call::eval_packed_generic(lv, nv, yield_constr);
         ret::eval_packed_generic(lv, nv, yield_constr);
+        mload::eval_packed_generic(lv, nv, yield_constr);
+        mstore::eval_packed_generic(lv, nv, yield_constr);
 
         // Last row must be `END`
         yield_constr.constraint_last_row(lv[COL_S_END] - P::ONES);
@@ -632,6 +634,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         cjmp::eval_ext_circuit(builder, lv, nv, yield_constr);
         call::eval_ext_circuit(builder, lv, nv, yield_constr);
         ret::eval_ext_circuit(builder, lv, nv, yield_constr);
+        mload::eval_ext_circuit(builder, lv, nv, yield_constr);
+        mstore::eval_ext_circuit(builder, lv, nv, yield_constr);
 
         // Last row must be `END`
         let last_end_cs = builder.sub_extension(lv[COL_S_END], one);
