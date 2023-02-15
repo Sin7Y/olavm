@@ -9,6 +9,10 @@ use itertools::Itertools;
 use plonky2_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
+use crate::cfft::{
+    evaluate_poly, evaluate_poly_with_offset, get_inv_twiddles, get_twiddles, interpolate_poly,
+    interpolate_poly_with_offset,
+};
 use crate::extension::{Extendable, FieldExtension};
 use crate::fft::{fft, fft_with_options, ifft, FftRootTable};
 use crate::types::Field;
@@ -55,21 +59,33 @@ impl<F: Field> PolynomialValues<F> {
     }
 
     pub fn ifft(self) -> PolynomialCoeffs<F> {
-        ifft(self)
+        // TODO: fft
+        // ifft(self)
+
+        let mut v = self.values;
+        let inv_twiddles = get_inv_twiddles::<F>(v.len());
+        interpolate_poly(&mut v, &inv_twiddles);
+        PolynomialCoeffs { coeffs: v }
     }
 
     /// Returns the polynomial whose evaluation on the coset `shift*H` is
     /// `self`.
     pub fn coset_ifft(self, shift: F) -> PolynomialCoeffs<F> {
-        let mut shifted_coeffs = self.ifft();
-        shifted_coeffs
-            .coeffs
-            .iter_mut()
-            .zip(shift.inverse().powers())
-            .for_each(|(c, r)| {
-                *c *= r;
-            });
-        shifted_coeffs
+        // TODO: fft
+        // let mut shifted_coeffs = self.ifft();
+        // shifted_coeffs
+        //     .coeffs
+        //     .iter_mut()
+        //     .zip(shift.inverse().powers())
+        //     .for_each(|(c, r)| {
+        //         *c *= r;
+        //     });
+        // shifted_coeffs
+
+        let mut v = self.values.clone();
+        let inv_twiddles = get_inv_twiddles::<F>(v.len());
+        interpolate_poly_with_offset(&mut v, &inv_twiddles, shift);
+        PolynomialCoeffs { coeffs: v }
     }
 
     pub fn lde_multiple(polys: Vec<Self>, rate_bits: usize) -> Vec<Self> {
@@ -77,15 +93,30 @@ impl<F: Field> PolynomialValues<F> {
     }
 
     pub fn lde(self, rate_bits: usize) -> Self {
-        let coeffs = ifft(self).lde(rate_bits);
-        fft_with_options(coeffs, Some(rate_bits), None)
+        // let coeffs = ifft(self).lde(rate_bits);
+        // fft_with_options(coeffs, Some(rate_bits), None)
+
+        // TODO: fft
+        let coeffs = self.ifft().lde(rate_bits);
+        let mut v = coeffs.coeffs;
+        let twiddles = get_twiddles::<F>(v.len());
+        evaluate_poly(&mut v, &twiddles);
+        PolynomialValues { values: v }
     }
 
     /// Low-degree extend `Self` (seen as evaluations over the subgroup) onto a
     /// coset.
     pub fn lde_onto_coset(self, rate_bits: usize) -> Self {
-        let coeffs = ifft(self).lde(rate_bits);
-        coeffs.coset_fft_with_options(F::coset_shift(), Some(rate_bits), None)
+        // let coeffs = ifft(self).lde(rate_bits);
+        // coeffs.coset_fft_with_options(F::coset_shift(), Some(rate_bits), None)
+
+        // TODO: fft
+        let coeffs = self.ifft();
+        let mut v = coeffs.coeffs;
+        let blowup_factor = 1 << rate_bits;
+        let twiddles = get_twiddles::<F>(v.len());
+        let v = evaluate_poly_with_offset(&mut v, &twiddles, F::coset_shift(), blowup_factor);
+        PolynomialValues { values: v }
     }
 
     pub fn degree(&self) -> usize {
@@ -268,7 +299,13 @@ impl<F: Field> PolynomialCoeffs<F> {
     }
 
     pub fn fft(self) -> PolynomialValues<F> {
-        fft(self)
+        // fft(self)
+
+        // TODO: fft
+        let mut v = self.coeffs;
+        let twiddles = get_twiddles::<F>(v.len());
+        evaluate_poly(&mut v, &twiddles);
+        PolynomialValues { values: v }
     }
 
     pub fn fft_with_options(
@@ -276,12 +313,18 @@ impl<F: Field> PolynomialCoeffs<F> {
         zero_factor: Option<usize>,
         root_table: Option<&FftRootTable<F>>,
     ) -> PolynomialValues<F> {
-        fft_with_options(self, zero_factor, root_table)
+        // fft_with_options(self, zero_factor, root_table)
+
+        // TODO: fft
+        let mut v = self.coeffs;
+        let twiddles = get_twiddles::<F>(v.len());
+        evaluate_poly(&mut v, &twiddles);
+        PolynomialValues { values: v }
     }
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
     pub fn coset_fft(&self, shift: F) -> PolynomialValues<F> {
-        self.coset_fft_with_options(shift, None, None)
+        self.coset_fft_with_options(shift, None, None, 1)
     }
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
@@ -290,14 +333,21 @@ impl<F: Field> PolynomialCoeffs<F> {
         shift: F,
         zero_factor: Option<usize>,
         root_table: Option<&FftRootTable<F>>,
+        blowup_factor: usize,
     ) -> PolynomialValues<F> {
-        let modified_poly: Self = shift
-            .powers()
-            .zip(&self.coeffs)
-            .map(|(r, &c)| r * c)
-            .collect::<Vec<_>>()
-            .into();
-        modified_poly.fft_with_options(zero_factor, root_table)
+        // let modified_poly: Self = shift
+        //     .powers()
+        //     .zip(&self.coeffs)
+        //     .map(|(r, &c)| r * c)
+        //     .collect::<Vec<_>>()
+        //     .into();
+        // modified_poly.fft_with_options(zero_factor, root_table)
+
+        // TODO: fft
+        let mut v = self.coeffs.clone();
+        let twiddles = get_twiddles::<F>(v.len());
+        let v = evaluate_poly_with_offset(&mut v, &twiddles, shift, blowup_factor);
+        PolynomialValues { values: v }
     }
 
     pub fn to_extension<const D: usize>(&self) -> PolynomialCoeffs<F::Extension>
@@ -434,13 +484,17 @@ impl<F: Field> Mul for &PolynomialCoeffs<F> {
         let a_evals = a.fft();
         let b_evals = b.fft();
 
-        let mul_evals: Vec<F> = a_evals
+        let mut mul_evals: Vec<F> = a_evals
             .values
             .into_iter()
             .zip(b_evals.values)
             .map(|(pa, pb)| pa * pb)
             .collect();
-        ifft(mul_evals.into())
+        // ifft(mul_evals.into())
+        // TODO: fft
+        let inv_twiddles = get_inv_twiddles::<F>(mul_evals.len());
+        interpolate_poly(&mut mul_evals, &inv_twiddles);
+        PolynomialCoeffs { coeffs: mul_evals }
     }
 }
 
