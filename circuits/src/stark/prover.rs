@@ -364,6 +364,7 @@ where
             challenger,
             &fri_params,
             timing,
+            twiddle_map,
         )
     );
 

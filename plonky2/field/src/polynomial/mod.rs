@@ -292,9 +292,13 @@ impl<F: Field> PolynomialCoeffs<F> {
     }
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
-    pub fn coset_fft(&self, shift: F) -> PolynomialValues<F> {
-        let twiddles = get_twiddles::<F>(self.coeffs.len());
-        self.coset_fft_with_options(shift, &twiddles, 1)
+    pub fn coset_fft(&self, shift: F, twiddles: Option<&[F]>) -> PolynomialValues<F> {
+        if twiddles.is_some() {
+            self.coset_fft_with_options(shift, twiddles.unwrap(), 1)
+        } else {
+            let twiddles = get_twiddles::<F>(self.coeffs.len());
+            self.coset_fft_with_options(shift, &twiddles, 1)
+        }
     }
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
@@ -498,8 +502,8 @@ mod tests {
         let n = 1 << k;
         let poly = PolynomialCoeffs::new(F::rand_vec(n));
         let shift = F::rand();
-        // let twiddles = get_twiddles::<F>(poly.len());
-        let coset_evals = poly.coset_fft(shift).values;
+        let twiddles = get_twiddles::<F>(poly.len());
+        let coset_evals = poly.coset_fft(shift, Some(&twiddles)).values;
 
         let generator = F::primitive_root_of_unity(k);
         let naive_coset_evals = F::cyclic_subgroup_coset_known_order(generator, shift, n)
@@ -531,8 +535,8 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(evals, naive_coset_evals.into());
 
-        // let twiddles = get_twiddles::<F>(coeffs.len());
-        let fft_evals = coeffs.coset_fft(shift);
+        let twiddles = get_twiddles::<F>(coeffs.len());
+        let fft_evals = coeffs.coset_fft(shift, Some(&twiddles));
         assert_eq!(evals, fft_evals);
     }
 

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use itertools::Itertools;
 use maybe_rayon::*;
 use plonky2_field::extension::{flatten, unflatten, Extendable};
@@ -25,12 +27,15 @@ pub fn fri_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const
     challenger: &mut Challenger<F, C::Hasher>,
     fri_params: &FriParams,
     timing: &mut TimingTree,
+    twiddle_map: &mut BTreeMap<usize, Vec<F>>,
 ) -> FriProof<F, C::Hasher, D>
 where
     [(); C::Hasher::HASH_SIZE]:,
 {
     let n = lde_polynomial_values.len();
     assert_eq!(lde_polynomial_coeffs.len(), n);
+
+    let twiddle = twiddle_map;
 
     // Commit phase
     let (trees, final_coeffs) = timed!(
@@ -103,7 +108,7 @@ where
                 .collect::<Vec<_>>(),
         );
         shift = shift.exp_u64(arity as u64);
-        values = coeffs.coset_fft(shift.into())
+        values = coeffs.coset_fft(shift.into(), None)
     }
 
     // The coefficients being removed here should always be zero.
