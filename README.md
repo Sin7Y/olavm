@@ -132,6 +132,11 @@ Alan Szepieniec's STARK tutorials:
 - [STARK - An Indepth Technical Analysis](https://hackmd.io/@sin7y/HktwgoeKq)
 - [The Stark Proof System of Miden V1](https://hackmd.io/@sin7y/HkIELMUu9)
 
+Privacy:
+- [Private delagation for zksnark](https://www.youtube.com/watch?v=mFzwp8gGn-E)
+- [ZEXE: Private computation](https://eprint.iacr.org/2018/962.pdf)
+- [Zcash protocol](https://github.com/zcash/zips/blob/main/protocol/protocol.pdf)
+
 ## License
 
 This project is under [MIT licensed](./LICENSE).
