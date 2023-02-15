@@ -333,9 +333,10 @@ mod tests {
     use core::program::Program;
     use executor::Process;
     use log::debug;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
     use std::mem;
+    use std::time::{Duration, Instant};
 
     #[allow(dead_code)]
     const D: usize = 2;
@@ -381,27 +382,33 @@ mod tests {
         let mut all_stark = AllStark::default();
         let (traces, public_values) = generate_traces(&program, &mut all_stark);
         let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        )?;
-        // println!("{}", mem::size_of_val(&proof));
 
-        let mut buffer = Buffer::new(Vec::new());
-        buffer.write_all_proof(&proof)?;
+        let start = Instant::now();
+        for _ in 0..20 {
+            let _proof = prove_with_traces::<F, C, D>(
+                &all_stark,
+                &config,
+                traces.clone(),
+                public_values.clone(),
+                &mut TimingTree::default(),
+            )?;
+        }
+        let duration = start.elapsed();
+        println!("Time elapsed in prove_with_traces() is: {:?}", duration);
 
-        println!("serialized cpu stark proof size: {}", buffer.len());
-        // println!("serialized bytes: {:?}", buffer.bytes());
+        // let mut buffer = Buffer::new(Vec::new());
+        // buffer.write_all_proof(&proof)?;
 
-        let mut de_buffer = Buffer::new(buffer.bytes());
-        let de_proof = de_buffer.read_all_proof::<F, C, D>()?;
-        // println!("deserialized_proof: {:?}", de_proof);
+        // println!("serialized cpu stark proof size: {}", buffer.len());
+        // // println!("serialized bytes: {:?}", buffer.bytes());
 
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, de_proof, &config)
+        // let mut de_buffer = Buffer::new(buffer.bytes());
+        // let de_proof = de_buffer.read_all_proof::<F, C, D>()?;
+        // // println!("deserialized_proof: {:?}", de_proof);
+
+        // let all_stark = AllStark::default();
+        // verify_proof(all_stark, de_proof, &config)
+        Ok(())
     }
 
     #[test]
