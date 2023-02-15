@@ -1,5 +1,8 @@
+use std::collections::BTreeMap;
+
 use itertools::Itertools;
 use maybe_rayon::*;
+use plonky2_field::cfft::get_twiddles;
 use plonky2_field::extension::Extendable;
 use plonky2_field::fft::FftRootTable;
 use plonky2_field::packed::PackedField;
@@ -46,7 +49,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         blinding: bool,
         cap_height: usize,
         timing: &mut TimingTree,
-        fft_root_table: Option<&FftRootTable<F>>,
+        twiddle_map: &mut BTreeMap<usize, Vec<F>>,
     ) -> Self
     where
         [(); C::Hasher::HASH_SIZE]:,
@@ -63,7 +66,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             blinding,
             cap_height,
             timing,
-            fft_root_table,
+            twiddle_map,
         )
     }
 
@@ -74,7 +77,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         blinding: bool,
         cap_height: usize,
         timing: &mut TimingTree,
-        fft_root_table: Option<&FftRootTable<F>>,
+        twiddle_map: &mut BTreeMap<usize, Vec<F>>,
     ) -> Self
     where
         [(); C::Hasher::HASH_SIZE]:,
@@ -83,7 +86,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let lde_values = timed!(
             timing,
             "FFT + blinding",
-            Self::lde_values(&polynomials, rate_bits, blinding, fft_root_table)
+            Self::lde_values(&polynomials, rate_bits, blinding, twiddle_map)
         );
 
         let mut leaves = timed!(timing, "transpose LDEs", transpose(&lde_values));
@@ -107,21 +110,22 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         polynomials: &[PolynomialCoeffs<F>],
         rate_bits: usize,
         blinding: bool,
-        fft_root_table: Option<&FftRootTable<F>>,
+        twiddle_map: &mut BTreeMap<usize, Vec<F>>,
     ) -> Vec<Vec<F>> {
         let degree = polynomials[0].len();
 
         // If blinding, salt with two random elements to each leaf vector.
         let salt_size = if blinding { SALT_SIZE } else { 0 };
 
+        let twiddles = twiddle_map
+                                            .entry(degree)
+                                    .or_insert_with(|| get_twiddles(degree));
+
         polynomials
             .par_iter()
             .map(|p| {
                 assert_eq!(p.len(), degree, "Polynomial degrees inconsistent");
-                // p.lde(rate_bits)
-                //     .coset_fft_with_options(F::coset_shift(), Some(rate_bits), fft_root_table)
-                //     .values;
-                p.coset_fft_with_options(F::coset_shift(), None, None, 1 << rate_bits).values
+                p.coset_fft_with_options(F::coset_shift(), twiddles, 1 << rate_bits).values
             })
             .chain(
                 (0..salt_size)
