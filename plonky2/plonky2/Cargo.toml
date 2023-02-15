@@ -12,7 +12,7 @@ default-run = "generate_constants"
 
 [features]
 default = ["parallel", "rand", "rand_chacha", "timing", "gate_testing"]
-parallel = ["maybe_rayon/parallel"]
+parallel = ["maybe_rayon/parallel", "plonky2_field/parallel"]
 rand = ["dep:rand", "plonky2_field/rand"]
 gate_testing = ["rand"]
 rand_chacha = ["dep:rand_chacha"]

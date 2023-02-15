@@ -11,6 +11,7 @@
 
 pub(crate) mod arch;
 pub mod batch_util;
+pub mod cfft;
 pub mod cosets;
 pub mod extension;
 pub mod fft;
