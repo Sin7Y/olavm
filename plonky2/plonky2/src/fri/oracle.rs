@@ -54,11 +54,15 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     where
         [(); C::Hasher::HASH_SIZE]:,
     {
+        // TODO: add time
+        let now = std::time::Instant::now();
         let coeffs = timed!(
             timing,
             "IFFT",
             values.into_par_iter().map(|v| v.ifft()).collect::<Vec<_>>()
         );
+
+        println!("trace ci ifft cost time: {:?}", now.elapsed());
 
         Self::from_coeffs(
             coeffs,
@@ -82,12 +86,20 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     where
         [(); C::Hasher::HASH_SIZE]:,
     {
+        // TODO: add time
+        let now = std::time::Instant::now();
+
         let degree = polynomials[0].len();
         let lde_values = timed!(
             timing,
             "FFT + blinding",
             Self::lde_values(&polynomials, rate_bits, blinding, twiddle_map)
         );
+
+        println!("trace ci lde_values cost time: {:?}", now.elapsed());
+
+        // TODO: add time
+        let now = std::time::Instant::now();
 
         let mut leaves = timed!(timing, "transpose LDEs", transpose(&lde_values));
         reverse_index_bits_in_place(&mut leaves);
@@ -96,6 +108,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             "build Merkle tree",
             MerkleTree::new(leaves, cap_height)
         );
+
+        println!("trace ci MerkleTree cost time: {:?}", now.elapsed());
 
         Self {
             polynomials,
