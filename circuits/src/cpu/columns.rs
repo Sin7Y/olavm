@@ -7,20 +7,19 @@ use std::ops::Range;
 // under the corresponding directory.
 
 // Main(CPU) trace.
-// There are 76 columns in cpu trace.
+// There are 75 columns in cpu trace.
 //
-// Context related columns(12):
-// ┌───────┬───────┬──────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬
-// │  clk  │   pc  │ flag │ reg_0 │ reg_1 │ reg_2 | reg_3 | reg_4 │ reg_5 |
-// reg_6 | reg_7 │ reg_8 │
-// ├───────┼───────┼──────┼───────┼───────┼───────┼───────┼───────┼───────┼───────|───────┼───────┼
-// │   1   │   0   │  0   │   0   │   0   │   0   │   0   │   0   │   0   │   0
-// |   0   │   0   │
-// └───────┴───────┴──────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴
+// Context related columns(11):
+// ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┐
+// │  clk  │   pc  │ reg_0 │ reg_1 │ reg_2 | reg_3 | reg_4 │ reg_5 │reg_6  │
+// reg_7 │ reg_8 │
+// ├───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────|
+// │   1   │   0   │   0   │   0   │   0   │   0   │   0   │   0   │   0   |   0
+// │   0   │
+// └───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┘
 pub(crate) const COL_CLK: usize = 0;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
-pub(crate) const COL_FLAG: usize = COL_PC + 1;
-pub(crate) const COL_START_REG: usize = COL_FLAG + 1;
+pub(crate) const COL_START_REG: usize = COL_PC + 1;
 pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTER_NUM;
 
 // Instruction related columns(5):
