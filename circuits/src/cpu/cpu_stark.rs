@@ -66,7 +66,7 @@ pub fn ctl_filter_with_bitwise_xor<F: Field>() -> Column<F> {
 
 // get the data source for CMP in Cpu table
 pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_OP0, COL_OP1]).collect_vec()
+    Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec()
 }
 
 pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
