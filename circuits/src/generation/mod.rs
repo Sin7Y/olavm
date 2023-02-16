@@ -31,9 +31,21 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     program: &Program,
     all_stark: &mut AllStark<F, D>,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
+    // TODO: add time
+    let now = std::time::Instant::now();
     let (cpu_rows, cpu_beta) =
         generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+    println!(
+            "generate_cpu_trace time: {:?}",
+            now.elapsed(),
+        );
+    // TODO: add time
+    let now = std::time::Instant::now();
     let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+    println!(
+        "cpu_trace_to_poly time: {:?}",
+        now.elapsed(),
+    );
     let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
     let memory_trace = trace_rows_to_poly_values(memory_rows);
     let (bitwise_rows, bitwise_beta) =

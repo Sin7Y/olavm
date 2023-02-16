@@ -218,18 +218,10 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         final_poly.coeffs.insert(0, F::Extension::ZERO);
 
         let lde_final_poly = final_poly.lde(fri_params.config.rate_bits);
-        let n = lde_final_poly.coeffs.len();
-        let twiddles = twiddle_map
-            .entry(n)
-            .or_insert_with(|| get_twiddles(n));
-        let mut t = Vec::new();
-        for i in twiddles {
-            t.push((*i).into());
-        }
         let lde_final_values = timed!(
             timing,
-            &format!("perform final FFT {}", n),
-            lde_final_poly.coset_fft(F::coset_shift().into(), Some(&t))
+            &format!("perform final FFT {}", lde_final_poly.coeffs.len()),
+            lde_final_poly.coset_fft(F::coset_shift().into(), None)
         );
 
         let fri_proof = fri_proof::<F, C, D>(

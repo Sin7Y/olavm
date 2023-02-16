@@ -83,6 +83,8 @@ where
 
     let mut twiddle_map = BTreeMap::new();
 
+    // TODO: add time
+    let now = std::time::Instant::now();
     let trace_commitments = timed!(
         timing,
         "compute trace commitments",
@@ -103,6 +105,10 @@ where
             })
             .collect::<Vec<_>>()
     );
+    println!(
+        "trace_commitments time: {:?}",
+        now.elapsed(),
+    );
 
     let trace_caps = trace_commitments
         .iter()
@@ -113,12 +119,21 @@ where
         challenger.observe_cap(cap);
     }
 
+    // TODO: add time
+    let now = std::time::Instant::now();
     let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
         config,
         &trace_poly_values,
         &all_stark.cross_table_lookups,
         &mut challenger,
     );
+    println!(
+        "cross_table_lookup_data time: {:?}",
+        now.elapsed(),
+    );
+
+    // TODO: add time
+    let now = std::time::Instant::now();
 
     let cpu_proof = prove_single_table(
         &all_stark.cpu_stark,
@@ -130,6 +145,14 @@ where
         timing,
         &mut twiddle_map,
     )?;
+
+    println!(
+        "prove_cpu_table time: {:?}",
+        now.elapsed(),
+    );
+
+    // TODO: add time
+    let now = std::time::Instant::now();
     let memory_proof = prove_single_table(
         &all_stark.memory_stark,
         config,
@@ -171,6 +194,11 @@ where
         timing,
         &mut twiddle_map,
     )?;
+
+    println!(
+        "other 4 trace prove time: {:?}",
+        now.elapsed(),
+    );
 
     let stark_proofs = [
         cpu_proof,
@@ -225,6 +253,9 @@ where
 
     challenger.compact();
 
+    // TODO: add time
+    let now = std::time::Instant::now();
+
     // Permutation arguments.
     let permutation_challenges = stark.uses_permutation_args().then(|| {
         get_n_grand_product_challenge_sets(
@@ -267,6 +298,11 @@ where
     let permutation_ctl_zs_cap = permutation_ctl_zs_commitment.merkle_tree.cap.clone();
     challenger.observe_cap(&permutation_ctl_zs_cap);
 
+    println!(
+        "cpu permutation_ctl_zs_commitment time: {:?}",
+        now.elapsed(),
+    );
+
     let alphas = challenger.get_n_challenges(config.num_challenges);
     // if cfg!(test) {
     //     check_constraints(
@@ -281,6 +317,10 @@ where
     //         config,
     //     );
     // }
+
+    // TODO: add time
+    let now = std::time::Instant::now();
+
     let quotient_polys = timed!(
         timing,
         "compute quotient polys",
@@ -296,6 +336,15 @@ where
             config,
         )
     );
+
+    println!(
+        "cpu compute_quotient_polys time: {:?}",
+        now.elapsed(),
+    );
+
+    // TODO: add time
+    let now = std::time::Instant::now();
+
     let all_quotient_chunks = timed!(
         timing,
         "split quotient polys",
@@ -327,6 +376,14 @@ where
     let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
     challenger.observe_cap(&quotient_polys_cap);
 
+    println!(
+        "cpu quotient_commitment time: {:?}",
+        now.elapsed(),
+    );
+
+    // TODO: add time
+    let now = std::time::Instant::now();
+
     let zeta = challenger.get_extension_challenge::<D>();
     // To avoid leaking witness data, we want to ensure that our opening locations,
     // `zeta` and `g * zeta`, are not in our subgroup `H`. It suffices to check
@@ -349,6 +406,14 @@ where
     );
     challenger.observe_openings(&openings.to_fri_openings());
 
+    println!(
+        "cpu opening time: {:?}",
+        now.elapsed(),
+    );
+
+    // TODO: add time
+    let now = std::time::Instant::now();
+
     let initial_merkle_trees = vec![
         trace_commitment,
         &permutation_ctl_zs_commitment,
@@ -366,6 +431,11 @@ where
             timing,
             twiddle_map,
         )
+    );
+
+    println!(
+        "cpu opening proof time: {:?}",
+        now.elapsed(),
     );
 
     Ok(StarkProof {

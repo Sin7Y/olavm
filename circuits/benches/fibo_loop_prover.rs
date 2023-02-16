@@ -17,9 +17,16 @@ type F = <C as GenericConfig<D>>::F;
 
 pub(crate) fn bench_fibo_loop_prover(program: &Program) {
     let mut all_stark = AllStark::default();
+    // TODO: add time
+    let now = std::time::Instant::now();
     let (traces, public_values) = generate_traces(&program, &mut all_stark);
+    println!(
+        "total generate_traces time: {:?}",
+        now.elapsed(),
+    );
     let config = StarkConfig::standard_fast_config();
-
+    // TODO: add time
+    let now = std::time::Instant::now();
     let proof = prove_with_traces::<F, C, D>(
         &all_stark,
         &config,
@@ -28,6 +35,10 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
         &mut TimingTree::default(),
     )
     .unwrap();
+    println!(
+        "total prove time: {:?}",
+        now.elapsed(),
+    );
     let mut buffer = Buffer::new(Vec::new());
     buffer.write_all_proof(&proof).unwrap();
     println!("proof_size: {}", buffer.bytes().len());
