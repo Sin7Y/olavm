@@ -32,7 +32,6 @@ class OpcodeValue(Enum):
 class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
-    FLAG = 'flag'
     REGS = 'regs'
     INST = 'instruction'
     OP1_IMM = 'op1_imm'
@@ -66,7 +65,6 @@ class JsonMainTraceColumnType(Enum):
 class MainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
-    FLAG = 'flag'
     R0 = 'r0'
     R1 = 'r1'
     R2 = 'r2'
@@ -192,10 +190,10 @@ class BitwiseTraceColumnType(Enum):
 class ComparisonTraceColumnType(Enum):
     OP0 = 'op0'
     OP1 = 'op1'
-    DIFF = 'diff'
-    DIFF_LIMB_LO = 'diff_limb_lo'
-    DIFF_LIMB_HI = 'diff_limb_hi'
-    FILTER_LOOKED_FOR_RANGE_CHECK = 'filter_looked_for_range_check'
+    CMP_FLAG = 'gte'
+    ABS_DIFF = 'abs_diff'
+    ABS_DIFF_INV = 'abs_diff_inv'
+    FILTER_LOOKING_FOR_RANGE_CHECK = 'filter_looking_rc'
 
 
 def generate_columns_of_title(worksheet, trace_column_title):
