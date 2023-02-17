@@ -62,7 +62,9 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             values.into_par_iter().map(|v| v.ifft()).collect::<Vec<_>>()
         );
 
-        println!("trace ci ifft cost time: {:?}", now.elapsed());
+        if values.len() == 76 && values[0].len() == 1<<20 {
+            println!("trace ci ifft cost time: {:?}", now.elapsed());
+        }
 
         Self::from_coeffs(
             coeffs,
@@ -96,7 +98,11 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             Self::lde_values(&polynomials, rate_bits, blinding, twiddle_map)
         );
 
-        println!("trace ci lde_values cost time: {:?}", now.elapsed());
+        if values.len() == 76 && values[0].len() == 1<<20 {
+            println!("trace ci lde_values cost time: {:?}", now.elapsed());
+        }
+
+        
 
         // TODO: add time
         let now = std::time::Instant::now();
@@ -109,7 +115,11 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             MerkleTree::new(leaves, cap_height)
         );
 
-        println!("trace ci MerkleTree cost time: {:?}", now.elapsed());
+        if values.len() == 76 && values[0].len() == 1<<20 {
+            println!("trace ci MerkleTree cost time: {:?}", now.elapsed());
+        }
+
+        
 
         Self {
             polynomials,

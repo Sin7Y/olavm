@@ -39,9 +39,6 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
         "total prove time: {:?}",
         now.elapsed(),
     );
-    let mut buffer = Buffer::new(Vec::new());
-    buffer.write_all_proof(&proof).unwrap();
-    println!("proof_size: {}", buffer.bytes().len());
 }
 
 fn fibo_loop_prover_benchmark(c: &mut Criterion) {
