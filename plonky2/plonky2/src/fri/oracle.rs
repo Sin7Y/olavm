@@ -62,7 +62,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             values.into_par_iter().map(|v| v.ifft()).collect::<Vec<_>>()
         );
 
-        if values.len() == 76 && values[0].len() == 1<<20 {
+        if coeffs.len() == 76 && coeffs[0].len() == 1<<20 {
             println!("trace ci ifft cost time: {:?}", now.elapsed());
         }
 
@@ -98,7 +98,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             Self::lde_values(&polynomials, rate_bits, blinding, twiddle_map)
         );
 
-        if values.len() == 76 && values[0].len() == 1<<20 {
+        if polynomials.len() == 76 && polynomials[0].len() == 1<<20 {
             println!("trace ci lde_values cost time: {:?}", now.elapsed());
         }
 
@@ -115,7 +115,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             MerkleTree::new(leaves, cap_height)
         );
 
-        if values.len() == 76 && values[0].len() == 1<<20 {
+        if polynomials.len() == 76 && polynomials[0].len() == 1<<20 {
             println!("trace ci MerkleTree cost time: {:?}", now.elapsed());
         }
 
