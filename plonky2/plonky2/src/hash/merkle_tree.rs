@@ -236,7 +236,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             }
         );
 
-        // #[cfg(not(feature = "parallel"))]
+        #[cfg(not(feature = "parallel"))]
         let nodes = build_merkle_nodes::<F, H>(&row_hashes);
 
         #[cfg(feature = "parallel")]
