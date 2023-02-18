@@ -32,6 +32,14 @@ pub trait Hasher<F: RichField>: Sized + Clone + Debug + Eq + PartialEq {
     /// Permutation used in the sponge construction.
     type Permutation: PlonkyPermutation<F>;
 
+    fn zero_hash() -> Self::Hash
+    where 
+        [(); Self::HASH_SIZE]:
+     {
+        let zeros = [0_u8; Self::HASH_SIZE];
+        Self::Hash::from_bytes(&zeros)
+    }
+
     /// Hash a message without any padding step. Note that this can enable
     /// length-extension attacks. However, it is still collision-resistant
     /// in cases where the input has a fixed length.
