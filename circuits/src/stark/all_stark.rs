@@ -384,15 +384,13 @@ mod tests {
         let config = StarkConfig::standard_fast_config();
 
         let start = Instant::now();
-        for _ in 0..20 {
-            let _proof = prove_with_traces::<F, C, D>(
-                &all_stark,
-                &config,
-                traces.clone(),
-                public_values.clone(),
-                &mut TimingTree::default(),
-            )?;
-        }
+        let _proof = prove_with_traces::<F, C, D>(
+            &all_stark,
+            &config,
+            traces.clone(),
+            public_values.clone(),
+            &mut TimingTree::default(),
+        )?;
         let duration = start.elapsed();
         println!("Time elapsed in prove_with_traces() is: {:?}", duration);
 
