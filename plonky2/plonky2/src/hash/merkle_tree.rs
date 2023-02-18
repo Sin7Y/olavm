@@ -149,7 +149,8 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
     pub fn new(leaves: Vec<Vec<F>>, cap_height: usize) -> Self
     where
         [(); H::HASH_SIZE]:,
-    {   
+    {   // TODO: add time
+        let now = std::time::Instant::now();
         let log2_leaves_len = log2_strict(leaves.len());
         assert!(
             cap_height <= log2_leaves_len,
@@ -172,6 +173,8 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             digests.set_len(num_digests);
             cap.set_len(len_cap);
         }
+
+        println!("build olavm merkle tree time: {:?}", now.elapsed());
 
         // let tree = Self::new1(leaves.clone(), cap_height);
 
@@ -201,7 +204,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
     where
         [(); H::HASH_SIZE]:,
     {   
-        // add time
+        // TODO: add time
         let now = std::time::Instant::now();
         
         let leaves_len = leaves.len();
