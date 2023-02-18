@@ -112,14 +112,14 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let merkle_tree = timed!(
             timing,
             "build Merkle tree",
-            MerkleTree::new(leaves, cap_height)
+            MerkleTree::new1(leaves, cap_height)
         );
 
         if polynomials.len() == 76 && polynomials[0].len() == 1<<20 {
             println!("trace ci MerkleTree cost time: {:?}", now.elapsed());
         }
 
-        
+
 
         Self {
             polynomials,
