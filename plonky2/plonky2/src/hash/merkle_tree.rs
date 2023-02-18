@@ -173,7 +173,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             cap.set_len(len_cap);
         }
 
-        let tree = Self::new1(leaves.clone(), cap_height);
+        // let tree = Self::new1(leaves.clone(), cap_height);
 
         // let by = digests[14].to_bytes();
         // for (i, d) in tree.digests.iter().enumerate() {
@@ -188,13 +188,13 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
         //     }
         // }
 
-        tree
+        // tree
 
-        // Self {
-        //     leaves,
-        //     digests,
-        //     cap: MerkleCap(cap),
-        // }
+        Self {
+            leaves,
+            digests,
+            cap: MerkleCap(cap),
+        }
     }
 
     pub fn new1(leaves: Vec<Vec<F>>, cap_height: usize) -> Self
