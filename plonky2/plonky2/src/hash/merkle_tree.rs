@@ -201,6 +201,9 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
     where
         [(); H::HASH_SIZE]:,
     {   
+        // add time
+        let now = std::time::Instant::now();
+        
         let leaves_len = leaves.len();
 
         // assert!(
@@ -240,6 +243,10 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             concurrent::build_merkle_nodes::<F, H>(&row_hashes)
         };
 
+        println!("build winterfell merkle tree time: {:?}", now.elapsed());
+
+        // add time
+        let now = std::time::Instant::now();
 
         let num_digests = 2 * (leaves_len - (1 << cap_height));
         let mut digests = unsafe { uninit_vector::<H::Hash>(num_digests) };
@@ -285,6 +292,8 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
                 }
             }
         }
+
+        println!("winterfell to olavm merkle tree time: {:?}", now.elapsed());
 
         Self {
             leaves,
