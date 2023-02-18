@@ -341,7 +341,7 @@ mod tests {
     #[allow(dead_code)]
     const D: usize = 2;
     #[allow(dead_code)]
-    type C = PoseidonGoldilocksConfig;
+    type C = Blake3GoldilocksConfig;
     #[allow(dead_code)]
     type F = <C as GenericConfig<D>>::F;
     #[allow(dead_code)]
