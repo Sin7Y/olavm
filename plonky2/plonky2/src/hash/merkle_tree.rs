@@ -246,7 +246,10 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             concurrent::build_merkle_nodes::<F, H>(&row_hashes)
         };
 
-        println!("build winterfell merkle tree time: {:?}", now.elapsed());
+        if leaves.len() == 1 << 20 && leaves[0].len() == 76 {
+            println!("build winterfell merkle tree time: {:?}", now.elapsed());
+        }
+
 
         // add time
         let now = std::time::Instant::now();
@@ -296,7 +299,11 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             }
         }
 
-        println!("winterfell to olavm merkle tree time: {:?}", now.elapsed());
+        if leaves.len() == 1 << 20 && leaves[0].len() == 76 {
+            println!("winterfell to olavm merkle tree time: {:?}", now.elapsed());
+        }
+
+        
 
         Self {
             leaves,

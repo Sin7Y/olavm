@@ -109,6 +109,14 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
 
         let mut leaves = timed!(timing, "transpose LDEs", transpose(&lde_values));
         reverse_index_bits_in_place(&mut leaves);
+
+        if polynomials.len() == 76 && polynomials[0].len() == 1<<20 {
+            println!("reverse leaves cost time: {:?}", now.elapsed());
+        }
+
+        // TODO: add time
+        let now = std::time::Instant::now();
+
         let merkle_tree = timed!(
             timing,
             "build Merkle tree",
