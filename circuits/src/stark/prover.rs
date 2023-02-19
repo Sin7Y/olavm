@@ -94,7 +94,7 @@ where
                 // TODO: add time
                 let now = std::time::Instant::now();
 
-                PolynomialBatch::<F, C, D>::from_values(
+                let c = PolynomialBatch::<F, C, D>::from_values(
                     // TODO: Cloning this isn't great; consider having `from_values` accept a
                     // reference, or having `compute_permutation_z_polys` read
                     // trace values from the `PolynomialBatch`.
@@ -104,12 +104,14 @@ where
                     cap_height,
                     timing,
                     &mut twiddle_map,
-                )
+                );
 
                 println!(
                     "inner trace_commitments time: {:?}",
                     now.elapsed(),
                 );
+
+                c
             })
             .collect::<Vec<_>>()
     );
