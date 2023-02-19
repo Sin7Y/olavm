@@ -246,7 +246,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             concurrent::build_merkle_nodes::<F, H>(&row_hashes)
         };
 
-        if leaves.len() == 1 << 20 && leaves[0].len() == 76 {
+        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
             println!("build winterfell merkle tree time: {:?}", now.elapsed());
         }
 
@@ -299,7 +299,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             }
         }
 
-        if leaves.len() == 1 << 20 && leaves[0].len() == 76 {
+        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
             println!("winterfell to olavm merkle tree time: {:?}", now.elapsed());
         }
 
