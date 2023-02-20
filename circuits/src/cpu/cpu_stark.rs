@@ -288,11 +288,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         // pc
         // if instruction is end, we don't need to constrain pc.
         // when cjmp, op0 is binary
+        let instruction_size = (P::ONES - lv[COL_S_MLOAD] - lv[COL_S_MSTORE])
+            * (P::ONES
+                + lv[COL_OP1_IMM]
+                + (lv[COL_S_MLOAD] + lv[COL_S_MSTORE]) * (P::ONES + P::ONES));
         let pc_incr = (P::ONES - (lv[COL_S_JMP] + lv[COL_S_CJMP] + lv[COL_S_CALL] + lv[COL_S_RET]))
-            * (lv[COL_PC] + P::ONES + lv[COL_OP1_IMM]);
+            * (lv[COL_PC] + instruction_size);
         let pc_jmp = lv[COL_S_JMP] * lv[COL_OP1];
         let pc_cjmp = lv[COL_S_CJMP]
-            * ((P::ONES - lv[COL_OP0]) * (lv[COL_PC] + P::ONES + lv[COL_OP1_IMM])
+            * ((P::ONES - lv[COL_OP0]) * (lv[COL_PC] + instruction_size)
                 + lv[COL_OP0] * lv[COL_OP1]);
         let pc_call = lv[COL_S_CALL] * lv[COL_OP1];
         let pc_ret = lv[COL_S_RET] * lv[COL_DST];
@@ -301,7 +305,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
                 * (nv[COL_PC] - (pc_incr + pc_jmp + pc_cjmp + pc_call + pc_ret)),
         );
         yield_constr.constraint(lv[COL_S_CJMP] * lv[COL_OP0] * (P::ONES - lv[COL_OP0]));
-
 
         // opcode
         add::eval_packed_generic(lv, nv, yield_constr);
@@ -586,8 +589,19 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             lv[COL_S_CALL],
             lv[COL_S_RET],
         ]);
+        let is_mem_op = builder.add_extension(lv[COL_S_MLOAD], lv[COL_S_MSTORE]);
+        let not_mem_op = builder.sub_extension(one, is_mem_op);
+        let one_add_op1_imm = builder.add_extension(one, lv[COL_OP1_IMM]);
+        let instruction_size = builder.arithmetic_extension(
+            one,
+            builder.two_extension(),
+            not_mem_op,
+            one_add_op1_imm,
+            is_mem_op,
+        );
+
         let pc_sum_boolean = builder.sub_extension(one, pc_sum);
-        let pc_incr = builder.add_many_extension([lv[COL_PC], one, lv[COL_OP1_IMM]]);
+        let pc_incr = builder.add_extension(lv[COL_PC], instruction_size);
         let pc_incr_cs = builder.mul_extension(pc_sum_boolean, pc_incr);
         let pc_jmp = builder.mul_extension(lv[COL_S_JMP], lv[COL_OP1]);
         let one_m_op0 = builder.sub_extension(one, lv[COL_OP0]);
