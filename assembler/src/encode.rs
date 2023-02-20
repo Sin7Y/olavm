@@ -5,10 +5,10 @@ use core::program::instruction::{
     REG0_FIELD_BIT_POSITION, REG1_FIELD_BIT_POSITION, REG2_FIELD_BIT_POSITION,
 };
 use log::debug;
+use log::Level::Debug;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use log::Level::Debug;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ImmediateFlag {
@@ -305,7 +305,7 @@ impl Encoder {
                 self.asm_code.remove(index);
                 cur_asm_len -= 1;
                 continue;
-            } else if  item.contains("//"){
+            } else if item.contains("//") {
                 self.asm_code.remove(index);
                 cur_asm_len -= 1;
                 continue;
@@ -321,7 +321,7 @@ impl Encoder {
                 let mut reg_name = Default::default();
                 if ops[0].eq("mload") {
                     let mut fp_offset = ops.get(2).unwrap().to_string();
-                    fp_offset = fp_offset.replace("[","").replace("]","");
+                    fp_offset = fp_offset.replace("[", "").replace("]", "");
                     let mut base_offset: Vec<&str> = fp_offset.split(",").collect();
                     let mut offset = 0;
                     if (*base_offset.get(0).unwrap()).eq("r8") {
@@ -331,7 +331,7 @@ impl Encoder {
                     reg_name = format!("mload {} r6", ops[1].clone().to_string());
                 } else if ops[0].eq("mstore") {
                     let mut fp_offset = ops.get(1).unwrap().to_string();
-                    fp_offset = fp_offset.replace("[","").replace("]","");
+                    fp_offset = fp_offset.replace("[", "").replace("]", "");
                     let mut base_offset: Vec<&str> = fp_offset.split(",").collect();
                     let mut offset = 0;
                     if (*base_offset.get(0).unwrap()).eq("r8") {
@@ -343,13 +343,13 @@ impl Encoder {
                     panic!("unknown instruction")
                 }
 
-                self.asm_code.insert(index+1, offset_asm);
+                self.asm_code.insert(index + 1, offset_asm);
                 cur_asm_len += 1;
-                self.asm_code.insert(index+2, format!("add r6 r6 1"));
+                self.asm_code.insert(index + 2, format!("add r6 r6 1"));
                 cur_asm_len += 1;
-                self.asm_code.insert(index+3, format!("add r6 r8 r6"));
+                self.asm_code.insert(index + 3, format!("add r6 r8 r6"));
                 cur_asm_len += 1;
-                self.asm_code.insert(index+4, reg_name);
+                self.asm_code.insert(index + 4, reg_name);
                 cur_asm_len += 1;
                 self.asm_code.remove(index);
                 cur_asm_len -= 1;
