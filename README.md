@@ -111,13 +111,13 @@ OlaVM runs based on the Goldilocks field and uses STARK to generate proofs for t
 - [Deep-FRI](https://arxiv.org/pdf/1903.12243.pdf)
 - [FRI](https://drops.dagstuhl.de/opus/volltexte/2018/9018/pdf/LIPIcs-ICALP-2018-14.pdf)
 
-Vitalik Buterin's blog series on zk-STARKs:
+### Vitalik Buterin's blog series on zk-STARKs:
 
 - [Part-1](https://vitalik.ca/general/2017/11/09/starks_part_1.html): Proofs with Polynomials
 - [Part-2](https://vitalik.ca/general/2017/11/22/starks_part_2.html): Thank Goodness It's FRI-day
 - [Part-3](https://vitalik.ca/general/2018/07/21/starks_part_3.html): Into the Weeds
 
-Alan Szepieniec's STARK tutorials:
+### Alan Szepieniec's STARK tutorials:
 
 - [Part-0](https://aszepieniec.github.io/stark-anatomy/): Introduction
 - [Part-1](https://aszepieniec.github.io/stark-anatomy/overview): STARK Overview
@@ -127,10 +127,15 @@ Alan Szepieniec's STARK tutorials:
 - [Part-5](https://aszepieniec.github.io/stark-anatomy/rescue-prime): A Rescue-Prime STARK
 - [Part-6](https://aszepieniec.github.io/stark-anatomy/faster): Speeding Things Up
 
-[Sin7Y](https://twitter.com/Sin7y_Labs)'s STARK explanation:
+### [Sin7Y](https://twitter.com/Sin7y_Labs)'s STARK explanation:
 
 - [STARK - An Indepth Technical Analysis](https://hackmd.io/@sin7y/HktwgoeKq)
 - [The Stark Proof System of Miden V1](https://hackmd.io/@sin7y/HkIELMUu9)
+
+### Privacy:
+- [Private delagation for zksnark](https://www.youtube.com/watch?v=mFzwp8gGn-E)
+- [ZEXE: Private computation](https://eprint.iacr.org/2018/962.pdf)
+- [Zcash protocol](https://github.com/zcash/zips/blob/main/protocol/protocol.pdf)
 
 ## License
 
