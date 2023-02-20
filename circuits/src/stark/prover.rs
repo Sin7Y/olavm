@@ -266,7 +266,7 @@ where
 
     challenger.compact();
 
-    if trace_poly_values[0] == 1 << 20 {
+    if trace_poly_values[0].len() == 1 << 20 {
         println!("cpu challenger compact {:?}", now.elapsed());
     }
 
