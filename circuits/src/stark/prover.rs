@@ -252,6 +252,9 @@ where
     [(); S::COLUMNS]:,
 {
     // TODO: add time
+    let now1 = std::time::Instant::now();
+
+    // TODO: add time
     let now = std::time::Instant::now();
 
     let degree = trace_poly_values[0].len();
@@ -502,6 +505,13 @@ where
         println!(
             "cpu init proof time: {:?}",
             now.elapsed(),
+        );
+    }
+
+    if trace_poly_values[0].len() == 1 << 20 {
+        println!(
+            "cpu inner prover time: {:?}",
+            now1.elapsed(),
         );
     }
 
