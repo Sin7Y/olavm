@@ -5,6 +5,7 @@ use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::goldilocks_field::GoldilocksField;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::hash::blake3::Blake3_256;
 use crate::hash::hash_types::HashOut;
 use crate::hash::hash_types::RichField;
 use crate::hash::hashing::{PlonkyPermutation, SPONGE_WIDTH};
@@ -117,5 +118,15 @@ impl GenericConfig<2> for KeccakGoldilocksConfig {
     type F = GoldilocksField;
     type FE = QuadraticExtension<Self::F>;
     type Hasher = KeccakHash<25>;
+    type InnerHasher = PoseidonHash;
+}
+
+/// Configuration using truncated Blake3 over the Goldilocks field.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub struct Blake3GoldilocksConfig;
+impl GenericConfig<2> for Blake3GoldilocksConfig {
+    type F = GoldilocksField;
+    type FE = QuadraticExtension<Self::F>;
+    type Hasher = Blake3_256<32>;
     type InnerHasher = PoseidonHash;
 }
