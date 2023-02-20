@@ -1,6 +1,6 @@
 use circuits::generation::generate_traces;
-use circuits::stark::all_stark::AllStark;
 use circuits::stark::config::StarkConfig;
+use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::prover::prove_with_traces;
 use circuits::stark::serialization::Buffer;
 use core::program::Program;
@@ -16,12 +16,12 @@ type C = PoseidonGoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
 
 pub(crate) fn bench_fibo_loop_prover(program: &Program) {
-    let mut all_stark = AllStark::default();
-    let (traces, public_values) = generate_traces(&program, &mut all_stark);
+    let mut ola_stark = OlaStark::default();
+    let (traces, public_values) = generate_traces(&program, &mut ola_stark);
     let config = StarkConfig::standard_fast_config();
 
     let proof = prove_with_traces::<F, C, D>(
-        &all_stark,
+        &ola_stark,
         &config,
         traces,
         public_values,

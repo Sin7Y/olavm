@@ -1,9 +1,9 @@
-pub mod all_stark;
 pub mod config;
 pub mod constraint_consumer;
 pub mod cross_table_lookup;
 mod get_challenges;
 pub mod lookup;
+pub mod ola_stark;
 pub mod permutation;
 pub mod proof;
 pub mod prover;

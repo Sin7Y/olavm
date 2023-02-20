@@ -19,7 +19,7 @@ This crate exposes two functions called `prove()` and `prove_with_traces`. After
 
 The `prove` function takes the following parameters:
 
-* `all_stark: &AllStark` - a reference to an AllStark struct contains all starks defined by OlaVM.
+* `ola_stark: &OlaStark` - a reference to an OlaStark struct contains all starks defined by OlaVM.
 * `config: &StarkConfig` - a reference to a OlaVM STARK config, all parameters for proof generation
 are configurable, and OlaVM has already provided a standard configuration.
 * `inputs: GenerationInputs` - a set of inputs with which to execute the program.
@@ -111,11 +111,11 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
     ];
 
     // generate the proof with traces from the execution of the fibonacci program
-    let all_stark = AllStark::default();
+    let ola_stark = OlaStark::default();
     let config = StarkConfig::standard_fast_config();
     let public_values = PublicValues::default();
     let proof = prove_with_traces::<F, C, D>(
-        &all_stark,
+        &ola_stark,
         &config,
         traces,
         public_values,
@@ -123,7 +123,7 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
     )?;
 
     // verify the proof is correct
-    verify_proof(all_stark, proof, &config).unwrap();
+    verify_proof(ola_stark, proof, &config).unwrap();
 ```
 
 ### Concurrent proof generation
