@@ -487,13 +487,25 @@ where
         );
     }
 
-    Ok(StarkProof {
+    // TODO: add time
+    let now = std::time::Instant::now();
+
+    let proof = StarkProof {
         trace_cap: trace_commitment.merkle_tree.cap.clone(),
         permutation_ctl_zs_cap,
         quotient_polys_cap,
         openings,
         opening_proof,
-    })
+    };
+
+    if trace_poly_values[0].len() == 1 << 20 {
+        println!(
+            "cpu init proof time: {:?}",
+            now.elapsed(),
+        );
+    }
+
+    Ok(proof)
 }
 
 /// Computes the quotient polynomials `(sum alpha^i C_i(x)) / Z_H(x)` for
