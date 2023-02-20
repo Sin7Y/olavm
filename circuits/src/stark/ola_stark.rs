@@ -15,7 +15,7 @@ use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
 
 #[derive(Clone)]
-pub struct AllStark<F: RichField + Extendable<D>, const D: usize> {
+pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub cpu_stark: CpuStark<F, D>,
     pub memory_stark: MemoryStark<F, D>,
     // builtins
@@ -26,7 +26,7 @@ pub struct AllStark<F: RichField + Extendable<D>, const D: usize> {
     pub cross_table_lookups: Vec<CrossTableLookup<F>>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> Default for AllStark<F, D> {
+impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
     fn default() -> Self {
         Self {
             cpu_stark: CpuStark::default(),
@@ -39,7 +39,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for AllStark<F, D> {
     }
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> AllStark<F, D> {
+impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
     pub(crate) fn nums_permutation_zs(&self, config: &StarkConfig) -> [usize; NUM_TABLES] {
         [
             self.cpu_stark.num_permutation_batches(config),
@@ -321,8 +321,8 @@ mod tests {
     use crate::generation::cpu::generate_cpu_trace;
     use crate::generation::generate_traces;
     use crate::generation::memory::generate_memory_trace;
-    use crate::stark::all_stark::AllStark;
     use crate::stark::config::StarkConfig;
+    use crate::stark::ola_stark::OlaStark;
     use crate::stark::proof::PublicValues;
     use crate::stark::prover::prove_with_traces;
     use crate::stark::serialization::Buffer;
@@ -378,11 +378,11 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
+            &ola_stark,
             &config,
             traces,
             public_values,
@@ -400,8 +400,8 @@ mod tests {
         let de_proof = de_buffer.read_all_proof::<F, C, D>()?;
         // println!("deserialized_proof: {:?}", de_proof);
 
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, de_proof, &config)
+        let ola_stark = OlaStark::default();
+        verify_proof(ola_stark, de_proof, &config)
     }
 
     #[test]
@@ -454,19 +454,19 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
+            &ola_stark,
             &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
         println!("{}", mem::size_of_val(&proof));
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, proof, &config)
+        let ola_stark = OlaStark::default();
+        verify_proof(ola_stark, proof, &config)
     }
 
     #[test]
@@ -514,18 +514,18 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
+            &ola_stark,
             &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, proof, &config)
+        let ola_stark = OlaStark::default();
+        verify_proof(ola_stark, proof, &config)
     }
 
     #[test]
@@ -581,18 +581,18 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
+            &ola_stark,
             &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, proof, &config)
+        let ola_stark = OlaStark::default();
+        verify_proof(ola_stark, proof, &config)
     }
 
     #[test]
@@ -629,18 +629,18 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
+            &ola_stark,
             &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, proof, &config)
+        let ola_stark = OlaStark::default();
+        verify_proof(ola_stark, proof, &config)
     }
 
     #[test]
@@ -677,18 +677,18 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
+            &ola_stark,
             &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, proof, &config)
+        let ola_stark = OlaStark::default();
+        verify_proof(ola_stark, proof, &config)
     }
 
     #[test]
@@ -725,18 +725,18 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
+            &ola_stark,
             &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, proof, &config)
+        let ola_stark = OlaStark::default();
+        verify_proof(ola_stark, proof, &config)
     }
 
     #[test]
@@ -812,17 +812,17 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let mut all_stark = AllStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut all_stark);
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
-            &all_stark,
+            &ola_stark,
             &config,
             traces,
             public_values,
             &mut TimingTree::default(),
         )?;
-        let all_stark = AllStark::default();
-        verify_proof(all_stark, proof, &config)
+        let ola_stark = OlaStark::default();
+        verify_proof(ola_stark, proof, &config)
     }
 }
