@@ -1,6 +1,6 @@
 use circuits::generation::generate_traces;
-use circuits::stark::all_stark::AllStark;
 use circuits::stark::config::StarkConfig;
+use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::proof::PublicValues;
 use circuits::stark::prover::prove_with_traces;
 use circuits::stark::verifier::verify_proof;
@@ -82,19 +82,19 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
         exec_time.as_millis(),
         program.trace.exec.len()
     );
-    let mut all_stark = AllStark::default();
-    let (traces, public_values) = generate_traces(&program, &mut all_stark);
+    let mut ola_stark = OlaStark::default();
+    let (traces, public_values) = generate_traces(&program, &mut ola_stark);
     let config = StarkConfig::standard_fast_config();
 
     let proof = prove_with_traces::<F, C, D>(
-        &all_stark,
+        &ola_stark,
         &config,
         traces,
         public_values,
         &mut TimingTree::default(),
     )
     .unwrap();
-    verify_proof(all_stark, proof, &config).unwrap();
+    verify_proof(ola_stark, proof, &config).unwrap();
 }
 
 fn fibo_loop_benchmark(c: &mut Criterion) {

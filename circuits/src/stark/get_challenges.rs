@@ -5,8 +5,8 @@ use plonky2::iop::challenger::{Challenger, RecursiveChallenger};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::config::{AlgebraicHasher, GenericConfig};
 
-use super::all_stark::{AllStark, NUM_TABLES};
 use super::config::StarkConfig;
+use super::ola_stark::{OlaStark, NUM_TABLES};
 use super::permutation::{
     get_grand_product_challenge_set, get_n_grand_product_challenge_sets,
     get_n_grand_product_challenge_sets_target,
@@ -17,7 +17,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> A
     /// Computes all Fiat-Shamir challenges used in the STARK proof.
     pub(crate) fn get_challenges(
         &self,
-        all_stark: &AllStark<F, D>,
+        ola_stark: &OlaStark<F, D>,
         config: &StarkConfig,
     ) -> AllProofChallenges<F, D> {
         let mut challenger = Challenger::<F, C::Hasher>::new();
@@ -31,8 +31,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> A
         let ctl_challenges =
             get_grand_product_challenge_set(&mut challenger, config.num_challenges);
 
-        let num_permutation_zs = all_stark.nums_permutation_zs(config);
-        let num_permutation_batch_sizes = all_stark.permutation_batch_sizes();
+        let num_permutation_zs = ola_stark.nums_permutation_zs(config);
+        let num_permutation_batch_sizes = ola_stark.permutation_batch_sizes();
 
         AllProofChallenges {
             stark_challenges: std::array::from_fn(|i| {
@@ -51,7 +51,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> A
     #[allow(unused)] // TODO: should be used soon
     pub(crate) fn get_challenger_states(
         &self,
-        all_stark: &AllStark<F, D>,
+        ola_stark: &OlaStark<F, D>,
         config: &StarkConfig,
     ) -> AllChallengerState<F, D> {
         let mut challenger = Challenger::<F, C::Hasher>::new();
@@ -65,8 +65,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> A
         let ctl_challenges =
             get_grand_product_challenge_set(&mut challenger, config.num_challenges);
 
-        let num_permutation_zs = all_stark.nums_permutation_zs(config);
-        let num_permutation_batch_sizes = all_stark.permutation_batch_sizes();
+        let num_permutation_zs = ola_stark.nums_permutation_zs(config);
+        let num_permutation_batch_sizes = ola_stark.permutation_batch_sizes();
 
         let mut challenger_states = vec![challenger.compact()];
         for i in 0..NUM_TABLES {
