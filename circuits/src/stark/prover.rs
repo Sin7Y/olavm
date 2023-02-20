@@ -266,7 +266,7 @@ where
 
     challenger.compact();
 
-    if trace_poly_values.len() == 1 << 20 {
+    if trace_poly_values[0] == 1 << 20 {
         println!("cpu challenger compact {:?}", now.elapsed());
     }
 
@@ -300,7 +300,7 @@ where
     };
     assert!(!z_polys.is_empty(), "No CTL?");
 
-    if trace_poly_values.len() == 1 << 20 {
+    if trace_poly_values[0].len() == 1 << 20 {
         println!("cpu prepare permutation_zs {:?}", now.elapsed());
     }
 
@@ -323,7 +323,7 @@ where
     let permutation_ctl_zs_cap = permutation_ctl_zs_commitment.merkle_tree.cap.clone();
     challenger.observe_cap(&permutation_ctl_zs_cap);
 
-    if trace_poly_values.len() == 1 << 20 {
+    if trace_poly_values[0].len() == 1 << 20 {
         println!(
             "cpu permutation_ctl_zs_commitment time: {:?}",
             now.elapsed(),
@@ -348,10 +348,12 @@ where
     //     );
     // }
 
-    println!(
-        "cpu get alpha time: {:?}",
-        now.elapsed(),
-    );
+    if trace_poly_values[0].len() == 1 << 20 {
+        println!(
+            "cpu get alpha time: {:?}",
+            now.elapsed(),
+        );
+    }
 
     // TODO: add time
     let now = std::time::Instant::now();
@@ -372,7 +374,7 @@ where
         )
     );
 
-    if trace_poly_values.len() == 1 << 20 {
+    if trace_poly_values[0].len() == 1 << 20 {
         println!(
             "cpu compute_quotient_polys time: {:?}",
             now.elapsed(),
@@ -415,10 +417,13 @@ where
     let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
     challenger.observe_cap(&quotient_polys_cap);
 
-    println!(
-        "cpu quotient_commitment time: {:?}",
-        now.elapsed(),
-    );
+    if trace_poly_values[0].len() == 1 << 20 {
+        println!(
+            "cpu quotient_commitment time: {:?}",
+            now.elapsed(),
+        );
+    }
+    
 
     // TODO: add time
     let now = std::time::Instant::now();
@@ -445,10 +450,13 @@ where
     );
     challenger.observe_openings(&openings.to_fri_openings());
 
-    println!(
-        "cpu opening time: {:?}",
-        now.elapsed(),
-    );
+    if trace_poly_values[0].len() == 1 << 20 {
+        println!(
+            "cpu opening time: {:?}",
+            now.elapsed(),
+        );
+    }
+    
 
     // TODO: add time
     let now = std::time::Instant::now();
@@ -472,10 +480,12 @@ where
         )
     );
 
-    println!(
-        "cpu opening proof time: {:?}",
-        now.elapsed(),
-    );
+    if trace_poly_values[0].len() == 1 << 20 {
+        println!(
+            "cpu opening proof time: {:?}",
+            now.elapsed(),
+        );
+    }
 
     Ok(StarkProof {
         trace_cap: trace_commitment.merkle_tree.cap.clone(),

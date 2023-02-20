@@ -150,7 +150,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
     where
         [(); H::HASH_SIZE]:,
     {   // TODO: add time
-        let now = std::time::Instant::now();
+        // let now = std::time::Instant::now();
         let log2_leaves_len = log2_strict(leaves.len());
         assert!(
             cap_height <= log2_leaves_len,
@@ -174,7 +174,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             cap.set_len(len_cap);
         }
 
-        println!("build olavm merkle tree time: {:?}", now.elapsed());
+        // println!("build olavm merkle tree time: {:?}", now.elapsed());
 
         // let tree = Self::new1(leaves.clone(), cap_height);
 
