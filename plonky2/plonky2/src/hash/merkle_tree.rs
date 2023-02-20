@@ -110,7 +110,7 @@ fn fill_digests_buf<F: RichField, H: Hasher<F>>(
     // this if there was a way to split into `blah` chunks as opposed to chunks
     // _of_ `blah`.)
     if digests_buf.is_empty() {
-        debug_assert_eq!(cap_buf.len(), leaves.len());
+        debug_assert_eq!(cap_buf.len(), leaves[0].len());
         cap_buf
             .par_iter_mut()
             .zip(leaves)
@@ -121,7 +121,7 @@ fn fill_digests_buf<F: RichField, H: Hasher<F>>(
     }
 
     let subtree_digests_len = digests_buf.len() >> cap_height;
-    let subtree_leaves_len = leaves.len() >> cap_height;
+    let subtree_leaves_len = leaves[0].len() >> cap_height;
     let digests_chunks = digests_buf.par_chunks_exact_mut(subtree_digests_len);
     let leaves_chunks = leaves.par_chunks_exact(subtree_leaves_len);
     assert_eq!(digests_chunks.len(), cap_buf.len());
@@ -142,13 +142,13 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
     where
         [(); H::HASH_SIZE]:,
     {
-        let log2_leaves_len = log2_strict(leaves.len());
+        let log2_leaves_len = log2_strict(leaves[0].len());
         assert!(
             cap_height <= log2_leaves_len,
             "cap height should be at most log2(leaves.len())"
         );
 
-        let num_digests = 2 * (leaves.len() - (1 << cap_height));
+        let num_digests = 2 * (leaves[0].len() - (1 << cap_height));
         let mut digests = Vec::with_capacity(num_digests);
 
         let len_cap = 1 << cap_height;
@@ -179,7 +179,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
     /// Create a Merkle proof from a leaf index.
     pub fn prove(&self, leaf_index: usize) -> MerkleProof<F, H> {
         let cap_height = log2_strict(self.cap.len());
-        let num_layers = log2_strict(self.leaves.len()) - cap_height;
+        let num_layers = log2_strict(self.leaves[0].len()) - cap_height;
         debug_assert_eq!(leaf_index >> (cap_height + num_layers), 0);
 
         let digest_tree = {

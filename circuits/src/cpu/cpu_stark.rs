@@ -684,16 +684,20 @@ mod tests {
         let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
 
+        println!("column: {}, row: {}", cpu_rows[0].len(), cpu_rows.len());
+
         let mut stark = S::default();
         stark.set_compress_challenge(beta).unwrap();
-        let len = cpu_rows.len();
+        let len = cpu_rows[0].len();
         let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
         let subgroup =
             F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
         for i in 0..len {
+            let local_values: [F; NUM_CPU_COLS] = cpu_rows.iter().map(|col| col[i % len]).collect::<Vec<_>>().try_into().unwrap();
+            let next_values: [F; NUM_CPU_COLS] = cpu_rows.iter().map(|col| col[(i+i) % len]).collect::<Vec<_>>().try_into().unwrap();
             let vars = StarkEvaluationVars {
-                local_values: &cpu_rows[i % len],
-                next_values: &cpu_rows[(i + 1) % len],
+                local_values: &local_values,
+                next_values: &next_values,
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(
