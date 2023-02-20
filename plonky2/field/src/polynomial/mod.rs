@@ -14,7 +14,6 @@ use crate::cfft::{
     interpolate_poly_with_offset,
 };
 use crate::extension::{Extendable, FieldExtension};
-use crate::fft::{fft, fft_with_options, ifft, FftRootTable};
 use crate::types::Field;
 
 /// A polynomial in point-value form.
@@ -59,9 +58,6 @@ impl<F: Field> PolynomialValues<F> {
     }
 
     pub fn ifft(self) -> PolynomialCoeffs<F> {
-        // TODO: fft
-        // ifft(self)
-
         let mut v = self.values;
         let inv_twiddles = get_inv_twiddles::<F>(v.len());
         interpolate_poly(&mut v, &inv_twiddles);
@@ -71,17 +67,6 @@ impl<F: Field> PolynomialValues<F> {
     /// Returns the polynomial whose evaluation on the coset `shift*H` is
     /// `self`.
     pub fn coset_ifft(self, shift: F) -> PolynomialCoeffs<F> {
-        // TODO: fft
-        // let mut shifted_coeffs = self.ifft();
-        // shifted_coeffs
-        //     .coeffs
-        //     .iter_mut()
-        //     .zip(shift.inverse().powers())
-        //     .for_each(|(c, r)| {
-        //         *c *= r;
-        //     });
-        // shifted_coeffs
-
         let mut v = self.values.clone();
         let inv_twiddles = get_inv_twiddles::<F>(v.len());
         interpolate_poly_with_offset(&mut v, &inv_twiddles, shift);
@@ -93,10 +78,6 @@ impl<F: Field> PolynomialValues<F> {
     }
 
     pub fn lde(self, rate_bits: usize) -> Self {
-        // let coeffs = ifft(self).lde(rate_bits);
-        // fft_with_options(coeffs, Some(rate_bits), None)
-
-        // TODO: fft
         let coeffs = self.ifft().lde(rate_bits);
         let mut v = coeffs.coeffs;
         let twiddles = get_twiddles::<F>(v.len());
@@ -107,10 +88,6 @@ impl<F: Field> PolynomialValues<F> {
     /// Low-degree extend `Self` (seen as evaluations over the subgroup) onto a
     /// coset.
     pub fn lde_onto_coset(self, rate_bits: usize) -> Self {
-        // let coeffs = ifft(self).lde(rate_bits);
-        // coeffs.coset_fft_with_options(F::coset_shift(), Some(rate_bits), None)
-
-        // TODO: fft
         let coeffs = self.ifft();
         let mut v = coeffs.coeffs;
         let blowup_factor = 1 << rate_bits;
@@ -299,9 +276,6 @@ impl<F: Field> PolynomialCoeffs<F> {
     }
 
     pub fn fft(self) -> PolynomialValues<F> {
-        // fft(self)
-
-        // TODO: fft
         let mut v = self.coeffs;
         let twiddles = get_twiddles::<F>(v.len());
         evaluate_poly(&mut v, &twiddles);
@@ -310,43 +284,32 @@ impl<F: Field> PolynomialCoeffs<F> {
 
     pub fn fft_with_options(
         self,
-        zero_factor: Option<usize>,
-        root_table: Option<&FftRootTable<F>>,
+        twiddles: &[F],
     ) -> PolynomialValues<F> {
-        // fft_with_options(self, zero_factor, root_table)
-
-        // TODO: fft
         let mut v = self.coeffs;
-        let twiddles = get_twiddles::<F>(v.len());
-        evaluate_poly(&mut v, &twiddles);
+        evaluate_poly(&mut v, twiddles);
         PolynomialValues { values: v }
     }
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
-    pub fn coset_fft(&self, shift: F) -> PolynomialValues<F> {
-        self.coset_fft_with_options(shift, None, None, 1)
+    pub fn coset_fft(&self, shift: F, twiddles: Option<&[F]>) -> PolynomialValues<F> {
+        if twiddles.is_some() {
+            self.coset_fft_with_options(shift, twiddles.unwrap(), 1)
+        } else {
+            let twiddles = get_twiddles::<F>(self.coeffs.len());
+            self.coset_fft_with_options(shift, &twiddles, 1)
+        }
     }
 
     /// Returns the evaluation of the polynomial on the coset `shift*H`.
     pub fn coset_fft_with_options(
         &self,
         shift: F,
-        zero_factor: Option<usize>,
-        root_table: Option<&FftRootTable<F>>,
+        twiddles: &[F],
         blowup_factor: usize,
     ) -> PolynomialValues<F> {
-        // let modified_poly: Self = shift
-        //     .powers()
-        //     .zip(&self.coeffs)
-        //     .map(|(r, &c)| r * c)
-        //     .collect::<Vec<_>>()
-        //     .into();
-        // modified_poly.fft_with_options(zero_factor, root_table)
-
-        // TODO: fft
         let mut v = self.coeffs.clone();
-        let twiddles = get_twiddles::<F>(v.len());
-        let v = evaluate_poly_with_offset(&mut v, &twiddles, shift, blowup_factor);
+        let v = evaluate_poly_with_offset(&mut v, twiddles, shift, blowup_factor);
         PolynomialValues { values: v }
     }
 
@@ -490,8 +453,6 @@ impl<F: Field> Mul for &PolynomialCoeffs<F> {
             .zip(b_evals.values)
             .map(|(pa, pb)| pa * pb)
             .collect();
-        // ifft(mul_evals.into())
-        // TODO: fft
         let inv_twiddles = get_inv_twiddles::<F>(mul_evals.len());
         interpolate_poly(&mut mul_evals, &inv_twiddles);
         PolynomialCoeffs { coeffs: mul_evals }
@@ -541,7 +502,8 @@ mod tests {
         let n = 1 << k;
         let poly = PolynomialCoeffs::new(F::rand_vec(n));
         let shift = F::rand();
-        let coset_evals = poly.coset_fft(shift).values;
+        let twiddles = get_twiddles::<F>(poly.len());
+        let coset_evals = poly.coset_fft(shift, Some(&twiddles)).values;
 
         let generator = F::primitive_root_of_unity(k);
         let naive_coset_evals = F::cyclic_subgroup_coset_known_order(generator, shift, n)
@@ -550,6 +512,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(coset_evals, naive_coset_evals);
 
+        // let inv_twiddles = get_inv_twiddles::<F>(coset_evals.len());
         let ifft_coeffs = PolynomialValues::new(coset_evals).coset_ifft(shift);
         assert_eq!(poly, ifft_coeffs);
     }
@@ -562,6 +525,7 @@ mod tests {
         let n = 1 << k;
         let evals = PolynomialValues::new(F::rand_vec(n));
         let shift = F::rand();
+        // let inv_twiddles = get_inv_twiddles::<F>(evals.len());
         let coeffs = evals.clone().coset_ifft(shift);
 
         let generator = F::primitive_root_of_unity(k);
@@ -571,7 +535,8 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(evals, naive_coset_evals.into());
 
-        let fft_evals = coeffs.coset_fft(shift);
+        let twiddles = get_twiddles::<F>(coeffs.len());
+        let fft_evals = coeffs.coset_fft(shift, Some(&twiddles));
         assert_eq!(evals, fft_evals);
     }
 

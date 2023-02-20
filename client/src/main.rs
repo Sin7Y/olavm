@@ -1,8 +1,8 @@
 extern crate clap;
 
 use assembler::encode::Encoder;
-use circuits::stark::all_stark::AllStark;
 use circuits::stark::config::StarkConfig;
+use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::prover::prove;
 use circuits::stark::serialization::Buffer;
 use circuits::stark::verifier::verify_proof;
@@ -144,11 +144,11 @@ fn main() {
                 trace,
             };
 
-            let mut all_stark = AllStark::<F, D>::default();
+            let mut ola_stark = OlaStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
             let proof = prove::<F, C, D>(
                 &program,
-                &mut all_stark,
+                &mut ola_stark,
                 &config,
                 &mut TimingTree::default(),
             )
@@ -183,9 +183,9 @@ fn main() {
             }
             let de_proof = de_proof.unwrap();
 
-            let all_stark = AllStark::<F, D>::default();
+            let ola_stark = OlaStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
-            match verify_proof(all_stark, de_proof, &config) {
+            match verify_proof(ola_stark, de_proof, &config) {
                 Err(error) => println!("Verify failed due to: {error}"),
                 _ => println!("Verify succeed!"),
             }

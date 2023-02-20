@@ -1,5 +1,6 @@
 use core::program::Program;
 use std::any::type_name;
+use std::collections::BTreeMap;
 
 use anyhow::{ensure, Result};
 use maybe_rayon::*;
@@ -18,7 +19,7 @@ use plonky2::util::timing::TimingTree;
 use plonky2::util::transpose;
 use plonky2_util::{log2_ceil, log2_strict};
 
-use super::all_stark::{AllStark, Table, NUM_TABLES};
+use super::ola_stark::{OlaStark, Table, NUM_TABLES};
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
@@ -41,7 +42,7 @@ use crate::memory::memory_stark::MemoryStark;
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(
     program: &Program,
-    all_stark: &mut AllStark<F, D>,
+    ola_stark: &mut OlaStark<F, D>,
     config: &StarkConfig,
     timing: &mut TimingTree,
 ) -> Result<AllProof<F, C, D>>
@@ -55,13 +56,13 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
 {
-    let (traces, public_values) = generate_traces(program, all_stark);
-    prove_with_traces(all_stark, config, traces, public_values, timing)
+    let (traces, public_values) = generate_traces(program, ola_stark);
+    prove_with_traces(ola_stark, config, traces, public_values, timing)
 }
 
 /// Compute all STARK proofs.
 pub fn prove_with_traces<F, C, const D: usize>(
-    all_stark: &AllStark<F, D>,
+    ola_stark: &OlaStark<F, D>,
     config: &StarkConfig,
     trace_poly_values: [Vec<PolynomialValues<F>>; NUM_TABLES],
     public_values: PublicValues,
@@ -80,6 +81,8 @@ where
     let rate_bits = config.fri_config.rate_bits;
     let cap_height = config.fri_config.cap_height;
 
+    let mut twiddle_map = BTreeMap::new();
+
     let trace_commitments = timed!(
         timing,
         "compute trace commitments",
@@ -95,7 +98,7 @@ where
                     false,
                     cap_height,
                     timing,
-                    None,
+                    &mut twiddle_map,
                 )
             })
             .collect::<Vec<_>>()
@@ -113,55 +116,60 @@ where
     let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
         config,
         &trace_poly_values,
-        &all_stark.cross_table_lookups,
+        &ola_stark.cross_table_lookups,
         &mut challenger,
     );
 
     let cpu_proof = prove_single_table(
-        &all_stark.cpu_stark,
+        &ola_stark.cpu_stark,
         config,
         &trace_poly_values[Table::Cpu as usize],
         &trace_commitments[Table::Cpu as usize],
         &ctl_data_per_table[Table::Cpu as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
     let memory_proof = prove_single_table(
-        &all_stark.memory_stark,
+        &ola_stark.memory_stark,
         config,
         &trace_poly_values[Table::Memory as usize],
         &trace_commitments[Table::Memory as usize],
         &ctl_data_per_table[Table::Memory as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
 
     let bitwise_proof = prove_single_table(
-        &all_stark.bitwise_stark,
+        &ola_stark.bitwise_stark,
         config,
         &trace_poly_values[Table::Bitwise as usize],
         &trace_commitments[Table::Bitwise as usize],
         &ctl_data_per_table[Table::Bitwise as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
     let cmp_proof = prove_single_table(
-        &all_stark.cmp_stark,
+        &ola_stark.cmp_stark,
         config,
         &trace_poly_values[Table::Cmp as usize],
         &trace_commitments[Table::Cmp as usize],
         &ctl_data_per_table[Table::Cmp as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
     let rangecheck_proof = prove_single_table(
-        &all_stark.rangecheck_stark,
+        &ola_stark.rangecheck_stark,
         config,
         &trace_poly_values[Table::RangeCheck as usize],
         &trace_commitments[Table::RangeCheck as usize],
         &ctl_data_per_table[Table::RangeCheck as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
 
     let stark_proofs = [
@@ -173,9 +181,9 @@ where
     ];
 
     let compress_challenges = [
-        all_stark.cpu_stark.get_compress_challenge().unwrap(),
+        ola_stark.cpu_stark.get_compress_challenge().unwrap(),
         F::ZERO,
-        all_stark.bitwise_stark.get_compress_challenge().unwrap(),
+        ola_stark.bitwise_stark.get_compress_challenge().unwrap(),
         F::ZERO,
         F::ZERO,
     ];
@@ -196,6 +204,7 @@ pub(crate) fn prove_single_table<F, C, S, const D: usize>(
     ctl_data: &CtlData<F>,
     challenger: &mut Challenger<F, C::Hasher>,
     timing: &mut TimingTree,
+    twiddle_map: &mut BTreeMap<usize, Vec<F>>,
 ) -> Result<StarkProof<F, C, D>>
 where
     F: RichField + Extendable<D>,
@@ -251,7 +260,7 @@ where
             false,
             config.fri_config.cap_height,
             timing,
-            None,
+            twiddle_map,
         )
     );
 
@@ -312,7 +321,7 @@ where
             false,
             config.fri_config.cap_height,
             timing,
-            None,
+            twiddle_map,
         )
     );
     let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
@@ -355,6 +364,7 @@ where
             challenger,
             &fri_params,
             timing,
+            twiddle_map,
         )
     );
 
