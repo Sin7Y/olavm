@@ -251,6 +251,9 @@ where
     [(); C::Hasher::HASH_SIZE]:,
     [(); S::COLUMNS]:,
 {
+    // TODO: add time
+    let now = std::time::Instant::now();
+
     let degree = trace_poly_values[0].len();
     let degree_bits = log2_strict(degree);
     let fri_params = config.fri_params(degree_bits);
@@ -262,6 +265,11 @@ where
     );
 
     challenger.compact();
+
+    if trace_poly_values.len() == 1 << 20 {
+        println!("cpu challenger compact {:?}", now.elapsed());
+    }
+
 
     // TODO: add time
     let now = std::time::Instant::now();
@@ -292,6 +300,13 @@ where
     };
     assert!(!z_polys.is_empty(), "No CTL?");
 
+    if trace_poly_values.len() == 1 << 20 {
+        println!("cpu prepare permutation_zs {:?}", now.elapsed());
+    }
+
+    // TODO: add time
+    let now = std::time::Instant::now();
+
     let permutation_ctl_zs_commitment = timed!(
         timing,
         "compute Zs commitment",
@@ -308,10 +323,15 @@ where
     let permutation_ctl_zs_cap = permutation_ctl_zs_commitment.merkle_tree.cap.clone();
     challenger.observe_cap(&permutation_ctl_zs_cap);
 
-    println!(
-        "cpu permutation_ctl_zs_commitment time: {:?}",
-        now.elapsed(),
-    );
+    if trace_poly_values.len() == 1 << 20 {
+        println!(
+            "cpu permutation_ctl_zs_commitment time: {:?}",
+            now.elapsed(),
+        );
+    }
+
+    // TODO: add time
+    let now = std::time::Instant::now();
 
     let alphas = challenger.get_n_challenges(config.num_challenges);
     // if cfg!(test) {
@@ -327,6 +347,11 @@ where
     //         config,
     //     );
     // }
+
+    println!(
+        "cpu get alpha time: {:?}",
+        now.elapsed(),
+    );
 
     // TODO: add time
     let now = std::time::Instant::now();
@@ -347,10 +372,14 @@ where
         )
     );
 
-    println!(
-        "cpu compute_quotient_polys time: {:?}",
-        now.elapsed(),
-    );
+    if trace_poly_values.len() == 1 << 20 {
+        println!(
+            "cpu compute_quotient_polys time: {:?}",
+            now.elapsed(),
+        );
+    }
+
+    
 
     // TODO: add time
     let now = std::time::Instant::now();
