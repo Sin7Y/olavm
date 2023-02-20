@@ -15,8 +15,8 @@ use plonky2::iop::target::Target;
 use plonky2::plonk::config::GenericConfig;
 use serde::{Deserialize, Serialize};
 
-use super::all_stark::NUM_TABLES;
 use super::config::StarkConfig;
+use super::ola_stark::NUM_TABLES;
 use super::permutation::GrandProductChallengeSet;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
