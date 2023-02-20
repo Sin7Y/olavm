@@ -7,12 +7,11 @@ use core::program::Program;
 use criterion::{criterion_group, criterion_main, Criterion};
 use executor::Process;
 use log::LevelFilter;
-use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+use plonky2::plonk::config::{GenericConfig, Blake3GoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::mem;
 
 const D: usize = 2;
-type C = PoseidonGoldilocksConfig;
+type C = Blake3GoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
 
 pub(crate) fn bench_fibo_loop_prover(program: &Program) {
