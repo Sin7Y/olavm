@@ -108,6 +108,14 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let now = std::time::Instant::now();
 
         let mut leaves = timed!(timing, "transpose LDEs", transpose(&lde_values));
+
+        if polynomials.len() == 76 && polynomials[0].len() == 1<<20 {
+            println!("transpose LDEs cost time: {:?}", now.elapsed());
+        }
+
+        // TODO: add time
+        let now = std::time::Instant::now();
+
         reverse_index_bits_in_place(&mut leaves);
 
         if polynomials.len() == 76 && polynomials[0].len() == 1<<20 {
