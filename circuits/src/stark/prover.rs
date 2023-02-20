@@ -143,7 +143,7 @@ where
     );
 
     // TODO: add time
-    let now2 = std::time::Instant::now();
+    let now = std::time::Instant::now();
 
     let cpu_proof = prove_single_table(
         &all_stark.cpu_stark,
@@ -157,8 +157,27 @@ where
     ).unwrap();
 
     println!(
-        "prove_cpu_table time: {:?}",
-        now2.elapsed(),
+        "prove_cpu_table1 time: {:?}",
+        now.elapsed(),
+    );
+
+    // TODO: add time
+    let now = std::time::Instant::now();
+
+    prove_single_table(
+        &all_stark.cpu_stark,
+        config,
+        &trace_poly_values[Table::Cpu as usize],
+        &trace_commitments[Table::Cpu as usize],
+        &ctl_data_per_table[Table::Cpu as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    );
+
+    println!(
+        "prove_cpu_table2 time: {:?}",
+        now.elapsed(),
     );
 
     // TODO: add time
