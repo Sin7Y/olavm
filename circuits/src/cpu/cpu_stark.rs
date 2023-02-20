@@ -684,7 +684,7 @@ mod tests {
         let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
 
-        println!("column: {}, row: {}", cpu_rows[0].len(), cpu_rows.len());
+        println!("rows: {}, columns: {}", cpu_rows.len(), cpu_rows[0].len());
 
         let mut stark = S::default();
         stark.set_compress_challenge(beta).unwrap();
@@ -693,13 +693,18 @@ mod tests {
         let subgroup =
             F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
         for i in 0..len {
-            let local_values = cpu_rows.iter().map(|row| row[i % len]).collect::<Vec<_>>();
+            let local_values = cpu_rows
+                .iter()
+                .map(|row| row[i % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
             let next_values = cpu_rows
                 .iter()
                 .map(|row| row[(i + 1) % len])
-                .collect::<Vec<_>>();
-            let local_values: [F; NUM_CPU_COLS] = local_values.try_into().unwrap();
-            let next_values: [F; NUM_CPU_COLS] = next_values.try_into().unwrap();
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
             let vars = StarkEvaluationVars {
                 local_values: &local_values,
                 next_values: &next_values,
