@@ -19,6 +19,10 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     let w = matrix[0].len();
 
     let mut transposed = vec![vec![]; w];
+
+    // TODO: add time
+    let now = std::time::Instant::now();
+
     for i in 0..w {
         transposed[i].reserve_exact(l);
         unsafe {
@@ -27,6 +31,11 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
             transposed[i].set_len(l);
         }
     }
+
+    println!("transpose inner cost time: {:?}", now.elapsed());
+
+    // TODO: add time
+    let now = std::time::Instant::now();
 
     // Optimization: ensure the larger loop is outside.
     if w >= l {
@@ -42,6 +51,8 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
             }
         }
     }
+
+    println!("transpose outer cost time: {:?}", now.elapsed());
 
     transposed
 }
