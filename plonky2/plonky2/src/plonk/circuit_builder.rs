@@ -756,6 +756,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         // Precompute FFT roots.
         let max_fft_points = 1 << (degree_bits + max(rate_bits, log2_ceil(quotient_degree_factor)));
         let fft_root_table = fft_root_table(max_fft_points);
+        let mut twiddle_map = BTreeMap::new();
 
         let constants_sigmas_vecs = [constant_vecs, sigma_vecs.clone()].concat();
         let constants_sigmas_commitment = PolynomialBatch::from_values(
@@ -764,7 +765,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             PlonkOracle::CONSTANTS_SIGMAS.blinding,
             cap_height,
             &mut timing,
-            Some(&fft_root_table),
+            &mut twiddle_map,
         );
 
         // Map between gates where not all generators are used and the gate's number of

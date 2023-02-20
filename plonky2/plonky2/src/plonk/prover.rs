@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::mem::swap;
 
 use anyhow::ensure;
@@ -64,6 +65,8 @@ where
             .map(|column| PolynomialValues::new(column.clone()))
             .collect()
     );
+    
+    let mut twiddle_map: BTreeMap<usize, Vec<F>> = BTreeMap::new();
 
     let wires_commitment = timed!(
         timing,
@@ -74,7 +77,7 @@ where
             config.zero_knowledge && PlonkOracle::WIRES.blinding,
             config.fri_config.cap_height,
             timing,
-            prover_data.fft_root_table.as_ref(),
+            &mut twiddle_map,
         )
     );
 
@@ -115,7 +118,7 @@ where
             config.zero_knowledge && PlonkOracle::ZS_PARTIAL_PRODUCTS.blinding,
             config.fri_config.cap_height,
             timing,
-            prover_data.fft_root_table.as_ref(),
+            &mut twiddle_map,
         )
     );
 
@@ -163,7 +166,7 @@ where
             config.zero_knowledge && PlonkOracle::QUOTIENT.blinding,
             config.fri_config.cap_height,
             timing,
-            prover_data.fft_root_table.as_ref(),
+            &mut twiddle_map,
         )
     );
 
@@ -209,6 +212,7 @@ where
             &mut challenger,
             &common_data.fri_params,
             timing,
+            &mut twiddle_map,
         )
     );
 
