@@ -143,7 +143,7 @@ where
     );
 
     // TODO: add time
-    let now = std::time::Instant::now();
+    let now2 = std::time::Instant::now();
 
     let cpu_proof = prove_single_table(
         &all_stark.cpu_stark,
@@ -154,11 +154,11 @@ where
         &mut challenger,
         timing,
         &mut twiddle_map,
-    )?;
+    ).unwrap();
 
     println!(
         "prove_cpu_table time: {:?}",
-        now.elapsed(),
+        now2.elapsed(),
     );
 
     // TODO: add time
