@@ -7,6 +7,7 @@ edition = "2021"
 [features]
 default = ["rand"]
 rand = ["dep:rand"]
+parallel = ["rayon"]
 
 [dependencies]
 plonky2_util = { path = "../util" }
@@ -17,3 +18,4 @@ rand = { optional = true, version = "0.8.4" }
 serde = { version = "1.0", features = ["derive"] }
 unroll = "0.1.5"
 static_assertions = "1.1.0"
+rayon = { version = "1.5.3", optional = true }

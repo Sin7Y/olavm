@@ -1,5 +1,6 @@
 use core::program::Program;
 use std::any::type_name;
+use std::collections::BTreeMap;
 
 use anyhow::{ensure, Result};
 use maybe_rayon::*;
@@ -80,6 +81,8 @@ where
     let rate_bits = config.fri_config.rate_bits;
     let cap_height = config.fri_config.cap_height;
 
+    let mut twiddle_map = BTreeMap::new();
+
     let trace_commitments = timed!(
         timing,
         "compute trace commitments",
@@ -95,7 +98,7 @@ where
                     false,
                     cap_height,
                     timing,
-                    None,
+                    &mut twiddle_map,
                 )
             })
             .collect::<Vec<_>>()
@@ -125,6 +128,7 @@ where
         &ctl_data_per_table[Table::Cpu as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
     let memory_proof = prove_single_table(
         &ola_stark.memory_stark,
@@ -134,6 +138,7 @@ where
         &ctl_data_per_table[Table::Memory as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
 
     let bitwise_proof = prove_single_table(
@@ -144,6 +149,7 @@ where
         &ctl_data_per_table[Table::Bitwise as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
     let cmp_proof = prove_single_table(
         &ola_stark.cmp_stark,
@@ -153,6 +159,7 @@ where
         &ctl_data_per_table[Table::Cmp as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
     let rangecheck_proof = prove_single_table(
         &ola_stark.rangecheck_stark,
@@ -162,6 +169,7 @@ where
         &ctl_data_per_table[Table::RangeCheck as usize],
         &mut challenger,
         timing,
+        &mut twiddle_map,
     )?;
 
     let stark_proofs = [
@@ -196,6 +204,7 @@ pub(crate) fn prove_single_table<F, C, S, const D: usize>(
     ctl_data: &CtlData<F>,
     challenger: &mut Challenger<F, C::Hasher>,
     timing: &mut TimingTree,
+    twiddle_map: &mut BTreeMap<usize, Vec<F>>,
 ) -> Result<StarkProof<F, C, D>>
 where
     F: RichField + Extendable<D>,
@@ -251,7 +260,7 @@ where
             false,
             config.fri_config.cap_height,
             timing,
-            None,
+            twiddle_map,
         )
     );
 
@@ -312,7 +321,7 @@ where
             false,
             config.fri_config.cap_height,
             timing,
-            None,
+            twiddle_map,
         )
     );
     let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
@@ -355,6 +364,7 @@ where
             challenger,
             &fri_params,
             timing,
+            twiddle_map,
         )
     );
 
