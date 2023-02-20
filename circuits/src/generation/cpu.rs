@@ -39,11 +39,11 @@ pub fn generate_cpu_trace<F: RichField>(
     let mut trace: Vec<Vec<F>> = vec![vec![F::default(); trace_len]; cpu::NUM_CPU_COLS];
     for (i, (s, r)) in steps.iter().zip(raw_insts.iter()).enumerate() {
         // Context related columns.
-        trace[cpu::COL_CLK][i] =  F::from_canonical_u32(s.clk);
+        trace[cpu::COL_CLK][i] = F::from_canonical_u32(s.clk);
         trace[cpu::COL_PC][i] = F::from_canonical_u64(s.pc);
         trace[cpu::COL_FLAG][i] = F::from_canonical_u32(s.flag as u32);
-        for i in 0..REGISTER_NUM {
-            trace[cpu::COL_START_REG + i][i] = F::from_canonical_u64(s.regs[i].0);
+        for j in 0..REGISTER_NUM {
+            trace[cpu::COL_START_REG + j][i] = F::from_canonical_u64(s.regs[j].0);
         }
 
         // Instruction related columns.
@@ -58,13 +58,13 @@ pub fn generate_cpu_trace<F: RichField>(
         trace[cpu::COL_DST][i] = F::from_canonical_u64(s.register_selector.dst.0);
         trace[cpu::COL_AUX0][i] = F::from_canonical_u64(s.register_selector.aux0.0);
         trace[cpu::COL_AUX1][i] = F::from_canonical_u64(s.register_selector.aux1.0);
-        for i in 0..REGISTER_NUM {
-            trace[cpu::COL_S_OP0_START + i][i] =
-                F::from_canonical_u64(s.register_selector.op0_reg_sel[i].0);
-            trace[cpu::COL_S_OP1_START + i][i] =
-                F::from_canonical_u64(s.register_selector.op1_reg_sel[i].0);
-            trace[cpu::COL_S_DST_START + i][i] =
-                F::from_canonical_u64(s.register_selector.dst_reg_sel[i].0);
+        for j in 0..REGISTER_NUM {
+            trace[cpu::COL_S_OP0_START + j][i] =
+                F::from_canonical_u64(s.register_selector.op0_reg_sel[j].0);
+            trace[cpu::COL_S_OP1_START + j][i] =
+                F::from_canonical_u64(s.register_selector.op1_reg_sel[j].0);
+            trace[cpu::COL_S_DST_START + j][i] =
+                F::from_canonical_u64(s.register_selector.dst_reg_sel[j].0);
         }
 
         // Selectors of opcode related columns.
@@ -148,7 +148,7 @@ pub fn generate_cpu_trace<F: RichField>(
     // We use our public (program) column to generate oracles.
     let mut challenger =
         Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
-    challenger.observe_elements(&trace[cpu::COL_RAW_INST]);
+    challenger.observe_elements(&[F::ZERO]);
     let beta = challenger.get_challenge();
 
     // Compress raw_pc and raw_inst columns into one column: COL_ZIP_RAW.
@@ -159,14 +159,18 @@ pub fn generate_cpu_trace<F: RichField>(
     }
 
     // Permuate zip_raw and zip_exed column.
-    let (permuted_inputs, permuted_table) = permuted_cols(
-        &trace[cpu::COL_ZIP_EXED],
-        &trace[cpu::COL_ZIP_RAW],
-    );
+    let (permuted_inputs, permuted_table) =
+        permuted_cols(&trace[cpu::COL_ZIP_EXED], &trace[cpu::COL_ZIP_RAW]);
     trace[cpu::COL_PER_ZIP_EXED] = permuted_inputs;
     trace[cpu::COL_PER_ZIP_RAW] = permuted_table;
 
-    let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| panic!("Expected a Vec of length {} but it was {}", cpu::NUM_CPU_COLS, v.len()));
+    let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
+        panic!(
+            "Expected a Vec of length {} but it was {}",
+            cpu::NUM_CPU_COLS,
+            v.len()
+        )
+    });
 
     (trace_row_vecs, beta)
 }

@@ -37,11 +37,12 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     // let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
     // let memory_trace = trace_rows_to_poly_values(memory_rows);
     // let (bitwise_rows, bitwise_beta) =
-    //     generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-    // let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-    // let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-    // let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-    // let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
+    //     generate_builtins_bitwise_trace::<F>(&program.trace.
+    // builtin_bitwise_combined); let bitwise_trace =
+    // trace_rows_to_poly_values(bitwise_rows); let cmp_rows =
+    // generate_builtins_cmp_trace(&program.trace.builtin_cmp); let cmp_trace =
+    // trace_rows_to_poly_values(cmp_rows); let rangecheck_rows =
+    // generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
     // let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
 
     all_stark

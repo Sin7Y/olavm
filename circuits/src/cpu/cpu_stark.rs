@@ -693,8 +693,13 @@ mod tests {
         let subgroup =
             F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
         for i in 0..len {
-            let local_values: [F; NUM_CPU_COLS] = cpu_rows.iter().map(|col| col[i % len]).collect::<Vec<_>>().try_into().unwrap();
-            let next_values: [F; NUM_CPU_COLS] = cpu_rows.iter().map(|col| col[(i+i) % len]).collect::<Vec<_>>().try_into().unwrap();
+            let local_values = cpu_rows.iter().map(|row| row[i % len]).collect::<Vec<_>>();
+            let next_values = cpu_rows
+                .iter()
+                .map(|row| row[(i + 1) % len])
+                .collect::<Vec<_>>();
+            let local_values: [F; NUM_CPU_COLS] = local_values.try_into().unwrap();
+            let next_values: [F; NUM_CPU_COLS] = next_values.try_into().unwrap();
             let vars = StarkEvaluationVars {
                 local_values: &local_values,
                 next_values: &next_values,
