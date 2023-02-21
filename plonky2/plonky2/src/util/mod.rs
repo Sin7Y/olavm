@@ -1,7 +1,7 @@
 use maybe_rayon::{MaybeIntoParIter, ParallelIterator, IndexedParallelIterator};
 use plonky2_field::polynomial::PolynomialValues;
 use plonky2_field::types::Field;
-use rayon::slice::ParallelSliceMut;
+use rayon::slice::{ParallelSliceMut, ParallelSlice};
 
 use crate::batch_iter_mut;
 
@@ -42,16 +42,31 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     // transposed: 2^20 * 76
     #[cfg(feature = "parallel")]
     let batch_size = w / rayon::current_num_threads().next_power_of_two();
-    transposed.par_chunks_mut(batch_size).enumerate().for_each(|(i, batch)| {
-        let batch_offset = i * batch_size;
-        for (k, row_buf) in batch.iter_mut().enumerate() {
-            let j = k + batch_offset;
-            for i in 0..l {
-                // batch[k][i] = matrix[i][j];
-                (*row_buf)[k] = matrix[i][j];
+    if batch_size > 0 && w.is_power_of_two() {
+        transposed.par_chunks_mut(batch_size).enumerate().for_each(|(i, batch)| {
+            let batch_offset = i * batch_size;
+            for (k, row_buf) in batch.iter_mut().enumerate() {
+                let j = k + batch_offset;
+                for i in 0..l {
+                    (*row_buf)[i] = matrix[i][j];
+                }
+            }
+        });
+    } else {
+        if w >= l {
+            for i in 0..w {
+                for j in 0..l {
+                    transposed[i][j] = matrix[j][i];
+                }
+            }
+        } else {
+            for j in 0..l {
+                for i in 0..w {
+                    transposed[i][j] = matrix[j][i];
+                }
             }
         }
-    });
+    }
     // batch_iter_mut!(
     //     &mut transposed,
     //     128, // min batch size
