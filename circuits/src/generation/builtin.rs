@@ -9,7 +9,8 @@ use plonky2::util::transpose;
 use crate::builtins::bitwise::columns as bitwise;
 use crate::builtins::cmp::columns as cmp;
 use crate::builtins::cmp::columns::{
-    COL_CMP_ABS_DIFF, COL_CMP_ABS_DIFF_INV, COL_CMP_GTE, COL_CMP_OP0,
+    COL_CMP_ABS_DIFF, COL_CMP_ABS_DIFF_INV, COL_CMP_FILTER_LOOKING_RC, COL_CMP_GTE, COL_CMP_OP0,
+    COL_CMP_OP1,
 };
 use crate::builtins::rangecheck::columns as rangecheck;
 use crate::stark::lookup::permuted_cols;
@@ -312,9 +313,15 @@ pub fn vec_to_ary_bitwise<F: RichField>(input: Vec<F>) -> [F; bitwise::COL_NUM_B
 pub fn generate_builtins_cmp_trace<F: RichField>(cells: &[CmpRow]) -> Vec<[F; cmp::COL_NUM_CMP]> {
     let mut trace: Vec<[F; cmp::COL_NUM_CMP]> = cells
         .iter()
-        .map(|_c| {
-            let row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
-            // todo fill in data
+        .map(|c| {
+            let mut row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
+            row[COL_CMP_OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
+            row[COL_CMP_OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
+            row[COL_CMP_GTE] = F::from_canonical_u64(c.gte.to_canonical_u64());
+            row[COL_CMP_ABS_DIFF] = F::from_canonical_u64(c.abs_diff.to_canonical_u64());
+            row[COL_CMP_ABS_DIFF_INV] = F::from_canonical_u64(c.abs_diff_inv.to_canonical_u64());
+            row[COL_CMP_FILTER_LOOKING_RC] =
+                F::from_canonical_u64(c.filter_looking_rc.to_canonical_u64());
             row
         })
         .collect();
