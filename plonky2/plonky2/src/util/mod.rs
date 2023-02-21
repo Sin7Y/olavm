@@ -1,3 +1,4 @@
+use maybe_rayon::{MaybeIntoParIter, ParallelIterator};
 use plonky2_field::polynomial::PolynomialValues;
 use plonky2_field::types::Field;
 
@@ -15,35 +16,12 @@ pub(crate) fn transpose_poly_values<F: Field>(polys: Vec<PolynomialValues<F>>) -
 
 // l * w => w * l
 pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
-    let l = matrix.len();
     let w = matrix[0].len();
 
-    let mut transposed = vec![vec![]; w];
-    for i in 0..w {
-        transposed[i].reserve_exact(l);
-        unsafe {
-            // After .reserve_exact(l), transposed[i] will have capacity at least l. Hence,
-            // set_len will not cause the buffer to overrun.
-            transposed[i].set_len(l);
-        }
-    }
-
-    // Optimization: ensure the larger loop is outside.
-    if w >= l {
-        for i in 0..w {
-            for j in 0..l {
-                transposed[i][j] = matrix[j][i];
-            }
-        }
-    } else {
-        for j in 0..l {
-            for i in 0..w {
-                transposed[i][j] = matrix[j][i];
-            }
-        }
-    }
-
-    transposed
+    (0..w)
+        .into_par_iter()
+        .map(|i| matrix.into_par_iter().map(|row| row[i]).collect())
+        .collect()
 }
 
 pub(crate) fn reverse_bits(n: usize, num_bits: usize) -> usize {
