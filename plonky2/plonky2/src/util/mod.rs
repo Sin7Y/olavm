@@ -2,6 +2,8 @@ use maybe_rayon::{MaybeIntoParIter, ParallelIterator};
 use plonky2_field::polynomial::PolynomialValues;
 use plonky2_field::types::Field;
 
+use crate::batch_iter_mut;
+
 pub(crate) mod context_tree;
 pub(crate) mod partial_products;
 pub mod reducing;
@@ -35,19 +37,34 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
         }
     }
     // Optimization: ensure the larger loop is outside.
-    if w >= l {
-        for i in 0..w {
-            for j in 0..l {
-                transposed[i][j] = matrix[j][i];
+    // 76 * 2^20 --> 2^20 * 76
+    // transposed: 2^20 * 76
+    batch_iter_mut!(
+        &mut transposed,
+        128, // min batch size
+        |batch: &mut [Vec<F>], batch_offset: usize| {
+            for (i, row_buf) in batch.iter_mut().enumerate() {
+                let col = i + batch_offset;
+                for j in 0..l {
+                    batch[i][j] = matrix[j][col];
+                }
             }
         }
-    } else {
-        for j in 0..l {
-            for i in 0..w {
-                transposed[i][j] = matrix[j][i];
-            }
-        }
-    }
+    );
+    
+    // if w >= l {
+    //     for i in 0..w {
+    //         for j in 0..l {
+    //             transposed[i][j] = matrix[j][i];
+    //         }
+    //     }
+    // } else {
+    //     for j in 0..l {
+    //         for i in 0..w {
+    //             transposed[i][j] = matrix[j][i];
+    //         }
+    //     }
+    // }
     transposed
 }
 
