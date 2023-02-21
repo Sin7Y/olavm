@@ -1,6 +1,7 @@
-use maybe_rayon::{MaybeIntoParIter, ParallelIterator};
+use maybe_rayon::{MaybeIntoParIter, ParallelIterator, IndexedParallelIterator};
 use plonky2_field::polynomial::PolynomialValues;
 use plonky2_field::types::Field;
+use rayon::slice::ParallelSliceMut;
 
 use crate::batch_iter_mut;
 
@@ -27,7 +28,7 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
 
     let l = matrix.len();
 
-    let mut transposed = vec![vec![]; w];
+    let mut transposed: Vec<Vec<F>> = vec![vec![]; w];
     for i in 0..w {
         transposed[i].reserve_exact(l);
         unsafe {
@@ -39,32 +40,40 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     // Optimization: ensure the larger loop is outside.
     // 76 * 2^20 --> 2^20 * 76
     // transposed: 2^20 * 76
-    batch_iter_mut!(
-        &mut transposed,
-        128, // min batch size
-        |batch: &mut [Vec<F>], batch_offset: usize| {
-            for (i, row_buf) in batch.iter_mut().enumerate() {
-                let col = i + batch_offset;
-                for j in 0..l {
-                    batch[i][j] = matrix[j][col];
-                }
+    #[cfg(feature = "parallel")]
+    let batch_size = w / rayon::current_num_threads().next_power_of_two();
+    transposed.par_chunks_mut(batch_size).enumerate().for_each(|(i, batch)| {
+        let batch_offset = i * batch_size;
+        for (k, row_buf) in batch.iter_mut().enumerate() {
+            let j = k + batch_offset;
+            for i in 0..l {
+                // batch[k][i] = matrix[i][j];
+                (*row_buf)[k] = matrix[i][j];
             }
         }
-    );
+    });
+    // batch_iter_mut!(
+    //     &mut transposed,
+    //     128, // min batch size
+    //     |batch: &mut [Vec<F>], batch_offset: usize| {
+            
+    //     }
+    // );
     
-    // if w >= l {
-    //     for i in 0..w {
-    //         for j in 0..l {
-    //             transposed[i][j] = matrix[j][i];
-    //         }
-    //     }
-    // } else {
-    //     for j in 0..l {
-    //         for i in 0..w {
-    //             transposed[i][j] = matrix[j][i];
-    //         }
-    //     }
-    // }
+    #[cfg(not(feature = "parallel"))]
+    if w >= l {
+        for i in 0..w {
+            for j in 0..l {
+                transposed[i][j] = matrix[j][i];
+            }
+        }
+    } else {
+        for j in 0..l {
+            for i in 0..w {
+                transposed[i][j] = matrix[j][i];
+            }
+        }
+    }
     transposed
 }
 
