@@ -31,6 +31,7 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     _nv: &[ExtensionTarget<D>; NUM_CPU_COLS],
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
 ) {
+    let one = builder.one_extension();
     // addr = anchor_addr + offset, aux1 = op1 + aux0
     let calculated_addr = builder.add_extension(lv[COL_OP1], lv[COL_AUX0]);
     let calculated_addr_sub_addr = builder.sub_extension(calculated_addr, lv[COL_AUX1]);
@@ -43,7 +44,7 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     yield_constr.constraint(builder, none_offset_cs);
 
     // when op1_imm is 0, aux0 is the imm
-    let one_m_op_imm = builder.sub_extension(builder.one_extension(), lv[COL_OP1_IMM]);
+    let one_m_op_imm = builder.sub_extension(one, lv[COL_OP1_IMM]);
     let aux0_m_imm = builder.sub_extension(lv[COL_AUX0], lv[COL_IMM_VAL]);
     let offset_cs = builder.mul_many_extension([lv[COL_S_MSTORE], one_m_op_imm, aux0_m_imm]);
     yield_constr.constraint(builder, offset_cs);
