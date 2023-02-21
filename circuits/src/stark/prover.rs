@@ -224,6 +224,8 @@ where
         &mut twiddle_map,
     )?;
 
+    
+
     println!(
         "other 4 trace prove time: {:?}",
         now.elapsed(),
