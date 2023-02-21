@@ -4,3 +4,4 @@
 Cargo.lock
 *.xlsx
 /**/.DS_Store
+/.vscode
