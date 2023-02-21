@@ -617,6 +617,7 @@ impl Process {
                         let offset_res = u64::from_str_radix(ops[3], 10);
                         if let Ok(offset) = offset_res {
                             offset_addr = offset;
+                            self.op1_imm = GoldilocksField::ZERO;
                         }
                     }
 
@@ -657,6 +658,7 @@ impl Process {
                         let offset_res = u64::from_str_radix(ops[3], 10);
                         if let Ok(offset) = offset_res {
                             offset_addr = offset;
+                            self.op1_imm = GoldilocksField::ZERO;
                         }
                     }
 
