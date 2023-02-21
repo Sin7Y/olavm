@@ -592,13 +592,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let is_mem_op = builder.add_extension(lv[COL_S_MLOAD], lv[COL_S_MSTORE]);
         let not_mem_op = builder.sub_extension(one, is_mem_op);
         let one_add_op1_imm = builder.add_extension(one, lv[COL_OP1_IMM]);
-        let instruction_size = builder.arithmetic_extension(
-            one,
-            builder.two_extension(),
-            not_mem_op,
-            one_add_op1_imm,
-            is_mem_op,
-        );
+        let instruction_size =
+            builder.arithmetic_extension(F::ONE, F::TWO, not_mem_op, one_add_op1_imm, is_mem_op);
 
         let pc_sum_boolean = builder.sub_extension(one, pc_sum);
         let pc_incr = builder.add_extension(lv[COL_PC], instruction_size);
