@@ -1,5 +1,4 @@
 use maybe_rayon::{MaybeIntoParIter, ParallelIterator, IndexedParallelIterator, MaybeParChunksMut};
-use maybe_rayon::current_num_threads;
 use plonky2_field::polynomial::PolynomialValues;
 use plonky2_field::types::Field;
 
@@ -25,7 +24,7 @@ pub fn transpose_par<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     let w = matrix[0].len();
 
     if w > l && w.is_power_of_two() {
-        let batch_size = w / current_num_threads().next_power_of_two();
+        let batch_size = w / rayon::current_num_threads().next_power_of_two();
         if batch_size < MIN_BATCH_SIZE {
             return transpose(matrix);
         }
@@ -77,7 +76,7 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     // 76 * 2^20 --> 2^20 * 76
     // transposed: 2^20 * 76
     #[cfg(feature = "parallel")]
-    let batch_size = w / current_num_threads().next_power_of_two();
+    let batch_size = w / rayon::current_num_threads().next_power_of_two();
     if batch_size > 0 && w.is_power_of_two() {
         transposed.par_chunks_mut(batch_size).enumerate().for_each(|(i, batch)| {
             let batch_offset = i * batch_size;
