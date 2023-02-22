@@ -8,7 +8,7 @@ use plonky2::field::polynomial::PolynomialValues;
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
-use crate::stark::all_stark::{AllStark, NUM_TABLES};
+use crate::stark::ola_stark::{OlaStark, NUM_TABLES};
 use crate::stark::proof::PublicValues;
 use crate::stark::util::trace_rows_to_poly_values;
 
@@ -29,7 +29,7 @@ pub struct GenerationInputs {}
 
 pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     program: &Program,
-    all_stark: &mut AllStark<F, D>,
+    ola_stark: &mut OlaStark<F, D>,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     // TODO: add time
     let now = std::time::Instant::now();
@@ -56,11 +56,11 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
     let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
 
-    all_stark
+    ola_stark
         .cpu_stark
         .set_compress_challenge(cpu_beta)
         .unwrap();
-    all_stark
+    ola_stark
         .bitwise_stark
         .set_compress_challenge(bitwise_beta)
         .unwrap();

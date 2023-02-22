@@ -10,6 +10,9 @@ pub use rayon::prelude::{
     ParallelIterator,
 };
 #[cfg(feature = "parallel")]
+pub use rayon::{current_num_threads, scope};
+
+#[cfg(feature = "parallel")]
 use rayon::{
     prelude::*,
     slice::{

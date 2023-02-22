@@ -6,10 +6,10 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::config::{GenericConfig, Hasher};
 use plonky2::plonk::plonk_common::reduce_with_powers;
 
-use super::all_stark::{AllStark, Table};
 use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;
 use super::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
+use super::ola_stark::{OlaStark, Table};
 use super::permutation::PermutationCheckVars;
 use super::proof::{
     AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges,
@@ -24,7 +24,7 @@ use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::MemoryStark;
 
 pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
-    all_stark: AllStark<F, D>,
+    ola_stark: OlaStark<F, D>,
     all_proof: AllProof<F, C, D>,
     config: &StarkConfig,
 ) -> Result<()>
@@ -39,18 +39,18 @@ where
     let AllProofChallenges {
         stark_challenges,
         ctl_challenges,
-    } = all_proof.get_challenges(&all_stark, config);
+    } = all_proof.get_challenges(&ola_stark, config);
 
-    let nums_permutation_zs = all_stark.nums_permutation_zs(config);
+    let nums_permutation_zs = ola_stark.nums_permutation_zs(config);
 
-    let AllStark {
+    let OlaStark {
         mut cpu_stark,
         memory_stark,
         mut bitwise_stark,
         cmp_stark,
         rangecheck_stark,
         cross_table_lookups,
-    } = all_stark;
+    } = ola_stark;
 
     if cpu_stark.get_compress_challenge().is_none() {
         cpu_stark

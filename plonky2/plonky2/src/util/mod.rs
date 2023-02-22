@@ -1,9 +1,7 @@
-use maybe_rayon::{MaybeIntoParIter, ParallelIterator, IndexedParallelIterator};
+use maybe_rayon::{MaybeIntoParIter, ParallelIterator, IndexedParallelIterator, MaybeParChunksMut};
+use maybe_rayon::current_num_threads;
 use plonky2_field::polynomial::PolynomialValues;
 use plonky2_field::types::Field;
-use rayon::slice::{ParallelSliceMut, ParallelSlice};
-
-use crate::batch_iter_mut;
 
 pub(crate) mod context_tree;
 pub(crate) mod partial_products;
@@ -12,12 +10,50 @@ pub mod serialization;
 pub mod strided_view;
 pub mod timing;
 
+const MIN_BATCH_SIZE: usize = 128;
+
 pub(crate) fn transpose_poly_values<F: Field>(polys: Vec<PolynomialValues<F>>) -> Vec<Vec<F>> {
     let poly_values = polys.into_iter().map(|p| p.values).collect::<Vec<_>>();
     transpose(&poly_values)
 }
 
-// l * w => w * l
+#[cfg(feature = "parallel")]
+pub fn transpose_par<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
+    use maybe_rayon::{IndexedParallelIterator, MaybeParChunksMut, ParallelIterator};
+
+    let l = matrix.len();
+    let w = matrix[0].len();
+
+    if w > l && w.is_power_of_two() {
+        let batch_size = w / current_num_threads().next_power_of_two();
+        if batch_size < MIN_BATCH_SIZE {
+            return transpose(matrix);
+        }
+        let mut transposed = vec![vec![]; w];
+        for i in 0..w {
+            transposed[i].reserve_exact(l);
+            unsafe {
+                transposed[i].set_len(l);
+            }
+        }
+        transposed
+            .par_chunks_mut(batch_size)
+            .enumerate()
+            .for_each(|(i, batch)| {
+                let batch_offset = i * batch_size;
+                for (k, row_buf) in batch.iter_mut().enumerate() {
+                    let j = k + batch_offset;
+                    for i in 0..l {
+                        (*row_buf)[i] = matrix[i][j];
+                    }
+                }
+            });
+        return transposed;
+    }
+
+    transpose(matrix)
+}
+
 pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     let w = matrix[0].len();
 
@@ -41,7 +77,7 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
     // 76 * 2^20 --> 2^20 * 76
     // transposed: 2^20 * 76
     #[cfg(feature = "parallel")]
-    let batch_size = w / rayon::current_num_threads().next_power_of_two();
+    let batch_size = w / current_num_threads().next_power_of_two();
     if batch_size > 0 && w.is_power_of_two() {
         transposed.par_chunks_mut(batch_size).enumerate().for_each(|(i, batch)| {
             let batch_offset = i * batch_size;

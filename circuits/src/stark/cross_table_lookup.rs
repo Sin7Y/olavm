@@ -14,9 +14,9 @@ use plonky2::iop::target::Target;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::config::GenericConfig;
 
-use super::all_stark::{Table, NUM_TABLES};
 use super::config::StarkConfig;
 use super::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use super::ola_stark::{Table, NUM_TABLES};
 use super::permutation::{
     get_grand_product_challenge_set, GrandProductChallenge, GrandProductChallengeSet,
 };
@@ -696,8 +696,8 @@ pub(crate) mod testutils {
     use plonky2::field::polynomial::PolynomialValues;
     use plonky2::field::types::Field;
 
-    use crate::stark::all_stark::Table;
     use crate::stark::cross_table_lookup::{CrossTableLookup, TableWithColumns};
+    use crate::stark::ola_stark::Table;
 
     type MultiSet<F> = HashMap<Vec<F>, Vec<(Table, usize)>>;
 
