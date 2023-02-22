@@ -2,6 +2,7 @@ use std::mem::MaybeUninit;
 use std::slice;
 
 use maybe_rayon::*;
+use plonky2_field::cfft::uninit_vector;
 use plonky2_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
@@ -164,6 +165,108 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             digests.set_len(num_digests);
             cap.set_len(len_cap);
         }
+
+        Self {
+            leaves,
+            digests,
+            cap: MerkleCap(cap),
+        }
+    }
+
+    pub fn new1(leaves: Vec<Vec<F>>, cap_height: usize) -> Self
+    where
+        [(); H::HASH_SIZE]:,
+    {   
+        // TODO: add time
+        let now = std::time::Instant::now();
+        
+        let leaves_len = leaves.len();
+
+        let mut row_hashes = unsafe { uninit_vector::<H::Hash>(leaves_len) };
+
+        batch_iter_mut!(
+            &mut row_hashes,
+            128, // min batch size
+            |batch: &mut [H::Hash], batch_offset: usize| {
+                let mut row_buf = vec![F::ZERO; leaves[0].len()];
+                for (i, row_hash) in batch.iter_mut().enumerate() {
+                    let row_idx = i + batch_offset;
+                    for (j, value) in (0..leaves[0].len()).into_iter().zip(row_buf.iter_mut()) {
+                        *value = leaves[row_idx][j];
+                    }
+                    *row_hash = H::hash_or_noop(&row_buf);
+                }
+            }
+        );
+
+        #[cfg(not(feature = "parallel"))]
+        let nodes = build_merkle_nodes::<F, H>(&row_hashes);
+
+        #[cfg(feature = "parallel")]
+        let nodes = if leaves_len <= concurrent::MIN_CONCURRENT_LEAVES {
+            build_merkle_nodes::<F, H>(&row_hashes)
+        } else {
+            concurrent::build_merkle_nodes::<F, H>(&row_hashes)
+        };
+
+        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
+            println!("build winterfell merkle tree time: {:?}", now.elapsed());
+        }
+
+
+        // add time
+        let now = std::time::Instant::now();
+
+        let num_digests = 2 * (leaves_len - (1 << cap_height));
+        let mut digests = unsafe { uninit_vector::<H::Hash>(num_digests) };
+        let len_cap = 1 << cap_height;
+        let mut cap = unsafe { uninit_vector::<H::Hash>(len_cap) };
+
+        if len_cap == leaves_len {
+            for i in 0..len_cap {
+                cap[i] = row_hashes[i];
+            }
+        } else {
+            for i in 0..len_cap {
+                cap[i] = nodes[i + len_cap];
+            }
+        }
+        
+
+        let tree_height_sub_1 = log2_strict(leaves_len);
+        let num_layers =  tree_height_sub_1 - cap_height;
+        let num_sub_tree_leaves = 1 << num_layers;
+        let tree_len = num_digests >> cap_height;
+        let num_trees = 1 << cap_height;
+
+        // digests.as_mut_slice().par_chunks_exact_mut(tree_len).enumerate().for_each(|(i, sub_digests)| {
+        if num_digests > 0 {
+            for i in 0..num_trees {
+                for pair_idx in (0..num_sub_tree_leaves).step_by(2) {
+                    let siblings_index = pair_idx;
+                    let sibling_index = siblings_index << 1;
+                    digests[tree_len * i + sibling_index] = row_hashes[num_sub_tree_leaves * i + pair_idx];
+                    digests[tree_len * i + sibling_index + 1] = row_hashes[num_sub_tree_leaves * i + pair_idx + 1];
+                }
+    
+                for layer in 1..num_layers {
+                    let num_layer_nodes = num_sub_tree_leaves >> layer;
+                    for pair_idx in (0..num_layer_nodes).step_by(2) {
+                        let siblings_index = (pair_idx << layer) + (1 << layer) - 1;
+                        let sibling_index = siblings_index << 1;
+                        let n_idx = (1 << (tree_height_sub_1 - layer)) + num_layer_nodes * i + pair_idx;
+                        digests[tree_len * i + sibling_index] = nodes[n_idx];
+                        digests[tree_len * i + sibling_index + 1] = nodes[n_idx + 1];
+                    }
+                }
+            }
+        }
+
+        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
+            println!("winterfell to olavm merkle tree time: {:?}", now.elapsed());
+        }
+
+        
 
         Self {
             leaves,
