@@ -44,7 +44,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     // TODO: add time
     let now = std::time::Instant::now();
     // 76 * 2^20
-    let cpu_trace = trace_rows_to_poly_values_new(cpu_rows);
+    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
     println!(
         "cpu_trace_to_poly time: {:?}",
         now.elapsed(),
