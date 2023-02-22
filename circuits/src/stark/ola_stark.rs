@@ -700,23 +700,52 @@ mod tests {
 
     #[test]
     fn comparison_test() -> Result<()> {
-        //mov r0 8
-        //mov r1 2
-        //mov r2 3
-        //add r3 r0 r1
-        //mul r4 r3 r2
-        //gte r4 r3
-        //end
-        let program_src = "0x4000000840000000
-            0x8
-            0x4000001040000000
-            0x2
-            0x4000002040000000
-            0x3
-            0x0020204400000000
-            0x0100408200000000
-            0x0200800000010000
-            0x0000000000800000";
+        // main:
+        // .LBL0_0:
+        //   add r8 r8 4
+        //   mstore [r8,-2] r8
+        //   mov r1 1
+        //   call le
+        //   add r8 r8 -4
+        //   end
+        // le:
+        // .LBL1_0:
+        //   mov r0 r1
+        //   mov r7 1
+        //   gte r0 r7 r0
+        //   cjmp r0 .LBL1_1
+        //   jmp .LBL1_2
+        // .LBL1_1:
+        //   mov r0 2
+        //   ret
+        // .LBL1_2:
+        //   mov r0 3
+        //   ret
+        let program_src = "0x6000080400000000
+0x4
+0x2010000001000000
+0xfffffffeffffffff
+0x4000001040000000
+0x1
+0x4000000008000000
+0xb
+0x6000080400000000
+0xfffffffefffffffd
+0x0000000000800000
+0x0000200840000000
+0x4000040040000000
+0x1
+0x1000100800010000
+0x4020000010000000
+0x13
+0x4000000020000000
+0x16
+0x4000000840000000
+0x2
+0x0000000004000000
+0x4000000840000000
+0x3
+0x0000000004000000";
 
         let instructions = program_src.split('\n');
         let mut program: Program = Program {
