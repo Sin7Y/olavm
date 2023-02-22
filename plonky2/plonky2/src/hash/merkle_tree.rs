@@ -6,6 +6,8 @@ use plonky2_field::cfft::uninit_vector;
 use plonky2_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
+use crate::batch_iter_mut;
+use crate::hash::concurrent;
 use crate::hash::hash_types::RichField;
 use crate::hash::merkle_proofs::MerkleProof;
 use crate::plonk::config::GenericHashOut;
@@ -316,6 +318,33 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
 
         MerkleProof { siblings }
     }
+}
+
+pub fn build_merkle_nodes<F: RichField, H: Hasher<F>>(leaves: &[H::Hash]) -> Vec<H::Hash>
+where
+    [(); H::HASH_SIZE]: {
+    let n = leaves.len() / 2;
+    // create un-initialized array to hold all intermediate nodes
+    let mut nodes = unsafe { uninit_vector::<H::Hash>(2 * n) };
+    nodes[0] = H::zero_hash();
+
+    // re-interpret leaves as an array of two leaves fused together
+    let two_leaves = unsafe { slice::from_raw_parts(leaves.as_ptr() as *const [H::Hash; 2], n) };
+
+    // build first row of internal nodes (parents of leaves)
+    for (i, j) in (0..n).zip(n..nodes.len()) {
+        nodes[j] = H::two_to_one(two_leaves[i][0], two_leaves[i][1]);
+    }
+
+    // re-interpret nodes as an array of two nodes fused together
+    let two_nodes = unsafe { slice::from_raw_parts(nodes.as_ptr() as *const [H::Hash; 2], n) };
+
+    // calculate all other tree nodes
+    for i in (1..n).rev() {
+        nodes[i] = H::two_to_one(two_nodes[i][0], two_nodes[i][1]);
+    }
+
+    nodes
 }
 
 #[cfg(test)]
