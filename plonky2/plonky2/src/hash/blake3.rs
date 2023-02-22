@@ -5,8 +5,11 @@ use std::mem::size_of;
 use crate::hash::hash_types::{HashOut, RichField};
 use crate::hash::hashing::{compress, hash_n_to_hash_no_pad, PlonkyPermutation, SPONGE_WIDTH};
 use crate::plonk::config::Hasher;
+use crate::util::serialization::Buffer;
 
 use blake3;
+
+use super::hash_types::BytesHash;
 
 pub struct Blake3Permutation;
 impl<F: RichField> PlonkyPermutation<F> for Blake3Permutation {
@@ -49,14 +52,33 @@ impl<F: RichField> PlonkyPermutation<F> for Blake3Permutation {
 pub struct Blake3_256<const N: usize>;
 impl<F: RichField, const N: usize> Hasher<F> for Blake3_256<N> {
     const HASH_SIZE: usize = N;
-    type Hash = HashOut<F>;
+    type Hash = BytesHash<N>;
     type Permutation = Blake3Permutation;
 
+    // fn hash_no_pad(input: &[F]) -> Self::Hash {
+    //     hash_n_to_hash_no_pad::<F, Self::Permutation>(input)
+    // }
+
+    // fn two_to_one(left: Self::Hash, right: Self::Hash) -> Self::Hash {
+    //     compress::<F, Self::Permutation>(left, right)
+    // }
+
     fn hash_no_pad(input: &[F]) -> Self::Hash {
-        hash_n_to_hash_no_pad::<F, Self::Permutation>(input)
+        let mut buffer = Buffer::new(Vec::new());
+        buffer.write_field_vec(input).unwrap();
+        let mut arr = [0; N];
+        let hash_bytes = blake3::hash(&buffer.bytes());
+        arr.copy_from_slice(hash_bytes.as_bytes());
+        BytesHash(arr)
     }
 
     fn two_to_one(left: Self::Hash, right: Self::Hash) -> Self::Hash {
-        compress::<F, Self::Permutation>(left, right)
+        let mut v = vec![0; N * 2];
+        v[0..N].copy_from_slice(&left.0);
+        v[N..].copy_from_slice(&right.0);
+        let mut arr = [0; N];
+        let hash_bytes = blake3::hash(&v);
+        arr.copy_from_slice(hash_bytes.as_bytes());
+        BytesHash(arr)
     }
 }

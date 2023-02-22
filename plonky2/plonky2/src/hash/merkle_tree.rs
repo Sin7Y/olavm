@@ -7,6 +7,7 @@ use plonky2_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
 use crate::batch_iter_mut;
+use blake3;
 use crate::hash::concurrent;
 use crate::hash::hash_types::RichField;
 use crate::hash::merkle_proofs::MerkleProof;
@@ -196,7 +197,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
                     for (j, value) in (0..leaves[0].len()).into_iter().zip(row_buf.iter_mut()) {
                         *value = leaves[row_idx][j];
                     }
-                    *row_hash = H::hash_or_noop(&row_buf);
+                    *row_hash = H::hash_no_pad(&row_buf);
                 }
             }
         );
@@ -205,27 +206,27 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             println!("batch_iter_mut time: {:?}", now.elapsed());
         }
 
-        // TODO: add time
-        let now = std::time::Instant::now();
-        let mut row_hashes1 = unsafe { uninit_vector::<H::Hash>(leaves_len) };
+        // // TODO: add time
+        // let now = std::time::Instant::now();
+        // let mut row_hashes1 = unsafe { uninit_vector::<H::Hash>(leaves_len) };
 
-        batch_iter_mut!(
-            &mut row_hashes1,
-            128, // min batch size
-            |batch: &mut [H::Hash], batch_offset: usize| {
-                let mut row_buf = vec![F::ZERO; leaves[0].len()];
-                for (i, row_hash) in batch.iter_mut().enumerate() {
-                    let row_idx = i + batch_offset;
-                    for (j, value) in (0..leaves[0].len()).into_iter().zip(row_buf.iter_mut()) {
-                        *value = leaves[row_idx][j];
-                    }
-                }
-            }
-        );
+        // batch_iter_mut!(
+        //     &mut row_hashes1,
+        //     128, // min batch size
+        //     |batch: &mut [H::Hash], batch_offset: usize| {
+        //         let mut row_buf = vec![F::ZERO; leaves[0].len()];
+        //         for (i, row_hash) in batch.iter_mut().enumerate() {
+        //             let row_idx = i + batch_offset;
+        //             for (j, value) in (0..leaves[0].len()).into_iter().zip(row_buf.iter_mut()) {
+        //                 *value = leaves[row_idx][j];
+        //             }
+        //         }
+        //     }
+        // );
 
-        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
-            println!("batch_iter_mut without hash time: {:?}", now.elapsed());
-        }
+        // if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
+        //     println!("batch_iter_mut without hash time: {:?}", now.elapsed());
+        // }
 
         // TODO: add time
         let now = std::time::Instant::now();
