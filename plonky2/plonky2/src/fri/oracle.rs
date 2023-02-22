@@ -234,14 +234,23 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         // github.com/mir-protocol/plonky2/pull/436 for details.
         final_poly.coeffs.insert(0, F::Extension::ZERO);
 
+        println!("generate final_poly {:?} size: {}", now.elapsed(), final_poly.coeffs.len());
+
+        let now = std::time::Instant::now();
+
         let lde_final_poly = final_poly.lde(fri_params.config.rate_bits);
+
+        println!("generate lde_final_poly {:?} size: {}", now.elapsed(), lde_final_poly.coeffs.len());
+
+        let now = std::time::Instant::now();
+
         let lde_final_values = timed!(
             timing,
             &format!("perform final FFT {}", lde_final_poly.coeffs.len()),
             lde_final_poly.coset_fft(F::coset_shift().into(), None)
         );
 
-        println!("generate final poly {:?}", now.elapsed());
+        println!("generate lde_final_values {:?} size: {}", now.elapsed(), lde_final_values.values.len());
 
         let now = std::time::Instant::now();
 
