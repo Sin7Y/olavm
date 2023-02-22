@@ -96,3 +96,110 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
     Column::single(COL_CMP_FILTER_LOOKING_RC)
 }
+
+mod tests {
+    use crate::builtins::cmp::cmp_stark::CmpStark;
+    use crate::generation::builtin::generate_builtins_cmp_trace;
+    use crate::stark::constraint_consumer::ConstraintConsumer;
+    use crate::stark::stark::Stark;
+    use crate::stark::vars::StarkEvaluationVars;
+    use core::program::Program;
+    use executor::Process;
+    use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2::field::types::Field;
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2_util::log2_strict;
+
+    #[allow(unused)]
+    fn test_cmp_stark(program_src: &str) {
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = CmpStark<F, D>;
+        let stark = S::default();
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        let _ = process.execute(&mut program);
+
+        let rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        println!(
+            "raw trace len:{}, extended len: {}",
+            program.trace.builtin_cmp.len(),
+            rows.len()
+        );
+        let last = F::primitive_root_of_unity(log2_strict(rows.len())).inverse();
+        let subgroup = F::cyclic_subgroup_known_order(
+            F::primitive_root_of_unity(log2_strict(rows.len())),
+            rows.len(),
+        );
+
+        for i in 0..rows.len() - 1 {
+            println!("cmp row index: {}", i);
+            let vars = StarkEvaluationVars {
+                local_values: &rows[i % rows.len()],
+                next_values: &rows[(i + 1) % rows.len()],
+            };
+
+            let mut constraint_consumer = ConstraintConsumer::new(
+                vec![F::rand()],
+                subgroup[i] - last,
+                if i == 0 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+                if i == rows.len() - 1 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+            );
+            stark.eval_packed_generic(vars, &mut constraint_consumer);
+
+            for &acc in &constraint_consumer.constraint_accs {
+                assert_eq!(acc, GoldilocksField::ZERO);
+            }
+        }
+    }
+
+    #[test]
+    fn test_cmp_with_program() {
+        let program_src = "0x6000080400000000
+0x4
+0x2010000001000000
+0xfffffffeffffffff
+0x4000001040000000
+0x1
+0x4000000008000000
+0xb
+0x6000080400000000
+0xfffffffefffffffd
+0x0000000000800000
+0x0000200840000000
+0x4000040040000000
+0x1
+0x1000100800010000
+0x4020000010000000
+0x13
+0x4000000020000000
+0x16
+0x4000000840000000
+0x2
+0x0000000004000000
+0x4000000840000000
+0x3
+0x0000000004000000";
+
+        test_cmp_stark(program_src);
+    }
+}
