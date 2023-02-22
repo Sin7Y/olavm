@@ -115,7 +115,7 @@ fn fill_digests_buf<F: RichField, H: Hasher<F>>(
     // this if there was a way to split into `blah` chunks as opposed to chunks
     // _of_ `blah`.)
     if digests_buf.is_empty() {
-        debug_assert_eq!(cap_buf.len(), leaves.len());
+        debug_assert_eq!(cap_buf.len(), leaves[0].len());
         cap_buf
             .par_iter_mut()
             .zip(leaves)
@@ -126,7 +126,7 @@ fn fill_digests_buf<F: RichField, H: Hasher<F>>(
     }
 
     let subtree_digests_len = digests_buf.len() >> cap_height;
-    let subtree_leaves_len = leaves.len() >> cap_height;
+    let subtree_leaves_len = leaves[0].len() >> cap_height;
     let digests_chunks = digests_buf.par_chunks_exact_mut(subtree_digests_len);
     let leaves_chunks = leaves.par_chunks_exact(subtree_leaves_len);
 

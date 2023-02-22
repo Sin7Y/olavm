@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::stark::ola_stark::{OlaStark, NUM_TABLES};
 use crate::stark::proof::PublicValues;
-use crate::stark::util::trace_rows_to_poly_values;
+use crate::stark::util::{trace_rows_to_poly_values, trace_rows_to_poly_values_new};
 
 use self::builtin::{
     generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
@@ -33,6 +33,8 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     // TODO: add time
     let now = std::time::Instant::now();
+    // 2^20 * 76
+    // 76 * 2^20
     let (cpu_rows, cpu_beta) =
         generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
     println!(
@@ -41,7 +43,8 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         );
     // TODO: add time
     let now = std::time::Instant::now();
-    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+    // 76 * 2^20
+    let cpu_trace = trace_rows_to_poly_values_new(cpu_rows);
     println!(
         "cpu_trace_to_poly time: {:?}",
         now.elapsed(),
@@ -67,10 +70,10 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
 
     let traces = [
         cpu_trace,
-        memory_trace,
-        bitwise_trace,
-        cmp_trace,
-        rangecheck_trace,
+        vec![PolynomialValues::zero(4)],
+        vec![PolynomialValues::zero(4)],
+        vec![PolynomialValues::zero(4)],
+        vec![PolynomialValues::zero(4)],
     ];
     let public_values = PublicValues {};
     (traces, public_values)
