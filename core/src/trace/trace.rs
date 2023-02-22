@@ -142,9 +142,7 @@ pub struct RangeCheckRow {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitwiseCombinedRow {
-    // bitwise_tag = {0,1,2} = {AND, OR, XOR}
-    // Identify the bitwise_type in BIT_WISE Fixed Table
-    pub bitwise_tag: u32,
+    pub opcode: u32,
 
     // Lookup with main Trace
     pub op0: GoldilocksField,
@@ -220,7 +218,7 @@ impl Trace {
 
     pub fn insert_bitwise_combined(
         &mut self,
-        bitwise_tag: u32,
+        opcode: u32,
         op0: GoldilocksField,
         op1: GoldilocksField,
         res: GoldilocksField,
@@ -230,7 +228,7 @@ impl Trace {
         let res_limbs = split_limbs_from_field(&res);
 
         self.builtin_bitwise_combined.push(BitwiseCombinedRow {
-            bitwise_tag,
+            opcode,
             op0,
             op1,
             res,
