@@ -207,6 +207,28 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
 
         // TODO: add time
         let now = std::time::Instant::now();
+        let mut row_hashes1 = unsafe { uninit_vector::<H::Hash>(leaves_len) };
+
+        batch_iter_mut!(
+            &mut row_hashes1,
+            128, // min batch size
+            |batch: &mut [H::Hash], batch_offset: usize| {
+                let mut row_buf = vec![F::ZERO; leaves[0].len()];
+                for (i, row_hash) in batch.iter_mut().enumerate() {
+                    let row_idx = i + batch_offset;
+                    for (j, value) in (0..leaves[0].len()).into_iter().zip(row_buf.iter_mut()) {
+                        *value = leaves[row_idx][j];
+                    }
+                }
+            }
+        );
+
+        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
+            println!("batch_iter_mut without hash time: {:?}", now.elapsed());
+        }
+
+        // TODO: add time
+        let now = std::time::Instant::now();
 
         #[cfg(not(feature = "parallel"))]
         let nodes = build_merkle_nodes::<F, H>(&row_hashes);
