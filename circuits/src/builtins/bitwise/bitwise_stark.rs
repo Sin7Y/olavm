@@ -409,3 +409,102 @@ pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
     Column::one()
 }*/
+
+mod tests {
+    use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
+    use crate::generation::builtin::{
+        generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
+    };
+    use crate::stark::constraint_consumer::ConstraintConsumer;
+    use crate::stark::stark::Stark;
+    use crate::stark::vars::StarkEvaluationVars;
+    use core::program::Program;
+    use executor::Process;
+    use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2::field::types::Field;
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2_util::log2_strict;
+
+    #[allow(unused)]
+    fn test_bitwise_stark(program_src: &str) {
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = BitwiseStark<F, D>;
+        let mut stark = S::default();
+
+        let instructions = program_src.split('\n');
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+
+        for inst in instructions.into_iter() {
+            program.instructions.push(inst.clone().parse().unwrap());
+        }
+
+        let mut process = Process::new();
+        let _ = process.execute(&mut program);
+
+        let (rows, bitwise_beta) =
+            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        println!(
+            "raw trace len:{}, extended len: {}",
+            program.trace.builtin_cmp.len(),
+            rows.len()
+        );
+        stark.set_compress_challenge(bitwise_beta);
+        let last = F::primitive_root_of_unity(log2_strict(rows.len())).inverse();
+        let subgroup = F::cyclic_subgroup_known_order(
+            F::primitive_root_of_unity(log2_strict(rows.len())),
+            rows.len(),
+        );
+
+        for i in 0..rows.len() - 1 {
+            let vars = StarkEvaluationVars {
+                local_values: &rows[i % rows.len()],
+                next_values: &rows[(i + 1) % rows.len()],
+            };
+
+            let mut constraint_consumer = ConstraintConsumer::new(
+                vec![F::rand()],
+                subgroup[i] - last,
+                if i == 0 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+                if i == rows.len() - 1 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+            );
+            stark.eval_packed_generic(vars, &mut constraint_consumer);
+
+            for &acc in &constraint_consumer.constraint_accs {
+                assert_eq!(acc, GoldilocksField::ZERO);
+            }
+        }
+    }
+
+    #[test]
+    fn test_bitwise_with_program() {
+        let program_src = "0x4000000840000000
+0x8
+0x4000001040000000
+0x2
+0x4000002040000000
+0x3
+0x0020204400000000
+0x0100408200000000
+0x0200810000200000
+0x0041020000100000
+0x0400440000080000
+0x0080804000100000
+0x0200808000200000
+0x0000000000800000";
+
+        test_bitwise_stark(program_src);
+    }
+}
