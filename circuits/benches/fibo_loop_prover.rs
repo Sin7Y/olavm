@@ -18,7 +18,7 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
     let mut ola_stark = OlaStark::default();
     // TODO: add time
     let now = std::time::Instant::now();
-    let (traces, public_values) = generate_traces(&program, &mut all_stark);
+    let (traces, public_values) = generate_traces(&program, &mut ola_stark);
     println!(
         "total generate_traces time: {:?}",
         now.elapsed(),
