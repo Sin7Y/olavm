@@ -169,7 +169,7 @@ class RangeCheckTraceColumnType(Enum):
 
 
 class BitwiseTraceColumnType(Enum):
-    BITWISE_TAG = 'bitwise_tag'
+    BITWISE_TAG = 'opcode'
     OP0 = 'op0'
     OP1 = 'op1'
     RES = 'res'

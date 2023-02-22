@@ -42,7 +42,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
             let mut row: [F; bitwise::COL_NUM_BITWISE] = [F::default(); bitwise::COL_NUM_BITWISE];
 
             row[bitwise::FILTER] = F::from_canonical_usize(1);
-            row[bitwise::TAG] = F::from_canonical_u32(c.bitwise_tag);
+            row[bitwise::TAG] = F::from_canonical_u32(c.opcode);
             row[bitwise::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
             row[bitwise::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
             row[bitwise::RES] = F::from_canonical_u64(c.res.to_canonical_u64());

@@ -733,27 +733,27 @@ impl Process {
                             GoldilocksField::from_canonical_u64(1);
                     }
 
-                    let op_type = match opcode.as_str() {
+                    let opcode = match opcode.as_str() {
                         "and" => {
                             self.registers[dst_index] =
                                 GoldilocksField(self.registers[op0_index].0 & op1_value.0 .0);
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::AND as u8);
-                            BitwiseOperation::And
+                            1<<Opcode::AND as u32
                         }
                         "or" => {
                             self.registers[dst_index] =
                                 GoldilocksField(self.registers[op0_index].0 | op1_value.0 .0);
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::OR as u8);
-                            BitwiseOperation::Or
+                            1<<Opcode::OR as u32
                         }
                         "xor" => {
                             self.registers[dst_index] =
                                 GoldilocksField(self.registers[op0_index].0 ^ op1_value.0 .0);
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::XOR as u8);
-                            BitwiseOperation::Xor
+                            1<<Opcode::XOR as u32
                         }
                         _ => panic!("not match opcode:{}", opcode),
                     };
@@ -763,8 +763,8 @@ impl Process {
                         GoldilocksField::from_canonical_u64(1);
 
                     program.trace.insert_bitwise_combined(
-                        op_type as u32,
-                        self.registers[op0_index],
+                        opcode,
+                        self.register_selector.op0,
                         op1_value.0,
                         self.registers[dst_index],
                     );
