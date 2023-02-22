@@ -15,9 +15,16 @@ type C = Blake3GoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
 
 pub(crate) fn bench_fibo_loop_prover(program: &Program) {
+
+    let t_now = std::time::Instant::now();
+    let now = std::time::Instant::now();
+
     let mut ola_stark = OlaStark::default();
     let (traces, public_values) = generate_traces(&program, &mut ola_stark);
     let config = StarkConfig::standard_fast_config();
+
+    println!("generate_traces time {:?}", now.elapsed());
+    let now = std::time::Instant::now();
 
     let proof = prove_with_traces::<F, C, D>(
         &ola_stark,
@@ -27,9 +34,14 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
         &mut TimingTree::default(),
     )
     .unwrap();
-    let mut buffer = Buffer::new(Vec::new());
-    buffer.write_all_proof(&proof).unwrap();
-    println!("proof_size: {}", buffer.bytes().len());
+
+    println!("prove_with_traces time {:?}", now.elapsed());
+
+    // let mut buffer = Buffer::new(Vec::new());
+    // buffer.write_all_proof(&proof).unwrap();
+    // println!("proof_size: {}", buffer.bytes().len());
+
+    println!("total time {:?}", t_now.elapsed());
 }
 
 fn fibo_loop_prover_benchmark(c: &mut Criterion) {

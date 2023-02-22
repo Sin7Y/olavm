@@ -89,13 +89,26 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             Self::lde_values(&polynomials, rate_bits, blinding, twiddle_map)
         );
 
+        let now = std::time::Instant::now();
+
         let mut leaves = timed!(timing, "transpose LDEs", transpose(&lde_values));
+
+        if polynomials.len() == 76 {
+            println!("transpose time {:?}", now.elapsed());
+        }
+
+        let now = std::time::Instant::now();
+
         reverse_index_bits_in_place(&mut leaves);
         let merkle_tree = timed!(
             timing,
             "build Merkle tree",
             MerkleTree::new(leaves, cap_height)
         );
+
+        if polynomials.len() == 76 {
+            println!("build Merkle tree time {:?}", now.elapsed());
+        }
 
         Self {
             polynomials,

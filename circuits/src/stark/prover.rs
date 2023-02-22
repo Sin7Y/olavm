@@ -355,6 +355,8 @@ where
         &quotient_commitment,
     ];
 
+    let now = std::time::Instant::now();
+
     let opening_proof = timed!(
         timing,
         "compute openings proof",
@@ -367,6 +369,10 @@ where
             twiddle_map,
         )
     );
+
+    if trace_poly_values.len() == 76 {
+        println!("opening proof {:?}", now.elapsed());
+    }
 
     Ok(StarkProof {
         trace_cap: trace_commitment.merkle_tree.cap.clone(),
