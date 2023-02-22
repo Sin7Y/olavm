@@ -37,6 +37,8 @@ where
 
     let twiddle = twiddle_map;
 
+    let now = std::time::Instant::now();
+
     // Commit phase
     let (trees, final_coeffs) = timed!(
         timing,
@@ -49,6 +51,10 @@ where
         )
     );
 
+    println!("Commit phase time {:?}", now.elapsed());
+
+    let now = std::time::Instant::now();
+
     // PoW phase
     let current_hash = challenger.get_hash();
     let pow_witness = timed!(
@@ -57,9 +63,15 @@ where
         fri_proof_of_work::<F, C, D>(current_hash, &fri_params.config)
     );
 
+    println!("pow phase time {:?}", now.elapsed());
+
+    let now = std::time::Instant::now();
+
     // Query phase
     let query_round_proofs =
         fri_prover_query_rounds::<F, C, D>(initial_merkle_trees, &trees, challenger, n, fri_params);
+
+    println!("Query phase time {:?}", now.elapsed());
 
     FriProof {
         commit_phase_merkle_caps: trees.iter().map(|t| t.cap.clone()).collect(),

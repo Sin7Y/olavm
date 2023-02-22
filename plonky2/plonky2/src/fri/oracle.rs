@@ -20,7 +20,7 @@ use crate::iop::challenger::Challenger;
 use crate::plonk::config::{GenericConfig, Hasher};
 use crate::timed;
 use crate::util::reducing::ReducingFactor;
-use crate::util::reverse_bits;
+use crate::util::{reverse_bits, transpose_par};
 use crate::util::timing::TimingTree;
 use crate::util::transpose;
 
@@ -91,6 +91,9 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
 
         let now = std::time::Instant::now();
 
+        #[cfg(feature = "parallel")]
+        let mut leaves = timed!(timing, "transpose LDEs", transpose_par(&lde_values));
+        #[cfg(not(feature = "parallel"))]
         let mut leaves = timed!(timing, "transpose LDEs", transpose(&lde_values));
 
         if polynomials.len() == 76 {
@@ -195,6 +198,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     where
         [(); C::Hasher::HASH_SIZE]:,
     {
+        let now = std::time::Instant::now();
         assert!(D > 1, "Not implemented for D=1.");
         let alpha = challenger.get_extension_challenge::<D>();
         let mut alpha = ReducingFactor::new(alpha);
@@ -237,6 +241,10 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             lde_final_poly.coset_fft(F::coset_shift().into(), None)
         );
 
+        println!("generate final poly {:?}", now.elapsed());
+
+        let now = std::time::Instant::now();
+
         let fri_proof = fri_proof::<F, C, D>(
             &oracles
                 .par_iter()
@@ -249,6 +257,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             timing,
             twiddle_map,
         );
+
+        println!("fri_proof time {:?}", now.elapsed());
 
         fri_proof
     }
