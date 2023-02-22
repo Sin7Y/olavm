@@ -70,10 +70,10 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
 
     let traces = [
         cpu_trace,
-        vec![PolynomialValues::zero(4)],
-        vec![PolynomialValues::zero(4)],
-        vec![PolynomialValues::zero(4)],
-        vec![PolynomialValues::zero(4)],
+        memory_trace,
+        bitwise_trace,
+        cmp_trace,
+        rangecheck_trace,
     ];
     let public_values = PublicValues {};
     (traces, public_values)
