@@ -18,7 +18,7 @@ pub(crate) fn transpose_poly_values<F: Field>(polys: Vec<PolynomialValues<F>>) -
 
 #[cfg(feature = "parallel")]
 pub fn transpose_par<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
-    use maybe_rayon::{MaybeParChunksMut, IndexedParallelIterator, ParallelIterator};
+    use maybe_rayon::{IndexedParallelIterator, MaybeParChunksMut, ParallelIterator};
 
     let l = matrix.len();
     let w = matrix[0].len();
@@ -35,20 +35,22 @@ pub fn transpose_par<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
                 transposed[i].set_len(l);
             }
         }
-        transposed.par_chunks_mut(batch_size).enumerate().for_each(|(i, batch)| {
-            let batch_offset = i * batch_size;
-            for (k, row_buf) in batch.iter_mut().enumerate() {
-                let j = k + batch_offset;
-                for i in 0..l {
-                    (*row_buf)[i] = matrix[i][j];
+        transposed
+            .par_chunks_mut(batch_size)
+            .enumerate()
+            .for_each(|(i, batch)| {
+                let batch_offset = i * batch_size;
+                for (k, row_buf) in batch.iter_mut().enumerate() {
+                    let j = k + batch_offset;
+                    for i in 0..l {
+                        (*row_buf)[i] = matrix[i][j];
+                    }
                 }
-            }
-        });
+            });
         return transposed;
     }
 
     transpose(matrix)
-    
 }
 
 pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {

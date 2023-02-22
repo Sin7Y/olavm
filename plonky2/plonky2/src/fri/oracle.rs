@@ -60,14 +60,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             values.into_par_iter().map(|v| v.ifft()).collect::<Vec<_>>()
         );
 
-        Self::from_coeffs(
-            coeffs,
-            rate_bits,
-            blinding,
-            cap_height,
-            timing,
-            twiddle_map,
-        )
+        Self::from_coeffs(coeffs, rate_bits, blinding, cap_height, timing, twiddle_map)
     }
 
     /// Creates a list polynomial commitment for the polynomials `polynomials`.
@@ -118,14 +111,15 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let salt_size = if blinding { SALT_SIZE } else { 0 };
 
         let twiddles = twiddle_map
-                                            .entry(degree)
-                                    .or_insert_with(|| get_twiddles(degree));
+            .entry(degree)
+            .or_insert_with(|| get_twiddles(degree));
 
         polynomials
             .par_iter()
             .map(|p| {
                 assert_eq!(p.len(), degree, "Polynomial degrees inconsistent");
-                p.coset_fft_with_options(F::coset_shift(), twiddles, 1 << rate_bits).values
+                p.coset_fft_with_options(F::coset_shift(), twiddles, 1 << rate_bits)
+                    .values
             })
             .chain(
                 (0..salt_size)
