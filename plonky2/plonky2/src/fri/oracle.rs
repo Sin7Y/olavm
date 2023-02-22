@@ -106,7 +106,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let merkle_tree = timed!(
             timing,
             "build Merkle tree",
-            MerkleTree::new(leaves, cap_height)
+            // MerkleTree::new(leaves, cap_height)
+            MerkleTree::new1(leaves, cap_height)
         );
 
         if polynomials.len() == 76 {
