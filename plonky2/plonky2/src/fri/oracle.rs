@@ -199,7 +199,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     where
         [(); C::Hasher::HASH_SIZE]:,
     {
-        let now = std::time::Instant::now();
+        // let now = std::time::Instant::now();
         assert!(D > 1, "Not implemented for D=1.");
         let alpha = challenger.get_extension_challenge::<D>();
         let mut alpha = ReducingFactor::new(alpha);
@@ -221,13 +221,36 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             let polys_coeff = polynomials.iter().map(|fri_poly| {
                 &oracles[fri_poly.oracle_index].polynomials[fri_poly.polynomial_index]
             });
+            let now = std::time::Instant::now();
+
             let composition_poly = timed!(
                 timing,
                 &format!("reduce batch of {} polynomials", polynomials.len()),
                 alpha.reduce_polys_base(polys_coeff)
             );
+
+            if instance.oracles[0].num_polys == 76 {
+                println!("composition_poly {:?}", now.elapsed());
+            }
+
+
+            let now = std::time::Instant::now();
+
+
             let quotient = composition_poly.divide_by_linear(*point);
+
+            if instance.oracles[0].num_polys == 76 {
+                println!("divide_by_linear {:?}", now.elapsed());
+            }
+
+            let now = std::time::Instant::now();
+
             alpha.shift_poly(&mut final_poly);
+
+            if instance.oracles[0].num_polys == 76 {
+                println!("shift_poly {:?}", now.elapsed());
+            }
+
             final_poly += quotient;
         }
         // Multiply the final polynomial by `X`, so that `final_poly` has the maximum
@@ -235,15 +258,15 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         // github.com/mir-protocol/plonky2/pull/436 for details.
         final_poly.coeffs.insert(0, F::Extension::ZERO);
 
-        println!("generate final_poly {:?} size: {}", now.elapsed(), final_poly.coeffs.len());
+        // println!("generate final_poly {:?} size: {}", now.elapsed(), final_poly.coeffs.len());
 
-        let now = std::time::Instant::now();
+        // let now = std::time::Instant::now();
 
         let lde_final_poly = final_poly.lde(fri_params.config.rate_bits);
 
-        println!("generate lde_final_poly {:?} size: {}", now.elapsed(), lde_final_poly.coeffs.len());
+        // println!("generate lde_final_poly {:?} size: {}", now.elapsed(), lde_final_poly.coeffs.len());
 
-        let now = std::time::Instant::now();
+        // let now = std::time::Instant::now();
 
         let lde_final_values = timed!(
             timing,
@@ -251,9 +274,9 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             lde_final_poly.coset_fft(F::coset_shift().into(), None)
         );
 
-        println!("generate lde_final_values {:?} size: {}", now.elapsed(), lde_final_values.values.len());
+        // println!("generate lde_final_values {:?} size: {}", now.elapsed(), lde_final_values.values.len());
 
-        let now = std::time::Instant::now();
+        // let now = std::time::Instant::now();
 
         let fri_proof = fri_proof::<F, C, D>(
             &oracles
@@ -268,7 +291,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             twiddle_map,
         );
 
-        println!("fri_proof time {:?}", now.elapsed());
+        // println!("fri_proof time {:?}", now.elapsed());
 
         fri_proof
     }
