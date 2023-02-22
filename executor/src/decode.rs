@@ -119,8 +119,11 @@ pub fn decode_raw_instruction(
                 instruction += &reg1_name;
 
                 instruction += " ";
-                if reg2 != REG_NOT_USED && imm_flag == 1 {
-                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
+
+                // todo：need distinct op1_imm or offset_imm?
+                // if reg2 != REG_NOT_USED && imm_flag == 1 {
+                if reg2 != REG_NOT_USED {
+                        let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
                     instruction += &imm.to_string();
                     step = IMM_INSTRUCTION_LEN;
                 }
@@ -136,11 +139,12 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
                 instruction += " ";
-                if imm_flag == 1 {
+                // todo：need distinct op1_imm or offset_imm?
+                // if imm_flag == 1 {
                     let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
                     instruction += &imm.to_string();
                     step = IMM_INSTRUCTION_LEN;
-                }
+                // }
                 if reg2 == REG_NOT_USED && imm_flag == 0 {
                     panic!("must be a reg or imm");
                 }

@@ -231,7 +231,6 @@ impl Encoder {
                             instuction.push(format!("{:#x}", op1_value.1));
                         } else {
                             if op3_value != 0 {
-                                raw_instruction |= 1 << IMM_FLAG_FIELD_BIT_POSITION;
                                 instuction.push(format!("{:#x}", op3_value));
                             }
                             raw_instruction |= 1 << (op1_value.1 + REG1_FIELD_BIT_POSITION);
@@ -247,7 +246,6 @@ impl Encoder {
                             instuction.push(format!("{:#x}", op2_value.1));
                         } else {
                             if op3_value != 0 {
-                                raw_instruction |= 1 << IMM_FLAG_FIELD_BIT_POSITION;
                                 instuction.push(format!("{:#x}", op3_value));
                             }
                             raw_instruction |= 1 << (op2_value.1 + REG1_FIELD_BIT_POSITION);
