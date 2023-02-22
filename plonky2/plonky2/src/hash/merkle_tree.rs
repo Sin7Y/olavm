@@ -201,6 +201,13 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             }
         );
 
+        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
+            println!("batch_iter_mut time: {:?}", now.elapsed());
+        }
+
+        // TODO: add time
+        let now = std::time::Instant::now();
+
         #[cfg(not(feature = "parallel"))]
         let nodes = build_merkle_nodes::<F, H>(&row_hashes);
 
