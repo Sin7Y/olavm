@@ -7,8 +7,11 @@ use std::{
 #[cfg(feature = "parallel")]
 pub use rayon::prelude::{
     IndexedParallelIterator, ParallelDrainFull, ParallelDrainRange, ParallelExtend,
-    ParallelIterator,
+    ParallelIterator
 };
+#[cfg(feature = "parallel")]
+pub use rayon::{ current_num_threads, scope };
+
 #[cfg(feature = "parallel")]
 use rayon::{
     prelude::*,
