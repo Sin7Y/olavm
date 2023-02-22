@@ -28,7 +28,7 @@ pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTE
 // ┼────────┼────────┼─────────┼────────┼─────────┼
 // │    0   │    0   │    0    │    0   │    0    │
 // ┴────────┴────────┴─────────┴────────┴─────────┴
-pub(crate) const COL_INST: usize = COL_REGS.end + 1;
+pub(crate) const COL_INST: usize = COL_REGS.end;
 pub(crate) const COL_OP1_IMM: usize = COL_INST + 1;
 pub(crate) const COL_OPCODE: usize = COL_OP1_IMM + 1;
 pub(crate) const COL_IMM_VAL: usize = COL_OPCODE + 1;
@@ -110,3 +110,58 @@ pub(crate) const COL_ZIP_EXED: usize = COL_ZIP_RAW + 1;
 pub(crate) const COL_PER_ZIP_RAW: usize = COL_ZIP_EXED + 1;
 pub(crate) const COL_PER_ZIP_EXED: usize = COL_PER_ZIP_RAW + 1;
 pub(crate) const NUM_CPU_COLS: usize = COL_PER_ZIP_EXED + 1;
+
+#[test]
+fn print_cpu_cols() {
+    println!("COL_CLK: {}", COL_CLK);
+    println!("COL_PC: {}", COL_PC);
+    for (index, col) in COL_REGS.into_iter().enumerate() {
+        println!("r{}: {}", index, col);
+    }
+    println!("COL_INST: {}", COL_INST);
+    println!("COL_OP1_IMM: {}", COL_OP1_IMM);
+    println!("COL_OPCODE: {}", COL_OPCODE);
+    println!("COL_IMM_VAL: {}", COL_IMM_VAL);
+    println!("COL_OP0: {}", COL_OP0);
+    println!("COL_OP1: {}", COL_OP1);
+    println!("COL_DST: {}", COL_DST);
+    println!("COL_AUX0: {}", COL_AUX0);
+    println!("COL_AUX1: {}", COL_AUX1);
+    for (index, col) in COL_S_OP0.into_iter().enumerate() {
+        println!("sel_op0_r{}: {}", index, col);
+    }
+    for (index, col) in COL_S_OP1.into_iter().enumerate() {
+        println!("sel_op1_r{}: {}", index, col);
+    }
+    for (index, col) in COL_S_DST.into_iter().enumerate() {
+        println!("sel_dst_r{}: {}", index, col);
+    }
+    println!("COL_S_ADD: {}", COL_S_ADD);
+    println!("COL_S_MUL: {}", COL_S_MUL);
+    println!("COL_S_EQ: {}", COL_S_EQ);
+    println!("COL_S_ASSERT: {}", COL_S_ASSERT);
+    println!("COL_S_MOV: {}", COL_S_MOV);
+    println!("COL_S_JMP: {}", COL_S_JMP);
+    println!("COL_S_CJMP: {}", COL_S_CJMP);
+    println!("COL_S_CALL: {}", COL_S_CALL);
+    println!("COL_S_RET: {}", COL_S_RET);
+    println!("COL_S_MLOAD: {}", COL_S_MLOAD);
+    println!("COL_S_MSTORE: {}", COL_S_MSTORE);
+    println!("COL_S_END: {}", COL_S_END);
+    println!("COL_S_RC: {}", COL_S_RC);
+    println!("COL_S_AND: {}", COL_S_AND);
+    println!("COL_S_OR: {}", COL_S_OR);
+    println!("COL_S_XOR: {}", COL_S_XOR);
+    println!("COL_S_NOT: {}", COL_S_NOT);
+    println!("COL_S_NEQ: {}", COL_S_NEQ);
+    println!("COL_S_GTE: {}", COL_S_GTE);
+    println!("COL_S_PSDN: {}", COL_S_PSDN);
+    println!("COL_S_ECDSA: {}", COL_S_ECDSA);
+    println!("COL_RAW_INST: {}", COL_RAW_INST);
+    println!("COL_RAW_PC: {}", COL_RAW_PC);
+    println!("COL_ZIP_RAW: {}", COL_ZIP_RAW);
+    println!("COL_ZIP_EXED: {}", COL_ZIP_EXED);
+    println!("COL_PER_ZIP_RAW: {}", COL_PER_ZIP_RAW);
+    println!("COL_PER_ZIP_EXED: {}", COL_PER_ZIP_EXED);
+    println!("NUM_CPU_COLS: {}", NUM_CPU_COLS);
+}
