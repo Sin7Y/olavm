@@ -35,6 +35,15 @@ pub fn limb_from_bits_le_recursive<F: RichField + Extendable<D>, const D: usize>
         })
 }
 
+pub fn trace_rows_to_poly_values_new<F: Field, const COLUMNS: usize>(
+    trace_rows: [Vec<F>; COLUMNS],
+) -> Vec<PolynomialValues<F>> {
+    trace_rows
+        .into_iter()
+        .map(|row| PolynomialValues::new(row))
+        .collect()
+}
+
 /// A helper function to transpose a row-wise trace and put it in the format
 /// that `prove` expects.
 pub fn trace_rows_to_poly_values<F: Field, const COLUMNS: usize>(
