@@ -111,8 +111,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
                 trace[index][bitwise::FIX_BITWSIE_OP0] = F::from_canonical_usize(op0);
                 trace[index][bitwise::FIX_BITWSIE_OP1] = F::from_canonical_usize(op1);
                 trace[index][bitwise::FIX_BITWSIE_RES] = F::from_canonical_usize(res_and);
-                trace[index][bitwise::FIX_TAG] =
-                    F::from_canonical_u64((1_u64 << Opcode::AND as u8));
+                trace[index][bitwise::FIX_TAG] = F::from_canonical_u64(1_u64 << Opcode::AND as u8);
 
                 let res_or = op0 | op1;
 
@@ -123,7 +122,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
                 trace[bitwise::BITWISE_U8_SIZE_PER + index][bitwise::FIX_BITWSIE_RES] =
                     F::from_canonical_usize(res_or);
                 trace[bitwise::BITWISE_U8_SIZE_PER + index][bitwise::FIX_TAG] =
-                    F::from_canonical_u64((1_u64 << Opcode::OR as u8));
+                    F::from_canonical_u64(1_u64 << Opcode::OR as u8);
 
                 let res_xor = op0 ^ op1;
 
@@ -134,7 +133,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
                 trace[bitwise::BITWISE_U8_SIZE_PER * 2 + index][bitwise::FIX_BITWSIE_RES] =
                     F::from_canonical_usize(res_xor);
                 trace[bitwise::BITWISE_U8_SIZE_PER * 2 + index][bitwise::FIX_TAG] =
-                    F::from_canonical_u64((1_u64 << Opcode::XOR as u8));
+                    F::from_canonical_u64(1_u64 << Opcode::XOR as u8);
 
                 index += 1;
             }

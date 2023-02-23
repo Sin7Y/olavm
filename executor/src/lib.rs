@@ -739,21 +739,21 @@ impl Process {
                                 GoldilocksField(self.registers[op0_index].0 & op1_value.0 .0);
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::AND as u8);
-                            1<<Opcode::AND as u32
+                            1 << Opcode::AND as u32
                         }
                         "or" => {
                             self.registers[dst_index] =
                                 GoldilocksField(self.registers[op0_index].0 | op1_value.0 .0);
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::OR as u8);
-                            1<<Opcode::OR as u32
+                            1 << Opcode::OR as u32
                         }
                         "xor" => {
                             self.registers[dst_index] =
                                 GoldilocksField(self.registers[op0_index].0 ^ op1_value.0 .0);
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::XOR as u8);
-                            1<<Opcode::XOR as u32
+                            1 << Opcode::XOR as u32
                         }
                         _ => panic!("not match opcode:{}", opcode),
                     };

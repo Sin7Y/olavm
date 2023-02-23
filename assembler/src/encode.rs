@@ -485,36 +485,36 @@ mod tests {
     #[test]
     fn call_test() {
         let asm_codes = "main:
-.LBL0_0:
-  add r8 r8 5
-  mstore [r8,-2] r8
-  mov r0 10
-  mstore [r8,-5] r0
-  mov r0 20
-  mstore [r8,-4] r0
-  mov r0 100
-  mstore [r8,-3] r0
-  mload r1 [r8,-5]
-  mload r2 [r8,-4]
-  call bar
-  mstore [r8,-3] r0
-  mload r0 [r8,-3]
-  add r8 r8 -5
-  end
-bar:
-.LBL1_0:
-  add r8 r8 5
-  mstore [r8,-3] r1
-  mstore [r8,-4] r2
-  mov r1 200
-  mstore [r8,-5] r1
-  mload r1 [r8,-3]
-  mload r2 [r8,-4]
-  add r0 r1 r2
-  mstore [r8,-5] r0
-  mload r0 [r8,-5]
-  add r8 r8 -5
-  ret ";
+                              .LBL0_0:
+                                add r8 r8 5
+                                mstore [r8,-2] r8
+                                mov r0 10
+                                mstore [r8,-5] r0
+                                mov r0 20
+                                mstore [r8,-4] r0
+                                mov r0 100
+                                mstore [r8,-3] r0
+                                mload r1 [r8,-5]
+                                mload r2 [r8,-4]
+                                call bar
+                                mstore [r8,-3] r0
+                                mload r0 [r8,-3]
+                                add r8 r8 -5
+                                end
+                              bar:
+                              .LBL1_0:
+                                add r8 r8 5
+                                mstore [r8,-3] r1
+                                mstore [r8,-4] r2
+                                mov r1 200
+                                mstore [r8,-5] r1
+                                mload r1 [r8,-3]
+                                mload r2 [r8,-4]
+                                add r0 r1 r2
+                                mstore [r8,-5] r0
+                                mload r0 [r8,-5]
+                                add r8 r8 -5
+                                ret ";
 
         let mut encoder: Encoder = Default::default();
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
@@ -526,17 +526,39 @@ bar:
     }
 
     #[test]
+    fn bitwise_test() {
+        let asm_codes = "mov r0 8
+                               mov r1 2
+                               mov r2 3
+                               add r3 r0 r1
+                               mul r4 r3 r2
+                               and r5 r4 r3
+                               or r6 r1 r4
+                               xor r7 r5 r2
+                               or r3 r2 r3
+                               and r4 r4 r3
+                               end";
+
+        let mut encoder: Encoder = Default::default();
+        let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
+        let raw_insts = encoder.assemble_link(asm_codes);
+
+        for item in raw_insts {
+            println!("{}", item);
+        }
+    }
+    #[test]
     fn comparison_test() {
         let asm_codes = "mov r0 8
-    mov r1 2
-    mov r2 3
-    add r3 r0 r1
-    mul r4 r3 r2
-    gte r6 r4 r3
-    cjmp r6 11
-    add r3 r0 r2
-    mul r4 r3 r0
-    end";
+                               mov r1 2
+                               mov r2 3
+                               add r3 r0 r1
+                               mul r4 r3 r2
+                               gte r6 r4 r3
+                               cjmp r6 11
+                               add r3 r0 r2
+                               mul r4 r3 r0
+                               end";
 
         let mut encoder: Encoder = Default::default();
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
@@ -596,6 +618,65 @@ bar:
                               mload r0 [r8,-6]
                               add r8 r8 -9
                               ret";
+
+        let mut encoder: Encoder = Default::default();
+        let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
+
+        let raw_insts = encoder.assemble_link(asm_codes);
+        for item in raw_insts {
+            println!("{}", item);
+        }
+    }
+
+    #[test]
+    fn fibo_loop_encode() {
+        let asm_codes = "main:
+                             .LBL0_0:
+                             add r8 r8 4
+                             mstore [r8,-2] r8
+                             mov r1 10
+                             call fib_non_recursive
+                             add r8 r8 -4
+                             end
+                             fib_non_recursive:
+                             .LBL2_0:
+                             add r8 r8 5
+                             mov r0 r1
+                             mstore [r8,-1] r0
+                             mov r0 0
+                             mstore [r8,-2] r0
+                             mov r0 1
+                             mstore [r8,-3] r0
+                             mov r0 1
+                             mstore [r8,-4] r0
+                             mov r0 2
+                             mstore [r8,-5] r0
+                             jmp .LBL2_1
+                             .LBL2_1:
+                             mload r0 [r8,-5]
+                             mload r1 [r8,-1]
+                             gte r0 r1 r0
+                             cjmp r0 .LBL2_2
+                             jmp .LBL2_4
+                             .LBL2_2:
+                             mload r1 [r8,-2]
+                             mload r2 [r8,-3]
+                             add r0 r1 r2
+                             mstore [r8,-4] r0
+                             mload r0 [r8,-3]
+                             mstore [r8,-2] r0
+                             mload r0 [r8,-4]
+                             mstore [r8,-3] r0
+                             jmp .LBL2_3
+                             .LBL2_3:
+                             mload r1 [r8,-5]
+                             add r0 r1 1
+                             mstore [r8,-5] r0
+                             jmp .LBL2_1
+                             .LBL2_4:
+                             mload r0 [r8,-4]
+                             add r8 r8 -5
+                            ret";
 
         let mut encoder: Encoder = Default::default();
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
