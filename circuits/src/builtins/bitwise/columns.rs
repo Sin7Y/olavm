@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::ops::Range;
 // 2022-12-15: written by xb
 
@@ -74,3 +75,67 @@ pub(crate) const RANGE_CHECK_U8_SIZE: usize = 1 << 8;
 //pub(crate) const BITWISE_U8_SIZE_PER: usize = (1 << 15) + (1 << 7);
 pub(crate) const BITWISE_U8_SIZE_PER: usize = 1 << 16;
 pub(crate) const BITWISE_U8_SIZE: usize = 3 * BITWISE_U8_SIZE_PER;
+
+pub(crate) fn get_bitwise_col_name_map() -> BTreeMap<usize, String> {
+    let mut m: BTreeMap<usize, String> = BTreeMap::new();
+    m.insert(FILTER, String::from("FILTER"));
+    m.insert(TAG, String::from("TAG"));
+    m.insert(OP0, String::from("OP0"));
+    m.insert(OP1, String::from("OP1"));
+    m.insert(RES, String::from("RES"));
+    for (index, col) in OP0_LIMBS.into_iter().enumerate() {
+        let name = format!("OP0_LIMB_{}", index);
+        m.insert(col, name);
+    }
+    for (index, col) in OP1_LIMBS.into_iter().enumerate() {
+        let name = format!("OP1_LIMB_{}", index);
+        m.insert(col, name);
+    }
+    for (index, col) in RES_LIMBS.into_iter().enumerate() {
+        let name = format!("RES_LIMB_{}", index);
+        m.insert(col, name);
+    }
+    for (index, col) in OP0_LIMBS_PERMUTED.into_iter().enumerate() {
+        let name = format!("OP0_LIMB_{}_PERMUTED", index);
+        m.insert(col, name);
+    }
+    for (index, col) in OP1_LIMBS_PERMUTED.into_iter().enumerate() {
+        let name = format!("OP1_LIMB_{}_PERMUTED", index);
+        m.insert(col, name);
+    }
+    for (index, col) in RES_LIMBS_PERMUTED.into_iter().enumerate() {
+        let name = format!("RES_LIMB_{}_PERMUTED", index);
+        m.insert(col, name);
+    }
+    for (index, col) in COMPRESS_LIMBS.into_iter().enumerate() {
+        let name = format!("COMPRESS_LIMB_{}", index);
+        m.insert(col, name);
+    }
+    for (index, col) in COMPRESS_PERMUTED.into_iter().enumerate() {
+        let name = format!("COMPRESS_PERMUTED_{}", index);
+        m.insert(col, name);
+    }
+    m.insert(FIX_RANGE_CHECK_U8, String::from("FIX_RANGE_CHECK_U8"));
+    for (index, col) in FIX_RANGE_CHECK_U8_PERMUTED.into_iter().enumerate() {
+        let name = format!("FIX_RANGE_CHECK_U8_PERMUTED_{}", index);
+        m.insert(col, name);
+    }
+    m.insert(FIX_TAG, String::from("FIX_TAG"));
+    m.insert(FIX_BITWSIE_OP0, String::from("FIX_BITWSIE_OP0"));
+    m.insert(FIX_BITWSIE_OP1, String::from("FIX_BITWSIE_OP1"));
+    m.insert(FIX_BITWSIE_RES, String::from("FIX_BITWSIE_RES"));
+    m.insert(FIX_COMPRESS, String::from("FIX_COMPRESS"));
+    for (index, col) in FIX_COMPRESS_PERMUTED.into_iter().enumerate() {
+        let name = format!("FIX_COMPRESS_PERMUTED_{}", index);
+        m.insert(col, name);
+    }
+    m
+}
+
+#[test]
+fn print_bitwise_cols() {
+    let m = get_bitwise_col_name_map();
+    for (col, name) in m {
+        println!("{}: {}", col, name);
+    }
+}
