@@ -131,19 +131,19 @@ fn bitwise_test() {
     //and r4 r4 r3
     //end
     let program_src = "0x4000000840000000
-        0x8
-        0x4000001040000000
-        0x2
-        0x4000002040000000
-        0x3
-        0x0020204400000000
-        0x0100408200000000
-        0x0200810000200000
-        0x0041020000100000
-        0x0400440000080000
-        0x0080804000100000
-        0x0200808000200000
-        0x0000000000800000";
+                             0x8
+                             0x4000001040000000
+                             0x2
+                             0x4000002040000000
+                             0x3
+                             0x0020204400000000
+                             0x0100408200000000
+                             0x0200810000200000
+                             0x0041020000100000
+                             0x0400440000080000
+                             0x0080804000100000
+                             0x0200808000200000
+                             0x0000000000800000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -179,19 +179,19 @@ fn comparison_test() {
     //mul r4 r3 r0
     //end
     let program_src = "0x4000000840000000
-0x8
-0x4000001040000000
-0x2
-0x4000002040000000
-0x3
-0x0020204400000000
-0x0100408200000000
-0x0200820000010000
-0x4800000010000000
-0xb
-0x0020404400000000
-0x0100108200000000
-0x0000000000800000";
+                             0x8
+                             0x4000001040000000
+                             0x2
+                             0x4000002040000000
+                             0x3
+                             0x0020204400000000
+                             0x0100408200000000
+                             0x0200820000010000
+                             0x4800000010000000
+                             0xb
+                             0x0020404400000000
+                             0x0100108200000000
+                             0x0000000000800000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -323,48 +323,127 @@ fn call_test() {
 }
 
 #[test]
-fn fibo_use_loop_decode_bench() {
-    // mov r0 8
-    // mov r1 1
-    // mov r2 1
-    // mov r3 0
-    // EQ r0 r3
-    // cjmp 24
-    // add r4 r1 r2
-    // mov r1 r2
-    // mov r2 r4
-    // mov r4 1
-    // mov r5 1
-    // mov r6 2
-    // add r6 r6 r5
-    // add r3 r3 r4
-    // jmp 8
-    // end
-    let program_src = "0x4000000840000000
-        0x8
-        0x4000001040000000
-        0x1
-        0x4000002040000000
-        0x1
-        0x4000004040000000
-        0x0
-        0x0020800100000000
-        0x4000000010000000
-        0x18
-        0x0040408400000000
-        0x0000401040000000
-        0x0001002040000000
-        0x4000008040000000
-        0x1
-        0x4000010040000000
-        0x1
-        0x4000020040000000
-        0x2
-        0x0802020400000000
-        0x0101004400000000
-        0x4000000020000000
-        0x8
-        0x0000000000800000";
+fn fibo_use_loop_decode() {
+    // main:
+    //    .LBL0_0:
+    //    add r8 r8 4
+    //    mstore [r8,-2] r8
+    //    mov r1 10
+    //    call fib_non_recursive
+    //    add r8 r8 -4
+    //    end
+    //    fib_non_recursive:
+    //    .LBL2_0:
+    //    add r8 r8 5
+    //    mov r0 r1
+    //    mstore [r8,-1] r0
+    //    mov r0 0
+    //    mstore [r8,-2] r0
+    //    mov r0 1
+    //    mstore [r8,-3] r0
+    //    mov r0 1
+    //    mstore [r8,-4] r0
+    //    mov r0 2
+    //    mstore [r8,-5] r0
+    //    jmp .LBL2_1
+    //    .LBL2_1:
+    //    mload r0 [r8,-5]
+    //    mload r1 [r8,-1]
+    //    gte r0 r1 r0
+    //    cjmp r0 .LBL2_2
+    //    jmp .LBL2_4
+    //    .LBL2_2:
+    //    mload r1 [r8,-2]
+    //    mload r2 [r8,-3]
+    //    add r0 r1 r2
+    //    mstore [r8,-4] r0
+    //    mload r0 [r8,-3]
+    //    mstore [r8,-2] r0
+    //    mload r0 [r8,-4]
+    //    mstore [r8,-3] r0
+    //    jmp .LBL2_3
+    //    .LBL2_3:
+    //    mload r1 [r8,-5]
+    //    add r0 r1 1
+    //    mstore [r8,-5] r0
+    //    jmp .LBL2_1
+    //    .LBL2_4:
+    //    mload r0 [r8,-4]
+    //    add r8 r8 -5
+    //   ret
+    let program_src = "0x6000080400000000
+                             0x4
+                             0x2010000001000000
+                             0xfffffffeffffffff
+                             0x4000001040000000
+                             0xa
+                             0x4000000008000000
+                             0xb
+                             0x6000080400000000
+                             0xfffffffefffffffd
+                             0x0000000000800000
+                             0x6000080400000000
+                             0x5
+                             0x0000200840000000
+                             0x0030000001000000
+                             0xffffffff00000000
+                             0x4000000840000000
+                             0x0
+                             0x0030000001000000
+                             0xfffffffeffffffff
+                             0x4000000840000000
+                             0x1
+                             0x0030000001000000
+                             0xfffffffefffffffe
+                             0x4000000840000000
+                             0x1
+                             0x0030000001000000
+                             0xfffffffefffffffd
+                             0x4000000840000000
+                             0x2
+                             0x0030000001000000
+                             0xfffffffefffffffc
+                             0x4000000020000000
+                             0x22
+                             0x0010000802000000
+                             0xfffffffefffffffc
+                             0x0010001002000000
+                             0xffffffff00000000
+                             0x0040100800010000
+                             0x4020000010000000
+                             0x2b
+                             0x4000000020000000
+                             0x44
+                             0x0010001002000000
+                             0xfffffffeffffffff
+                             0x0010002002000000
+                             0xfffffffefffffffe
+                             0x0040400c00000000
+                             0x0030000001000000
+                             0xfffffffefffffffd
+                             0x0010000802000000
+                             0xfffffffefffffffe
+                             0x0030000001000000
+                             0xfffffffeffffffff
+                             0x0010000802000000
+                             0xfffffffefffffffd
+                             0x0030000001000000
+                             0xfffffffefffffffe
+                             0x4000000020000000
+                             0x3c
+                             0x0010001002000000
+                             0xfffffffefffffffc
+                             0x4040000c00000000
+                             0x1
+                             0x0030000001000000
+                             0xfffffffefffffffc
+                             0x4000000020000000
+                             0x22
+                             0x0010000802000000
+                             0xfffffffefffffffd
+                             0x6000080400000000
+                             0xfffffffefffffffc
+                             0x0000000004000000";
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -442,7 +521,7 @@ fn fibo_recursive() {
     //   ret
     let program_src = "0x6000080400000000
                              0x4
-                             0x6010000001000000
+                             0x2010000001000000
                              0xfffffffeffffffff
                              0x4000001040000000
                              0xa
@@ -453,12 +532,12 @@ fn fibo_recursive() {
                              0x0000000000800000
                              0x6000080400000000
                              0x9
-                             0x6010000001000000
+                             0x2010000001000000
                              0xfffffffeffffffff
                              0x0000200840000000
-                             0x4030000001000000
+                             0x0030000001000000
                              0xfffffffefffffffa
-                             0x4010000802000000
+                             0x0010000802000000
                              0xfffffffefffffffa
                              0x4020020100000000
                              0x1
@@ -471,7 +550,7 @@ fn fibo_recursive() {
                              0x6000080400000000
                              0xfffffffefffffff8
                              0x0000000004000000
-                             0x4010000802000000
+                             0x0010000802000000
                              0xfffffffefffffffa
                              0x4020020100000000
                              0x2
@@ -484,30 +563,30 @@ fn fibo_recursive() {
                              0x6000080400000000
                              0xfffffffefffffff8
                              0x0000000004000000
-                             0x4010000802000000
+                             0x0010000802000000
                              0xfffffffefffffffa
                              0x4020001400000000
                              0xffffffff00000000
                              0x4000000008000000
                              0xb
-                             0x4030000001000000
+                             0x0030000001000000
                              0xfffffffefffffffe
-                             0x4010000802000000
+                             0x0010000802000000
                              0xfffffffefffffffa
                              0x4020000c00000000
                              0xfffffffeffffffff
-                             0x4030000001000000
+                             0x0030000001000000
                              0xfffffffefffffffc
-                             0x4010001002000000
+                             0x0010001002000000
                              0xfffffffefffffffc
                              0x4000000008000000
                              0xb
-                             0x4010001002000000
+                             0x0010001002000000
                              0xfffffffefffffffe
                              0x0040100c00000000
-                             0x4030000001000000
+                             0x0030000001000000
                              0xfffffffefffffffb
-                             0x4010000802000000
+                             0x0010000802000000
                              0xfffffffefffffffb
                              0x6000080400000000
                              0xfffffffefffffff8

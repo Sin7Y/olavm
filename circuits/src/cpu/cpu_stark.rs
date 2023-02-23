@@ -289,9 +289,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         // if instruction is end, we don't need to constrain pc.
         // when cjmp, op0 is binary
         let instruction_size = (P::ONES - lv[COL_S_MLOAD] - lv[COL_S_MSTORE])
-            * (P::ONES
-                + lv[COL_OP1_IMM])
-                + (lv[COL_S_MLOAD] + lv[COL_S_MSTORE]) * (P::ONES + P::ONES);
+            * (P::ONES + lv[COL_OP1_IMM])
+            + (lv[COL_S_MLOAD] + lv[COL_S_MSTORE]) * (P::ONES + P::ONES);
         let pc_incr = (P::ONES - (lv[COL_S_JMP] + lv[COL_S_CJMP] + lv[COL_S_CALL] + lv[COL_S_RET]))
             * (lv[COL_PC] + instruction_size);
         let pc_jmp = lv[COL_S_JMP] * lv[COL_OP1];
