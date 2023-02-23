@@ -412,6 +412,7 @@ pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
 
 mod tests {
     use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
+    use crate::builtins::bitwise::columns::get_bitwise_col_name_map;
     use crate::generation::builtin::{
         generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
     };
@@ -424,6 +425,7 @@ mod tests {
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
+    use std::borrow::Borrow;
 
     #[allow(unused)]
     fn test_bitwise_stark(program_src: &str) {
@@ -483,6 +485,17 @@ mod tests {
             stark.eval_packed_generic(vars, &mut constraint_consumer);
 
             for &acc in &constraint_consumer.constraint_accs {
+                if !acc.eq(&GoldilocksField::ZERO) {
+                    println!("constraint error in line {}", i);
+                    let m = get_bitwise_col_name_map();
+                    println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+                    for col in m.keys() {
+                        let name = m.get(col).unwrap();
+                        let lv = vars.local_values[*col].0;
+                        let nv = vars.next_values[*col].0;
+                        println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+                    }
+                }
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
         }
