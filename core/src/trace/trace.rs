@@ -3,6 +3,7 @@ use crate::program::REGISTER_NUM;
 use crate::utils::split_limbs_from_field;
 use crate::utils::split_u16_limbs_from_field;
 use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::{Field, Field64};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -125,7 +126,6 @@ pub struct Step {
     pub opcode: GoldilocksField,
     pub op1_imm: GoldilocksField,
     pub regs: [GoldilocksField; REGISTER_NUM],
-    pub flag: bool,
     pub register_selector: RegisterSelector,
 }
 
@@ -142,9 +142,7 @@ pub struct RangeCheckRow {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitwiseCombinedRow {
-    // bitwise_tag = {0,1,2} = {AND, OR, XOR}
-    // Identify the bitwise_type in BIT_WISE Fixed Table
-    pub bitwise_tag: u32,
+    pub opcode: u32,
 
     // Lookup with main Trace
     pub op0: GoldilocksField,
@@ -173,17 +171,18 @@ pub struct BitwiseCombinedRow {
 pub struct CmpRow {
     pub op0: GoldilocksField,
     pub op1: GoldilocksField,
-    pub diff: GoldilocksField,
-    pub diff_limb_lo: GoldilocksField,
-    pub diff_limb_hi: GoldilocksField,
-    pub filter_looked_for_range_check: GoldilocksField,
+    pub gte: GoldilocksField,
+    pub abs_diff: GoldilocksField,
+    pub abs_diff_inv: GoldilocksField,
+    pub filter_looking_rc: GoldilocksField,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
     //(inst_asm_str, imm_flag, step, inst_encode, imm_val)
     pub instructions: HashMap<u64, (String, u8, u64, GoldilocksField, GoldilocksField)>,
-    pub raw_instructions: HashMap<u64, Instruction>,
+    // pub raw_instructions: HashMap<u64, Instruction>,
+    pub raw_instructions: HashMap<u64, String>,
     pub raw_binary_instructions: Vec<String>,
     // todo need limit the trace size
     pub exec: Vec<Step>,
@@ -198,24 +197,28 @@ impl Trace {
         &mut self,
         op0: GoldilocksField,
         op1: GoldilocksField,
-        filter_looked_for_range_check: GoldilocksField,
+        value: GoldilocksField,
+        abs_diff: GoldilocksField,
+        filter_looking_rc: GoldilocksField,
     ) {
-        let diff = op0 - op1;
-        let split_limbs = split_u16_limbs_from_field(&diff);
+        let mut abs_diff_inv = GoldilocksField::ZERO;
+        if !abs_diff.is_zero() {
+            abs_diff_inv = abs_diff.inverse();
+        };
 
         self.builtin_cmp.push(CmpRow {
             op0,
             op1,
-            diff,
-            diff_limb_lo: GoldilocksField(split_limbs.0),
-            diff_limb_hi: GoldilocksField(split_limbs.1),
-            filter_looked_for_range_check,
+            gte: value,
+            abs_diff,
+            abs_diff_inv,
+            filter_looking_rc,
         });
     }
 
     pub fn insert_bitwise_combined(
         &mut self,
-        bitwise_tag: u32,
+        opcode: u32,
         op0: GoldilocksField,
         op1: GoldilocksField,
         res: GoldilocksField,
@@ -225,7 +228,7 @@ impl Trace {
         let res_limbs = split_limbs_from_field(&res);
 
         self.builtin_bitwise_combined.push(BitwiseCombinedRow {
-            bitwise_tag,
+            opcode,
             op0,
             op1,
             res,
@@ -272,7 +275,6 @@ impl Trace {
         op1_imm: GoldilocksField,
         opcode: GoldilocksField,
         regs: [GoldilocksField; REGISTER_NUM],
-        flag: bool,
         register_selector: RegisterSelector,
     ) {
         let step = Step {
@@ -280,7 +282,6 @@ impl Trace {
             pc,
             instruction,
             regs,
-            flag,
             immediate_data,
             op1_imm,
             opcode,

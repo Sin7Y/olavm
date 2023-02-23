@@ -1,5 +1,5 @@
+use core::program::instruction::Opcode;
 use core::trace::trace::{BitwiseCombinedRow, CmpRow, RangeCheckRow};
-
 use plonky2::field::types::PrimeField64;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::challenger::Challenger;
@@ -8,6 +8,10 @@ use plonky2::util::transpose;
 
 use crate::builtins::bitwise::columns as bitwise;
 use crate::builtins::cmp::columns as cmp;
+use crate::builtins::cmp::columns::{
+    COL_CMP_ABS_DIFF, COL_CMP_ABS_DIFF_INV, COL_CMP_FILTER_LOOKING_RC, COL_CMP_GTE, COL_CMP_OP0,
+    COL_CMP_OP1,
+};
 use crate::builtins::rangecheck::columns as rangecheck;
 use crate::stark::lookup::permuted_cols;
 
@@ -38,7 +42,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
             let mut row: [F; bitwise::COL_NUM_BITWISE] = [F::default(); bitwise::COL_NUM_BITWISE];
 
             row[bitwise::FILTER] = F::from_canonical_usize(1);
-            row[bitwise::TAG] = F::from_canonical_u32(c.bitwise_tag);
+            row[bitwise::TAG] = F::from_canonical_u32(c.opcode);
             row[bitwise::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
             row[bitwise::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
             row[bitwise::RES] = F::from_canonical_u64(c.res.to_canonical_u64());
@@ -107,7 +111,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
                 trace[index][bitwise::FIX_BITWSIE_OP0] = F::from_canonical_usize(op0);
                 trace[index][bitwise::FIX_BITWSIE_OP1] = F::from_canonical_usize(op1);
                 trace[index][bitwise::FIX_BITWSIE_RES] = F::from_canonical_usize(res_and);
-                trace[index][bitwise::FIX_TAG] = F::from_canonical_usize(0);
+                trace[index][bitwise::FIX_TAG] = F::from_canonical_u64(1_u64 << Opcode::AND as u8);
 
                 let res_or = op0 | op1;
 
@@ -118,7 +122,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
                 trace[bitwise::BITWISE_U8_SIZE_PER + index][bitwise::FIX_BITWSIE_RES] =
                     F::from_canonical_usize(res_or);
                 trace[bitwise::BITWISE_U8_SIZE_PER + index][bitwise::FIX_TAG] =
-                    F::from_canonical_usize(1);
+                    F::from_canonical_u64(1_u64 << Opcode::OR as u8);
 
                 let res_xor = op0 ^ op1;
 
@@ -129,7 +133,7 @@ pub fn generate_builtins_bitwise_trace<F: RichField>(
                 trace[bitwise::BITWISE_U8_SIZE_PER * 2 + index][bitwise::FIX_BITWSIE_RES] =
                     F::from_canonical_usize(res_xor);
                 trace[bitwise::BITWISE_U8_SIZE_PER * 2 + index][bitwise::FIX_TAG] =
-                    F::from_canonical_usize(2);
+                    F::from_canonical_u64(1_u64 << Opcode::XOR as u8);
 
                 index += 1;
             }
@@ -311,59 +315,44 @@ pub fn generate_builtins_cmp_trace<F: RichField>(cells: &[CmpRow]) -> Vec<[F; cm
         .iter()
         .map(|c| {
             let mut row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
-
-            row[cmp::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
-            row[cmp::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
-            row[cmp::DIFF] = F::from_canonical_u64(c.diff.to_canonical_u64());
-            row[cmp::DIFF_LIMB_LO] = F::from_canonical_u64(c.diff_limb_lo.to_canonical_u64());
-            row[cmp::DIFF_LIMB_HI] = F::from_canonical_u64(c.diff_limb_hi.to_canonical_u64());
-            row[cmp::FILTER] =
-                F::from_canonical_u64(c.filter_looked_for_range_check.to_canonical_u64());
-
+            row[COL_CMP_OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
+            row[COL_CMP_OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
+            row[COL_CMP_GTE] = F::from_canonical_u64(c.gte.to_canonical_u64());
+            row[COL_CMP_ABS_DIFF] = F::from_canonical_u64(c.abs_diff.to_canonical_u64());
+            row[COL_CMP_ABS_DIFF_INV] = F::from_canonical_u64(c.abs_diff_inv.to_canonical_u64());
+            row[COL_CMP_FILTER_LOOKING_RC] =
+                F::from_canonical_u64(c.filter_looking_rc.to_canonical_u64());
             row
         })
         .collect();
 
     if trace.is_empty() {
-        let ary = [F::ZERO; cmp::COL_NUM_CMP];
-
-        trace.push(ary);
-        trace.push(ary);
-
-        trace
-    } else {
-        // Pad trace to power of two.
-        // Ensure the max rows number.
-        let trace_len = trace.len();
-
-        let mut new_row_len = trace_len;
-
-        if !trace_len.is_power_of_two() {
-            new_row_len = trace_len.next_power_of_two();
-        }
-
-        new_row_len = new_row_len.max(2);
-
-        // padding for exe trace
-        for _ in trace_len..new_row_len {
-            trace.push([F::ZERO; cmp::COL_NUM_CMP]);
-        }
-
-        trace
+        let mut dummy_row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
+        dummy_row[COL_CMP_OP0] = F::ONE;
+        dummy_row[COL_CMP_GTE] = F::ONE;
+        dummy_row[COL_CMP_ABS_DIFF] = F::ONE;
+        dummy_row[COL_CMP_ABS_DIFF_INV] = F::ONE;
+        trace.push(dummy_row);
     }
-}
 
-pub fn vec_to_ary_cmp<F: RichField>(input: Vec<F>) -> [F; cmp::COL_NUM_CMP] {
-    let mut ary = [F::ZERO; cmp::COL_NUM_CMP];
-
-    ary[cmp::FILTER] = input[cmp::FILTER];
-    ary[cmp::OP0] = input[cmp::OP0];
-    ary[cmp::OP1] = input[cmp::OP1];
-    ary[cmp::DIFF] = input[cmp::DIFF];
-    ary[cmp::DIFF_LIMB_LO] = input[cmp::DIFF_LIMB_LO];
-    ary[cmp::DIFF_LIMB_HI] = input[cmp::DIFF_LIMB_HI];
-
-    ary
+    // Pad trace to power of two.
+    let num_filled_row_len = trace.len();
+    if !num_filled_row_len.is_power_of_two() || num_filled_row_len == 1 {
+        let num_padded_rows = if num_filled_row_len == 1 {
+            2
+        } else {
+            num_filled_row_len.next_power_of_two()
+        };
+        for _ in num_filled_row_len..num_padded_rows {
+            let mut dummy_row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
+            dummy_row[COL_CMP_OP0] = F::ONE;
+            dummy_row[COL_CMP_GTE] = F::ONE;
+            dummy_row[COL_CMP_ABS_DIFF] = F::ONE;
+            dummy_row[COL_CMP_ABS_DIFF_INV] = F::ONE;
+            trace.push(dummy_row);
+        }
+    }
+    trace
 }
 
 pub fn generate_builtins_rangecheck_trace<F: RichField>(

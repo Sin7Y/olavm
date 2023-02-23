@@ -2,6 +2,7 @@ use crate::error::ProcessorError;
 use core::program::instruction::{Opcode, *};
 use log::debug;
 
+const REG_NOT_USED: u8 = 0xff;
 fn parse_hex_str(hex_str: &str) -> Result<u64, ProcessorError> {
     let res = u64::from_str_radix(hex_str, 16);
     match res {
@@ -18,16 +19,16 @@ fn get_index(data: u64) -> u8 {
         }
         i -= 1;
     }
-    0xff
+    REG_NOT_USED
 }
 pub fn decode_raw_instruction(
     raw_inst_str: &str,
     imm_str: &str,
 ) -> Result<(String, u64), ProcessorError> {
     let mut step = NO_IMM_INSTRUCTION_LEN;
+    debug!("raw_inst:{}", raw_inst_str);
     let raw_inst = parse_hex_str(raw_inst_str.trim_start_matches("0x"))?;
     let opcode_index = get_index(raw_inst & OPCODE_FIELD_BITS_MASK);
-    debug!("raw_inst:{}", raw_inst);
 
     if let Ok(op_code) = Opcode::try_from(opcode_index) {
         debug!("op_code:{:?}", op_code);
@@ -42,7 +43,15 @@ pub fn decode_raw_instruction(
 
         let mut instruction = "".to_string();
         match op_code {
-            Opcode::ADD | Opcode::MUL | Opcode::SUB | Opcode::AND | Opcode::OR | Opcode::XOR => {
+            Opcode::ADD
+            | Opcode::MUL
+            | Opcode::SUB
+            | Opcode::AND
+            | Opcode::OR
+            | Opcode::XOR
+            | Opcode::NEQ
+            | Opcode::GTE
+            | Opcode::EQ => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
@@ -60,7 +69,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::EQ | Opcode::ASSERT | Opcode::NEQ | Opcode::GTE => {
+            Opcode::ASSERT | Opcode::CJMP => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg1_name = format!("r{}", reg1);
@@ -75,7 +84,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::MOV | Opcode::MLOAD | Opcode::NOT => {
+            Opcode::MOV | Opcode::NOT => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
@@ -93,19 +102,54 @@ pub fn decode_raw_instruction(
             Opcode::MSTORE => {
                 instruction += &op_code.to_string();
                 instruction += " ";
-                if imm_flag == 1 {
+
+                if reg2 != REG_NOT_USED {
+                    let reg2_name = format!("r{}", reg2);
+                    instruction += &reg2_name;
+                } else if imm_flag == 1 {
                     let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
                     instruction += &imm.to_string();
                     step = IMM_INSTRUCTION_LEN;
                 } else {
+                    panic!("must be a reg or imm");
+                }
+
+                instruction += " ";
+                let reg1_name = format!("r{}", reg1);
+                instruction += &reg1_name;
+
+                instruction += " ";
+
+                // todo：need distinct op1_imm or offset_imm?
+                // if reg2 != REG_NOT_USED && imm_flag == 1 {
+                if reg2 != REG_NOT_USED {
+                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
+                    instruction += &imm.to_string();
+                    step = IMM_INSTRUCTION_LEN;
+                }
+            }
+            Opcode::MLOAD => {
+                instruction += &op_code.to_string();
+                instruction += " ";
+                let reg0_name = format!("r{}", reg0);
+                instruction += &reg0_name;
+                instruction += " ";
+                if reg2 != REG_NOT_USED {
                     let reg2_name = format!("r{}", reg2);
                     instruction += &reg2_name;
                 }
                 instruction += " ";
-                let reg1_name = format!("r{}", reg1);
-                instruction += &reg1_name;
+                // todo：need distinct op1_imm or offset_imm?
+                // if imm_flag == 1 {
+                let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
+                instruction += &imm.to_string();
+                step = IMM_INSTRUCTION_LEN;
+                // }
+                if reg2 == REG_NOT_USED && imm_flag == 0 {
+                    panic!("must be a reg or imm");
+                }
             }
-            Opcode::JMP | Opcode::CJMP | Opcode::CALL | Opcode::RC => {
+            Opcode::JMP | Opcode::CALL | Opcode::RC => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 if imm_flag == 1 {
