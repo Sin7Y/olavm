@@ -220,13 +220,7 @@ pub fn generate_cpu_trace<F: RichField>(
     } else {
         trace_len
     };
-    let mut trace: Vec<Vec<F>> = vec![vec![]; cpu::NUM_CPU_COLS];
-    for i in 0..cpu::NUM_CPU_COLS {
-        trace[i].reserve_exact(ext_trace_len);
-        unsafe {
-            trace[i].set_len(ext_trace_len);
-        }
-    }
+    let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; ext_trace_len]; cpu::NUM_CPU_COLS];
     for (i, (s, r)) in steps.iter().zip(raw_insts.iter()).enumerate() {
         // Context related columns.
         trace[cpu::COL_CLK][i] = F::from_canonical_u32(s.clk);
