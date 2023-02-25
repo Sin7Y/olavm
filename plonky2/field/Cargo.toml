@@ -19,3 +19,4 @@ serde = { version = "1.0", features = ["derive"] }
 unroll = "0.1.5"
 static_assertions = "1.1.0"
 rayon = { version = "1.5.3", optional = true }
+maybe_rayon = { path = "../maybe_rayon" }
