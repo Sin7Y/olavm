@@ -277,3 +277,11 @@ where
 {
     (oper_a(), oper_b())
 }
+
+pub fn current_num_threads() -> usize {
+    #[cfg(feature = "parallel")]
+    return rayon::current_num_threads();
+
+    #[cfg(not(feature = "parallel"))]
+    1
+}
