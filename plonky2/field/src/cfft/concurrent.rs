@@ -1,8 +1,5 @@
-use maybe_rayon::current_num_threads;
+use maybe_rayon::{current_num_threads, MaybeParChunks, IndexedParallelIterator, MaybeParChunksMut, ParallelIterator, MaybeParIterMut};
 use plonky2_util::log2_strict;
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
-
 
 use crate::types::Field;
 
@@ -75,7 +72,7 @@ pub fn permute<F: Field>(v: &mut [F]) {
     let n = v.len();
     let num_batches = current_num_threads().next_power_of_two();
     let batch_size = n / num_batches;
-    rayon::scope(|s| {
+    maybe_rayon::scope(|s| {
         for batch_idx in 0..num_batches {
             // create another mutable reference to the slice of values to use in a new
             // thread; this is OK because we never write the same positions in
