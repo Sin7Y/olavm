@@ -3,7 +3,7 @@ use std::{
     iter::{FlatMap, IntoIterator, Iterator},
     slice::{Chunks, ChunksExact, ChunksExactMut, ChunksMut},
 };
-
+#[cfg(feature = "parallel")]
 use rayon::Scope;
 #[cfg(feature = "parallel")]
 pub use rayon::prelude::{
@@ -298,10 +298,10 @@ where
 
 // TODO: implement scope for sequential
 #[cfg(not(feature = "parallel"))]
-pub fn scope<'scope, OP, R>(op: OP) -> R
+pub fn scope<OP, R>(op: OP)
 where
-    OP: FnOnce(&Scope<'scope>) -> R + Send,
+    OP: FnOnce() -> R + Send,
     R: Send,
 {
-    None
+
 }
