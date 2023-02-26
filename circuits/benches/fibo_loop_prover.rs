@@ -19,17 +19,16 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
     let (traces, public_values) = generate_traces(&program, &mut ola_stark);
     let config = StarkConfig::standard_fast_config();
 
-    let proof = prove_with_traces::<F, C, D>(
+    let _ = prove_with_traces::<F, C, D>(
         &ola_stark,
         &config,
         traces,
         public_values,
         &mut TimingTree::default(),
-    )
-    .unwrap();
-    let mut buffer = Buffer::new(Vec::new());
-    buffer.write_all_proof(&proof).unwrap();
-    println!("proof_size: {}", buffer.bytes().len());
+    );
+    // let mut buffer = Buffer::new(Vec::new());
+    // buffer.write_all_proof(&proof).unwrap();
+    // println!("proof_size: {}", buffer.bytes().len());
 }
 
 fn fibo_loop_prover_benchmark(c: &mut Criterion) {
@@ -40,26 +39,21 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
     // 0x5d00, 0xb800, 0x17200
     let program_src = format!(
         "0x4000000840000000
-        0x5d00
+        0x172
         0x4000001040000000
         0x1
         0x4000002040000000
         0x1
         0x4000004040000000
         0x0
-        0x0020800100000000
-        0x4000000010000000
-        0x18
+        0x0020810100000000
+        0x4400000010000000
+        0x13
         0x0040408400000000
         0x0000401040000000
         0x0001002040000000
         0x4000008040000000
         0x1
-        0x4000010040000000
-        0x1
-        0x4000020040000000
-        0x2
-        0x0802020400000000
         0x0101004400000000
         0x4000000020000000
         0x8
