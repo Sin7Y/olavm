@@ -79,9 +79,9 @@ A few general notes on performance:
 
 Software:
 
-- Support the fastest hash algorithm, [Blake3 Hash](https://github.com/BLAKE3-team/BLAKE3-specs/blob/master/blake3.pdf)
-- Support [parallel FFT](https://github.com/facebook/winterfell/tree/main/math/src/fft)
-- Support [parallel polynomial evaluation](https://github.com/facebook/winterfell/tree/main/math/src/fft)
+- Support the fastest hash algorithm, [Blake3 Hash](https://github.com/BLAKE3-team/BLAKE3-specs/blob/master/blake3.pdf) $\color{Green}{Done}$
+- Support [parallel FFT](https://github.com/facebook/winterfell/tree/main/math/src/fft) $\color{Green}{Done}$
+- Support [parallel polynomial evaluation](https://github.com/facebook/winterfell/tree/main/math/src/fft) $\color{Green}{Done}$
 - Support parallel proof
 
 Hardware:
