@@ -39,7 +39,7 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
     // 0x5d00, 0xb800, 0x17200
     let program_src = format!(
         "0x4000000840000000
-        0x172
+        0x17200
         0x4000001040000000
         0x1
         0x4000002040000000
