@@ -3,7 +3,8 @@ use std::{
     iter::{FlatMap, IntoIterator, Iterator},
     slice::{Chunks, ChunksExact, ChunksExactMut, ChunksMut},
 };
-
+#[cfg(feature = "parallel")]
+use rayon::Scope;
 #[cfg(feature = "parallel")]
 pub use rayon::prelude::{
     IndexedParallelIterator, ParallelDrainFull, ParallelDrainRange, ParallelExtend,
@@ -276,4 +277,31 @@ where
     B: FnOnce() -> RB,
 {
     (oper_a(), oper_b())
+}
+
+pub fn current_num_threads() -> usize {
+    #[cfg(feature = "parallel")]
+    return rayon::current_num_threads();
+
+    #[cfg(not(feature = "parallel"))]
+    1
+}
+
+#[cfg(feature = "parallel")]
+pub fn scope<'scope, OP, R>(op: OP) -> R
+where
+    OP: FnOnce(&Scope<'scope>) -> R + Send,
+    R: Send,
+{
+    rayon::scope(op)
+}
+
+// TODO: implement scope for sequential
+#[cfg(not(feature = "parallel"))]
+pub fn scope<OP, R>(op: OP)
+where
+    OP: FnOnce() -> R + Send,
+    R: Send,
+{
+
 }

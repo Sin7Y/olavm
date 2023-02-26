@@ -67,6 +67,14 @@ pub trait Hasher<F: RichField>: Sized + Clone + Debug + Eq + PartialEq {
     }
 
     fn two_to_one(left: Self::Hash, right: Self::Hash) -> Self::Hash;
+
+    fn zero_hash() -> Self::Hash
+    where
+        [(); Self::HASH_SIZE]:
+    {
+        let zeros = [0_u8; Self::HASH_SIZE];
+        Self::Hash::from_bytes(&zeros)
+    }
 }
 
 /// Trait for algebraic hash functions, built from a permutation using the

@@ -58,7 +58,7 @@ where
     [(); H::HASH_SIZE]:,
 {
     let mut index = leaf_index;
-    let mut current_digest = H::hash_or_noop(&leaf_data);
+    let mut current_digest = H::hash_no_pad(&leaf_data);
     for &sibling_digest in proof.siblings.iter() {
         let bit = index & 1;
         index >>= 1;

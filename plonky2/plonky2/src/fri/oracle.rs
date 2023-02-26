@@ -1,9 +1,10 @@
+use std::borrow::BorrowMut;
 use std::collections::BTreeMap;
 
 use itertools::Itertools;
 use maybe_rayon::*;
 use plonky2_field::cfft::get_twiddles;
-use plonky2_field::extension::Extendable;
+use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::fft::FftRootTable;
 use plonky2_field::packed::PackedField;
 use plonky2_field::polynomial::{PolynomialCoeffs, PolynomialValues};
@@ -94,7 +95,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let merkle_tree = timed!(
             timing,
             "build Merkle tree",
-            MerkleTree::new(leaves, cap_height)
+            MerkleTree::new_v2(leaves, cap_height)
         );
 
         Self {
@@ -184,7 +185,6 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     {
         assert!(D > 1, "Not implemented for D=1.");
         let alpha = challenger.get_extension_challenge::<D>();
-        let mut alpha = ReducingFactor::new(alpha);
 
         // Final low-degree polynomial that goes into FRI.
         let mut final_poly = PolynomialCoeffs::empty();
@@ -200,16 +200,18 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         // `FRI_ORACLES` in `plonky2/src/plonk/plonk_common.rs`.
         for FriBatchInfo { point, polynomials } in &instance.batches {
             // Collect the coefficients of all the polynomials in `polynomials`.
-            let polys_coeff = polynomials.iter().map(|fri_poly| {
+            let polys_coeffs: Vec<&PolynomialCoeffs<F>> = polynomials.iter().map(|fri_poly| {
                 &oracles[fri_poly.oracle_index].polynomials[fri_poly.polynomial_index]
-            });
-            let composition_poly = timed!(
-                timing,
-                &format!("reduce batch of {} polynomials", polynomials.len()),
-                alpha.reduce_polys_base(polys_coeff)
-            );
+            }).collect();
+            
+            let poly_len = polys_coeffs.len();
+            let alphas: Vec<<F as Extendable<D>>::Extension> = alpha.powers().take(poly_len).collect();
+
+            let composition_poly: PolynomialCoeffs<<F as Extendable<D>>::Extension> = alphas.into_par_iter().enumerate().map(|(i, a)| {
+                polys_coeffs[i].mul_extension(a)
+            }).sum();
             let quotient = composition_poly.divide_by_linear(*point);
-            alpha.shift_poly(&mut final_poly);
+            (*final_poly.borrow_mut()) *= alpha.exp_u64(poly_len as u64);
             final_poly += quotient;
         }
         // Multiply the final polynomial by `X`, so that `final_poly` has the maximum
