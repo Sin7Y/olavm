@@ -195,7 +195,7 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
                     for (j, value) in (0..leaves[0].len()).into_iter().zip(row_buf.iter_mut()) {
                         *value = leaves[row_idx][j];
                     }
-                    *row_hash = H::hash_or_noop(&row_buf);
+                    *row_hash = H::hash_no_pad(&row_buf);
                 }
             }
         );
