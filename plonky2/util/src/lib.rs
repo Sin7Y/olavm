@@ -280,6 +280,44 @@ pub fn branch_hint() {
     }
 }
 
+#[macro_export]
+macro_rules! batch_iter_mut {
+    ($e: expr, $c: expr) => {
+        #[cfg(feature = "parallel")]
+        {
+            let batch_size = $e.len() / current_num_threads().next_power_of_two();
+            if batch_size < 1 {
+                $c($e, 0);
+            }
+            else {
+                $e.par_chunks_mut(batch_size).enumerate().for_each(|(i, batch)| {
+                    $c(batch, i * batch_size);
+                });
+            }
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        $c($e, 0);
+    };
+    ($e: expr, $min_batch_size: expr, $c: expr) => {
+        #[cfg(feature = "parallel")]
+        {
+            let batch_size = $e.len() / current_num_threads().next_power_of_two();
+            if batch_size < $min_batch_size {
+                $c($e, 0);
+            }
+            else {
+                $e.par_chunks_mut(batch_size).enumerate().for_each(|(i, batch)| {
+                    $c(batch, i * batch_size);
+                });
+            }
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        $c($e, 0);
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{log2_ceil, log2_strict};
