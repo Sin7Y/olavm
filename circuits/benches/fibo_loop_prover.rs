@@ -36,10 +36,12 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
         .filter_level(LevelFilter::Info)
         .try_init();
 
-    // 0x5d00, 0xb800, 0x17200
+    // trace_len_factor: 0x5d00(2^18), 0xb800(2^19), 0x17200(2^20)
+    // 0x2e8b0(2^21), 0x5d170(2^22), 0xba2e0(2^23)
+    let trace_len_factor = 0x17200;
     let program_src = format!(
         "0x4000000840000000
-        0x17200
+        {:#x}
         0x4000001040000000
         0x1
         0x4000002040000000
@@ -57,7 +59,8 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
         0x0101004400000000
         0x4000000020000000
         0x8
-        0x0000000000800000"
+        0x0000000000800000",
+        trace_len_factor
     );
 
     let instructions = program_src.split('\n');
