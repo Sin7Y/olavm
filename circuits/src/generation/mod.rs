@@ -33,7 +33,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let cpu_trace = trace_to_poly_values(cpu_rows);
 
     let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-    let memory_trace = trace_rows_to_poly_values(memory_rows);
+    let memory_trace = trace_to_poly_values(memory_rows);
 
     let (bitwise_rows, bitwise_beta) =
         generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
