@@ -413,9 +413,7 @@ pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
 mod tests {
     use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
     use crate::builtins::bitwise::columns::get_bitwise_col_name_map;
-    use crate::generation::builtin::{
-        generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
-    };
+    use crate::generation::builtin::{generate_bitwise_trace, generate_cmp_trace};
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
@@ -449,7 +447,7 @@ mod tests {
         let _ = process.execute(&mut program);
 
         let (rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+            generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",

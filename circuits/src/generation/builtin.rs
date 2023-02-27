@@ -33,7 +33,7 @@ use crate::stark::lookup::permuted_cols;
 // Extend:
 //      looking_table: <0,1,2,3,4,5,5,5,5,5,5,5,5,5,5,5>
 //      looked_table: <0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15>
-pub fn generate_builtins_bitwise_trace<F: RichField>(
+pub fn generate_bitwise_trace<F: RichField>(
     cells: &[BitwiseCombinedRow],
 ) -> ([Vec<F>; bitwise::COL_NUM_BITWISE], F) {
     if cells.is_empty() {
@@ -292,7 +292,7 @@ pub fn vec_to_ary_bitwise<F: RichField>(input: Vec<F>) -> [F; bitwise::COL_NUM_B
     ary
 }
 
-pub fn generate_builtins_cmp_trace<F: RichField>(cells: &[CmpRow]) -> [Vec<F>; cmp::COL_NUM_CMP] {
+pub fn generate_cmp_trace<F: RichField>(cells: &[CmpRow]) -> [Vec<F>; cmp::COL_NUM_CMP] {
     let trace_len = cells.len();
     let ext_trace_len = if !trace_len.is_power_of_two() || trace_len < 2 {
         if trace_len < 2 {
@@ -333,7 +333,7 @@ pub fn generate_builtins_cmp_trace<F: RichField>(cells: &[CmpRow]) -> [Vec<F>; c
     })
 }
 
-pub fn generate_builtins_rangecheck_trace<F: RichField>(
+pub fn generate_rc_trace<F: RichField>(
     cells: &[RangeCheckRow],
 ) -> [Vec<F>; rangecheck::COL_NUM_RC] {
     if cells.is_empty() {

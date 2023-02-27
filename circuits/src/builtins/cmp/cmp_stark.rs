@@ -100,7 +100,7 @@ pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
 mod tests {
     use crate::builtins::cmp::cmp_stark::CmpStark;
     use crate::builtins::cmp::columns::*;
-    use crate::generation::builtin::generate_builtins_cmp_trace;
+    use crate::generation::builtin::generate_cmp_trace;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
@@ -132,7 +132,7 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let rows = generate_cmp_trace(&program.trace.builtin_cmp);
         let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",
