@@ -725,26 +725,79 @@ mod tests {
 
     #[test]
     fn test_fibo_use_loop() {
-        let program_src = "0x4000000840000000
-        0x8
-        0x4000001040000000
-        0x1
-        0x4000002040000000
-        0x1
-        0x4000004040000000
-        0x0
-        0x0020800100000000
-        0x4000000010000000
-        0x13
-        0x0040408400000000
-        0x0000401040000000
-        0x0001002040000000
-        0x4000008040000000
-        0x1
-        0x0101004400000000
-        0x4000000020000000
-        0x8
-        0x0000000000800000";
+        let program_src = "0x6000080400000000
+                             0x4
+                             0x2010000001000000
+                             0xfffffffeffffffff
+                             0x4000001040000000
+                             0xa
+                             0x4000000008000000
+                             0xb
+                             0x6000080400000000
+                             0xfffffffefffffffd
+                             0x0000000000800000
+                             0x6000080400000000
+                             0x5
+                             0x0000200840000000
+                             0x0030000001000000
+                             0xffffffff00000000
+                             0x4000000840000000
+                             0x0
+                             0x0030000001000000
+                             0xfffffffeffffffff
+                             0x4000000840000000
+                             0x1
+                             0x0030000001000000
+                             0xfffffffefffffffe
+                             0x4000000840000000
+                             0x1
+                             0x0030000001000000
+                             0xfffffffefffffffd
+                             0x4000000840000000
+                             0x2
+                             0x0030000001000000
+                             0xfffffffefffffffc
+                             0x4000000020000000
+                             0x22
+                             0x0010000802000000
+                             0xfffffffefffffffc
+                             0x0010001002000000
+                             0xffffffff00000000
+                             0x0040100800010000
+                             0x4020000010000000
+                             0x2b
+                             0x4000000020000000
+                             0x44
+                             0x0010001002000000
+                             0xfffffffeffffffff
+                             0x0010002002000000
+                             0xfffffffefffffffe
+                             0x0040400c00000000
+                             0x0030000001000000
+                             0xfffffffefffffffd
+                             0x0010000802000000
+                             0xfffffffefffffffe
+                             0x0030000001000000
+                             0xfffffffeffffffff
+                             0x0010000802000000
+                             0xfffffffefffffffd
+                             0x0030000001000000
+                             0xfffffffefffffffe
+                             0x4000000020000000
+                             0x3c
+                             0x0010001002000000
+                             0xfffffffefffffffc
+                             0x4040000c00000000
+                             0x1
+                             0x0030000001000000
+                             0xfffffffefffffffc
+                             0x4000000020000000
+                             0x22
+                             0x0010000802000000
+                             0xfffffffefffffffd
+                             0x6000080400000000
+                             0xfffffffefffffffc
+                             0x0000000004000000";
 
         test_cpu_stark(program_src);
     }
@@ -753,57 +806,86 @@ mod tests {
     fn test_memory() {
         let program_src = "0x6000080400000000
 0x4
-0x2010000001000000
-0xfffffffeffffffff
-0x4000001040000000
+0x4000008040000000
+0x64
+0x0210000001000000
+0xfffffffefffffffe
+0x4000008040000000
 0x1
-0x4000000008000000
-0xb
+0x0210000001000000
+0xfffffffeffffffff
+0x4000008040000000
+0x2
+0x0210000001000000
+0xffffffff00000000
+0x0010008002000000
+0xfffffffefffffffe
+0x0010001002000000
+0xfffffffeffffffff
+0x0010000802000000
+0xffffffff00000000
+0x0200208400000000
+0x0200108200000000
 0x6000080400000000
 0xfffffffefffffffd
-0x0000000000800000
-0x0000200840000000
-0x4000040040000000
-0x1
-0x1000100800010000
-0x4020000010000000
-0x13
-0x4000000020000000
-0x16
-0x4000000840000000
-0x2
-0x0000000004000000
-0x4000000840000000
-0x3
-0x0000000004000000";
+0x0000000000800000";
 
         test_cpu_stark(program_src);
     }
 
     #[test]
     fn test_call() {
-        let program_src = "0x4000000020000000
-            0x7
-        0x4020008200000000
-        0xa
-        0x0200208400000000
-        0x0001000840000000
-        0x0000000004000000
-        0x4000000840000000
-        0x8
-        0x4000001040000000
-        0x2
-        0x4000080040000000
-        0x100010000
-        0x6000040400000000
-        0xfffffffeffffffff
-        0x4000020040000000
-        0x100000000
-        0x0808000001000000
-        0x4000000008000000
-        0x2
-        0x0020200c00000000
-        0x0000000000800000";
+        let program_src = "0x6000080400000000
+                             0x5
+                             0x2010000001000000
+                             0xfffffffeffffffff
+                             0x4000000840000000
+                             0xa
+                             0x0030000001000000
+                             0xfffffffefffffffc
+                             0x4000000840000000
+                             0x14
+                             0x0030000001000000
+                             0xfffffffefffffffd
+                             0x4000000840000000
+                             0x64
+                             0x0030000001000000
+                             0xfffffffefffffffe
+                             0x0010001002000000
+                             0xfffffffefffffffc
+                             0x0010002002000000
+                             0xfffffffefffffffd
+                             0x4000000008000000
+                             0x1d
+                             0x0030000001000000
+                             0xfffffffefffffffe
+                             0x0010000802000000
+                             0xfffffffefffffffe
+                             0x6000080400000000
+                             0xfffffffefffffffc
+                             0x0000000000800000
+                             0x6000080400000000
+                             0x5
+                             0x0050000001000000
+                             0xfffffffefffffffe
+                             0x0090000001000000
+                             0xfffffffefffffffd
+                             0x4000001040000000
+                             0xc8
+                             0x0050000001000000
+                             0xfffffffefffffffc
+                             0x0010001002000000
+                             0xfffffffefffffffe
+                             0x0010002002000000
+                             0xfffffffefffffffd
+                             0x0040400c00000000
+                             0x0030000001000000
+                             0xfffffffefffffffc
+                             0x0010000802000000
+                             0xfffffffefffffffc
+                             0x6000080400000000
+                             0xfffffffefffffffc
+                             0x0000000004000000";
 
         test_cpu_stark(program_src);
     }

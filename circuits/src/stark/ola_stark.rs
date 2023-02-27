@@ -314,6 +314,8 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
 
 #[allow(unused_imports)]
 mod tests {
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
     use crate::generation::builtin::{
         generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
         generate_builtins_rangecheck_trace,
@@ -348,112 +350,18 @@ mod tests {
     type S = dyn Stark<F, D>;
 
     #[test]
-    fn add_mul_decode() -> Result<()> {
-        //mov r0 8
-        //mov r1 2
-        //mov r2 3
-        //add r3 r0 r1
-        //mul r4 r3 r2
-        //end
-        let program_src = "0x4000000840000000
-            0x8
-            0x4000001040000000
-            0x2
-            0x4000002040000000
-            0x3
-            0x0020204400000000
-            0x0100408200000000
-            0x0000000000800000";
+    fn fibo_recursive_decode() -> Result<()> {
+        let file = File::open("../assembler/testdata/fib_recursive.bin").unwrap();
+        let mut instructions = BufReader::new(file).lines();
 
-        let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
         debug!("instructions:{:?}", program.instructions);
 
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
-        let config = StarkConfig::standard_fast_config();
-
-        let start = Instant::now();
-        let _proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces.clone(),
-            public_values.clone(),
-            &mut TimingTree::default(),
-        )?;
-        let duration = start.elapsed();
-        println!("Time elapsed in prove_with_traces() is: {:?}", duration);
-
-        // let mut buffer = Buffer::new(Vec::new());
-        // buffer.write_all_proof(&proof)?;
-
-        // println!("serialized cpu stark proof size: {}", buffer.len());
-        // // println!("serialized bytes: {:?}", buffer.bytes());
-
-        // let mut de_buffer = Buffer::new(buffer.bytes());
-        // let de_proof = de_buffer.read_all_proof::<F, C, D>()?;
-        // // println!("deserialized_proof: {:?}", de_proof);
-
-        // let ola_stark = AllStark::default();
-        // verify_proof(ola_stark, de_proof, &config)
-        Ok(())
-    }
-
-    #[test]
-    fn fibo_use_loop_decode() -> Result<()> {
-        // mov r0 8
-        // mov r1 1
-        // mov r2 1
-        // mov r3 0
-        // EQ r5 r0 r3
-        // cjmp r5 19
-        // add r4 r1 r2
-        // mov r1 r2
-        // mov r2 r4
-        // mov r4 1
-        // add r3 r3 r4
-        // jmp 8
-        // end
-        let program_src = "0x4000000840000000
-            0x5d0
-            0x4000001040000000
-            0x1
-            0x4000002040000000
-            0x1
-            0x4000004040000000
-            0x0
-            0x0020810100000000
-            0x4400000010000000
-            0x13
-            0x0040408400000000
-            0x0000401040000000
-            0x0001002040000000
-            0x4000008040000000
-            0x1
-            0x0101004400000000
-            0x4000000020000000
-            0x8
-            0x0000000000800000";
-
-        let instructions = program_src.split('\n');
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+        for inst in instructions {
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
@@ -476,36 +384,8 @@ mod tests {
 
     #[test]
     fn memory_test() -> Result<()> {
-        // mov r0 8
-        // mstore  0x100 r0
-        // mov r1 2
-        // mstore  0x200 r1
-        // mov r0 20
-        // mload r1 0x100
-        // mload r2 0x200
-        // mload r3 0x200
-        // add r0 r1 r1
-        // end
-        let program_src = "0x4000000840000000
-                            0x8
-                            0x4020000001000000
-                            0x100
-                            0x4000001040000000
-                            0x2
-                            0x4040000001000000
-                            0x200
-                            0x4000000840000000
-                            0x14
-                            0x4000001002000000
-                            0x100
-                            0x4000002002000000
-                            0x200
-                            0x4000004002000000
-                            0x200
-                            0x0040200c00000000
-                            0x0000000000800000";
-
-        let instructions = program_src.split('\n');
+        let file = File::open("../assembler/testdata/memory.bin").unwrap();
+        let mut instructions = BufReader::new(file).lines();
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
@@ -513,7 +393,7 @@ mod tests {
         debug!("instructions:{:?}", program.instructions);
 
         for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
@@ -535,44 +415,9 @@ mod tests {
 
     #[test]
     fn call_test() -> Result<()> {
-        //JMP 7
-        //MUL r4 r0 10
-        //ADD r4 r4 r1
-        //MOV r0 r4
-        //RET
-        //MOV r0 8
-        //MOV r1 2
-        //mov r8 0x100010000
-        //add r7 r8 -2
-        //mov r6 0x100000000
-        //mstore r7 r6
-        //CALL 2
-        //ADD r0 r0 r1
-        //END
-        let program_src = "0x4000000020000000
-                                0x7
-                            0x4020008200000000
-                            0xa
-                            0x0200208400000000
-                            0x0001000840000000
-                            0x0000000004000000
-                            0x4000000840000000
-                            0x8
-                            0x4000001040000000
-                            0x2
-                            0x4000080040000000
-                            0x100010000
-                            0x6000040400000000
-                            0xfffffffeffffffff
-                            0x4000020040000000
-                            0x100000000
-                            0x0808000001000000
-                            0x4000000008000000
-                            0x2
-                            0x0020200c00000000
-                            0x0000000000800000";
+        let file = File::open("../assembler/testdata/call.bin").unwrap();
+        let mut instructions = BufReader::new(file).lines();
 
-        let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
@@ -580,7 +425,7 @@ mod tests {
         debug!("instructions:{:?}", program.instructions);
 
         for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
@@ -602,33 +447,17 @@ mod tests {
 
     #[test]
     fn range_check_test() -> Result<()> {
-        //mov r0 8
-        //mov r1 2
-        //mov r2 3
-        //add r3 r0 r1
-        //mul r4 r3 r2
-        //range_check r4
-        //end
-        let program_src = "0x4000000840000000
-            0x8
-            0x4000001040000000
-            0x2
-            0x4000002040000000
-            0x3
-            0x0020204400000000
-            0x0100408200000000
-            0x0001000000400000
-            0x0000000000800000";
+        let file = File::open("../assembler/testdata/range_check.bin").unwrap();
+        let mut instructions = BufReader::new(file).lines();
 
-        let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
         debug!("instructions:{:?}", program.instructions);
 
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+        for inst in instructions {
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
@@ -650,22 +479,9 @@ mod tests {
 
     #[test]
     fn bitwise_test() -> Result<()> {
-        let program_src = "0x4000000840000000
-0x8
-0x4000001040000000
-0x2
-0x4000002040000000
-0x3
-0x0020204400000000
-0x0100408200000000
-0x0200810000200000
-0x0041020000100000
-0x0400440000080000
-0x0080804000100000
-0x0200808000200000
-0x0000000000800000";
+        let file = File::open("../assembler/testdata/bitwise.bin").unwrap();
+        let mut instructions = BufReader::new(file).lines();
 
-        let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
@@ -673,7 +489,7 @@ mod tests {
         debug!("instructions:{:?}", program.instructions);
 
         for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
@@ -716,33 +532,10 @@ mod tests {
         // .LBL1_2:
         //   mov r0 3
         //   ret
-        let program_src = "0x6000080400000000
-0x4
-0x2010000001000000
-0xfffffffeffffffff
-0x4000001040000000
-0x1
-0x4000000008000000
-0xb
-0x6000080400000000
-0xfffffffefffffffd
-0x0000000000800000
-0x0000200840000000
-0x4000040040000000
-0x1
-0x1000100800010000
-0x4020000010000000
-0x13
-0x4000000020000000
-0x16
-0x4000000840000000
-0x2
-0x0000000004000000
-0x4000000840000000
-0x3
-0x0000000004000000";
 
-        let instructions = program_src.split('\n');
+        let file = File::open("../assembler/testdata/comparison.bin").unwrap();
+        let mut instructions = BufReader::new(file).lines();
+
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
@@ -750,7 +543,7 @@ mod tests {
         debug!("instructions:{:?}", program.instructions);
 
         for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
@@ -772,64 +565,9 @@ mod tests {
 
     #[test]
     fn fibo_use_loop_memory_decode() -> Result<()> {
-        //2 0 mov r0 1
-        //2 2 mov r2 1
-        //2 4 mstore 128 r0
-        //2 6 mstore 135 r0
-        //2 8 mov r0 test_loop
-        //2 10 mov r3 0
-        //1 12 EQ r0 r3
-        //2 13 cjmp 30
-        //2 15 mload  r1  128
-        //1 17 assert r1  r2
-        //2 18 mload  r2  135
-        //1 20 add r4 r1 r2
-        //2 21 mstore 128 r2
-        //2 23 mstore 135 r4
-        //2 25 mov r4 1
-        //1 27 add r3 r3 r4
-        //2 28 jmp 12
-        //1 30 range_check r3
-        //1 31 end
-        let program_src = format!(
-            "0x4000000840000000
-        0x1
-         0x4000002040000000
-        0x1
-        0x4020000001000000
-        0x80
-        0x4020000001000000
-        0x87
-        0x4000000840000000
-        {:#x}
-        0x4000004040000000
-        0x0
-        0x0020800100000000
-        0x4000000010000000
-        0x1e
-        0x4000001002000000
-        0x80
-        0x0040400080000000
-        0x4000002002000000
-        0x87
-        0x0040408400000000
-        0x4080000001000000
-        0x80
-        0x4200000001000000
-        0x87
-        0x4000008040000000
-        0x1
-        0x0101004400000000
-        0x4000000020000000
-        0xc
-        0x0000800000400000
-        0x0000000000800000",
-            8 // 200~300, 0x20000 == 100 w
-        );
+        let file = File::open("../assembler/testdata/fib_loop.bin").unwrap();
+        let mut instructions = BufReader::new(file).lines();
 
-        debug!("program_src:{:?}", program_src);
-
-        let instructions = program_src.split('\n');
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
@@ -837,7 +575,7 @@ mod tests {
         debug!("instructions:{:?}", program.instructions);
 
         for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
