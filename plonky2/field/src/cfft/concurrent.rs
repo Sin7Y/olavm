@@ -1,4 +1,7 @@
-use maybe_rayon::{current_num_threads, MaybeParChunks, IndexedParallelIterator, MaybeParChunksMut, ParallelIterator, MaybeParIterMut};
+use maybe_rayon::{
+    current_num_threads, IndexedParallelIterator, MaybeParChunks, MaybeParChunksMut,
+    MaybeParIterMut, ParallelIterator,
+};
 use plonky2_util::log2_strict;
 
 use crate::types::Field;

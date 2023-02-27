@@ -1,17 +1,20 @@
 use core::slice;
-use maybe_rayon::{MaybeParIterMut, MaybeParIter, IndexedParallelIterator, ParallelIterator, current_num_threads};
+use maybe_rayon::{
+    current_num_threads, IndexedParallelIterator, MaybeParIter, MaybeParIterMut, ParallelIterator,
+};
 use plonky2_field::cfft::uninit_vector;
 
-use crate::{plonk::config::Hasher, hash::hash_types::RichField};
+use crate::{hash::hash_types::RichField, plonk::config::Hasher};
 
 pub const MIN_CONCURRENT_LEAVES: usize = 1024;
 
-/// Builds a all internal nodes of the Merkle using all available threads and stores the
-/// results in a single vector such that root of the tree is at position 1, nodes immediately
-/// under the root is at positions 2 and 3 etc.
+/// Builds a all internal nodes of the Merkle using all available threads and
+/// stores the results in a single vector such that root of the tree is at
+/// position 1, nodes immediately under the root is at positions 2 and 3 etc.
 pub fn build_merkle_nodes<F: RichField, H: Hasher<F>>(leaves: &[H::Hash]) -> Vec<H::Hash>
-where 
-    [(); H::HASH_SIZE]: {
+where
+    [(); H::HASH_SIZE]:,
+{
     let n = leaves.len() / 2;
 
     // create un-initialized array to hold all intermediate nodes
