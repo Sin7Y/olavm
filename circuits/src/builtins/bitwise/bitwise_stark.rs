@@ -450,22 +450,34 @@ mod tests {
 
         let (rows, bitwise_beta) =
             generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",
             program.trace.builtin_cmp.len(),
-            rows.len()
+            len
         );
         stark.set_compress_challenge(bitwise_beta);
-        let last = F::primitive_root_of_unity(log2_strict(rows.len())).inverse();
-        let subgroup = F::cyclic_subgroup_known_order(
-            F::primitive_root_of_unity(log2_strict(rows.len())),
-            rows.len(),
-        );
 
-        for i in 0..rows.len() - 1 {
+        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
+        let subgroup =
+            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
+
+        for i in 0..len - 1 {
+            let local_values = rows
+                .iter()
+                .map(|row| row[i % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
+            let next_values = rows
+                .iter()
+                .map(|row| row[(i + 1) % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
             let vars = StarkEvaluationVars {
-                local_values: &rows[i % rows.len()],
-                next_values: &rows[(i + 1) % rows.len()],
+                local_values: &local_values,
+                next_values: &next_values,
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(

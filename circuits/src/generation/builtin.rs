@@ -35,201 +35,183 @@ use crate::stark::lookup::permuted_cols;
 //      looked_table: <0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15>
 pub fn generate_builtins_bitwise_trace<F: RichField>(
     cells: &[BitwiseCombinedRow],
-) -> (Vec<[F; bitwise::COL_NUM_BITWISE]>, F) {
-    let mut trace: Vec<[F; bitwise::COL_NUM_BITWISE]> = cells
-        .iter()
-        .map(|c| {
-            let mut row: [F; bitwise::COL_NUM_BITWISE] = [F::default(); bitwise::COL_NUM_BITWISE];
-
-            row[bitwise::FILTER] = F::from_canonical_usize(1);
-            row[bitwise::TAG] = F::from_canonical_u32(c.opcode);
-            row[bitwise::OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
-            row[bitwise::OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
-            row[bitwise::RES] = F::from_canonical_u64(c.res.to_canonical_u64());
-
-            row[bitwise::OP0_LIMBS.start] = F::from_canonical_u64(c.op0_0.to_canonical_u64());
-            row[bitwise::OP0_LIMBS.start + 1] = F::from_canonical_u64(c.op0_1.to_canonical_u64());
-            row[bitwise::OP0_LIMBS.start + 2] = F::from_canonical_u64(c.op0_2.to_canonical_u64());
-            row[bitwise::OP0_LIMBS.end] = F::from_canonical_u64(c.op0_3.to_canonical_u64());
-
-            row[bitwise::OP1_LIMBS.start] = F::from_canonical_u64(c.op1_0.to_canonical_u64());
-            row[bitwise::OP1_LIMBS.start + 1] = F::from_canonical_u64(c.op1_1.to_canonical_u64());
-            row[bitwise::OP1_LIMBS.start + 2] = F::from_canonical_u64(c.op1_2.to_canonical_u64());
-            row[bitwise::OP1_LIMBS.end] = F::from_canonical_u64(c.op1_3.to_canonical_u64());
-
-            row[bitwise::RES_LIMBS.start] = F::from_canonical_u64(c.res_0.to_canonical_u64());
-            row[bitwise::RES_LIMBS.start + 1] = F::from_canonical_u64(c.res_1.to_canonical_u64());
-            row[bitwise::RES_LIMBS.start + 2] = F::from_canonical_u64(c.res_2.to_canonical_u64());
-            row[bitwise::RES_LIMBS.end] = F::from_canonical_u64(c.res_3.to_canonical_u64());
-
-            row
-        })
-        .collect();
-
-    if trace.is_empty() {
-        trace.extend([
-            [F::ZERO; bitwise::COL_NUM_BITWISE],
-            [F::ZERO; bitwise::COL_NUM_BITWISE],
-        ]);
-        (trace, F::default())
-    } else {
-        // Ensure the max rows number.
-        let trace_len = trace.len();
-        let max_trace_len = trace_len
-            .max(bitwise::RANGE_CHECK_U8_SIZE)
-            .max(bitwise::BITWISE_U8_SIZE);
-
-        let mut new_row_len = max_trace_len;
-
-        if !max_trace_len.is_power_of_two() {
-            new_row_len = max_trace_len.next_power_of_two();
-        }
-
-        // padding for exe trace
-        //if !max_trace_len.is_power_of_two() {
-        //let new_row_len = max_trace_len.next_power_of_two();
-        //let end_row = trace[trace_len - 1];
-        for _ in trace_len..new_row_len {
-            //let mut new_row = end_row;
-            //new_row[bitwise::FILTER] = F::ZERO;
-            trace.push([F::ZERO; bitwise::COL_NUM_BITWISE]);
-        }
-
-        // add fix bitwise info
-        // for 2^8 case, the row is 2^15 + 2^7
-        // fixed at 2023-1-16, for 2^8 case, row number is 2^16
-        let mut index = 0;
-        for op0 in 0..bitwise::RANGE_CHECK_U8_SIZE {
-            // add fix rangecheck info
-            trace[op0][bitwise::FIX_RANGE_CHECK_U8] = F::from_canonical_usize(op0);
-
-            //for op1 in op0..bitwise::RANGE_CHECK_U8_SIZE {
-            for op1 in 0..bitwise::RANGE_CHECK_U8_SIZE {
-                // exe the AND OPE ration
-                let res_and = op0 & op1;
-
-                trace[index][bitwise::FIX_BITWSIE_OP0] = F::from_canonical_usize(op0);
-                trace[index][bitwise::FIX_BITWSIE_OP1] = F::from_canonical_usize(op1);
-                trace[index][bitwise::FIX_BITWSIE_RES] = F::from_canonical_usize(res_and);
-                trace[index][bitwise::FIX_TAG] = F::from_canonical_u64(1_u64 << Opcode::AND as u8);
-
-                let res_or = op0 | op1;
-
-                trace[bitwise::BITWISE_U8_SIZE_PER + index][bitwise::FIX_BITWSIE_OP0] =
-                    F::from_canonical_usize(op0);
-                trace[bitwise::BITWISE_U8_SIZE_PER + index][bitwise::FIX_BITWSIE_OP1] =
-                    F::from_canonical_usize(op1);
-                trace[bitwise::BITWISE_U8_SIZE_PER + index][bitwise::FIX_BITWSIE_RES] =
-                    F::from_canonical_usize(res_or);
-                trace[bitwise::BITWISE_U8_SIZE_PER + index][bitwise::FIX_TAG] =
-                    F::from_canonical_u64(1_u64 << Opcode::OR as u8);
-
-                let res_xor = op0 ^ op1;
-
-                trace[bitwise::BITWISE_U8_SIZE_PER * 2 + index][bitwise::FIX_BITWSIE_OP0] =
-                    F::from_canonical_usize(op0);
-                trace[bitwise::BITWISE_U8_SIZE_PER * 2 + index][bitwise::FIX_BITWSIE_OP1] =
-                    F::from_canonical_usize(op1);
-                trace[bitwise::BITWISE_U8_SIZE_PER * 2 + index][bitwise::FIX_BITWSIE_RES] =
-                    F::from_canonical_usize(res_xor);
-                trace[bitwise::BITWISE_U8_SIZE_PER * 2 + index][bitwise::FIX_TAG] =
-                    F::from_canonical_u64(1_u64 << Opcode::XOR as u8);
-
-                index += 1;
-            }
-        }
-
-        // TODO: We should choose proper columns for oracle.
-        let mut challenger =
-            Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
-        let mut op0_columns = vec![];
-        let mut op1_columns = vec![];
-        let mut res_columns = vec![];
-        trace.iter().for_each(|row| {
-            op0_columns.extend(row[bitwise::OP0_LIMBS].iter().clone());
-            op1_columns.extend(row[bitwise::OP1_LIMBS].iter().clone());
-            res_columns.extend(row[bitwise::RES_LIMBS].iter().clone());
+) -> ([Vec<F>; bitwise::COL_NUM_BITWISE], F) {
+    if cells.is_empty() {
+        let trace: Vec<Vec<F>> = vec![vec![F::default(); 2]; bitwise::COL_NUM_BITWISE];
+        let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
+            panic!(
+                "Expected a Vec of length {} but it was {}",
+                bitwise::COL_NUM_BITWISE,
+                v.len()
+            )
         });
-        challenger.observe_elements(&[op0_columns, op1_columns, res_columns].concat());
-        let beta = challenger.get_challenge();
-
-        for t in trace.iter_mut().take(max_trace_len) {
-            t[bitwise::COMPRESS_LIMBS.start] = t[bitwise::TAG]
-                + t[bitwise::OP0_LIMBS.start] * beta
-                + t[bitwise::OP1_LIMBS.start] * beta * beta
-                + t[bitwise::RES_LIMBS.start] * beta * beta * beta;
-
-            t[bitwise::COMPRESS_LIMBS.start + 1] = t[bitwise::TAG]
-                + t[bitwise::OP0_LIMBS.start + 1] * beta
-                + t[bitwise::OP1_LIMBS.start + 1] * beta * beta
-                + t[bitwise::RES_LIMBS.start + 1] * beta * beta * beta;
-
-            t[bitwise::COMPRESS_LIMBS.start + 2] = t[bitwise::TAG]
-                + t[bitwise::OP0_LIMBS.start + 2] * beta
-                + t[bitwise::OP1_LIMBS.start + 2] * beta * beta
-                + t[bitwise::RES_LIMBS.start + 2] * beta * beta * beta;
-
-            t[bitwise::COMPRESS_LIMBS.start + 3] = t[bitwise::TAG]
-                + t[bitwise::OP0_LIMBS.start + 3] * beta
-                + t[bitwise::OP1_LIMBS.start + 3] * beta * beta
-                + t[bitwise::RES_LIMBS.start + 3] * beta * beta * beta;
-
-            t[bitwise::FIX_COMPRESS] = t[bitwise::FIX_TAG]
-                + t[bitwise::FIX_BITWSIE_OP0] * beta
-                + t[bitwise::FIX_BITWSIE_OP1] * beta * beta
-                + t[bitwise::FIX_BITWSIE_RES] * beta * beta * beta;
-        }
-
-        // Transpose to column-major form.
-        let trace_row_vecs: Vec<_> = trace.into_iter().map(|row| row.to_vec()).collect();
-        let mut trace_col_vecs = transpose(&trace_row_vecs);
-
-        // add the permutation information
-        for i in 0..4 {
-            // permuted for rangecheck
-            let (permuted_inputs, permuted_table) = permuted_cols(
-                &trace_col_vecs[bitwise::OP0_LIMBS.start + i],
-                &trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8],
-            );
-
-            trace_col_vecs[bitwise::OP0_LIMBS_PERMUTED.start + i] = permuted_inputs;
-            trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + i] = permuted_table;
-
-            let (permuted_inputs, permuted_table) = permuted_cols(
-                &trace_col_vecs[bitwise::OP1_LIMBS.start + i],
-                &trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8],
-            );
-
-            trace_col_vecs[bitwise::OP1_LIMBS_PERMUTED.start + i] = permuted_inputs;
-            trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 4 + i] = permuted_table;
-
-            let (permuted_inputs, permuted_table) = permuted_cols(
-                &trace_col_vecs[bitwise::RES_LIMBS.start + i],
-                &trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8],
-            );
-
-            trace_col_vecs[bitwise::RES_LIMBS_PERMUTED.start + i] = permuted_inputs;
-            trace_col_vecs[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 8 + i] = permuted_table;
-
-            // permutation for bitwise
-            let (permuted_inputs, permuted_table) = permuted_cols(
-                &trace_col_vecs[bitwise::COMPRESS_LIMBS.start + i],
-                &trace_col_vecs[bitwise::FIX_COMPRESS],
-            );
-
-            trace_col_vecs[bitwise::COMPRESS_PERMUTED.start + i] = permuted_inputs;
-            trace_col_vecs[bitwise::FIX_COMPRESS_PERMUTED.start + i] = permuted_table;
-        }
-
-        let final_trace = transpose(&trace_col_vecs);
-
-        let trace_row_vecs: Vec<_> = final_trace
-            .into_iter()
-            .map(|row| vec_to_ary_bitwise(row))
-            .collect();
-
-        (trace_row_vecs, beta)
+        return (trace_row_vecs, F::default());
     }
+
+    // Ensure the max rows number.
+    let trace_len = cells.len();
+    let max_trace_len = trace_len
+        .max(bitwise::RANGE_CHECK_U8_SIZE)
+        .max(bitwise::BITWISE_U8_SIZE);
+
+    let ext_trace_len = if !max_trace_len.is_power_of_two() {
+        max_trace_len.next_power_of_two()
+    } else {
+        max_trace_len
+    };
+
+    let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; ext_trace_len]; bitwise::COL_NUM_BITWISE];
+    for (i, c) in cells.iter().enumerate() {
+        trace[bitwise::FILTER][i] = F::from_canonical_usize(1);
+        trace[bitwise::TAG][i] = F::from_canonical_u32(c.opcode);
+        trace[bitwise::OP0][i] = F::from_canonical_u64(c.op0.to_canonical_u64());
+        trace[bitwise::OP1][i] = F::from_canonical_u64(c.op1.to_canonical_u64());
+        trace[bitwise::RES][i] = F::from_canonical_u64(c.res.to_canonical_u64());
+
+        trace[bitwise::OP0_LIMBS.start][i] = F::from_canonical_u64(c.op0_0.to_canonical_u64());
+        trace[bitwise::OP0_LIMBS.start + 1][i] = F::from_canonical_u64(c.op0_1.to_canonical_u64());
+        trace[bitwise::OP0_LIMBS.start + 2][i] = F::from_canonical_u64(c.op0_2.to_canonical_u64());
+        trace[bitwise::OP0_LIMBS.end][i] = F::from_canonical_u64(c.op0_3.to_canonical_u64());
+
+        trace[bitwise::OP1_LIMBS.start][i] = F::from_canonical_u64(c.op1_0.to_canonical_u64());
+        trace[bitwise::OP1_LIMBS.start + 1][i] = F::from_canonical_u64(c.op1_1.to_canonical_u64());
+        trace[bitwise::OP1_LIMBS.start + 2][i] = F::from_canonical_u64(c.op1_2.to_canonical_u64());
+        trace[bitwise::OP1_LIMBS.end][i] = F::from_canonical_u64(c.op1_3.to_canonical_u64());
+
+        trace[bitwise::RES_LIMBS.start][i] = F::from_canonical_u64(c.res_0.to_canonical_u64());
+        trace[bitwise::RES_LIMBS.start + 1][i] = F::from_canonical_u64(c.res_1.to_canonical_u64());
+        trace[bitwise::RES_LIMBS.start + 2][i] = F::from_canonical_u64(c.res_2.to_canonical_u64());
+        trace[bitwise::RES_LIMBS.end][i] = F::from_canonical_u64(c.res_3.to_canonical_u64());
+    }
+
+    // add fix bitwise info
+    // for 2^8 case, the row is 2^15 + 2^7
+    // fixed at 2023-1-16, for 2^8 case, row number is 2^16
+    let mut index = 0;
+    for op0 in 0..bitwise::RANGE_CHECK_U8_SIZE {
+        // add fix rangecheck info
+        trace[bitwise::FIX_RANGE_CHECK_U8][op0] = F::from_canonical_usize(op0);
+
+        //for op1 in op0..bitwise::RANGE_CHECK_U8_SIZE {
+        for op1 in 0..bitwise::RANGE_CHECK_U8_SIZE {
+            // exe the AND OPE ration
+            let res_and = op0 & op1;
+            trace[bitwise::FIX_BITWSIE_OP0][index] = F::from_canonical_usize(op0);
+            trace[bitwise::FIX_BITWSIE_OP1][index] = F::from_canonical_usize(op1);
+            trace[bitwise::FIX_BITWSIE_RES][index] = F::from_canonical_usize(res_and);
+            trace[bitwise::FIX_TAG][index] = F::from_canonical_u64(1_u64 << Opcode::AND as u8);
+
+            let res_or = op0 | op1;
+            trace[bitwise::FIX_BITWSIE_OP0][bitwise::BITWISE_U8_SIZE_PER + index] =
+                F::from_canonical_usize(op0);
+            trace[bitwise::FIX_BITWSIE_OP1][bitwise::BITWISE_U8_SIZE_PER + index] =
+                F::from_canonical_usize(op1);
+            trace[bitwise::FIX_BITWSIE_RES][bitwise::BITWISE_U8_SIZE_PER + index] =
+                F::from_canonical_usize(res_or);
+            trace[bitwise::FIX_TAG][bitwise::BITWISE_U8_SIZE_PER + index] =
+                F::from_canonical_u64(1_u64 << Opcode::OR as u8);
+
+            let res_xor = op0 ^ op1;
+            trace[bitwise::FIX_BITWSIE_OP0][bitwise::BITWISE_U8_SIZE_PER * 2 + index] =
+                F::from_canonical_usize(op0);
+            trace[bitwise::FIX_BITWSIE_OP1][bitwise::BITWISE_U8_SIZE_PER * 2 + index] =
+                F::from_canonical_usize(op1);
+            trace[bitwise::FIX_BITWSIE_RES][bitwise::BITWISE_U8_SIZE_PER * 2 + index] =
+                F::from_canonical_usize(res_xor);
+            trace[bitwise::FIX_TAG][bitwise::BITWISE_U8_SIZE_PER * 2 + index] =
+                F::from_canonical_u64(1_u64 << Opcode::XOR as u8);
+
+            index += 1;
+        }
+    }
+
+    // TODO: We should choose proper columns for oracle.
+    let mut challenger =
+        Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
+    for i in 0..bitwise::OP0_LIMBS.len() {
+        challenger.observe_elements(&trace[bitwise::OP0_LIMBS.start + i]);
+    }
+    for i in 0..bitwise::OP1_LIMBS.len() {
+        challenger.observe_elements(&trace[bitwise::OP1_LIMBS.start + i]);
+    }
+    for i in 0..bitwise::RES_LIMBS.len() {
+        challenger.observe_elements(&trace[bitwise::RES_LIMBS.start + i]);
+    }
+    let beta = challenger.get_challenge();
+
+    for i in 0..trace[0].len() {
+        trace[bitwise::COMPRESS_LIMBS.start][i] = trace[bitwise::TAG][i]
+            + trace[bitwise::OP0_LIMBS.start][i] * beta
+            + trace[bitwise::OP1_LIMBS.start][i] * beta * beta
+            + trace[bitwise::RES_LIMBS.start][i] * beta * beta * beta;
+
+        trace[bitwise::COMPRESS_LIMBS.start + 1][i] = trace[bitwise::TAG][i]
+            + trace[bitwise::OP0_LIMBS.start + 1][i] * beta
+            + trace[bitwise::OP1_LIMBS.start + 1][i] * beta * beta
+            + trace[bitwise::RES_LIMBS.start + 1][i] * beta * beta * beta;
+
+        trace[bitwise::COMPRESS_LIMBS.start + 2][i] = trace[bitwise::TAG][i]
+            + trace[bitwise::OP0_LIMBS.start + 2][i] * beta
+            + trace[bitwise::OP1_LIMBS.start + 2][i] * beta * beta
+            + trace[bitwise::RES_LIMBS.start + 2][i] * beta * beta * beta;
+
+        trace[bitwise::COMPRESS_LIMBS.start + 3][i] = trace[bitwise::TAG][i]
+            + trace[bitwise::OP0_LIMBS.start + 3][i] * beta
+            + trace[bitwise::OP1_LIMBS.start + 3][i] * beta * beta
+            + trace[bitwise::RES_LIMBS.start + 3][i] * beta * beta * beta;
+
+        trace[bitwise::FIX_COMPRESS][i] = trace[bitwise::FIX_TAG][i]
+            + trace[bitwise::FIX_BITWSIE_OP0][i] * beta
+            + trace[bitwise::FIX_BITWSIE_OP1][i] * beta * beta
+            + trace[bitwise::FIX_BITWSIE_RES][i] * beta * beta * beta;
+    }
+
+    // add the permutation information
+    for i in 0..4 {
+        // permuted for rangecheck
+        let (permuted_inputs, permuted_table) = permuted_cols(
+            &trace[bitwise::OP0_LIMBS.start + i],
+            &trace[bitwise::FIX_RANGE_CHECK_U8],
+        );
+
+        trace[bitwise::OP0_LIMBS_PERMUTED.start + i] = permuted_inputs;
+        trace[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + i] = permuted_table;
+
+        let (permuted_inputs, permuted_table) = permuted_cols(
+            &trace[bitwise::OP1_LIMBS.start + i],
+            &trace[bitwise::FIX_RANGE_CHECK_U8],
+        );
+
+        trace[bitwise::OP1_LIMBS_PERMUTED.start + i] = permuted_inputs;
+        trace[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 4 + i] = permuted_table;
+
+        let (permuted_inputs, permuted_table) = permuted_cols(
+            &trace[bitwise::RES_LIMBS.start + i],
+            &trace[bitwise::FIX_RANGE_CHECK_U8],
+        );
+
+        trace[bitwise::RES_LIMBS_PERMUTED.start + i] = permuted_inputs;
+        trace[bitwise::FIX_RANGE_CHECK_U8_PERMUTED.start + 8 + i] = permuted_table;
+
+        // permutation for bitwise
+        let (permuted_inputs, permuted_table) = permuted_cols(
+            &trace[bitwise::COMPRESS_LIMBS.start + i],
+            &trace[bitwise::FIX_COMPRESS],
+        );
+
+        trace[bitwise::COMPRESS_PERMUTED.start + i] = permuted_inputs;
+        trace[bitwise::FIX_COMPRESS_PERMUTED.start + i] = permuted_table;
+    }
+
+    let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
+        panic!(
+            "Expected a Vec of length {} but it was {}",
+            bitwise::COL_NUM_BITWISE,
+            v.len()
+        )
+    });
+
+    (trace_row_vecs, beta)
 }
 
 pub fn vec_to_ary_bitwise<F: RichField>(input: Vec<F>) -> [F; bitwise::COL_NUM_BITWISE] {
@@ -389,17 +371,17 @@ pub fn generate_builtins_rangecheck_trace<F: RichField>(
         let trace_len = trace.len();
         let max_trace_len = trace_len.max(rangecheck::RANGE_CHECK_U16_SIZE);
 
-        let mut new_row_len = max_trace_len;
+        let mut ext_trace_len = max_trace_len;
 
         if !max_trace_len.is_power_of_two() {
-            new_row_len = max_trace_len.next_power_of_two();
+            ext_trace_len = max_trace_len.next_power_of_two();
         }
 
         // padding for exe trace
         //if !max_trace_len.is_power_of_two() {
-        //let new_row_len = max_trace_len.next_power_of_two();
+        //let ext_trace_len = max_trace_len.next_power_of_two();
         //let end_row = trace[trace_len - 1];
-        for _ in trace_len..new_row_len {
+        for _ in trace_len..ext_trace_len {
             //let mut new_row = end_row;
             //new_row[rangecheck::CPU_FILTER] = F::ZERO;
             //new_row[rangecheck::MEMORY_FILTER] = F::ZERO;
