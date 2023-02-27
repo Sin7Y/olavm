@@ -33,7 +33,9 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     let (cpu_rows, cpu_beta) =
         generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
+    let cpu_trace = cpu_rows.into_iter()
+    .map(|row| PolynomialValues::new(row))
+    .collect();
     let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
     let memory_trace = trace_rows_to_poly_values(memory_rows);
     let (bitwise_rows, bitwise_beta) =
