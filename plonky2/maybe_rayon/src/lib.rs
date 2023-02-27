@@ -1,15 +1,10 @@
-#[cfg(not(feature = "parallel"))]
-use std::{
-    iter::{FlatMap, IntoIterator, Iterator},
-    slice::{Chunks, ChunksExact, ChunksExactMut, ChunksMut},
-};
-#[cfg(feature = "parallel")]
-use rayon::Scope;
 #[cfg(feature = "parallel")]
 pub use rayon::prelude::{
     IndexedParallelIterator, ParallelDrainFull, ParallelDrainRange, ParallelExtend,
     ParallelIterator,
 };
+#[cfg(feature = "parallel")]
+use rayon::Scope;
 #[cfg(feature = "parallel")]
 use rayon::{
     prelude::*,
@@ -17,6 +12,11 @@ use rayon::{
         Chunks as ParChunks, ChunksExact as ParChunksExact, ChunksExactMut as ParChunksExactMut,
         ChunksMut as ParChunksMut, ParallelSlice, ParallelSliceMut,
     },
+};
+#[cfg(not(feature = "parallel"))]
+use std::{
+    iter::{FlatMap, IntoIterator, Iterator},
+    slice::{Chunks, ChunksExact, ChunksExactMut, ChunksMut},
 };
 
 pub trait MaybeParIter<'data> {
@@ -303,5 +303,4 @@ where
     OP: FnOnce() -> R + Send,
     R: Send,
 {
-
 }
