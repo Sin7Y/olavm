@@ -71,7 +71,7 @@ where
 
     for (&i, v) in leaves_indices.iter().zip(leaves_data) {
         // Observe the leaves.
-        seen.insert(i + num_leaves, H::hash_or_noop(v));
+        seen.insert(i + num_leaves, H::hash_no_pad(v));
     }
 
     // Iterators over the siblings.
