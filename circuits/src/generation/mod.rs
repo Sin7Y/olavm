@@ -46,7 +46,10 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         .map(|row| PolynomialValues::new(row))
         .collect();
     let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-    let cmp_trace = trace_rows_to_poly_values(cmp_rows);
+    let cmp_trace = cmp_rows
+        .into_iter()
+        .map(|row| PolynomialValues::new(row))
+        .collect();
     let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
     let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
 

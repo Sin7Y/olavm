@@ -488,7 +488,7 @@ mod tests {
                 } else {
                     GoldilocksField::ZERO
                 },
-                if i == rows.len() - 1 {
+                if i == len - 1 {
                     GoldilocksField::ONE
                 } else {
                     GoldilocksField::ZERO

@@ -99,6 +99,7 @@ pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
 
 mod tests {
     use crate::builtins::cmp::cmp_stark::CmpStark;
+    use crate::builtins::cmp::columns::*;
     use crate::generation::builtin::generate_builtins_cmp_trace;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
@@ -132,22 +133,32 @@ mod tests {
         let _ = process.execute(&mut program);
 
         let rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",
             program.trace.builtin_cmp.len(),
-            rows.len()
+            len
         );
-        let last = F::primitive_root_of_unity(log2_strict(rows.len())).inverse();
-        let subgroup = F::cyclic_subgroup_known_order(
-            F::primitive_root_of_unity(log2_strict(rows.len())),
-            rows.len(),
-        );
+        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
+        let subgroup =
+            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
 
-        for i in 0..rows.len() - 1 {
-            println!("cmp row index: {}", i);
+        for i in 0..len - 1 {
+            let local_values: [F; COL_NUM_CMP] = rows
+                .iter()
+                .map(|row| row[i % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
+            let next_values: [F; COL_NUM_CMP] = rows
+                .iter()
+                .map(|row| row[(i + 1) % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
             let vars = StarkEvaluationVars {
-                local_values: &rows[i % rows.len()],
-                next_values: &rows[(i + 1) % rows.len()],
+                local_values: &local_values,
+                next_values: &next_values,
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(
@@ -158,7 +169,7 @@ mod tests {
                 } else {
                     GoldilocksField::ZERO
                 },
-                if i == rows.len() - 1 {
+                if i == len - 1 {
                     GoldilocksField::ONE
                 } else {
                     GoldilocksField::ZERO

@@ -292,49 +292,46 @@ pub fn vec_to_ary_bitwise<F: RichField>(input: Vec<F>) -> [F; bitwise::COL_NUM_B
     ary
 }
 
-pub fn generate_builtins_cmp_trace<F: RichField>(cells: &[CmpRow]) -> Vec<[F; cmp::COL_NUM_CMP]> {
-    let mut trace: Vec<[F; cmp::COL_NUM_CMP]> = cells
-        .iter()
-        .map(|c| {
-            let mut row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
-            row[COL_CMP_OP0] = F::from_canonical_u64(c.op0.to_canonical_u64());
-            row[COL_CMP_OP1] = F::from_canonical_u64(c.op1.to_canonical_u64());
-            row[COL_CMP_GTE] = F::from_canonical_u64(c.gte.to_canonical_u64());
-            row[COL_CMP_ABS_DIFF] = F::from_canonical_u64(c.abs_diff.to_canonical_u64());
-            row[COL_CMP_ABS_DIFF_INV] = F::from_canonical_u64(c.abs_diff_inv.to_canonical_u64());
-            row[COL_CMP_FILTER_LOOKING_RC] =
-                F::from_canonical_u64(c.filter_looking_rc.to_canonical_u64());
-            row
-        })
-        .collect();
+pub fn generate_builtins_cmp_trace<F: RichField>(cells: &[CmpRow]) -> [Vec<F>; cmp::COL_NUM_CMP] {
+    let trace_len = cells.len();
+    let ext_trace_len = if !trace_len.is_power_of_two() || trace_len < 2 {
+        if trace_len < 2 {
+            2
+        } else {
+            trace_len.next_power_of_two()
+        }
+    } else {
+        trace_len
+    };
 
-    if trace.is_empty() {
-        let mut dummy_row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
-        dummy_row[COL_CMP_OP0] = F::ONE;
-        dummy_row[COL_CMP_GTE] = F::ONE;
-        dummy_row[COL_CMP_ABS_DIFF] = F::ONE;
-        dummy_row[COL_CMP_ABS_DIFF_INV] = F::ONE;
-        trace.push(dummy_row);
+    let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; ext_trace_len]; cmp::COL_NUM_CMP];
+    for (i, c) in cells.iter().enumerate() {
+        trace[COL_CMP_OP0][i] = F::from_canonical_u64(c.op0.to_canonical_u64());
+        trace[COL_CMP_OP1][i] = F::from_canonical_u64(c.op1.to_canonical_u64());
+        trace[COL_CMP_GTE][i] = F::from_canonical_u64(c.gte.to_canonical_u64());
+        trace[COL_CMP_ABS_DIFF][i] = F::from_canonical_u64(c.abs_diff.to_canonical_u64());
+        trace[COL_CMP_ABS_DIFF_INV][i] = F::from_canonical_u64(c.abs_diff_inv.to_canonical_u64());
+        trace[COL_CMP_FILTER_LOOKING_RC][i] =
+            F::from_canonical_u64(c.filter_looking_rc.to_canonical_u64());
     }
 
     // Pad trace to power of two.
-    let num_filled_row_len = trace.len();
-    if !num_filled_row_len.is_power_of_two() || num_filled_row_len == 1 {
-        let num_padded_rows = if num_filled_row_len == 1 {
-            2
-        } else {
-            num_filled_row_len.next_power_of_two()
-        };
-        for _ in num_filled_row_len..num_padded_rows {
-            let mut dummy_row: [F; cmp::COL_NUM_CMP] = [F::default(); cmp::COL_NUM_CMP];
-            dummy_row[COL_CMP_OP0] = F::ONE;
-            dummy_row[COL_CMP_GTE] = F::ONE;
-            dummy_row[COL_CMP_ABS_DIFF] = F::ONE;
-            dummy_row[COL_CMP_ABS_DIFF_INV] = F::ONE;
-            trace.push(dummy_row);
+    if trace_len != ext_trace_len {
+        for i in trace_len..ext_trace_len {
+            trace[COL_CMP_OP0][i] = F::ONE;
+            trace[COL_CMP_GTE][i] = F::ONE;
+            trace[COL_CMP_ABS_DIFF][i] = F::ONE;
+            trace[COL_CMP_ABS_DIFF_INV][i] = F::ONE;
         }
     }
-    trace
+    let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
+        panic!(
+            "Expected a Vec of length {} but it was {}",
+            bitwise::COL_NUM_BITWISE,
+            v.len()
+        )
+    });
+    trace_row_vecs
 }
 
 pub fn generate_builtins_rangecheck_trace<F: RichField>(
