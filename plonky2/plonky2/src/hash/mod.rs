@@ -1,5 +1,6 @@
 mod arch;
 pub mod blake3;
+pub mod concurrent;
 pub mod hash_types;
 pub mod hashing;
 pub mod keccak;
@@ -8,4 +9,3 @@ pub mod merkle_tree;
 pub mod path_compression;
 pub mod poseidon;
 pub mod poseidon_goldilocks;
-pub mod concurrent;

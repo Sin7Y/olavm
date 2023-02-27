@@ -3,16 +3,17 @@ use std::slice;
 
 use maybe_rayon::*;
 use plonky2_field::cfft::uninit_vector;
+use plonky2_util::batch_iter_mut;
 use plonky2_util::log2_strict;
 use serde::{Deserialize, Serialize};
 
-use crate::batch_iter_mut;
-use blake3;
-use crate::hash::concurrent;
 use crate::hash::hash_types::RichField;
 use crate::hash::merkle_proofs::MerkleProof;
 use crate::plonk::config::GenericHashOut;
 use crate::plonk::config::Hasher;
+
+#[cfg(feature = "parallel")]
+mod concurrent;
 
 /// The Merkle cap of height `h` of a Merkle tree is the `h`-th layer (from the
 /// root) of the tree. It can be used in place of the root to verify Merkle
@@ -176,13 +177,10 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
         }
     }
 
-    pub fn new1(leaves: Vec<Vec<F>>, cap_height: usize) -> Self
+    pub fn new_v2(leaves: Vec<Vec<F>>, cap_height: usize) -> Self
     where
         [(); H::HASH_SIZE]:,
-    {   
-        // TODO: add time
-        let now = std::time::Instant::now();
-        
+    {
         let leaves_len = leaves.len();
 
         let mut row_hashes = unsafe { uninit_vector::<H::Hash>(leaves_len) };
@@ -202,35 +200,6 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
             }
         );
 
-        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
-            println!("batch_iter_mut time: {:?}", now.elapsed());
-        }
-
-        // // TODO: add time
-        // let now = std::time::Instant::now();
-        // let mut row_hashes1 = unsafe { uninit_vector::<H::Hash>(leaves_len) };
-
-        // batch_iter_mut!(
-        //     &mut row_hashes1,
-        //     128, // min batch size
-        //     |batch: &mut [H::Hash], batch_offset: usize| {
-        //         let mut row_buf = vec![F::ZERO; leaves[0].len()];
-        //         for (i, row_hash) in batch.iter_mut().enumerate() {
-        //             let row_idx = i + batch_offset;
-        //             for (j, value) in (0..leaves[0].len()).into_iter().zip(row_buf.iter_mut()) {
-        //                 *value = leaves[row_idx][j];
-        //             }
-        //         }
-        //     }
-        // );
-
-        // if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
-        //     println!("batch_iter_mut without hash time: {:?}", now.elapsed());
-        // }
-
-        // TODO: add time
-        let now = std::time::Instant::now();
-
         #[cfg(not(feature = "parallel"))]
         let nodes = build_merkle_nodes::<F, H>(&row_hashes);
 
@@ -240,14 +209,6 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
         } else {
             concurrent::build_merkle_nodes::<F, H>(&row_hashes)
         };
-
-        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
-            println!("build winterfell merkle tree time: {:?}", now.elapsed());
-        }
-
-
-        // add time
-        let now = std::time::Instant::now();
 
         let num_digests = 2 * (leaves_len - (1 << cap_height));
         let mut digests = unsafe { uninit_vector::<H::Hash>(num_digests) };
@@ -263,42 +224,39 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
                 cap[i] = nodes[i + len_cap];
             }
         }
-        
 
         let tree_height_sub_1 = log2_strict(leaves_len);
-        let num_layers =  tree_height_sub_1 - cap_height;
+        let num_layers = tree_height_sub_1 - cap_height;
         let num_sub_tree_leaves = 1 << num_layers;
         let tree_len = num_digests >> cap_height;
         let num_trees = 1 << cap_height;
 
-        // digests.as_mut_slice().par_chunks_exact_mut(tree_len).enumerate().for_each(|(i, sub_digests)| {
+        // digests.as_mut_slice().par_chunks_exact_mut(tree_len).enumerate().
+        // for_each(|(i, sub_digests)| {
         if num_digests > 0 {
             for i in 0..num_trees {
                 for pair_idx in (0..num_sub_tree_leaves).step_by(2) {
                     let siblings_index = pair_idx;
                     let sibling_index = siblings_index << 1;
-                    digests[tree_len * i + sibling_index] = row_hashes[num_sub_tree_leaves * i + pair_idx];
-                    digests[tree_len * i + sibling_index + 1] = row_hashes[num_sub_tree_leaves * i + pair_idx + 1];
+                    digests[tree_len * i + sibling_index] =
+                        row_hashes[num_sub_tree_leaves * i + pair_idx];
+                    digests[tree_len * i + sibling_index + 1] =
+                        row_hashes[num_sub_tree_leaves * i + pair_idx + 1];
                 }
-    
+
                 for layer in 1..num_layers {
                     let num_layer_nodes = num_sub_tree_leaves >> layer;
                     for pair_idx in (0..num_layer_nodes).step_by(2) {
                         let siblings_index = (pair_idx << layer) + (1 << layer) - 1;
                         let sibling_index = siblings_index << 1;
-                        let n_idx = (1 << (tree_height_sub_1 - layer)) + num_layer_nodes * i + pair_idx;
+                        let n_idx =
+                            (1 << (tree_height_sub_1 - layer)) + num_layer_nodes * i + pair_idx;
                         digests[tree_len * i + sibling_index] = nodes[n_idx];
                         digests[tree_len * i + sibling_index + 1] = nodes[n_idx + 1];
                     }
                 }
             }
         }
-
-        if leaves.len() == 1 << 23 && leaves[0].len() == 76 {
-            println!("winterfell to olavm merkle tree time: {:?}", now.elapsed());
-        }
-
-        
 
         Self {
             leaves,
@@ -352,7 +310,8 @@ impl<F: RichField, H: Hasher<F>> MerkleTree<F, H> {
 
 pub fn build_merkle_nodes<F: RichField, H: Hasher<F>>(leaves: &[H::Hash]) -> Vec<H::Hash>
 where
-    [(); H::HASH_SIZE]: {
+    [(); H::HASH_SIZE]:,
+{
     let n = leaves.len() / 2;
     // create un-initialized array to hold all intermediate nodes
     let mut nodes = unsafe { uninit_vector::<H::Hash>(2 * n) };

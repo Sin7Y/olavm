@@ -44,7 +44,6 @@ pub fn generate_cpu_trace<F: RichField>(
         // Context related columns.
         trace[cpu::COL_CLK][i] = F::from_canonical_u32(s.clk);
         trace[cpu::COL_PC][i] = F::from_canonical_u64(s.pc);
-        trace[cpu::COL_FLAG][i] = F::from_canonical_u32(s.flag as u32);
         for j in 0..REGISTER_NUM {
             trace[cpu::COL_START_REG + j][i] = F::from_canonical_u64(s.regs[j].0);
         }

@@ -20,7 +20,7 @@ use {
 };
 
 pub fn ctl_data_cpu_mem_mstore<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_OP0]).collect_vec()
+    Column::singles([COL_CLK, COL_OPCODE, COL_AUX1, COL_OP0]).collect_vec()
 }
 
 pub fn ctl_filter_cpu_mem_mstore<F: Field>() -> Column<F> {
@@ -28,7 +28,7 @@ pub fn ctl_filter_cpu_mem_mstore<F: Field>() -> Column<F> {
 }
 
 pub fn ctl_data_cpu_mem_mload<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP1, COL_DST]).collect_vec()
+    Column::singles([COL_CLK, COL_OPCODE, COL_AUX1, COL_DST]).collect_vec()
 }
 
 pub fn ctl_filter_cpu_mem_mload<F: Field>() -> Column<F> {
@@ -66,7 +66,7 @@ pub fn ctl_filter_with_bitwise_xor<F: Field>() -> Column<F> {
 
 // get the data source for CMP in Cpu table
 pub fn ctl_data_with_cmp<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_OP0, COL_OP1]).collect_vec()
+    Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec()
 }
 
 pub fn ctl_filter_with_cmp<F: Field>() -> Column<F> {
@@ -269,11 +269,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         yield_constr
             .constraint((P::ONES - lv[COL_S_END]) * (nv[COL_CLK] - (lv[COL_CLK] + P::ONES)));
 
-        // flag
-        yield_constr.constraint(lv[COL_FLAG] * (P::ONES - lv[COL_FLAG]));
-        let s_cmp = lv[COL_S_EQ] + lv[COL_S_NEQ] + lv[COL_S_GTE] + lv[COL_S_CJMP] + lv[COL_S_END];
-        yield_constr.constraint((P::ONES - s_cmp) * (nv[COL_FLAG] - lv[COL_FLAG]));
-
         // reg
         for (dst, l_r, n_r) in izip!(
             &s_dsts[..REGISTER_NUM - 1],
@@ -292,18 +287,23 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // pc
         // if instruction is end, we don't need to constrain pc.
+        // when cjmp, op0 is binary
+        let instruction_size = (P::ONES - lv[COL_S_MLOAD] - lv[COL_S_MSTORE])
+            * (P::ONES + lv[COL_OP1_IMM])
+            + (lv[COL_S_MLOAD] + lv[COL_S_MSTORE]) * (P::ONES + P::ONES);
         let pc_incr = (P::ONES - (lv[COL_S_JMP] + lv[COL_S_CJMP] + lv[COL_S_CALL] + lv[COL_S_RET]))
-            * (lv[COL_PC] + P::ONES + lv[COL_OP1_IMM]);
+            * (lv[COL_PC] + instruction_size);
         let pc_jmp = lv[COL_S_JMP] * lv[COL_OP1];
         let pc_cjmp = lv[COL_S_CJMP]
-            * ((P::ONES - lv[COL_FLAG]) * (lv[COL_PC] + P::ONES + lv[COL_OP1_IMM])
-                + lv[COL_FLAG] * lv[COL_OP1]);
+            * ((P::ONES - lv[COL_OP0]) * (lv[COL_PC] + instruction_size)
+                + lv[COL_OP0] * lv[COL_OP1]);
         let pc_call = lv[COL_S_CALL] * lv[COL_OP1];
         let pc_ret = lv[COL_S_RET] * lv[COL_DST];
         yield_constr.constraint(
             (P::ONES - lv[COL_S_END])
                 * (nv[COL_PC] - (pc_incr + pc_jmp + pc_cjmp + pc_call + pc_ret)),
         );
+        yield_constr.constraint(lv[COL_S_CJMP] * lv[COL_OP0] * (P::ONES - lv[COL_OP0]));
 
         // opcode
         add::eval_packed_generic(lv, nv, yield_constr);
@@ -311,10 +311,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         cmp::eval_packed_generic(lv, nv, yield_constr);
         assert::eval_packed_generic(lv, nv, yield_constr);
         mov::eval_packed_generic(lv, nv, yield_constr);
-        jmp::eval_packed_generic(lv, nv, yield_constr);
-        cjmp::eval_packed_generic(lv, nv, yield_constr);
         call::eval_packed_generic(lv, nv, yield_constr);
         ret::eval_packed_generic(lv, nv, yield_constr);
+        mload::eval_packed_generic(lv, nv, yield_constr);
+        mstore::eval_packed_generic(lv, nv, yield_constr);
 
         // Last row must be `END`
         yield_constr.constraint_last_row(lv[COL_S_END] - P::ONES);
@@ -557,24 +557,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let clk_cs = builder.mul_extension(end_boolean, clk_cs);
         yield_constr.constraint(builder, clk_cs);
 
-        // flag
-        let flag_boolean = builder.sub_extension(one, lv[COL_FLAG]);
-        let flag_boolean_cs = builder.mul_extension(lv[COL_FLAG], flag_boolean);
-        yield_constr.constraint(builder, flag_boolean_cs);
-        let s_cmp = [
-            lv[COL_S_EQ],
-            lv[COL_S_NEQ],
-            lv[COL_S_GTE],
-            lv[COL_S_CJMP],
-            lv[COL_S_END],
-        ]
-        .iter()
-        .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        let flag_diff = builder.sub_extension(nv[COL_FLAG], lv[COL_FLAG]);
-        let s_cmp_boolean = builder.sub_extension(one, s_cmp);
-        let flag_cs = builder.mul_extension(s_cmp_boolean, flag_diff);
-        yield_constr.constraint(builder, flag_cs);
-
         // reg
         for (dst, l_r, n_r) in izip!(
             &s_dsts[..REGISTER_NUM - 1],
@@ -599,19 +581,26 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // pc
         // if instruction is end, we don't need to constrain pc.
+        // when cjmp, op0 is binary
         let pc_sum = builder.add_many_extension([
             lv[COL_S_JMP],
             lv[COL_S_CJMP],
             lv[COL_S_CALL],
             lv[COL_S_RET],
         ]);
+        let is_mem_op = builder.add_extension(lv[COL_S_MLOAD], lv[COL_S_MSTORE]);
+        let not_mem_op = builder.sub_extension(one, is_mem_op);
+        let one_add_op1_imm = builder.add_extension(one, lv[COL_OP1_IMM]);
+        let instruction_size =
+            builder.arithmetic_extension(F::ONE, F::TWO, not_mem_op, one_add_op1_imm, is_mem_op);
+
         let pc_sum_boolean = builder.sub_extension(one, pc_sum);
-        let pc_incr = builder.add_many_extension([lv[COL_PC], one, lv[COL_OP1_IMM]]);
+        let pc_incr = builder.add_extension(lv[COL_PC], instruction_size);
         let pc_incr_cs = builder.mul_extension(pc_sum_boolean, pc_incr);
         let pc_jmp = builder.mul_extension(lv[COL_S_JMP], lv[COL_OP1]);
-        let flag_boolean = builder.sub_extension(one, lv[COL_FLAG]);
-        let flag_op1 = builder.mul_extension(lv[COL_FLAG], lv[COL_OP1]);
-        let pc_cjmp = builder.mul_add_extension(flag_boolean, pc_incr, flag_op1);
+        let one_m_op0 = builder.sub_extension(one, lv[COL_OP0]);
+        let op0_op1 = builder.mul_extension(lv[COL_OP0], lv[COL_OP1]);
+        let pc_cjmp = builder.mul_add_extension(one_m_op0, pc_incr, op0_op1);
         let pc_cjmp_cs = builder.mul_extension(lv[COL_S_CJMP], pc_cjmp);
         let pc_call = builder.mul_extension(lv[COL_S_CALL], lv[COL_OP1]);
         let pc_ret = builder.mul_extension(lv[COL_S_RET], lv[COL_DST]);
@@ -621,6 +610,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let pc_diff = builder.sub_extension(nv[COL_PC], pc_part_cs);
         let pc_cs = builder.mul_extension(end_boolean, pc_diff);
         yield_constr.constraint(builder, pc_cs);
+        let cjmp_op0_binary_cs = builder.mul_extension(lv[COL_OP0], one_m_op0);
+        yield_constr.constraint(builder, cjmp_op0_binary_cs);
 
         // opcode
         add::eval_ext_circuit(builder, lv, nv, yield_constr);
@@ -628,10 +619,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         cmp::eval_ext_circuit(builder, lv, nv, yield_constr);
         assert::eval_ext_circuit(builder, lv, nv, yield_constr);
         mov::eval_ext_circuit(builder, lv, nv, yield_constr);
-        jmp::eval_ext_circuit(builder, lv, nv, yield_constr);
-        cjmp::eval_ext_circuit(builder, lv, nv, yield_constr);
         call::eval_ext_circuit(builder, lv, nv, yield_constr);
         ret::eval_ext_circuit(builder, lv, nv, yield_constr);
+        mload::eval_ext_circuit(builder, lv, nv, yield_constr);
+        mstore::eval_ext_circuit(builder, lv, nv, yield_constr);
 
         // Last row must be `END`
         let last_end_cs = builder.sub_extension(lv[COL_S_END], one);
@@ -644,7 +635,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     }
 
     fn constraint_degree(&self) -> usize {
-        4
+        5
     }
 }
 
@@ -760,24 +751,31 @@ mod tests {
 
     #[test]
     fn test_memory() {
-        let program_src = "0x4000000840000000
-        0x8
-        0x4020000001000000
-        0x100
-        0x4000001040000000
-        0x2
-        0x4040000001000000
-        0x200
-        0x4000000840000000
-        0x14
-        0x4000001002000000
-        0x100
-        0x4000002002000000
-        0x200
-        0x4000004002000000
-        0x200
-        0x0040200c00000000
-        0x0000000000800000";
+        let program_src = "0x6000080400000000
+0x4
+0x2010000001000000
+0xfffffffeffffffff
+0x4000001040000000
+0x1
+0x4000000008000000
+0xb
+0x6000080400000000
+0xfffffffefffffffd
+0x0000000000800000
+0x0000200840000000
+0x4000040040000000
+0x1
+0x1000100800010000
+0x4020000010000000
+0x13
+0x4000000020000000
+0x16
+0x4000000840000000
+0x2
+0x0000000004000000
+0x4000000840000000
+0x3
+0x0000000004000000";
 
         test_cpu_stark(program_src);
     }

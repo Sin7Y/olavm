@@ -1,6 +1,8 @@
+use maybe_rayon::{
+    current_num_threads, IndexedParallelIterator, MaybeParChunks, MaybeParChunksMut,
+    MaybeParIterMut, ParallelIterator,
+};
 use plonky2_util::log2_strict;
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
 
 use crate::types::Field;
 
@@ -55,7 +57,7 @@ where
 
     let domain_offset = domain_offset.inverse();
     let inv_len = F::from_canonical_u64(values.len() as u64).inverse();
-    let batch_size = values.len() / rayon::current_num_threads().next_power_of_two();
+    let batch_size = values.len() / current_num_threads().next_power_of_two();
 
     values
         .par_chunks_mut(batch_size)
@@ -71,9 +73,9 @@ where
 
 pub fn permute<F: Field>(v: &mut [F]) {
     let n = v.len();
-    let num_batches = rayon::current_num_threads().next_power_of_two();
+    let num_batches = current_num_threads().next_power_of_two();
     let batch_size = n / num_batches;
-    rayon::scope(|s| {
+    maybe_rayon::scope(|s| {
         for batch_idx in 0..num_batches {
             // create another mutable reference to the slice of values to use in a new
             // thread; this is OK because we never write the same positions in
@@ -182,7 +184,7 @@ fn transpose_square_2<T>(matrix: &mut [T], size: usize) {
 }
 
 fn clone_and_shift<F: Field>(source: &[F], destination: &mut [F], offset: F) {
-    let batch_size = source.len() / rayon::current_num_threads().next_power_of_two();
+    let batch_size = source.len() / current_num_threads().next_power_of_two();
     source
         .par_chunks(batch_size)
         .zip(destination.par_chunks_mut(batch_size))

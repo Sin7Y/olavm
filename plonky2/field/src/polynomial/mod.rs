@@ -282,10 +282,7 @@ impl<F: Field> PolynomialCoeffs<F> {
         PolynomialValues { values: v }
     }
 
-    pub fn fft_with_options(
-        self,
-        twiddles: &[F],
-    ) -> PolynomialValues<F> {
+    pub fn fft_with_options(self, twiddles: &[F]) -> PolynomialValues<F> {
         let mut v = self.coeffs;
         evaluate_poly(&mut v, twiddles);
         PolynomialValues { values: v }

@@ -1,6 +1,8 @@
-use plonky2_field::polynomial::PolynomialValues;
-use plonky2_field::types::Field;
-use maybe_rayon::{IndexedParallelIterator, MaybeParChunksMut, ParallelIterator};
+#[cfg(feature = "parallel")]
+use maybe_rayon::{
+    current_num_threads, IndexedParallelIterator, MaybeParChunksMut, ParallelIterator,
+};
+use plonky2_field::{polynomial::PolynomialValues, types::Field};
 
 pub(crate) mod context_tree;
 pub(crate) mod partial_products;
@@ -15,7 +17,6 @@ pub(crate) fn transpose_poly_values<F: Field>(polys: Vec<PolynomialValues<F>>) -
 }
 
 pub fn transpose_par<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
-
     let l = matrix.len();
     let w = matrix[0].len();
 
@@ -61,6 +62,26 @@ pub fn transpose<F: Field>(matrix: &[Vec<F>]) -> Vec<Vec<F>> {
             // After .reserve_exact(l), transposed[i] will have capacity at least l. Hence,
             // set_len will not cause the buffer to overrun.
             transposed[i].set_len(l);
+        }
+    }
+
+    #[cfg(feature = "parallel")]
+    if w > l && w.is_power_of_two() {
+        let batch_size = w / current_num_threads();
+        if batch_size >= 128 {
+            transposed
+                .par_chunks_mut(batch_size)
+                .enumerate()
+                .for_each(|(i, batch)| {
+                    let batch_offset = i * batch_size;
+                    for (k, row_buf) in batch.iter_mut().enumerate() {
+                        let j = k + batch_offset;
+                        for i in 0..l {
+                            (*row_buf)[i] = matrix[i][j];
+                        }
+                    }
+                });
+            return transposed;
         }
     }
 

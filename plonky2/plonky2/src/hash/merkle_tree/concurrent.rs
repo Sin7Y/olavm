@@ -1,10 +1,10 @@
 use core::slice;
-use maybe_rayon::{IndexedParallelIterator, MaybeParIter, MaybeParIterMut, ParallelIterator};
+use maybe_rayon::{
+    current_num_threads, IndexedParallelIterator, MaybeParIter, MaybeParIterMut, ParallelIterator,
+};
 use plonky2_field::cfft::uninit_vector;
 
-use crate::plonk::config::Hasher;
-
-use super::hash_types::RichField;
+use crate::{hash::hash_types::RichField, plonk::config::Hasher};
 
 pub const MIN_CONCURRENT_LEAVES: usize = 1024;
 
@@ -33,14 +33,14 @@ where
     // access patterns are rather complicated - so, we use regular threads instead
 
     // number of sub-trees must always be a power of 2
-    let num_subtrees = rayon::current_num_threads().next_power_of_two();
+    let num_subtrees = current_num_threads().next_power_of_two();
     let batch_size = n / num_subtrees;
 
     // re-interpret nodes as an array of two nodes fused together
     let two_nodes = unsafe { slice::from_raw_parts(nodes.as_ptr() as *const [H::Hash; 2], n) };
 
     // process each subtree in a separate thread
-    rayon::scope(|s| {
+    maybe_rayon::scope(|s| {
         for i in 0..num_subtrees {
             let nodes = unsafe { &mut *(&mut nodes[..] as *mut [H::Hash]) };
             s.spawn(move |_| {

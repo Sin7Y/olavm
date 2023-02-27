@@ -1,9 +1,10 @@
+use std::borrow::BorrowMut;
 use std::collections::BTreeMap;
 
 use itertools::Itertools;
 use maybe_rayon::*;
 use plonky2_field::cfft::get_twiddles;
-use plonky2_field::extension::Extendable;
+use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::fft::FftRootTable;
 use plonky2_field::packed::PackedField;
 use plonky2_field::polynomial::{PolynomialCoeffs, PolynomialValues};
@@ -20,9 +21,9 @@ use crate::iop::challenger::Challenger;
 use crate::plonk::config::{GenericConfig, Hasher};
 use crate::timed;
 use crate::util::reducing::ReducingFactor;
-use crate::util::{reverse_bits, transpose_par};
 use crate::util::timing::TimingTree;
 use crate::util::transpose;
+use crate::util::{reverse_bits, transpose_par};
 
 /// Four (~64 bit) field elements gives ~128 bit security.
 pub const SALT_SIZE: usize = 4;
@@ -60,14 +61,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             values.into_par_iter().map(|v| v.ifft()).collect::<Vec<_>>()
         );
 
-        Self::from_coeffs(
-            coeffs,
-            rate_bits,
-            blinding,
-            cap_height,
-            timing,
-            twiddle_map,
-        )
+        Self::from_coeffs(coeffs, rate_bits, blinding, cap_height, timing, twiddle_map)
     }
 
     /// Creates a list polynomial commitment for the polynomials `polynomials`.
@@ -106,8 +100,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let merkle_tree = timed!(
             timing,
             "build Merkle tree",
-            // MerkleTree::new(leaves, cap_height)
-            MerkleTree::new1(leaves, cap_height)
+            MerkleTree::new_v2(leaves, cap_height)
         );
 
         if polynomials.len() == 76 {
@@ -135,14 +128,15 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let salt_size = if blinding { SALT_SIZE } else { 0 };
 
         let twiddles = twiddle_map
-                                            .entry(degree)
-                                    .or_insert_with(|| get_twiddles(degree));
+            .entry(degree)
+            .or_insert_with(|| get_twiddles(degree));
 
         polynomials
             .par_iter()
             .map(|p| {
                 assert_eq!(p.len(), degree, "Polynomial degrees inconsistent");
-                p.coset_fft_with_options(F::coset_shift(), twiddles, 1 << rate_bits).values
+                p.coset_fft_with_options(F::coset_shift(), twiddles, 1 << rate_bits)
+                    .values
             })
             .chain(
                 (0..salt_size)
@@ -202,7 +196,6 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         // let now = std::time::Instant::now();
         assert!(D > 1, "Not implemented for D=1.");
         let alpha = challenger.get_extension_challenge::<D>();
-        let mut alpha = ReducingFactor::new(alpha);
 
         // Final low-degree polynomial that goes into FRI.
         let mut final_poly = PolynomialCoeffs::empty();
@@ -218,39 +211,24 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         // `FRI_ORACLES` in `plonky2/src/plonk/plonk_common.rs`.
         for FriBatchInfo { point, polynomials } in &instance.batches {
             // Collect the coefficients of all the polynomials in `polynomials`.
-            let polys_coeff = polynomials.iter().map(|fri_poly| {
-                &oracles[fri_poly.oracle_index].polynomials[fri_poly.polynomial_index]
-            });
-            let now = std::time::Instant::now();
+            let polys_coeffs: Vec<&PolynomialCoeffs<F>> = polynomials
+                .iter()
+                .map(|fri_poly| {
+                    &oracles[fri_poly.oracle_index].polynomials[fri_poly.polynomial_index]
+                })
+                .collect();
 
-            let composition_poly = timed!(
-                timing,
-                &format!("reduce batch of {} polynomials", polynomials.len()),
-                alpha.reduce_polys_base(polys_coeff)
-            );
+            let poly_len = polys_coeffs.len();
+            let alphas: Vec<<F as Extendable<D>>::Extension> =
+                alpha.powers().take(poly_len).collect();
 
-            if instance.oracles[0].num_polys == 76 {
-                println!("composition_poly {:?}", now.elapsed());
-            }
-
-
-            let now = std::time::Instant::now();
-
-
+            let composition_poly: PolynomialCoeffs<<F as Extendable<D>>::Extension> = alphas
+                .into_par_iter()
+                .enumerate()
+                .map(|(i, a)| polys_coeffs[i].mul_extension(a))
+                .sum();
             let quotient = composition_poly.divide_by_linear(*point);
-
-            if instance.oracles[0].num_polys == 76 {
-                println!("divide_by_linear {:?}", now.elapsed());
-            }
-
-            let now = std::time::Instant::now();
-
-            alpha.shift_poly(&mut final_poly);
-
-            if instance.oracles[0].num_polys == 76 {
-                println!("shift_poly {:?}", now.elapsed());
-            }
-
+            (*final_poly.borrow_mut()) *= alpha.exp_u64(poly_len as u64);
             final_poly += quotient;
         }
         // Multiply the final polynomial by `X`, so that `final_poly` has the maximum
@@ -258,13 +236,15 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         // github.com/mir-protocol/plonky2/pull/436 for details.
         final_poly.coeffs.insert(0, F::Extension::ZERO);
 
-        // println!("generate final_poly {:?} size: {}", now.elapsed(), final_poly.coeffs.len());
+        // println!("generate final_poly {:?} size: {}", now.elapsed(),
+        // final_poly.coeffs.len());
 
         // let now = std::time::Instant::now();
 
         let lde_final_poly = final_poly.lde(fri_params.config.rate_bits);
 
-        // println!("generate lde_final_poly {:?} size: {}", now.elapsed(), lde_final_poly.coeffs.len());
+        // println!("generate lde_final_poly {:?} size: {}", now.elapsed(),
+        // lde_final_poly.coeffs.len());
 
         // let now = std::time::Instant::now();
 
@@ -274,7 +254,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             lde_final_poly.coset_fft(F::coset_shift().into(), None)
         );
 
-        // println!("generate lde_final_values {:?} size: {}", now.elapsed(), lde_final_values.values.len());
+        // println!("generate lde_final_values {:?} size: {}", now.elapsed(),
+        // lde_final_values.values.len());
 
         // let now = std::time::Instant::now();
 
