@@ -272,7 +272,7 @@ fn fibo_use_loop_decode() {
     //    add r8 r8 -5
     //   ret
 
-    let file = File::open("../assembler/testdata/fibo_loop.bin").unwrap();
+    let file = File::open("../assembler/testdata/fib_loop.bin").unwrap();
     let mut instructions = BufReader::new(file).lines();
 
     let mut program: Program = Program {

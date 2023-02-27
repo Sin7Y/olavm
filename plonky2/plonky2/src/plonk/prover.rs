@@ -65,7 +65,7 @@ where
             .map(|column| PolynomialValues::new(column.clone()))
             .collect()
     );
-    
+
     let mut twiddle_map: BTreeMap<usize, Vec<F>> = BTreeMap::new();
 
     let wires_commitment = timed!(

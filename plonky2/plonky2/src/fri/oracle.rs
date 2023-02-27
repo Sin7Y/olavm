@@ -61,14 +61,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             values.into_par_iter().map(|v| v.ifft()).collect::<Vec<_>>()
         );
 
-        Self::from_coeffs(
-            coeffs,
-            rate_bits,
-            blinding,
-            cap_height,
-            timing,
-            twiddle_map,
-        )
+        Self::from_coeffs(coeffs, rate_bits, blinding, cap_height, timing, twiddle_map)
     }
 
     /// Creates a list polynomial commitment for the polynomials `polynomials`.
@@ -119,14 +112,15 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         let salt_size = if blinding { SALT_SIZE } else { 0 };
 
         let twiddles = twiddle_map
-                                            .entry(degree)
-                                    .or_insert_with(|| get_twiddles(degree));
+            .entry(degree)
+            .or_insert_with(|| get_twiddles(degree));
 
         polynomials
             .par_iter()
             .map(|p| {
                 assert_eq!(p.len(), degree, "Polynomial degrees inconsistent");
-                p.coset_fft_with_options(F::coset_shift(), twiddles, 1 << rate_bits).values
+                p.coset_fft_with_options(F::coset_shift(), twiddles, 1 << rate_bits)
+                    .values
             })
             .chain(
                 (0..salt_size)
@@ -200,16 +194,22 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         // `FRI_ORACLES` in `plonky2/src/plonk/plonk_common.rs`.
         for FriBatchInfo { point, polynomials } in &instance.batches {
             // Collect the coefficients of all the polynomials in `polynomials`.
-            let polys_coeffs: Vec<&PolynomialCoeffs<F>> = polynomials.iter().map(|fri_poly| {
-                &oracles[fri_poly.oracle_index].polynomials[fri_poly.polynomial_index]
-            }).collect();
-            
-            let poly_len = polys_coeffs.len();
-            let alphas: Vec<<F as Extendable<D>>::Extension> = alpha.powers().take(poly_len).collect();
+            let polys_coeffs: Vec<&PolynomialCoeffs<F>> = polynomials
+                .iter()
+                .map(|fri_poly| {
+                    &oracles[fri_poly.oracle_index].polynomials[fri_poly.polynomial_index]
+                })
+                .collect();
 
-            let composition_poly: PolynomialCoeffs<<F as Extendable<D>>::Extension> = alphas.into_par_iter().enumerate().map(|(i, a)| {
-                polys_coeffs[i].mul_extension(a)
-            }).sum();
+            let poly_len = polys_coeffs.len();
+            let alphas: Vec<<F as Extendable<D>>::Extension> =
+                alpha.powers().take(poly_len).collect();
+
+            let composition_poly: PolynomialCoeffs<<F as Extendable<D>>::Extension> = alphas
+                .into_par_iter()
+                .enumerate()
+                .map(|(i, a)| polys_coeffs[i].mul_extension(a))
+                .sum();
             let quotient = composition_poly.divide_by_linear(*point);
             (*final_poly.borrow_mut()) *= alpha.exp_u64(poly_len as u64);
             final_poly += quotient;
