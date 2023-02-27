@@ -453,25 +453,23 @@ mod tests {
     use crate::encode::Encoder;
     use log::{debug, error, LevelFilter};
     #[test]
-    fn mstore_mload_test() {
+    fn memory_test() {
         let asm_codes = "main:
-     .LBL_0_0:
-       add r8 r8 4
-       mov r4 100
-       mstore [r8,-3] r4
-       mov r4 1
-       mstore [r8,-2] r4
-       mov r4 2
-       mstore [r8,-1] r4
-       mload r4 [r8,-3]
-       mload r1 [r8,-2]
-       mload r0 [r8,-1]
-       add r4 r4 r1
-       mul r4 r4 r0
-       mstore [r5] r4
-       mload r0 [r5]
-       add r8 r8 -4
-       end";
+                               .LBL_0_0:
+                                 add r8 r8 4
+                                 mov r4 100
+                                 mstore [r8,-3] r4
+                                 mov r4 1
+                                 mstore [r8,-2] r4
+                                 mov r4 2
+                                 mstore [r8,-1] r4
+                                 mload r4 [r8,-3]
+                                 mload r1 [r8,-2]
+                                 mload r0 [r8,-1]
+                                 add r4 r4 r1
+                                 mul r4 r4 r0
+                                 add r8 r8 -4
+                                 end";
 
         let mut encoder: Encoder = Default::default();
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
@@ -526,6 +524,25 @@ mod tests {
     }
 
     #[test]
+    fn range_check_test() {
+        let asm_codes = "mov r0 8
+                               mov r1 2
+                               mov r2 3
+                               add r3 r0 r1
+                               mul r4 r3 r2
+                               range r4
+                               end";
+
+        let mut encoder: Encoder = Default::default();
+        let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
+        let raw_insts = encoder.assemble_link(asm_codes);
+
+        for item in raw_insts {
+            println!("{}", item);
+        }
+    }
+
+    #[test]
     fn bitwise_test() {
         let asm_codes = "mov r0 8
                                mov r1 2
@@ -547,18 +564,31 @@ mod tests {
             println!("{}", item);
         }
     }
+
+
     #[test]
     fn comparison_test() {
-        let asm_codes = "mov r0 8
-                               mov r1 2
-                               mov r2 3
-                               add r3 r0 r1
-                               mul r4 r3 r2
-                               gte r6 r4 r3
-                               cjmp r6 11
-                               add r3 r0 r2
-                               mul r4 r3 r0
-                               end";
+        let asm_codes = "main:
+        .LBL0_0:
+          add r8 r8 4
+          mstore [r8,-2] r8
+          mov r1 1
+          call le
+          add r8 r8 -4
+          end
+        le:
+        .LBL1_0:
+          mov r0 r1
+          mov r7 1
+          gte r0 r7 r0
+          cjmp r0 .LBL1_1
+          jmp .LBL1_2
+        .LBL1_1:
+          mov r0 2
+          ret
+        .LBL1_2:
+          mov r0 3
+          ret";
 
         let mut encoder: Encoder = Default::default();
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
