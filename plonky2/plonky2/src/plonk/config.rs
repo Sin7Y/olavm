@@ -70,7 +70,7 @@ pub trait Hasher<F: RichField>: Sized + Clone + Debug + Eq + PartialEq {
 
     fn zero_hash() -> Self::Hash
     where
-        [(); Self::HASH_SIZE]:
+        [(); Self::HASH_SIZE]:,
     {
         let zeros = [0_u8; Self::HASH_SIZE];
         Self::Hash::from_bytes(&zeros)

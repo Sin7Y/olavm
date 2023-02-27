@@ -4,7 +4,7 @@ use std::mem::size_of;
 
 use crate::hash::hash_types::{HashOut, RichField};
 use crate::hash::hashing::{compress, hash_n_to_hash_no_pad, PlonkyPermutation, SPONGE_WIDTH};
-use crate::plonk::config::{Hasher, GenericHashOut};
+use crate::plonk::config::{GenericHashOut, Hasher};
 use crate::util::serialization::Buffer;
 use core::slice;
 
@@ -58,10 +58,7 @@ impl<F: RichField, const N: usize> Hasher<F> for Blake3_256<N> {
 
     fn hash_no_pad(input: &[F]) -> Self::Hash {
         let buffer = unsafe {
-            slice::from_raw_parts(
-                input.as_ptr() as *const u8,
-                input.len() * F::BITS >> 3,
-            )
+            slice::from_raw_parts(input.as_ptr() as *const u8, input.len() * F::BITS >> 3)
         };
 
         let mut arr = [0; N];
@@ -71,19 +68,9 @@ impl<F: RichField, const N: usize> Hasher<F> for Blake3_256<N> {
     }
 
     fn two_to_one(left: Self::Hash, right: Self::Hash) -> Self::Hash {
-        let left = unsafe {
-            slice::from_raw_parts(
-                left.0.as_ptr() as *const u8,
-                32,
-            )
-        };
+        let left = unsafe { slice::from_raw_parts(left.0.as_ptr() as *const u8, 32) };
 
-        let right = unsafe {
-            slice::from_raw_parts(
-                right.0.as_ptr() as *const u8,
-                32,
-            )
-        };
+        let right = unsafe { slice::from_raw_parts(right.0.as_ptr() as *const u8, 32) };
 
         let mut v = vec![0; N * 2];
         v[0..N].copy_from_slice(left);

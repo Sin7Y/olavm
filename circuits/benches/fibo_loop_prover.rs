@@ -7,7 +7,7 @@ use core::program::Program;
 use criterion::{criterion_group, criterion_main, Criterion};
 use executor::Process;
 use log::LevelFilter;
-use plonky2::plonk::config::{GenericConfig, Blake3GoldilocksConfig};
+use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig};
 use plonky2::util::timing::TimingTree;
 
 const D: usize = 2;
