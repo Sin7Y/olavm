@@ -438,7 +438,7 @@ impl Encoder {
         self.asm_code = asm_codes;
         self.relocate();
         for item in &self.asm_code {
-            println!("{}", item);
+            debug!("{}", item);
         }
         for raw_code in self.asm_code.clone().into_iter() {
             let raw_inst = self.encode_instruction(&raw_code).unwrap();
@@ -450,8 +450,28 @@ impl Encoder {
 
 #[allow(unused_imports)]
 mod tests {
+    use std::fs::File;
+    use std::io::{BufWriter, Write};
     use crate::encode::Encoder;
     use log::{debug, error, LevelFilter};
+
+    fn write_encode_to_file(raw_insts: Vec<String>, path: &str) {
+        let file = File::create(path).unwrap();
+        let mut fout = BufWriter::new(file);
+
+        for line in raw_insts {
+            let res = fout.write_all((line + "\n").as_bytes());
+            if res.is_err() {
+                debug!("file write_all err: {:?}", res);
+            }
+        }
+
+        let res = fout.flush();
+        if res.is_err() {
+            debug!("file flush res: {:?}", res);
+        }
+    }
+
     #[test]
     fn memory_test() {
         let asm_codes = "main:
@@ -475,9 +495,7 @@ mod tests {
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
         let raw_insts = encoder.assemble_link(asm_codes);
 
-        for item in raw_insts {
-            println!("{}", item);
-        }
+        write_encode_to_file(raw_insts, "testdata/memory.bin");
     }
 
     #[test]
@@ -518,9 +536,7 @@ mod tests {
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
         let raw_insts = encoder.assemble_link(asm_codes);
 
-        for item in raw_insts {
-            println!("{}", item);
-        }
+        write_encode_to_file(raw_insts, "testdata/call.bin");
     }
 
     #[test]
@@ -537,9 +553,7 @@ mod tests {
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
         let raw_insts = encoder.assemble_link(asm_codes);
 
-        for item in raw_insts {
-            println!("{}", item);
-        }
+        write_encode_to_file(raw_insts, "testdata/range_check.bin");
     }
 
     #[test]
@@ -560,9 +574,7 @@ mod tests {
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
         let raw_insts = encoder.assemble_link(asm_codes);
 
-        for item in raw_insts {
-            println!("{}", item);
-        }
+        write_encode_to_file(raw_insts, "testdata/bitwise.bin");
     }
 
 
@@ -594,9 +606,8 @@ mod tests {
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
         let raw_insts = encoder.assemble_link(asm_codes);
 
-        for item in raw_insts {
-            println!("{}", item);
-        }
+        write_encode_to_file(raw_insts, "testdata/comparison.bin");
+
     }
 
     #[test]
@@ -653,9 +664,8 @@ mod tests {
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
 
         let raw_insts = encoder.assemble_link(asm_codes);
-        for item in raw_insts {
-            println!("{}", item);
-        }
+        write_encode_to_file(raw_insts, "testdata/fib_recursive.bin");
+
     }
 
     #[test]
@@ -712,8 +722,6 @@ mod tests {
         let asm_codes: Vec<String> = asm_codes.split('\n').map(|e| e.to_string()).collect();
 
         let raw_insts = encoder.assemble_link(asm_codes);
-        for item in raw_insts {
-            println!("{}", item);
-        }
+        write_encode_to_file(raw_insts, "testdata/fib_loop.bin");
     }
 }
