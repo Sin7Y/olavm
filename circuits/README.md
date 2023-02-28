@@ -53,15 +53,15 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
     // jmp 8
     // end
     let program_src = "0x4000000840000000
-        0x6000
+        0x8
         0x4000001040000000
         0x1
         0x4000002040000000
         0x1
         0x4000004040000000
         0x0
-        0x0020800100000000
-        0x4000000010000000
+        0x0020810100000000
+        0x4400000010000000
         0x13
         0x0040408400000000
         0x0000401040000000
@@ -71,7 +71,7 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
         0x0101004400000000
         0x4000000020000000
         0x8
-        0x0000000000800000";
+        0x0000000000800000"
 
     let instructions = program_src.split('\n');
     let mut program: Program = Program {
@@ -89,31 +89,10 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
     process.execute(&mut program);
     
 
-    // generate trace for all starks
-    let (cpu_rows, cpu_beta) =
-        generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-    let cpu_trace = trace_rows_to_poly_values(cpu_rows);
-    let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-    let memory_trace = trace_rows_to_poly_values(memory_rows);
-    let (bitwise_rows, bitwise_beta) =
-        generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-    let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-    let cmp_rows = generate_cmp_trace(&program.trace.builtin_cmp);
-    let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-    let rangecheck_rows = generate_rc_trace(&program.trace.builtin_rangecheck);
-    let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
-    let traces = [
-        cpu_trace,
-        memory_trace,
-        bitwise_trace,
-        cmp_trace,
-        rangecheck_trace,
-    ];
-
     // generate the proof with traces from the execution of the fibonacci program
-    let ola_stark = OlaStark::default();
+    let mut ola_stark = OlaStark::default();
+    let (traces, public_values) = generate_traces(&program, &mut ola_stark);
     let config = StarkConfig::standard_fast_config();
-    let public_values = PublicValues::default();
     let proof = prove_with_traces::<F, C, D>(
         &ola_stark,
         &config,
@@ -123,7 +102,8 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
     )?;
 
     // verify the proof is correct
-    verify_proof(ola_stark, proof, &config).unwrap();
+    let ola_stark = OlaStark::default();
+    verify_proof(ola_stark, proof, &config)
 ```
 
 ### Concurrent proof generation
