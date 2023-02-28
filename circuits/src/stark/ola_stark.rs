@@ -317,8 +317,7 @@ mod tests {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     use crate::generation::builtin::{
-        generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
-        generate_builtins_rangecheck_trace,
+        generate_bitwise_trace, generate_cmp_trace, generate_rc_trace,
     };
     use crate::generation::cpu::generate_cpu_trace;
     use crate::generation::generate_traces;

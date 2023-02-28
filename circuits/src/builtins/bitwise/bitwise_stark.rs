@@ -413,9 +413,7 @@ pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
 mod tests {
     use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
     use crate::builtins::bitwise::columns::get_bitwise_col_name_map;
-    use crate::generation::builtin::{
-        generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
-    };
+    use crate::generation::builtin::{generate_bitwise_trace, generate_cmp_trace};
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
@@ -449,23 +447,35 @@ mod tests {
         let _ = process.execute(&mut program);
 
         let (rows, bitwise_beta) =
-            generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+            generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",
             program.trace.builtin_cmp.len(),
-            rows.len()
+            len
         );
         stark.set_compress_challenge(bitwise_beta);
-        let last = F::primitive_root_of_unity(log2_strict(rows.len())).inverse();
-        let subgroup = F::cyclic_subgroup_known_order(
-            F::primitive_root_of_unity(log2_strict(rows.len())),
-            rows.len(),
-        );
 
-        for i in 0..rows.len() - 1 {
+        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
+        let subgroup =
+            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
+
+        for i in 0..len - 1 {
+            let local_values = rows
+                .iter()
+                .map(|row| row[i % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
+            let next_values = rows
+                .iter()
+                .map(|row| row[(i + 1) % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
             let vars = StarkEvaluationVars {
-                local_values: &rows[i % rows.len()],
-                next_values: &rows[(i + 1) % rows.len()],
+                local_values: &local_values,
+                next_values: &next_values,
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(
@@ -476,7 +486,7 @@ mod tests {
                 } else {
                     GoldilocksField::ZERO
                 },
-                if i == rows.len() - 1 {
+                if i == len - 1 {
                     GoldilocksField::ONE
                 } else {
                     GoldilocksField::ZERO
