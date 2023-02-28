@@ -40,7 +40,7 @@ There are a lot of tricks to get a very ZK-friendly ZKVM in OlaVM. We would like
 | Builtins - cmp             | $\color{Green}{Done}$  |
 | Builtins - poseidon        | $\color{Yellow}{Doing}$|
 | Builtins - ecdsa           | $\color{Yellow}{Doing}$|
-| Prover optimization        | $\color{Yellow}{Doing}$|
+| Prover optimization        |  $\color{Green}{Done}$|
 | Prophets lib               | $\color{Red}{Todo}$    |
 | u32/u64/u256 lib           | $\color{Red}{Todo}$    |
 | Support privacy            | $\color{Red}{Todo}$    |
@@ -207,6 +207,7 @@ OlaVM runs based on the Goldilocks field and uses STARK to generate proofs for t
 - [Private delagation for zksnark](https://www.youtube.com/watch?v=mFzwp8gGn-E)
 - [ZEXE: Private computation](https://eprint.iacr.org/2018/962.pdf)
 - [Zcash protocol](https://github.com/zcash/zips/blob/main/protocol/protocol.pdf)
+- [DPC on Aleo](https://www.youtube.com/watch?v=uMmAUssK-PA&t=1705s)
 
 ## License
 

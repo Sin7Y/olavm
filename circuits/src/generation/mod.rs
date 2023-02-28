@@ -10,12 +10,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::stark::ola_stark::{OlaStark, NUM_TABLES};
 use crate::stark::proof::PublicValues;
-use crate::stark::util::trace_rows_to_poly_values;
+use crate::stark::util::{trace_rows_to_poly_values, trace_to_poly_values};
 
-use self::builtin::{
-    generate_builtins_bitwise_trace, generate_builtins_cmp_trace,
-    generate_builtins_rangecheck_trace,
-};
+use self::builtin::{generate_bitwise_trace, generate_cmp_trace, generate_rc_trace};
 use self::cpu::generate_cpu_trace;
 use self::memory::generate_memory_trace;
 
@@ -33,19 +30,20 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     let (cpu_rows, cpu_beta) =
         generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-    let cpu_trace = cpu_rows
-        .into_iter()
-        .map(|row| PolynomialValues::new(row))
-        .collect();
+    let cpu_trace = trace_to_poly_values(cpu_rows);
+
     let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-    let memory_trace = trace_rows_to_poly_values(memory_rows);
+    let memory_trace = trace_to_poly_values(memory_rows);
+
     let (bitwise_rows, bitwise_beta) =
-        generate_builtins_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-    let bitwise_trace = trace_rows_to_poly_values(bitwise_rows);
-    let cmp_rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
-    let cmp_trace = trace_rows_to_poly_values(cmp_rows);
-    let rangecheck_rows = generate_builtins_rangecheck_trace(&program.trace.builtin_rangecheck);
-    let rangecheck_trace = trace_rows_to_poly_values(rangecheck_rows);
+        generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+    let bitwise_trace = trace_to_poly_values(bitwise_rows);
+
+    let cmp_rows = generate_cmp_trace(&program.trace.builtin_cmp);
+    let cmp_trace = trace_to_poly_values(cmp_rows);
+
+    let rc_rows = generate_rc_trace(&program.trace.builtin_rangecheck);
+    let rc_trace = trace_to_poly_values(rc_rows);
 
     ola_stark
         .cpu_stark
@@ -56,13 +54,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         .set_compress_challenge(bitwise_beta)
         .unwrap();
 
-    let traces = [
-        cpu_trace,
-        memory_trace,
-        bitwise_trace,
-        cmp_trace,
-        rangecheck_trace,
-    ];
+    let traces = [cpu_trace, memory_trace, bitwise_trace, cmp_trace, rc_trace];
     let public_values = PublicValues {};
     (traces, public_values)
 }

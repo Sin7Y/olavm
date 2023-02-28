@@ -48,6 +48,15 @@ pub fn trace_rows_to_poly_values<F: Field, const COLUMNS: usize>(
         .collect()
 }
 
+pub fn trace_to_poly_values<F: Field, const COLUMNS: usize>(
+    trace: [Vec<F>; COLUMNS],
+) -> Vec<PolynomialValues<F>> {
+    trace
+        .into_iter()
+        .map(|row| PolynomialValues::new(row))
+        .collect()
+}
+
 /// Returns the 32-bit little-endian limbs of a `U256`.
 #[allow(unused)]
 pub(crate) fn u256_limbs<F: Field>(u256: U256) -> [F; 8] {
