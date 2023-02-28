@@ -28,7 +28,7 @@ where
         let size = 1 << size_log;
         group.bench_with_input(BenchmarkId::from_parameter(size), &size, |b, _| {
             let leaves = vec![F::rand_vec(ELEMS_PER_LEAF); size];
-            b.iter(|| MerkleTree::<F, H>::new(leaves.clone(), 0));
+            b.iter(|| MerkleTree::<F, H>::new_v2(leaves.clone(), 0));
         });
     }
 }
