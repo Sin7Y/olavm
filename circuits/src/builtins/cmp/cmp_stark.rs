@@ -99,7 +99,8 @@ pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
 
 mod tests {
     use crate::builtins::cmp::cmp_stark::CmpStark;
-    use crate::generation::builtin::generate_builtins_cmp_trace;
+    use crate::builtins::cmp::columns::*;
+    use crate::generation::builtin::generate_cmp_trace;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
@@ -109,45 +110,59 @@ mod tests {
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
 
     #[allow(unused)]
-    fn test_cmp_stark(program_src: &str) {
+    fn test_cmp_stark(program_path: &str) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = CmpStark<F, D>;
         let stark = S::default();
 
-        let instructions = program_src.split('\n');
+        let file = File::open(program_path).unwrap();
+        let instructions = BufReader::new(file).lines();
+
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
 
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+        for inst in instructions {
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
         let _ = process.execute(&mut program);
 
-        let rows = generate_builtins_cmp_trace(&program.trace.builtin_cmp);
+        let rows = generate_cmp_trace(&program.trace.builtin_cmp);
+        let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",
             program.trace.builtin_cmp.len(),
-            rows.len()
+            len
         );
-        let last = F::primitive_root_of_unity(log2_strict(rows.len())).inverse();
-        let subgroup = F::cyclic_subgroup_known_order(
-            F::primitive_root_of_unity(log2_strict(rows.len())),
-            rows.len(),
-        );
+        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
+        let subgroup =
+            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
 
-        for i in 0..rows.len() - 1 {
-            println!("cmp row index: {}", i);
+        for i in 0..len - 1 {
+            let local_values: [F; COL_NUM_CMP] = rows
+                .iter()
+                .map(|row| row[i % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
+            let next_values: [F; COL_NUM_CMP] = rows
+                .iter()
+                .map(|row| row[(i + 1) % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
             let vars = StarkEvaluationVars {
-                local_values: &rows[i % rows.len()],
-                next_values: &rows[(i + 1) % rows.len()],
+                local_values: &local_values,
+                next_values: &next_values,
             };
 
             let mut constraint_consumer = ConstraintConsumer::new(
@@ -158,7 +173,7 @@ mod tests {
                 } else {
                     GoldilocksField::ZERO
                 },
-                if i == rows.len() - 1 {
+                if i == len - 1 {
                     GoldilocksField::ONE
                 } else {
                     GoldilocksField::ZERO
@@ -174,32 +189,7 @@ mod tests {
 
     #[test]
     fn test_cmp_with_program() {
-        let program_src = "0x6000080400000000
-0x4
-0x2010000001000000
-0xfffffffeffffffff
-0x4000001040000000
-0x1
-0x4000000008000000
-0xb
-0x6000080400000000
-0xfffffffefffffffd
-0x0000000000800000
-0x0000200840000000
-0x4000040040000000
-0x1
-0x1000100800010000
-0x4020000010000000
-0x13
-0x4000000020000000
-0x16
-0x4000000840000000
-0x2
-0x0000000004000000
-0x4000000840000000
-0x3
-0x0000000004000000";
-
-        test_cmp_stark(program_src);
+        let program_path = "../assembler/testdata/comparison.bin";
+        test_cmp_stark(program_path);
     }
 }
