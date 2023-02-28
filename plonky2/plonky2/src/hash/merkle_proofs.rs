@@ -183,7 +183,7 @@ mod tests {
         let n = 1 << log_n;
         let cap_height = 1;
         let leaves = random_data::<F>(n, 7);
-        let tree = MerkleTree::<F, <C as GenericConfig<D>>::Hasher>::new(leaves, cap_height);
+        let tree = MerkleTree::<F, <C as GenericConfig<D>>::Hasher>::new_v2(leaves, cap_height);
         let i: usize = thread_rng().gen_range(0..n);
         let proof = tree.prove(i);
 
