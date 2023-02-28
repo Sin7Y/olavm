@@ -8,36 +8,7 @@ use crate::memory::columns as memory;
 pub fn generate_memory_trace<F: RichField>(
     cells: &[MemoryTraceCell],
 ) -> [Vec<F>; memory::NUM_MEM_COLS] {
-    if cells.is_empty() {
-        let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
-        let span = F::from_canonical_u64(2_u64.pow(32).sub(1));
-        let addr = p - span;
-        let mut trace: Vec<Vec<F>> = vec![vec![F::default(); 2]; memory::NUM_MEM_COLS];
-        trace[memory::COL_MEM_ADDR][0] = addr;
-        trace[memory::COL_MEM_ADDR][1] = addr;
-
-        trace[memory::COL_MEM_IS_WRITE][0] = F::ONE;
-        trace[memory::COL_MEM_IS_WRITE][1] = F::ONE;
-
-        trace[memory::COL_MEM_DIFF_ADDR_COND][0] = p - addr;
-        trace[memory::COL_MEM_DIFF_ADDR_COND][1] = p - addr;
-
-        trace[memory::COL_MEM_REGION_PROPHET][0] = F::ONE;
-        trace[memory::COL_MEM_REGION_PROPHET][1] = F::ONE;
-
-        trace[memory::COL_MEM_RC_VALUE][0] = p - addr;
-        trace[memory::COL_MEM_RC_VALUE][1] = p - addr;
-
-        return trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
-            panic!(
-                "Expected a Vec of length {} but it was {}",
-                memory::NUM_MEM_COLS,
-                v.len()
-            )
-        });
-    }
-
-    let num_filled_row_len = cells.len();
+    let mut num_filled_row_len = cells.len();
     let num_padded_rows = if !num_filled_row_len.is_power_of_two() || num_filled_row_len < 2 {
         if num_filled_row_len < 2 {
             2
@@ -75,6 +46,20 @@ pub fn generate_memory_trace<F: RichField>(
         trace[memory::COL_MEM_RC_VALUE][i] = F::from_canonical_u64(c.rc_value.to_canonical_u64());
         trace[memory::COL_MEM_FILTER_LOOKING_RC][i] =
             F::from_canonical_u64(c.filter_looking_rc.to_canonical_u64());
+    }
+
+    if num_filled_row_len == 0 {
+        let p = F::from_canonical_u64(0) - F::from_canonical_u64(1);
+        let span = F::from_canonical_u64(2_u64.pow(32).sub(1));
+        let addr = p - span;
+        // Trace at least has 2 columns.
+        trace[memory::COL_MEM_ADDR][0] = addr;
+        trace[memory::COL_MEM_IS_WRITE][0] = F::ONE;
+        trace[memory::COL_MEM_DIFF_ADDR_COND][0] = p - addr;
+        trace[memory::COL_MEM_REGION_PROPHET][0] = F::ONE;
+        trace[memory::COL_MEM_RC_VALUE][0] = p - addr;
+
+        num_filled_row_len = 1;
     }
 
     // Pad trace to power of two.

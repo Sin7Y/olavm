@@ -240,7 +240,7 @@ pub fn generate_cmp_trace<F: RichField>(cells: &[CmpRow]) -> [Vec<F>; cmp::COL_N
     trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
         panic!(
             "Expected a Vec of length {} but it was {}",
-            bitwise::COL_NUM_BITWISE,
+            cmp::COL_NUM_CMP,
             v.len()
         )
     })
@@ -298,7 +298,7 @@ pub fn generate_rc_trace<F: RichField>(
     trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
         panic!(
             "Expected a Vec of length {} but it was {}",
-            bitwise::COL_NUM_BITWISE,
+            rangecheck::COL_NUM_RC,
             v.len()
         )
     })
