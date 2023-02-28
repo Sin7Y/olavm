@@ -450,10 +450,10 @@ impl Encoder {
 
 #[allow(unused_imports)]
 mod tests {
-    use std::fs::File;
-    use std::io::{BufWriter, Write};
     use crate::encode::Encoder;
     use log::{debug, error, LevelFilter};
+    use std::fs::File;
+    use std::io::{BufWriter, Write};
 
     fn write_encode_to_file(raw_insts: Vec<String>, path: &str) {
         let file = File::create(path).unwrap();
@@ -577,7 +577,6 @@ mod tests {
         write_encode_to_file(raw_insts, "testdata/bitwise.bin");
     }
 
-
     #[test]
     fn comparison_test() {
         let asm_codes = "main:
@@ -607,7 +606,6 @@ mod tests {
         let raw_insts = encoder.assemble_link(asm_codes);
 
         write_encode_to_file(raw_insts, "testdata/comparison.bin");
-
     }
 
     #[test]
@@ -665,7 +663,6 @@ mod tests {
 
         let raw_insts = encoder.assemble_link(asm_codes);
         write_encode_to_file(raw_insts, "testdata/fib_recursive.bin");
-
     }
 
     #[test]

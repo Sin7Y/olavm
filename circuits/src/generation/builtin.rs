@@ -337,11 +337,11 @@ pub fn generate_rc_trace<F: RichField>(
     cells: &[RangeCheckRow],
 ) -> [Vec<F>; rangecheck::COL_NUM_RC] {
     if cells.is_empty() {
-        let trace: Vec<Vec<F>> = vec![vec![F::default(); 2]; bitwise::COL_NUM_BITWISE];
+        let trace: Vec<Vec<F>> = vec![vec![F::default(); 2]; rangecheck::COL_NUM_RC];
         return trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
             panic!(
                 "Expected a Vec of length {} but it was {}",
-                bitwise::COL_NUM_BITWISE,
+                rangecheck::COL_NUM_RC,
                 v.len()
             )
         });

@@ -424,23 +424,27 @@ mod tests {
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
     use std::borrow::Borrow;
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
 
     #[allow(unused)]
-    fn test_bitwise_stark(program_src: &str) {
+    fn test_bitwise_stark(program_path: &str) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = BitwiseStark<F, D>;
         let mut stark = S::default();
 
-        let instructions = program_src.split('\n');
+        let file = File::open(program_path).unwrap();
+        let mut instructions = BufReader::new(file).lines();
+
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
 
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+        for inst in instructions {
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
@@ -513,21 +517,7 @@ mod tests {
 
     #[test]
     fn test_bitwise_with_program() {
-        let program_src = "0x4000000840000000
-0x8
-0x4000001040000000
-0x2
-0x4000002040000000
-0x3
-0x0020204400000000
-0x0100408200000000
-0x0200810000200000
-0x0041020000100000
-0x0400440000080000
-0x0080804000100000
-0x0200808000200000
-0x0000000000800000";
-
-        test_bitwise_stark(program_src);
+        let program_path = "../assembler/testdata/bitwise.bin";
+        test_bitwise_stark(&program_path);
     }
 }

@@ -314,8 +314,6 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
 
 #[allow(unused_imports)]
 mod tests {
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
     use crate::generation::builtin::{
         generate_bitwise_trace, generate_cmp_trace, generate_rc_trace,
     };
@@ -336,6 +334,8 @@ mod tests {
     use log::debug;
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
     use std::mem;
     use std::time::{Duration, Instant};
 
@@ -447,7 +447,7 @@ mod tests {
     #[test]
     fn range_check_test() -> Result<()> {
         let file = File::open("../assembler/testdata/range_check.bin").unwrap();
-        let mut instructions = BufReader::new(file).lines();
+        let instructions = BufReader::new(file).lines();
 
         let mut program: Program = Program {
             instructions: Vec::new(),
@@ -479,7 +479,7 @@ mod tests {
     #[test]
     fn bitwise_test() -> Result<()> {
         let file = File::open("../assembler/testdata/bitwise.bin").unwrap();
-        let mut instructions = BufReader::new(file).lines();
+        let instructions = BufReader::new(file).lines();
 
         let mut program: Program = Program {
             instructions: Vec::new(),
