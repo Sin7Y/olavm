@@ -455,7 +455,7 @@ mod tests {
         let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",
-            program.trace.builtin_cmp.len(),
+            program.trace.builtin_bitwise_combined.len(),
             len
         );
         stark.set_compress_challenge(bitwise_beta);
@@ -464,7 +464,7 @@ mod tests {
         let subgroup =
             F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
 
-        for i in 0..len - 1 {
+        for i in 0..len {
             let local_values = rows
                 .iter()
                 .map(|row| row[i % len])
