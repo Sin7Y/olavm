@@ -314,12 +314,7 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
 
 #[allow(unused_imports)]
 mod tests {
-    use crate::generation::builtin::{
-        generate_bitwise_trace, generate_cmp_trace, generate_rc_trace,
-    };
-    use crate::generation::cpu::generate_cpu_trace;
     use crate::generation::generate_traces;
-    use crate::generation::memory::generate_memory_trace;
     use crate::stark::config::StarkConfig;
     use crate::stark::ola_stark::OlaStark;
     use crate::stark::proof::PublicValues;
@@ -348,16 +343,15 @@ mod tests {
     #[allow(dead_code)]
     type S = dyn Stark<F, D>;
 
-    #[test]
-    fn fibo_recursive_decode() -> Result<()> {
-        let file = File::open("../assembler/testdata/fib_recursive.bin").unwrap();
-        let mut instructions = BufReader::new(file).lines();
+    #[allow(unused)]
+    fn test_ola_stark(program_path: &str) -> Result<()> {
+        let file = File::open(program_path).unwrap();
+        let instructions = BufReader::new(file).lines();
 
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
-        debug!("instructions:{:?}", program.instructions);
 
         for inst in instructions {
             program.instructions.push(inst.unwrap());
@@ -376,136 +370,39 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         )?;
-        println!("{}", mem::size_of_val(&proof));
+
         let ola_stark = OlaStark::default();
         verify_proof(ola_stark, proof, &config)
+    }
+
+    #[test]
+    fn fibo_recursive_decode() -> Result<()> {
+        let program_path = "../assembler/testdata/fib_recursive.bin";
+        test_ola_stark(program_path)
     }
 
     #[test]
     fn memory_test() -> Result<()> {
-        let file = File::open("../assembler/testdata/memory.bin").unwrap();
-        let mut instructions = BufReader::new(file).lines();
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
-        let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        )?;
-        let ola_stark = OlaStark::default();
-        verify_proof(ola_stark, proof, &config)
+        let program_path = "../assembler/testdata/memory.bin";
+        test_ola_stark(program_path)
     }
 
     #[test]
     fn call_test() -> Result<()> {
-        let file = File::open("../assembler/testdata/call.bin").unwrap();
-        let mut instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
-        let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        )?;
-        let ola_stark = OlaStark::default();
-        verify_proof(ola_stark, proof, &config)
+        let program_path = "../assembler/testdata/call.bin";
+        test_ola_stark(program_path)
     }
 
     #[test]
     fn range_check_test() -> Result<()> {
-        let file = File::open("../assembler/testdata/range_check.bin").unwrap();
-        let instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
-        let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        )?;
-        let ola_stark = OlaStark::default();
-        verify_proof(ola_stark, proof, &config)
+        let program_path = "../assembler/testdata/range_check.bin";
+        test_ola_stark(program_path)
     }
 
     #[test]
     fn bitwise_test() -> Result<()> {
-        let file = File::open("../assembler/testdata/bitwise.bin").unwrap();
-        let instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
-        let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        )?;
-        let ola_stark = OlaStark::default();
-        verify_proof(ola_stark, proof, &config)
+        let program_path = "../assembler/testdata/bitwise.bin";
+        test_ola_stark(program_path)
     }
 
     #[test]
@@ -532,65 +429,13 @@ mod tests {
         //   mov r0 3
         //   ret
 
-        let file = File::open("../assembler/testdata/comparison.bin").unwrap();
-        let mut instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
-        let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        )?;
-        let ola_stark = OlaStark::default();
-        verify_proof(ola_stark, proof, &config)
+        let program_path = "../assembler/testdata/comparison.bin";
+        test_ola_stark(program_path)
     }
 
     #[test]
     fn fibo_use_loop_memory_decode() -> Result<()> {
-        let file = File::open("../assembler/testdata/fib_loop.bin").unwrap();
-        let mut instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-        debug!("instructions:{:?}", program.instructions);
-
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
-        let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        )?;
-        let ola_stark = OlaStark::default();
-        verify_proof(ola_stark, proof, &config)
+        let program_path = "../assembler/testdata/fib_loop.bin";
+        test_ola_stark(program_path)
     }
 }
