@@ -642,6 +642,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 #[cfg(test)]
 mod tests {
     use crate::generation::cpu::generate_cpu_trace;
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
     use {
         super::*,
         core::program::Program,
@@ -653,20 +655,22 @@ mod tests {
         plonky2_util::log2_strict,
     };
 
-    fn test_cpu_stark(program_src: &str) {
+    fn test_cpu_stark(program_path: &str) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = CpuStark<F, D>;
 
-        let instructions = program_src.split('\n');
+        let file = File::open(program_path).unwrap();
+        let instructions = BufReader::new(file).lines();
+
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
         };
 
-        for inst in instructions.into_iter() {
-            program.instructions.push(inst.clone().parse().unwrap());
+        for inst in instructions {
+            program.instructions.push(inst.unwrap());
         }
 
         let mut process = Process::new();
@@ -674,8 +678,6 @@ mod tests {
 
         let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-
-        println!("rows: {}, columns: {}", cpu_rows.len(), cpu_rows[0].len());
 
         let mut stark = S::default();
         stark.set_compress_challenge(beta).unwrap();
@@ -725,168 +727,19 @@ mod tests {
 
     #[test]
     fn test_fibo_use_loop() {
-        let program_src = "0x6000080400000000
-                             0x4
-                             0x2010000001000000
-                             0xfffffffeffffffff
-                             0x4000001040000000
-                             0xa
-                             0x4000000008000000
-                             0xb
-                             0x6000080400000000
-                             0xfffffffefffffffd
-                             0x0000000000800000
-                             0x6000080400000000
-                             0x5
-                             0x0000200840000000
-                             0x0030000001000000
-                             0xffffffff00000000
-                             0x4000000840000000
-                             0x0
-                             0x0030000001000000
-                             0xfffffffeffffffff
-                             0x4000000840000000
-                             0x1
-                             0x0030000001000000
-                             0xfffffffefffffffe
-                             0x4000000840000000
-                             0x1
-                             0x0030000001000000
-                             0xfffffffefffffffd
-                             0x4000000840000000
-                             0x2
-                             0x0030000001000000
-                             0xfffffffefffffffc
-                             0x4000000020000000
-                             0x22
-                             0x0010000802000000
-                             0xfffffffefffffffc
-                             0x0010001002000000
-                             0xffffffff00000000
-                             0x0040100800010000
-                             0x4020000010000000
-                             0x2b
-                             0x4000000020000000
-                             0x44
-                             0x0010001002000000
-                             0xfffffffeffffffff
-                             0x0010002002000000
-                             0xfffffffefffffffe
-                             0x0040400c00000000
-                             0x0030000001000000
-                             0xfffffffefffffffd
-                             0x0010000802000000
-                             0xfffffffefffffffe
-                             0x0030000001000000
-                             0xfffffffeffffffff
-                             0x0010000802000000
-                             0xfffffffefffffffd
-                             0x0030000001000000
-                             0xfffffffefffffffe
-                             0x4000000020000000
-                             0x3c
-                             0x0010001002000000
-                             0xfffffffefffffffc
-                             0x4040000c00000000
-                             0x1
-                             0x0030000001000000
-                             0xfffffffefffffffc
-                             0x4000000020000000
-                             0x22
-                             0x0010000802000000
-                             0xfffffffefffffffd
-                             0x6000080400000000
-                             0xfffffffefffffffc
-                             0x0000000004000000";
-
-        test_cpu_stark(program_src);
+        let program_path = "../assembler/testdata/fib_loop.bin";
+        test_cpu_stark(program_path);
     }
 
     #[test]
     fn test_memory() {
-        let program_src = "0x6000080400000000
-0x4
-0x4000008040000000
-0x64
-0x0210000001000000
-0xfffffffefffffffe
-0x4000008040000000
-0x1
-0x0210000001000000
-0xfffffffeffffffff
-0x4000008040000000
-0x2
-0x0210000001000000
-0xffffffff00000000
-0x0010008002000000
-0xfffffffefffffffe
-0x0010001002000000
-0xfffffffeffffffff
-0x0010000802000000
-0xffffffff00000000
-0x0200208400000000
-0x0200108200000000
-0x6000080400000000
-0xfffffffefffffffd
-0x0000000000800000";
-
-        test_cpu_stark(program_src);
+        let program_path = "../assembler/testdata/memory.bin";
+        test_cpu_stark(program_path);
     }
 
     #[test]
     fn test_call() {
-        let program_src = "0x6000080400000000
-                             0x5
-                             0x2010000001000000
-                             0xfffffffeffffffff
-                             0x4000000840000000
-                             0xa
-                             0x0030000001000000
-                             0xfffffffefffffffc
-                             0x4000000840000000
-                             0x14
-                             0x0030000001000000
-                             0xfffffffefffffffd
-                             0x4000000840000000
-                             0x64
-                             0x0030000001000000
-                             0xfffffffefffffffe
-                             0x0010001002000000
-                             0xfffffffefffffffc
-                             0x0010002002000000
-                             0xfffffffefffffffd
-                             0x4000000008000000
-                             0x1d
-                             0x0030000001000000
-                             0xfffffffefffffffe
-                             0x0010000802000000
-                             0xfffffffefffffffe
-                             0x6000080400000000
-                             0xfffffffefffffffc
-                             0x0000000000800000
-                             0x6000080400000000
-                             0x5
-                             0x0050000001000000
-                             0xfffffffefffffffe
-                             0x0090000001000000
-                             0xfffffffefffffffd
-                             0x4000001040000000
-                             0xc8
-                             0x0050000001000000
-                             0xfffffffefffffffc
-                             0x0010001002000000
-                             0xfffffffefffffffe
-                             0x0010002002000000
-                             0xfffffffefffffffd
-                             0x0040400c00000000
-                             0x0030000001000000
-                             0xfffffffefffffffc
-                             0x0010000802000000
-                             0xfffffffefffffffc
-                             0x6000080400000000
-                             0xfffffffefffffffc
-                             0x0000000004000000";
-
-        test_cpu_stark(program_src);
+        let program_path = "../assembler/testdata/call.bin";
+        test_cpu_stark(program_path);
     }
 }
