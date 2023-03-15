@@ -77,7 +77,7 @@ impl FromStr for OlaAsmOperand {
         }
 
         let regex_identifier =
-            Regex::new(r"^(?P<identifier>_*[[:alpha:]][_0-9A-Za-z]]*)$").unwrap();
+            Regex::new(r"^(?P<identifier>_*[[:alpha:]]+[[:word:]]*)$").unwrap();
         let capture_identifier = regex_identifier.captures(s);
         if capture_identifier.is_some() {
             let caps = capture_identifier.unwrap();
@@ -291,11 +291,11 @@ mod tests {
             }
         );
 
-        let oper_identifier = OlaAsmOperand::from_str("_abc_d_efgHHd").unwrap();
+        let oper_identifier = OlaAsmOperand::from_str("_abc__d_efgHHd").unwrap();
         assert_eq!(
             oper_identifier,
             OlaAsmOperand::Identifier {
-                value: "_abc_d_efgHHd".to_string()
+                value: "_abc__d_efgHHd".to_string()
             }
         );
 

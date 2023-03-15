@@ -1,18 +1,36 @@
 use crate::error::AssemblerError;
-use crate::error::AssemblerError::ParseIntError;
-use core::program::instruction::Opcode;
-use core::program::instruction::{
-    IMM_FLAG_FIELD_BIT_POSITION, IMM_INSTRUCTION_LEN, NO_IMM_INSTRUCTION_LEN,
-    REG0_FIELD_BIT_POSITION, REG1_FIELD_BIT_POSITION, REG2_FIELD_BIT_POSITION,
-};
-use core::program::FIELD_ORDER;
+// use crate::error::AssemblerError::ParseIntError;
+// use core::program::instruction::Opcode;
+// use core::program::instruction::{
+//     IMM_FLAG_FIELD_BIT_POSITION, IMM_INSTRUCTION_LEN, NO_IMM_INSTRUCTION_LEN,
+//     REG0_FIELD_BIT_POSITION, REG1_FIELD_BIT_POSITION,
+// REG2_FIELD_BIT_POSITION, };
+// use core::program::FIELD_ORDER;
 use log::debug;
-use log::Level::Debug;
+// use log::Level::Debug;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::opcodes::OlaOpcode;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+const FIELD_ORDER: u64 = 0xFFFFFFFF00000001;
+
+const NO_IMM_INSTRUCTION_LEN: u64 = 1;
+const IMM_INSTRUCTION_LEN: u64 = 2;
+const OPCODE_FLAG_FIELD_LEN: u64 = 19;
+const REG_FIELD_BIT_LEN: u64 = 9;
+
+const OPCODE_FLAG_FIELD_BIT_POSITION: u64 = 16;
+const REG0_FIELD_BIT_POSITION: u64 = OPCODE_FLAG_FIELD_BIT_POSITION + OPCODE_FLAG_FIELD_LEN;
+const REG1_FIELD_BIT_POSITION: u64 = REG0_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
+const REG2_FIELD_BIT_POSITION: u64 = REG1_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
+const IMM_FLAG_FIELD_BIT_POSITION: u64 = REG2_FIELD_BIT_POSITION + REG_FIELD_BIT_LEN;
+
+pub const REG_FIELD_BITS_MASK: u64 = 0x1ff;
+pub const IMM_FLAG_FIELD_BITS_MASK: u64 = 0x1;
+pub const OPCODE_FIELD_BITS_MASK: u64 = 0x7_ffff_ffff;
+
+#[derive(Debug, Copy, Clone)]
 pub enum ImmediateFlag {
     NoUsed,
     Used,
@@ -102,19 +120,19 @@ impl Encoder {
                 match opcode.as_str() {
                     "mov" => {
                         raw_instruction |=
-                            1 << Opcode::MOV as u8 | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
+                            1 << OlaOpcode::MOV.binary_bit_shift() | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                     }
                     "assert" => {
                         raw_instruction |=
-                            1 << Opcode::ASSERT as u8 | 1 << (dst_index + REG2_FIELD_BIT_POSITION)
+                            1 << OlaOpcode::ASSERT.binary_bit_shift() | 1 << (dst_index + REG2_FIELD_BIT_POSITION)
                     }
                     "not" => {
                         raw_instruction |=
-                            1 << Opcode::NOT as u8 | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
+                            1 << OlaOpcode::NOT.binary_bit_shift()  | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                     }
                     "cjmp" => {
                         raw_instruction |=
-                            1 << Opcode::CJMP as u8 | 1 << (dst_index + REG2_FIELD_BIT_POSITION)
+                            1 << OlaOpcode::CJMP.binary_bit_shift() | 1 << (dst_index + REG2_FIELD_BIT_POSITION)
                     }
                     _ => panic!("not match opcode:{}", opcode),
                 }
@@ -134,15 +152,15 @@ impl Encoder {
                     raw_instruction |= 1 << (value.1 + REG1_FIELD_BIT_POSITION);
                 }
                 match opcode.as_str() {
-                    "cjmp" => raw_instruction |= 1 << Opcode::CJMP as u8,
+                    "cjmp" => raw_instruction |= 1 << OlaOpcode::CJMP.binary_bit_shift(),
                     "jmp" => {
-                        raw_instruction |= 1 << Opcode::JMP as u8;
+                        raw_instruction |= 1 << OlaOpcode::JMP.binary_bit_shift();
                     }
                     "call" => {
-                        raw_instruction |= 1 << Opcode::CALL as u8;
+                        raw_instruction |= 1 << OlaOpcode::CALL.binary_bit_shift();
                     }
                     "range" => {
-                        raw_instruction |= 1 << Opcode::RC as u8;
+                        raw_instruction |= 1 << OlaOpcode::RC.binary_bit_shift();
                     }
                     _ => panic!("not match opcode:{}", opcode),
                 }
@@ -166,43 +184,43 @@ impl Encoder {
 
                 match opcode.as_str() {
                     "add" => {
-                        raw_instruction |= 1 << (Opcode::ADD as u8)
+                        raw_instruction |= 1 << (OlaOpcode::ADD.binary_bit_shift())
                             | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                             | 1 << (op1_index + REG2_FIELD_BIT_POSITION)
                     }
                     "mul" => {
-                        raw_instruction |= 1 << (Opcode::MUL as u8)
+                        raw_instruction |= 1 << (OlaOpcode::MUL.binary_bit_shift())
                             | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                             | 1 << (op1_index + REG2_FIELD_BIT_POSITION)
                     }
                     "and" => {
-                        raw_instruction |= 1 << (Opcode::AND as u8)
+                        raw_instruction |= 1 << (OlaOpcode::AND.binary_bit_shift())
                             | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                             | 1 << (op1_index + REG2_FIELD_BIT_POSITION)
                     }
                     "or" => {
-                        raw_instruction |= 1 << (Opcode::OR as u8)
+                        raw_instruction |= 1 << (OlaOpcode::OR.binary_bit_shift())
                             | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                             | 1 << (op1_index + REG2_FIELD_BIT_POSITION)
                     }
                     "xor" => {
-                        raw_instruction |= 1 << (Opcode::XOR as u8)
+                        raw_instruction |= 1 << (OlaOpcode::XOR.binary_bit_shift())
                             | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                             | 1 << (op1_index + REG2_FIELD_BIT_POSITION)
                     }
                     "eq" => {
-                        raw_instruction |= 1 << Opcode::EQ as u8
+                        raw_instruction |= 1 << OlaOpcode::EQ.binary_bit_shift()
                             | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                             | 1 << (op1_index + REG2_FIELD_BIT_POSITION)
                     }
                     "neq" => {
-                        raw_instruction |= 1 << Opcode::NEQ as u8
+                        raw_instruction |= 1 << OlaOpcode::NEQ.binary_bit_shift()
                             | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                             | 1 << (op1_index + REG2_FIELD_BIT_POSITION)
                     }
 
                     "gte" => {
-                        raw_instruction |= 1 << Opcode::GTE as u8
+                        raw_instruction |= 1 << OlaOpcode::GTE.binary_bit_shift()
                             | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                             | 1 << (op1_index + REG2_FIELD_BIT_POSITION)
                     }
@@ -211,7 +229,7 @@ impl Encoder {
             }
             "ret" => {
                 assert!(ops.len() == 1, "ret params len is 0");
-                raw_instruction |= 1 << Opcode::RET as u8;
+                raw_instruction |= 1 << OlaOpcode::RET.binary_bit_shift();
             }
             "mstore" | "mload" => {
                 assert!(
@@ -236,7 +254,7 @@ impl Encoder {
                             raw_instruction |= 1 << (op1_value.1 + REG1_FIELD_BIT_POSITION);
                         }
                         raw_instruction |=
-                            1 << Opcode::MSTORE as u8 | 1 << (op2_index + REG2_FIELD_BIT_POSITION);
+                            1 << OlaOpcode::MSTORE.binary_bit_shift() | 1 << (op2_index + REG2_FIELD_BIT_POSITION);
                     }
                     "mload" => {
                         let op2_value = self.get_index_value(ops[2])?;
@@ -251,14 +269,14 @@ impl Encoder {
                             raw_instruction |= 1 << (op2_value.1 + REG1_FIELD_BIT_POSITION);
                         }
                         raw_instruction |=
-                            1 << Opcode::MLOAD as u8 | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
+                            1 << OlaOpcode::MLOAD.binary_bit_shift() | 1 << (dst_index + REG0_FIELD_BIT_POSITION)
                     }
                     _ => panic!("not match opcode:{}", opcode),
                 }
             }
             "end" => {
                 assert!(ops.len() == 1, "end params len is 0");
-                raw_instruction |= 1 << Opcode::END as u8;
+                raw_instruction |= 1 << OlaOpcode::END.binary_bit_shift();
             }
             _ => panic!("not match opcode:{}", opcode),
         };

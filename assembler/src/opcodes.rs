@@ -51,7 +51,7 @@ impl OlaOpcode {
         }
     }
 
-    fn binary_bit_shift(&self) -> u8 {
+    pub fn binary_bit_shift(&self) -> u8 {
         match self {
             OlaOpcode::ADD => 34,
             OlaOpcode::MUL => 33,

@@ -37,7 +37,8 @@ fn split_ola_asm_pieces(
         .iter()
         .skip(0)
         .map(|op_str| OlaAsmOperand::from_str(op_str))
-        .collect()?;
+        .map(|r| r.unwrap())
+        .collect();
 
     match opcode {
         OlaOpcode::ADD
@@ -77,9 +78,7 @@ fn split_ola_asm_pieces(
             }
         }
 
-        OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC => {
-            Err("wtf".to_string())
-        }
+        OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC => Err("wtf".to_string()),
 
         _ => Err("wtf".to_string()),
     }
