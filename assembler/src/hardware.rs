@@ -13,6 +13,62 @@ pub enum OlaRegister {
     R8,
 }
 
+impl OlaRegister {
+    fn binary_bit_shift_as_op0(&self) -> u8 {
+        match self {
+            OlaRegister::R8 => 61,
+            OlaRegister::R7 => 60,
+            OlaRegister::R6 => 59,
+            OlaRegister::R5 => 58,
+            OlaRegister::R4 => 57,
+            OlaRegister::R3 => 56,
+            OlaRegister::R2 => 55,
+            OlaRegister::R1 => 54,
+            OlaRegister::R0 => 53,
+        }
+    }
+
+    fn binary_bit_shift_as_op1(&self) -> u8 {
+        match self {
+            OlaRegister::R8 => 52,
+            OlaRegister::R7 => 51,
+            OlaRegister::R6 => 50,
+            OlaRegister::R5 => 49,
+            OlaRegister::R4 => 48,
+            OlaRegister::R3 => 47,
+            OlaRegister::R2 => 46,
+            OlaRegister::R1 => 45,
+            OlaRegister::R0 => 44,
+        }
+    }
+
+    fn binary_bit_shift_as_dst(&self) -> u8 {
+        match self {
+            OlaRegister::R8 => 43,
+            OlaRegister::R7 => 42,
+            OlaRegister::R6 => 41,
+            OlaRegister::R5 => 40,
+            OlaRegister::R4 => 39,
+            OlaRegister::R3 => 38,
+            OlaRegister::R2 => 37,
+            OlaRegister::R1 => 36,
+            OlaRegister::R0 => 35,
+        }
+    }
+
+    pub fn binary_bit_mask_as_op0(&self) -> u64 {
+        1 << self.binary_bit_shift_as_op0()
+    }
+
+    pub fn binary_bit_mask_as_op1(&self) -> u64 {
+        1 << self.binary_bit_shift_as_op1()
+    }
+
+    pub fn binary_bit_mask_as_dst(&self) -> u64 {
+        1 << self.binary_bit_shift_as_dst()
+    }
+}
+
 impl FromStr for OlaRegister {
     type Err = String;
 
