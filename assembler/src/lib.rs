@@ -3,5 +3,5 @@ mod error;
 mod operands;
 mod opcodes;
 mod hardware;
-mod relocate;
+mod asm_instruction;
 
