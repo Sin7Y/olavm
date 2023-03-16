@@ -1,9 +1,10 @@
-use enum_iterator::{Sequence, all};
+use enum_iterator::{all, Sequence};
+use std::fmt::{Display, Formatter};
 
 use crate::operands::OlaOperand;
 use std::str::FromStr;
 
-#[derive(Debug, Sequence, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Sequence, Clone, Eq, PartialEq)]
 pub enum OlaOpcode {
     ADD,
     MUL,
@@ -24,6 +25,14 @@ pub enum OlaOpcode {
     NOT,
     NEQ,
     GTE,
+}
+
+impl Display for OlaOpcode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let token = self.token();
+        let shift = self.binary_bit_shift();
+        write!(f, "{}({})", token, shift)
+    }
 }
 
 impl OlaOpcode {

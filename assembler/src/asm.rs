@@ -1,6 +1,7 @@
 use crate::opcodes::OlaOpcode;
 use crate::operands::OlaAsmOperand;
 use regex::Regex;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -10,6 +11,35 @@ pub struct OlaAsmInstruction {
     op0: Option<OlaAsmOperand>,
     op1: Option<OlaAsmOperand>,
     dst: Option<OlaAsmOperand>,
+}
+
+impl Display for OlaAsmInstruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let op0_desc = if self.op0.is_some() {
+            format!("{}", self.op0.as_ref().unwrap())
+        } else {
+            String::from("None")
+        };
+        let op1_desc = if self.op1.is_some() {
+            format!("{}", self.op1.as_ref().unwrap())
+        } else {
+            String::from("None")
+        };
+        let dst_desc = if self.dst.is_some() {
+            format!("{}", self.dst.as_ref().unwrap())
+        } else {
+            String::from("None")
+        };
+        write!(
+            f,
+            "asm({}), opcode: {}, op0: {}, op1: {}, dst: {}",
+            self.asm.clone(),
+            self.opcode,
+            op0_desc,
+            op1_desc,
+            dst_desc
+        )
+    }
 }
 
 impl FromStr for OlaAsmInstruction {
@@ -169,6 +199,25 @@ pub(crate) enum AsmRow {
     LabelProphet(String),
 }
 
+impl Display for AsmRow {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AsmRow::Instruction(instruction) => {
+                write!(f, "Instruction({})", instruction)
+            }
+            AsmRow::LabelCall(value) => {
+                write!(f, "LabelCall({})", value)
+            }
+            AsmRow::LabelJmp(value) => {
+                write!(f, "LabelJmp({})", value)
+            }
+            AsmRow::LabelProphet(value) => {
+                write!(f, "LabelProphet({})", value)
+            }
+        }
+    }
+}
+
 impl FromStr for AsmRow {
     type Err = String;
 
@@ -182,7 +231,7 @@ impl FromStr for AsmRow {
         }
 
         let regex_label_jmp =
-            Regex::new(r"^.(?P<label_jmp>LBL[1-9][[:digit:]]*_[1-9][[:digit:]]*):$").unwrap();
+            Regex::new(r"^(?P<label_jmp>\.LBL[1-9][[:digit:]]*_[[:digit:]]*):$").unwrap();
         let caps_jmp = regex_label_jmp.captures(s);
         if caps_jmp.is_some() {
             let caps = caps_jmp.unwrap();
@@ -191,8 +240,7 @@ impl FromStr for AsmRow {
         }
 
         let regex_label_prophet =
-            Regex::new(r"^.(?P<label_prophet>PROPHET[1-9][[:digit:]]*_[1-9][[:digit:]]*):$")
-                .unwrap();
+            Regex::new(r"^(?P<label_prophet>\.PROPHET[1-9][[:digit:]]*_[[:digit:]]*):$").unwrap();
         let caps_prophet = regex_label_prophet.captures(s);
         if caps_prophet.is_some() {
             let caps = caps_prophet.unwrap();
@@ -204,14 +252,14 @@ impl FromStr for AsmRow {
         return if instruction_res.is_ok() {
             Ok(AsmRow::Instruction(instruction_res.unwrap()))
         } else {
-            Err("".to_string())
+            Err(format!("AsmRow parse err: {}", s))
         };
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::asm::split_ola_asm_pieces;
+    use crate::asm::{split_ola_asm_pieces, AsmRow, OlaAsmInstruction};
     use crate::hardware::OlaRegister;
     use crate::opcodes::OlaOpcode;
     use crate::operands::{ImmediateValue, OlaAsmOperand};
@@ -240,6 +288,81 @@ mod tests {
             OlaAsmOperand::RegisterOperand {
                 register: OlaRegister::R0
             }
+        );
+    }
+
+    #[test]
+    fn test_asm_row_parse() {
+        let row_add_str = "add r0 5 r2";
+        let row_add = AsmRow::from_str(row_add_str).unwrap();
+        assert_eq!(
+            row_add,
+            AsmRow::Instruction(OlaAsmInstruction {
+                asm: row_add_str.to_string(),
+                opcode: OlaOpcode::ADD,
+                op0: Some(OlaAsmOperand::ImmediateOperand {
+                    value: ImmediateValue {
+                        hex: "0x5".to_string()
+                    }
+                }),
+                op1: Some(OlaAsmOperand::RegisterOperand {
+                    register: OlaRegister::R2
+                }),
+                dst: Some(OlaAsmOperand::RegisterOperand {
+                    register: OlaRegister::R0
+                })
+            })
+        );
+
+        let row_mload_str = "mload r1 [r8,-2]";
+        let row_mload = AsmRow::from_str(row_mload_str).unwrap();
+        assert_eq!(
+            row_mload,
+            AsmRow::Instruction(OlaAsmInstruction {
+                asm: row_mload_str.to_string(),
+                opcode: OlaOpcode::MLOAD,
+                op0: None,
+                op1: Some(OlaAsmOperand::RegisterWithOffset {
+                    register: OlaRegister::R8,
+                    offset: ImmediateValue::from_str("-2").unwrap()
+                }),
+                dst: Some(OlaAsmOperand::RegisterOperand {
+                    register: OlaRegister::R1
+                }),
+            })
+        );
+
+        let row_mstore_str = "mstore [r8,-5] r1";
+        let row_mstore = AsmRow::from_str(row_mstore_str).unwrap();
+        assert_eq!(
+            row_mstore,
+            AsmRow::Instruction(OlaAsmInstruction {
+                asm: row_mstore_str.to_string(),
+                opcode: OlaOpcode::MSTORE,
+                op0: Some(OlaAsmOperand::RegisterWithOffset {
+                    register: OlaRegister::R8,
+                    offset: ImmediateValue::from_str("-5").unwrap()
+                }),
+                op1: Some(OlaAsmOperand::RegisterOperand {
+                    register: OlaRegister::R1
+                }),
+                dst: None
+            })
+        );
+
+        let row_label_call_str = "bar:";
+        let row_label_call = AsmRow::from_str(row_label_call_str).unwrap();
+        assert_eq!(row_label_call, AsmRow::LabelCall(String::from("bar")));
+
+        let row_label_jmp_str = ".LBL1_0:";
+        let row_label_jmp = AsmRow::from_str(row_label_jmp_str).unwrap();
+        assert_eq!(row_label_jmp, AsmRow::LabelJmp(String::from(".LBL1_0")));
+
+        let row_label_prophet_str = ".PROPHET1_3:";
+        let row_label_prophet = AsmRow::from_str(row_label_prophet_str).unwrap();
+        assert_eq!(
+            row_label_prophet,
+            AsmRow::LabelProphet(String::from(".PROPHET1_3"))
         );
     }
 }

@@ -1,5 +1,6 @@
 use crate::hardware::{OlaRegister, OlaSpecialRegister};
 use regex::Regex;
+use std::fmt::{write, Display, Formatter};
 use std::i128;
 use std::num::ParseIntError;
 use std::str::FromStr;
@@ -25,6 +26,36 @@ pub(crate) enum OlaAsmOperand {
     Identifier {
         value: String,
     },
+}
+
+impl Display for OlaAsmOperand {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OlaAsmOperand::ImmediateOperand { value } => {
+                write!(f, "ImmediateOperand({})", value)
+            }
+            OlaAsmOperand::RegisterOperand { register } => {
+                write!(f, "RegisterOperand({})", register)
+            }
+            OlaAsmOperand::RegisterWithOffset { register, offset } => {
+                write!(
+                    f,
+                    "RegisterWithOffset([{},{}])",
+                    register,
+                    offset.to_u64().unwrap_or(0)
+                )
+            }
+            OlaAsmOperand::SpecialReg { special_reg } => {
+                write!(f, "SpecialReg({})", special_reg)
+            }
+            OlaAsmOperand::Label { value } => {
+                write!(f, "Label({})", value)
+            }
+            OlaAsmOperand::Identifier { value } => {
+                write!(f, "Identifier({})", value)
+            }
+        }
+    }
 }
 
 impl FromStr for OlaAsmOperand {
@@ -76,8 +107,7 @@ impl FromStr for OlaAsmOperand {
             });
         }
 
-        let regex_identifier =
-            Regex::new(r"^(?P<identifier>_*[[:alpha:]]+[[:word:]]*)$").unwrap();
+        let regex_identifier = Regex::new(r"^(?P<identifier>_*[[:alpha:]]+[[:word:]]*)$").unwrap();
         let capture_identifier = regex_identifier.captures(s);
         if capture_identifier.is_some() {
             let caps = capture_identifier.unwrap();
@@ -153,7 +183,7 @@ impl FromStr for OlaOperand {
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub struct ImmediateValue {
-    hex: String,
+    pub hex: String,
 }
 
 impl ImmediateValue {
@@ -161,6 +191,14 @@ impl ImmediateValue {
     fn to_u64(&self) -> Result<u64, ParseIntError> {
         let without_prefix = self.hex.trim_start_matches("0x");
         return u64::from_str_radix(without_prefix, 16);
+    }
+}
+
+impl Display for ImmediateValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let hex = self.hex.clone();
+        let value = self.to_u64().unwrap_or(0);
+        write!(f, "{}({})", hex, value)
     }
 }
 

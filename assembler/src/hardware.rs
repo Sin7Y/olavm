@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -88,10 +89,37 @@ impl FromStr for OlaRegister {
     }
 }
 
+impl Display for OlaRegister {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let token = match self {
+            OlaRegister::R0 => "r0".to_string(),
+            OlaRegister::R1 => "r1".to_string(),
+            OlaRegister::R2 => "r2".to_string(),
+            OlaRegister::R3 => "r3".to_string(),
+            OlaRegister::R4 => "r4".to_string(),
+            OlaRegister::R5 => "r5".to_string(),
+            OlaRegister::R6 => "r6".to_string(),
+            OlaRegister::R7 => "r7".to_string(),
+            OlaRegister::R8 => "r8".to_string(),
+        };
+        write!(f, "{}", token)
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum OlaSpecialRegister {
     PC,
     PSP,
+}
+
+impl Display for OlaSpecialRegister {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let token = match self {
+            OlaSpecialRegister::PC => "pc",
+            OlaSpecialRegister::PSP => "psp",
+        };
+        write!(f, "{}", token)
+    }
 }
 
 impl FromStr for OlaSpecialRegister {
