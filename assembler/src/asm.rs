@@ -1,5 +1,6 @@
 use crate::opcodes::OlaOpcode;
 use crate::operands::OlaAsmOperand;
+use regex::Regex;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -9,6 +10,27 @@ pub struct OlaAsmInstruction {
     op0: Option<OlaAsmOperand>,
     op1: Option<OlaAsmOperand>,
     dst: Option<OlaAsmOperand>,
+}
+
+impl FromStr for OlaAsmInstruction {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let split_res = split_ola_asm_pieces(s.to_string());
+        if split_res.is_err() {
+            let err_msg = split_res.err().unwrap();
+            return Err(err_msg);
+        }
+        let asm = s.to_string();
+        let (opcode, op0, op1, dst) = split_res.unwrap();
+        Ok(OlaAsmInstruction {
+            asm,
+            opcode,
+            op0,
+            op1,
+            dst,
+        })
+    }
 }
 
 // disassemble into opcode, op0, op1, dst
@@ -116,14 +138,80 @@ pub(crate) struct AsmInstruction {
     op0: Option<OlaAsmOperand>,
     op1: Option<OlaAsmOperand>,
     dst: Option<OlaAsmOperand>,
-    label_fn: Option<String>,
-    label_jmp: Option<String>,
-    label_prophet: Option<String>,
+}
+
+impl AsmInstruction {
+    fn binary_length(&self) -> u8 {
+        let mut len = 1;
+        len += match self.op0 {
+            Some(OlaAsmOperand::ImmediateOperand { .. })
+            | Some(OlaAsmOperand::RegisterWithOffset { .. })
+            | Some(OlaAsmOperand::Identifier { .. })
+            | Some(OlaAsmOperand::Label { .. }) => 1,
+            _ => 0,
+        };
+        len += match self.op1 {
+            Some(OlaAsmOperand::ImmediateOperand { .. })
+            | Some(OlaAsmOperand::RegisterWithOffset { .. })
+            | Some(OlaAsmOperand::Identifier { .. })
+            | Some(OlaAsmOperand::Label { .. }) => 1,
+            _ => 0,
+        };
+        len
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) enum AsmRow {
+    Instruction(OlaAsmInstruction),
+    LabelCall(String),
+    LabelJmp(String),
+    LabelProphet(String),
+}
+
+impl FromStr for AsmRow {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let regex_label_call = Regex::new(r"^(?P<label_call>[[:word:]]+):$").unwrap();
+        let caps_call = regex_label_call.captures(s);
+        if caps_call.is_some() {
+            let caps = caps_call.unwrap();
+            let label = caps.name("label_call").unwrap().as_str();
+            return Ok(AsmRow::LabelCall(label.to_string()));
+        }
+
+        let regex_label_jmp =
+            Regex::new(r"^.(?P<label_jmp>LBL[1-9][[:digit:]]*_[1-9][[:digit:]]*):$").unwrap();
+        let caps_jmp = regex_label_jmp.captures(s);
+        if caps_jmp.is_some() {
+            let caps = caps_jmp.unwrap();
+            let label = caps.name("label_jmp").unwrap().as_str();
+            return Ok(AsmRow::LabelJmp(label.to_string()));
+        }
+
+        let regex_label_prophet =
+            Regex::new(r"^.(?P<label_prophet>PROPHET[1-9][[:digit:]]*_[1-9][[:digit:]]*):$")
+                .unwrap();
+        let caps_prophet = regex_label_prophet.captures(s);
+        if caps_prophet.is_some() {
+            let caps = caps_prophet.unwrap();
+            let label = caps.name("label_prophet").unwrap().as_str();
+            return Ok(AsmRow::LabelProphet(label.to_string()));
+        }
+
+        let instruction_res = OlaAsmInstruction::from_str(s);
+        return if instruction_res.is_ok() {
+            Ok(AsmRow::Instruction(instruction_res.unwrap()))
+        } else {
+            Err("".to_string())
+        };
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::asm_instruction::split_ola_asm_pieces;
+    use crate::asm::split_ola_asm_pieces;
     use crate::hardware::OlaRegister;
     use crate::opcodes::OlaOpcode;
     use crate::operands::{ImmediateValue, OlaAsmOperand};
