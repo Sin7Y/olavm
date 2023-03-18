@@ -42,7 +42,7 @@ pub struct BinaryInstruction {
 }
 
 impl BinaryInstruction {
-    const BIT_SHIFT_IMM: usize = 64;
+    const BIT_SHIFT_IMM: usize = 62;
 
     pub fn binary_length(&self) -> u8 {
         let mut len = 1;
@@ -125,6 +125,9 @@ impl BinaryInstruction {
             None => {}
         }
 
+        if is_op1_imm {
+            instruction_u64 |= 1 << Self::BIT_SHIFT_IMM;
+        }
         instruction_u64 |= self.opcode.binary_bit_mask();
         let mut codes: Vec<String> = vec![];
         codes.push(format!("{:#x}", instruction_u64));
