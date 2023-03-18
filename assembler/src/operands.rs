@@ -181,6 +181,30 @@ impl FromStr for OlaOperand {
     }
 }
 
+impl Display for OlaOperand {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OlaOperand::ImmediateOperand { value } => {
+                write!(f, "ImmediateOperand({})", value)
+            }
+            OlaOperand::RegisterOperand { register } => {
+                write!(f, "RegisterOperand({})", register)
+            }
+            OlaOperand::RegisterWithOffset { register, offset } => {
+                write!(
+                    f,
+                    "RegisterWithOffset([{},{}])",
+                    register,
+                    offset.to_u64().unwrap_or(0)
+                )
+            }
+            OlaOperand::SpecialReg { special_reg } => {
+                write!(f, "SpecialReg({})", special_reg)
+            }
+        }
+    }
+}
+
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub struct ImmediateValue {
     pub hex: String,

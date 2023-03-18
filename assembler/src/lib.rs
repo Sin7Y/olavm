@@ -5,4 +5,5 @@ mod opcodes;
 mod hardware;
 mod asm;
 mod relocate;
+mod binary_program;
 
