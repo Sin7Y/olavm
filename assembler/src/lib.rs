@@ -6,4 +6,5 @@ mod hardware;
 mod asm;
 mod relocate;
 mod binary_program;
+mod encoder;
 

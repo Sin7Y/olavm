@@ -6,11 +6,11 @@ use std::str::FromStr;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct OlaAsmInstruction {
-    asm: String,
-    opcode: OlaOpcode,
-    op0: Option<OlaAsmOperand>,
-    op1: Option<OlaAsmOperand>,
-    dst: Option<OlaAsmOperand>,
+    pub(crate) asm: String,
+    pub(crate) opcode: OlaOpcode,
+    pub(crate) op0: Option<OlaAsmOperand>,
+    pub(crate) op1: Option<OlaAsmOperand>,
+    pub(crate) dst: Option<OlaAsmOperand>,
 }
 
 impl OlaAsmInstruction {

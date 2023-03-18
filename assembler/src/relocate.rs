@@ -11,18 +11,18 @@ pub(crate) struct AsmBundle {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct AsmProphet {
-    label: String,
-    code: String,
-    inputs: Vec<String>,
-    outputs: Vec<String>,
+    pub(crate) label: String,
+    pub(crate) code: String,
+    pub(crate) inputs: Vec<String>,
+    pub(crate) outputs: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelocatedAsmBundle {
-    instructions: Vec<OlaAsmInstruction>,
-    mapper_label_call: HashMap<String, usize>,
-    mapper_label_jmp: HashMap<String, usize>,
-    mapper_label_prophet: HashMap<String, usize>,
+    pub(crate) instructions: Vec<OlaAsmInstruction>,
+    pub(crate) prophets: HashMap<usize, AsmProphet>,
+    pub(crate) mapper_label_call: HashMap<String, usize>,
+    pub(crate) mapper_label_jmp: HashMap<String, usize>,
 }
 
 pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, String> {
@@ -116,11 +116,25 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
         }
         line_num += 1;
     }
+
+    let mut prophets: HashMap<usize, AsmProphet> = HashMap::new();
+    let asm_prophets = bundle.prophets.clone();
+    let mut prophets_iter = asm_prophets.iter();
+    while let Some(prophet) = prophets_iter.next() {
+        let host = mapper_label_prophet.get(prophet.label.as_str());
+        if host.is_none() {
+            return Err(format!(
+                "relocate error, prophet cannot find host: {}",
+                prophet.label
+            ));
+        }
+        prophets.insert(host.unwrap().clone(), prophet.clone());
+    }
     Ok(RelocatedAsmBundle {
         instructions,
+        prophets,
         mapper_label_call,
         mapper_label_jmp,
-        mapper_label_prophet,
     })
 }
 

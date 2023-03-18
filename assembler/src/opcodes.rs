@@ -1,7 +1,6 @@
 use enum_iterator::{all, Sequence};
 use std::fmt::{Display, Formatter};
 
-use crate::operands::OlaOperand;
 use std::str::FromStr;
 
 #[derive(Debug, Copy, Sequence, Clone, Eq, PartialEq)]
@@ -100,57 +99,4 @@ impl FromStr for OlaOpcode {
         }
         Err(format!("invalid opcode token: {}", s))
     }
-}
-
-pub struct OlaInstruction {
-    asm: String,
-    binary: Vec<String>,
-    opcode: OlaOpcode,
-    op0: Option<OlaOperand>,
-    op1: Option<OlaOperand>,
-    dst: Option<OlaOperand>,
-}
-
-// deassemble into opcode, op0, op1, dst
-// fn split_ola_asm_pieces(
-//     asm_line: String,
-// ) -> Result<
-//     (
-//         OlaOpcode,
-//         Option<OlaOperand>,
-//         Option<OlaOperand>,
-//         Option<OlaOperand>,
-//     ),
-//     String,
-// > { let str_pieces: Vec<_> = asm_line.trim().split_whitespace().collect();
-// > let opcode = ops.first().unwrap().to_lowercase();
-// }
-
-// fn parse_ola_instruction_from_asm(line: String) -> OlaInstruction {}
-
-// fn encode_ola_instruction(
-//     opcode: OlaOpcode,
-//     op0: Option<OlaOperand>,
-//     op1: Option<OlaOperand>,
-//     dst: Option<OlaOperand>,
-// ) -> String {
-//
-// }
-
-pub trait OlaInstructionHandler {
-    // fn from_asm(asm: String) -> Result<OlaInstruction, String> {
-    //     // todo
-    //     Err("not impl yet".to_string())
-    // }
-    //
-    // fn from_binary<'a>(
-    //     iter: &mut impl Iterator<Item = &'a String>,
-    // ) -> Result<OlaInstruction, String> {
-    //     // todo
-    //     Err("not impl yet".to_string())
-    // }
-
-    fn opcode(&self) -> OlaOpcode;
-    fn instruction_size(&self) -> u8;
-    fn has_immediate_value(&self) -> bool;
 }

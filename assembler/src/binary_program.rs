@@ -1,8 +1,38 @@
+use serde::{Deserialize, Serialize};
+
 use crate::opcodes::OlaOpcode;
 use crate::operands::{ImmediateValue, OlaOperand};
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BinaryProgram {
+    pub bytecode: String,
+    pub prophets: Vec<Prophet>,
+}
+
+impl BinaryProgram {
+    pub fn from_instructions(instructions: Vec<BinaryInstruction>) -> Result<BinaryProgram, String> {
+        let mut prophets: Vec<Prophet> = vec![];
+        let mut binary_instructions: Vec<String> = vec![];
+
+        let mut iter = instructions.iter();
+        while let Some(instruction) = iter.next() {
+            if let Some(prophet) = instruction.clone().prophet {
+                prophets.push(prophet);
+            }
+
+            let encoded_instruction = instruction.encode()?;
+            for encoded_line in encoded_instruction {
+                binary_instructions.push(encoded_line);
+            }
+        }
+
+        let bytecode = binary_instructions.join("\n");
+        Ok(BinaryProgram { bytecode, prophets })
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct BinaryInstruction {
     pub opcode: OlaOpcode,
     pub op0: Option<OlaOperand>,
@@ -109,15 +139,15 @@ impl Display for BinaryInstruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let op0 = match &self.op0 {
             Some(op) => format!("{}", op),
-            None => "None",
+            None => String::from("None"),
         };
         let op1 = match &self.op1 {
             Some(op) => format!("{}", op),
-            None => "None",
+            None => String::from("None"),
         };
         let dst = match &self.dst {
             Some(op) => format!("{}", op),
-            None => "None",
+            None => String::from("None"),
         };
         write!(
             f,
@@ -129,16 +159,16 @@ impl Display for BinaryInstruction {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Prophet {
-    host: usize,
-    code: String,
-    inputs: Vec<ProphetInput>,
-    outputs: Vec<String>,
+    pub host: usize,
+    pub code: String,
+    pub inputs: Vec<ProphetInput>,
+    pub outputs: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProphetInput {
-    name: String,      // identifier
-    stored_in: String, // reg or memory
-    anchor: String,    // when reg mode, targe reg; when memory mode, r8
-    offset: usize,     // when reg mode, 0; when memory mode, -3, -4, -5...(count from -3)
+    pub name: String,      // identifier
+    pub stored_in: String, // reg or memory
+    pub anchor: String,    // when reg mode, targe reg; when memory mode, r8
+    pub offset: usize,     // when reg mode, 0; when memory mode, -3, -4, -5...(count from -3)
 }
