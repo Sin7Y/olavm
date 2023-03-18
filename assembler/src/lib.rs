@@ -4,4 +4,5 @@ mod operands;
 mod opcodes;
 mod hardware;
 mod asm;
+mod relocate;
 

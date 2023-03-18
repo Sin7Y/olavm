@@ -5,12 +5,33 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct OlaAsmInstruction {
+pub(crate) struct OlaAsmInstruction {
     asm: String,
     opcode: OlaOpcode,
     op0: Option<OlaAsmOperand>,
     op1: Option<OlaAsmOperand>,
     dst: Option<OlaAsmOperand>,
+}
+
+impl OlaAsmInstruction {
+    pub(crate) fn binary_length(&self) -> u8 {
+        let mut len = 1;
+        len += match self.op0 {
+            Some(OlaAsmOperand::ImmediateOperand { .. })
+            | Some(OlaAsmOperand::RegisterWithOffset { .. })
+            | Some(OlaAsmOperand::Identifier { .. })
+            | Some(OlaAsmOperand::Label { .. }) => 1,
+            _ => 0,
+        };
+        len += match self.op1 {
+            Some(OlaAsmOperand::ImmediateOperand { .. })
+            | Some(OlaAsmOperand::RegisterWithOffset { .. })
+            | Some(OlaAsmOperand::Identifier { .. })
+            | Some(OlaAsmOperand::Label { .. }) => 1,
+            _ => 0,
+        };
+        len
+    }
 }
 
 impl Display for OlaAsmInstruction {
@@ -162,34 +183,34 @@ fn split_ola_asm_pieces(
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct AsmInstruction {
-    opcode: OlaOpcode,
-    op0: Option<OlaAsmOperand>,
-    op1: Option<OlaAsmOperand>,
-    dst: Option<OlaAsmOperand>,
-}
-
-impl AsmInstruction {
-    fn binary_length(&self) -> u8 {
-        let mut len = 1;
-        len += match self.op0 {
-            Some(OlaAsmOperand::ImmediateOperand { .. })
-            | Some(OlaAsmOperand::RegisterWithOffset { .. })
-            | Some(OlaAsmOperand::Identifier { .. })
-            | Some(OlaAsmOperand::Label { .. }) => 1,
-            _ => 0,
-        };
-        len += match self.op1 {
-            Some(OlaAsmOperand::ImmediateOperand { .. })
-            | Some(OlaAsmOperand::RegisterWithOffset { .. })
-            | Some(OlaAsmOperand::Identifier { .. })
-            | Some(OlaAsmOperand::Label { .. }) => 1,
-            _ => 0,
-        };
-        len
-    }
-}
+// #[derive(Debug, Clone, Eq, PartialEq)]
+// pub(crate) struct AsmInstruction {
+//     opcode: OlaOpcode,
+//     op0: Option<OlaAsmOperand>,
+//     op1: Option<OlaAsmOperand>,
+//     dst: Option<OlaAsmOperand>,
+// }
+//
+// impl AsmInstruction {
+//     fn binary_length(&self) -> u8 {
+//         let mut len = 1;
+//         len += match self.op0 {
+//             Some(OlaAsmOperand::ImmediateOperand { .. })
+//             | Some(OlaAsmOperand::RegisterWithOffset { .. })
+//             | Some(OlaAsmOperand::Identifier { .. })
+//             | Some(OlaAsmOperand::Label { .. }) => 1,
+//             _ => 0,
+//         };
+//         len += match self.op1 {
+//             Some(OlaAsmOperand::ImmediateOperand { .. })
+//             | Some(OlaAsmOperand::RegisterWithOffset { .. })
+//             | Some(OlaAsmOperand::Identifier { .. })
+//             | Some(OlaAsmOperand::Label { .. }) => 1,
+//             _ => 0,
+//         };
+//         len
+//     }
+// }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) enum AsmRow {
@@ -231,7 +252,7 @@ impl FromStr for AsmRow {
         }
 
         let regex_label_jmp =
-            Regex::new(r"^(?P<label_jmp>\.LBL[1-9][[:digit:]]*_[[:digit:]]*):$").unwrap();
+            Regex::new(r"^(?P<label_jmp>\.LBL[[:digit:]]+_[[:digit:]]+):$").unwrap();
         let caps_jmp = regex_label_jmp.captures(s);
         if caps_jmp.is_some() {
             let caps = caps_jmp.unwrap();
@@ -240,7 +261,7 @@ impl FromStr for AsmRow {
         }
 
         let regex_label_prophet =
-            Regex::new(r"^(?P<label_prophet>\.PROPHET[1-9][[:digit:]]*_[[:digit:]]*):$").unwrap();
+            Regex::new(r"^(?P<label_prophet>\.PROPHET[[:digit:]]+_[[:digit:]]+):$").unwrap();
         let caps_prophet = regex_label_prophet.captures(s);
         if caps_prophet.is_some() {
             let caps = caps_prophet.unwrap();
@@ -354,9 +375,9 @@ mod tests {
         let row_label_call = AsmRow::from_str(row_label_call_str).unwrap();
         assert_eq!(row_label_call, AsmRow::LabelCall(String::from("bar")));
 
-        let row_label_jmp_str = ".LBL1_0:";
+        let row_label_jmp_str = ".LBL0_0:";
         let row_label_jmp = AsmRow::from_str(row_label_jmp_str).unwrap();
-        assert_eq!(row_label_jmp, AsmRow::LabelJmp(String::from(".LBL1_0")));
+        assert_eq!(row_label_jmp, AsmRow::LabelJmp(String::from(".LBL0_0")));
 
         let row_label_prophet_str = ".PROPHET1_3:";
         let row_label_prophet = AsmRow::from_str(row_label_prophet_str).unwrap();
