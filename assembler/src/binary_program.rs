@@ -11,7 +11,9 @@ pub struct BinaryProgram {
 }
 
 impl BinaryProgram {
-    pub fn from_instructions(instructions: Vec<BinaryInstruction>) -> Result<BinaryProgram, String> {
+    pub fn from_instructions(
+        instructions: Vec<BinaryInstruction>,
+    ) -> Result<BinaryProgram, String> {
         let mut prophets: Vec<Prophet> = vec![];
         let mut binary_instructions: Vec<String> = vec![];
 
@@ -130,7 +132,7 @@ impl BinaryInstruction {
         }
         instruction_u64 |= self.opcode.binary_bit_mask();
         let mut codes: Vec<String> = vec![];
-        codes.push(format!("{:#x}", instruction_u64));
+        codes.push(format!("0x{:0>16x}", instruction_u64));
         if imm.is_some() {
             codes.push(imm.unwrap().hex);
         };

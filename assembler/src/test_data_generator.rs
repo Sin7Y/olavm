@@ -11,6 +11,14 @@ mod tests {
         );
     }
 
+    #[test]
+    fn generate_memory() {
+        generate_from_file(
+            "memory.json".to_string(),
+            "memory.bin".to_string(),
+        );
+    }
+
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let input_path = format!("test_data/asm/{}", input_file_name);
         let json_str = std::fs::read_to_string(&input_path).unwrap();
