@@ -230,6 +230,21 @@ impl FromStr for ImmediateValue {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with("0x") {
+            let without_prefix = s.trim_start_matches("0x");
+            let hex_parsed_res = u64::from_str_radix(without_prefix, 16);
+            if hex_parsed_res.is_err() {
+                return Err(format!("Immediate is not a valid number: {}", s));
+            }
+            let value = hex_parsed_res.unwrap();
+            if value > ImmediateValue::ORDER {
+                return Err(format!("Immediate overflow: {}", s));
+            }
+            return Ok(ImmediateValue {
+                hex: format!("{:#x}", value),
+            });
+        }
+
         let parsed_result = i128::from_str_radix(s, 10);
         if parsed_result.is_err() {
             return Err(format!("Immediate is not a valid number: {}", s));
@@ -259,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_immediate_parse() {
-        let overflow_upper = ImmediateValue::from_str("0xFFFFFFFF00000002");
+        let overflow_upper = ImmediateValue::from_str("0xffffffff00000002");
         let err_str = "wtf".to_string();
         assert!(matches!(overflow_upper, Err(err_str)));
         let immediate_999 = ImmediateValue::from_str("999").unwrap();
@@ -272,6 +287,14 @@ mod tests {
 
         let value_u64 = immediate_999.to_u64().unwrap();
         assert_eq!(value_u64, 999);
+
+        let hex_value = ImmediateValue::from_str("0xffffffff00000000").unwrap();
+        assert_eq!(
+            hex_value,
+            ImmediateValue {
+                hex: String::from("0xffffffff00000000")
+            }
+        );
     }
 
     #[test]

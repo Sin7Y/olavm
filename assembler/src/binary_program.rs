@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use crate::hardware::OlaRegister;
 use crate::opcodes::OlaOpcode;
 use crate::operands::{ImmediateValue, OlaOperand};
+use enum_iterator::all;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BinaryProgram {
@@ -44,7 +47,7 @@ pub struct BinaryInstruction {
 }
 
 impl BinaryInstruction {
-    const BIT_SHIFT_IMM: usize = 62;
+    const BIT_SHIFT_OP1_IMM: usize = 62;
 
     pub fn binary_length(&self) -> u8 {
         let mut len = 1;
@@ -128,7 +131,7 @@ impl BinaryInstruction {
         }
 
         if is_op1_imm {
-            instruction_u64 |= 1 << Self::BIT_SHIFT_IMM;
+            instruction_u64 |= 1 << Self::BIT_SHIFT_OP1_IMM;
         }
         instruction_u64 |= self.opcode.binary_bit_mask();
         let mut codes: Vec<String> = vec![];
@@ -137,6 +140,132 @@ impl BinaryInstruction {
             codes.push(imm.unwrap().hex);
         };
         Ok(codes)
+    }
+
+    pub(crate) fn decode(
+        binary_code: Vec<String>,
+        prophet: Option<Prophet>,
+    ) -> Result<Self, String> {
+        if binary_code.is_empty() {
+            return Err(format!(
+                "decode binary instruction error, empty binary code."
+            ));
+        }
+        let instruction_binary = binary_code.first().unwrap();
+        let instruction_without_prefix = instruction_binary.trim_start_matches("0x");
+        let instruction_u64_res = u64::from_str_radix(instruction_without_prefix, 16);
+        if instruction_u64_res.is_err() {
+            return Err(format!(
+                "decode binary instruction error, instruction could not parsed into an u64: {}",
+                instruction_binary
+            ));
+        }
+        let instruction_u64 = instruction_u64_res.unwrap();
+
+        let matched_opcode = all::<OlaOpcode>()
+            .collect::<Vec<_>>()
+            .iter()
+            .map(|op| {
+                let mask = op.binary_bit_mask();
+                let matched = instruction_u64 & mask != 0;
+                (op, matched)
+            })
+            .find(|(op, matched)| matched.clone())
+            .map(|(op, matched)| op.clone());
+        if matched_opcode.is_none() {
+            return Err(format!(
+                "decode binary instruction error, no opcode matched: {}",
+                instruction_binary
+            ));
+        }
+        let opcode = matched_opcode.unwrap().clone();
+        let is_op1_imm = instruction_u64 & (1 << Self::BIT_SHIFT_OP1_IMM) != 0;
+        let instruction_length =
+            if is_op1_imm || opcode == OlaOpcode::MLOAD || opcode == OlaOpcode::MSTORE {
+                2
+            } else {
+                1
+            };
+        if binary_code.len() != instruction_length {
+            return Err(format!("decode binary instruction error, length should be {}, but input code length is {}: {}", instruction_length, binary_code.len(), instruction_binary));
+        }
+        let immediate_value = if instruction_length == 2 {
+            let imm_line = binary_code.get(2).unwrap().clone();
+            let imm = ImmediateValue::from_str(imm_line.as_str());
+            if imm.is_err() {
+                return Err(format!("decode binary instruction error, invalid immediate value: {}, with instruction {}", imm_line, instruction_binary));
+            };
+            Some(imm.unwrap())
+        } else {
+            None
+        };
+
+        let op0 = all::<OlaRegister>()
+            .collect::<Vec<_>>()
+            .iter()
+            .map(|reg| {
+                let mask = reg.binary_bit_mask_as_op0();
+                let matched = instruction_u64 & mask != 0;
+                (reg, matched)
+            })
+            .find(|(reg, matched)| matched.clone())
+            .map(|(reg, matched)| OlaOperand::RegisterOperand {
+                register: reg.clone(),
+            });
+
+        let op1 = if is_op1_imm {
+            Some(OlaOperand::ImmediateOperand {
+                value: immediate_value.unwrap(),
+            })
+        } else {
+            let matched_op1_reg = all::<OlaRegister>()
+                .collect::<Vec<_>>()
+                .iter()
+                .map(|reg| {
+                    let mask = reg.binary_bit_mask_as_op1();
+                    let matched = instruction_u64 & mask != 0;
+                    (reg, matched)
+                })
+                .find(|(reg, matched)| matched.clone())
+                .map(|(reg, matched)| reg.clone());
+            if opcode == OlaOpcode::MSTORE || opcode == OlaOpcode::MLOAD {
+                if matched_op1_reg.is_none() {
+                    return Err(format!(""));
+                }
+                Some(OlaOperand::RegisterWithOffset {
+                    register: matched_op1_reg.unwrap(),
+                    offset: immediate_value.unwrap(),
+                })
+            } else {
+                if matched_op1_reg.is_some() {
+                    Some(OlaOperand::RegisterOperand {
+                        register: matched_op1_reg.unwrap(),
+                    })
+                } else {
+                    None
+                }
+            }
+        };
+
+        let dst = all::<OlaRegister>()
+            .collect::<Vec<_>>()
+            .iter()
+            .map(|reg| {
+                let mask = reg.binary_bit_mask_as_dst();
+                let matched = instruction_u64 & mask != 0;
+                (reg, matched)
+            })
+            .find(|(reg, matched)| matched.clone())
+            .map(|(reg, matched)| OlaOperand::RegisterOperand {
+                register: reg.clone(),
+            });
+        Ok(BinaryInstruction {
+            opcode,
+            op0,
+            op1,
+            dst,
+            prophet,
+        })
     }
 }
 

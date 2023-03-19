@@ -1,7 +1,8 @@
+use enum_iterator::Sequence;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Sequence)]
 pub enum OlaRegister {
     R0,
     R1,
