@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use std::fs;
     use crate::encoder::encode_to_binary;
     use crate::relocate::{asm_relocate, AsmBundle};
 
@@ -53,6 +54,7 @@ mod tests {
     }
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {
+        let _ = fs::create_dir_all("test_data/bin");
         let input_path = format!("test_data/asm/{}", input_file_name);
         let json_str = std::fs::read_to_string(&input_path).unwrap();
         let bundle: AsmBundle = serde_json::from_str(json_str.as_str()).unwrap();

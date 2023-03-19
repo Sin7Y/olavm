@@ -47,7 +47,7 @@ pub struct BinaryInstruction {
 }
 
 impl BinaryInstruction {
-    const BIT_SHIFT_OP1_IMM: usize = 62;
+    pub const BIT_SHIFT_OP1_IMM: usize = 62;
 
     pub fn binary_length(&self) -> u8 {
         let mut len = 1;
@@ -190,7 +190,7 @@ impl BinaryInstruction {
             return Err(format!("decode binary instruction error, length should be {}, but input code length is {}: {}", instruction_length, binary_code.len(), instruction_binary));
         }
         let immediate_value = if instruction_length == 2 {
-            let imm_line = binary_code.get(2).unwrap().clone();
+            let imm_line = binary_code.get(1).unwrap().clone();
             let imm = ImmediateValue::from_str(imm_line.as_str());
             if imm.is_err() {
                 return Err(format!("decode binary instruction error, invalid immediate value: {}, with instruction {}", imm_line, instruction_binary));

@@ -8,4 +8,5 @@ mod relocate;
 mod binary_program;
 mod encoder;
 mod test_data_generator;
+mod decoder;
 

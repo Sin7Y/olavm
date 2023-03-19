@@ -187,35 +187,6 @@ fn split_ola_asm_pieces(
     }
 }
 
-// #[derive(Debug, Clone, Eq, PartialEq)]
-// pub(crate) struct AsmInstruction {
-//     opcode: OlaOpcode,
-//     op0: Option<OlaAsmOperand>,
-//     op1: Option<OlaAsmOperand>,
-//     dst: Option<OlaAsmOperand>,
-// }
-//
-// impl AsmInstruction {
-//     fn binary_length(&self) -> u8 {
-//         let mut len = 1;
-//         len += match self.op0 {
-//             Some(OlaAsmOperand::ImmediateOperand { .. })
-//             | Some(OlaAsmOperand::RegisterWithOffset { .. })
-//             | Some(OlaAsmOperand::Identifier { .. })
-//             | Some(OlaAsmOperand::Label { .. }) => 1,
-//             _ => 0,
-//         };
-//         len += match self.op1 {
-//             Some(OlaAsmOperand::ImmediateOperand { .. })
-//             | Some(OlaAsmOperand::RegisterWithOffset { .. })
-//             | Some(OlaAsmOperand::Identifier { .. })
-//             | Some(OlaAsmOperand::Label { .. }) => 1,
-//             _ => 0,
-//         };
-//         len
-//     }
-// }
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) enum AsmRow {
     Instruction(OlaAsmInstruction),
