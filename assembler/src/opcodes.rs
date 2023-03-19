@@ -35,7 +35,7 @@ impl Display for OlaOpcode {
 }
 
 impl OlaOpcode {
-    fn token(&self) -> String {
+    pub fn token(&self) -> String {
         match self {
             OlaOpcode::ADD => "add".to_string(),
             OlaOpcode::MUL => "mul".to_string(),

@@ -271,6 +271,64 @@ impl BinaryInstruction {
             prophet,
         })
     }
+
+    pub fn get_asm_form_code(&self) -> String {
+        match self.opcode {
+            OlaOpcode::ADD
+            | OlaOpcode::MUL
+            | OlaOpcode::AND
+            | OlaOpcode::OR
+            | OlaOpcode::XOR
+            | OlaOpcode::EQ
+            | OlaOpcode::NEQ
+            | OlaOpcode::GTE => {
+                format!(
+                    "{} {} {} {}",
+                    self.opcode.token(),
+                    self.dst.clone().unwrap().get_asm_token(),
+                    self.op0.clone().unwrap().get_asm_token(),
+                    self.op1.clone().unwrap().get_asm_token()
+                )
+            }
+
+            OlaOpcode::MOV | OlaOpcode::NOT | OlaOpcode::MLOAD => {
+                format!(
+                    "{} {} {}",
+                    self.opcode.token(),
+                    self.dst.clone().unwrap().get_asm_token(),
+                    self.op1.clone().unwrap().get_asm_token()
+                )
+            }
+
+            OlaOpcode::MSTORE => {
+                format!(
+                    "{} {} {}",
+                    self.opcode.token(),
+                    self.op1.clone().unwrap().get_asm_token(),
+                    self.op0.clone().unwrap().get_asm_token()
+                )
+            }
+
+            OlaOpcode::ASSERT | OlaOpcode::CJMP => {
+                format!(
+                    "{} {} {}",
+                    self.opcode.token(),
+                    self.op0.clone().unwrap().get_asm_token(),
+                    self.op1.clone().unwrap().get_asm_token()
+                )
+            }
+
+            OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC => {
+                format!(
+                    "{} {}",
+                    self.opcode.token(),
+                    self.op1.clone().unwrap().get_asm_token()
+                )
+            }
+
+            OlaOpcode::RET | OlaOpcode::END => format!("{}", self.opcode.token()),
+        }
+    }
 }
 
 impl Display for BinaryInstruction {

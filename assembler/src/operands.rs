@@ -136,6 +136,23 @@ pub enum OlaOperand {
     },
 }
 
+impl OlaOperand {
+    pub fn get_asm_token(&self) -> String {
+        match self {
+            OlaOperand::ImmediateOperand { value } => value.clone().hex,
+            OlaOperand::RegisterOperand { register } => {
+                format!("{}", register)
+            }
+            OlaOperand::RegisterWithOffset { register, offset } => {
+                format!("[{},{}]", register, offset.hex)
+            }
+            OlaOperand::SpecialReg { special_reg } => {
+                format!("{}", special_reg)
+            }
+        }
+    }
+}
+
 impl FromStr for OlaOperand {
     type Err = String;
 
