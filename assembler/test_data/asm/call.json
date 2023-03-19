@@ -1,0 +1,4 @@
+{
+  "program": "main:\n.LBL0_0:\nadd r8 r8 5\nmstore [r8,-2] r8\nmov r0 10\nmstore [r8,-5] r0\nmov r0 20\nmstore [r8,-4] r0\nmov r0 100\nmstore [r8,-3] r0\nmload r1 [r8,-5]\nmload r2 [r8,-4]\ncall bar\nmstore [r8,-3] r0\nmload r0 [r8,-3]\nadd r8 r8 -5\nend\nbar:\n.LBL1_0:\nadd r8 r8 5\nmstore [r8,-3] r1\nmstore [r8,-4] r2\nmov r1 200\nmstore [r8,-5] r1\nmload r1 [r8,-3]\nmload r2 [r8,-4]\nadd r0 r1 r2\nmstore [r8,-5] r0\nmload r0 [r8,-5]\nadd r8 r8 -5\nret ",
+  "prophets": []
+}
