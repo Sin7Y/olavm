@@ -92,7 +92,7 @@ impl FromStr for OlaAsmOperand {
             return Ok(OlaAsmOperand::ImmediateOperand { value });
         }
 
-        let regex_label = Regex::new(r"^.(?P<label>LBL[[:digit:]]+_[[:digit:]]+)$").unwrap();
+        let regex_label = Regex::new(r"^(?P<label>.LBL[[:digit:]]+_[[:digit:]]+)$").unwrap();
         let capture_label = regex_label.captures(s);
         if capture_label.is_some() {
             let caps = capture_label.unwrap();
@@ -349,7 +349,7 @@ mod tests {
         assert_eq!(
             oper_label,
             OlaAsmOperand::Label {
-                value: "LBL1_2".to_string()
+                value: ".LBL1_2".to_string()
             }
         );
 
