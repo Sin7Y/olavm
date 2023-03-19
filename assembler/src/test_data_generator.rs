@@ -7,7 +7,7 @@ mod tests {
     fn generate_hand_write_prophet() {
         generate_from_file(
             "hand_write_prophet.json".to_string(),
-            "hand_write_prophet.bin".to_string(),
+            "hand_write_prophet.json".to_string(),
         );
     }
 
@@ -15,7 +15,7 @@ mod tests {
     fn generate_memory() {
         generate_from_file(
             "memory.json".to_string(),
-            "memory.bin".to_string(),
+            "memory.json".to_string(),
         );
     }
 
