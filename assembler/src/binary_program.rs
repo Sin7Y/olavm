@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::hardware::OlaRegister;
+use crate::hardware::{OlaRegister, OlaSpecialRegister};
 use crate::opcodes::OlaOpcode;
 use crate::operands::{ImmediateValue, OlaOperand};
 use enum_iterator::all;
@@ -240,6 +240,10 @@ impl BinaryInstruction {
                 if matched_op1_reg.is_some() {
                     Some(OlaOperand::RegisterOperand {
                         register: matched_op1_reg.unwrap(),
+                    })
+                } else if opcode == OlaOpcode::MOV {
+                    Some(OlaOperand::SpecialReg {
+                        special_reg: OlaSpecialRegister::PSP,
                     })
                 } else {
                     None

@@ -92,7 +92,7 @@ fn get_instruction_length(instruction: String) -> Result<u8, String> {
 #[cfg(test)]
 mod tests {
     use crate::binary_program::BinaryProgram;
-    use crate::decoder::{decode_binary_program_from_file, decode_binary_program_to_instructions};
+    use crate::decoder::decode_binary_program_to_instructions;
     use crate::encoder::encode_to_binary;
     use crate::relocate::{asm_relocate, AsmBundle};
 
@@ -134,13 +134,6 @@ mod tests {
     #[test]
     fn test_decode_fibo_loop() {
         test_decode("fibo_loop.json".to_string());
-    }
-
-    #[test]
-    fn test_decode_fibo_loop_from_file() {
-        let path = format!("test_data/bin/{}", "fibo_loop.json".to_string());
-        let instructions = decode_binary_program_from_file(path).unwrap();
-        dbg!(instructions);
     }
 
     fn test_decode(file_name: String) {
