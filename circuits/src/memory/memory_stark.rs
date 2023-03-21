@@ -405,7 +405,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program);
+        let _ = process.execute(&mut program, &mut None);
 
         let rows = generate_memory_trace(&program.trace.memory);
         let len = rows[0].len();

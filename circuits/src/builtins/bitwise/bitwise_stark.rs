@@ -448,7 +448,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program);
+        let _ = process.execute(&mut program, &mut None);
 
         let (rows, bitwise_beta) =
             generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);

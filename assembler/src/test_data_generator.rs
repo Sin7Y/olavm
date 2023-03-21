@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use std::fs;
     use crate::encoder::encode_to_binary;
     use crate::relocate::{asm_relocate, AsmBundle};
+    use std::fs;
 
     #[test]
     fn generate_hand_write_prophet() {

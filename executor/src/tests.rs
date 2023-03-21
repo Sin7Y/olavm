@@ -1,6 +1,9 @@
 use crate::Process;
+use assembler::binary_program::BinaryProgram;
 use core::program::Program;
 use log::{debug, LevelFilter};
+use regex::Regex;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
@@ -42,7 +45,7 @@ fn memory_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program).unwrap();
+    process.execute(&mut program, &mut None).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -74,7 +77,7 @@ fn range_check_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program).unwrap();
+    process.execute(&mut program, &mut None).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -110,8 +113,10 @@ fn bitwise_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program).unwrap();
-
+    let res = process.execute(&mut program, &mut None);
+    if res.is_err() {
+        println!("res:{:?}", res);
+    }
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
@@ -156,7 +161,7 @@ fn comparison_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program).unwrap();
+    process.execute(&mut program, &mut None).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -213,7 +218,7 @@ fn call_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program).unwrap();
+    process.execute(&mut program, &mut None).unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -287,7 +292,7 @@ fn fibo_use_loop_decode() {
 
     let mut process = Process::new();
     let start = Instant::now();
-    process.execute(&mut program).unwrap();
+    process.execute(&mut program, &mut None).unwrap();
     let exec_time = start.elapsed();
     println!(
         "exec_time: {}, exec steps: {}",
@@ -365,7 +370,7 @@ fn fibo_recursive() {
     }
 
     let mut process = Process::new();
-    let res = process.execute(&mut program);
+    let res = process.execute(&mut program, &mut None);
     if res.is_err() {
         panic!("execute err:{:?}", res);
     }
@@ -374,5 +379,59 @@ fn fibo_recursive() {
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
     let mut file = File::create("fibo_recursive.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn prophet_test() {
+    // main:
+    // .LBL0_0:
+    //     add r8 r8 2
+    // mov r0 20
+    // mov r1 5
+    // add r0 r0 r1
+    // mov r7 r8
+    // mov r8 psp
+    //     .PROPHET0_0:
+    //     mload r1 [r8,0]
+    // mov r8 r7
+    // mul r2 r1 r1
+    // assert r0 r2
+    // mstore [r8,-2] r0
+    // mstore [r8,-1] r1
+    // end
+    let file = File::open(
+        "../assembler/test_data/bin/hand_write_prophet.json",
+    )
+    .unwrap();
+    let reader = BufReader::new(file);
+
+    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
+    let instructions = program.bytecode.split("\n");
+    let mut prophets = HashMap::new();
+    for item in program.prophets {
+        prophets.insert(item.host as u64, item);
+    }
+
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+
+    for inst in instructions {
+        program.instructions.push(inst.to_string());
+    }
+
+    let mut process = Process::new();
+
+    let res = process.execute(&mut program, &mut Some(prophets));
+    if res.is_err() {
+        panic!("execute err:{:?}", res);
+    }
+
+    println!("vm trace: {:?}", program.trace);
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("prophet.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }

@@ -1,21 +1,22 @@
-use crate::decode::decode_raw_instruction;
+use crate::decode::{decode_raw_instruction, REG_NOT_USED};
 use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
-//use core::program::instruction::ImmediateOrRegName::Immediate;
+use assembler::binary_program::Prophet;
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{
     Add, And, Assert, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload,
     Mov, Mstore, Mul, Neq, Not, Opcode, Or, Range, Ret, Sub, Xor,
 };
 use core::program::{Program, REGISTER_NUM};
-use core::trace::trace::{
-    BitwiseOperation, ComparisonOperation, MemoryTraceCell, RegisterSelector,
-};
+use core::trace::trace::{ComparisonOperation, MemoryTraceCell, RegisterSelector};
 use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType};
+use interpreter::interpreter::Interpreter;
+use interpreter::utils::number::NumberRet::{Multiple, Single};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64, PrimeField64};
-use std::collections::BTreeMap;
+use regex::Regex;
+use std::collections::{BTreeMap, HashMap};
 use std::time::Instant;
 
 mod coprocessor;
@@ -29,7 +30,8 @@ mod tests;
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 8;
 const REGION_SPAN: u64 = 2 ^ 32 - 1;
-
+const MEM_SPAN_SIZE: u64 = u32::MAX as u64;
+const PSP_START_ADDR: u64 = GoldilocksField::ORDER - MEM_SPAN_SIZE;
 #[derive(Debug, Default)]
 pub struct Process {
     pub clk: u32,
@@ -41,6 +43,7 @@ pub struct Process {
     pub opcode: GoldilocksField,
     pub op1_imm: GoldilocksField,
     pub memory: MemoryTree,
+    pub psp: GoldilocksField,
 }
 
 impl Process {
@@ -57,6 +60,7 @@ impl Process {
             memory: MemoryTree {
                 trace: BTreeMap::new(),
             },
+            psp: GoldilocksField(PSP_START_ADDR),
         }
     }
 
@@ -84,8 +88,12 @@ impl Process {
             );
         } else {
             let src_index = self.get_reg_index(op_str);
-            value = self.registers[src_index];
-            return (value, ImmediateOrRegName::RegName(src_index));
+            if src_index == (REG_NOT_USED as usize) {
+                return (self.psp, ImmediateOrRegName::RegName(src_index));
+            } else {
+                value = self.registers[src_index];
+                return (value, ImmediateOrRegName::RegName(src_index));
+            }
         }
     }
 
@@ -227,7 +235,11 @@ impl Process {
         instuction
     }
 
-    pub fn execute(&mut self, program: &mut Program) -> Result<(), ProcessorError> {
+    pub fn execute(
+        &mut self,
+        program: &mut Program,
+        prophets: &mut Option<HashMap<u64, Prophet>>,
+    ) -> Result<(), ProcessorError> {
         let instrs_len = program.instructions.len() as u64;
 
         let start = Instant::now();
@@ -291,10 +303,68 @@ impl Process {
         );
 
         let mut start = Instant::now();
+
+        let mut prophets_insert = HashMap::new();
+        if prophets.is_some() {
+            prophets_insert = prophets.clone().unwrap();
+        }
         loop {
             self.register_selector = RegisterSelector::default();
             let registers_status = self.registers;
             let pc_status = self.pc;
+
+            if prophets_insert.get(&pc_status).is_some() {
+                let prophet = prophets_insert.get(&pc_status).unwrap();
+                debug!("prophet code:{}", prophet.code);
+
+                let re = Regex::new(r"^%\{([\s\S]*)%}$").unwrap();
+
+                let code = re.captures(&prophet.code).unwrap().get(1).unwrap().as_str();
+                debug!("code:{}", code);
+                let mut interpreter = Interpreter::new(code);
+
+                let mut values = Vec::new();
+                for input in prophet.inputs.iter() {
+                    if input.stored_in.eq("reg") {
+                        let re = Regex::new(r"^r(\d)$").unwrap();
+                        let cap = re.captures(&input.anchor).unwrap();
+                        let reg_index = cap.get(1).unwrap().as_str().parse::<usize>().unwrap();
+                        values.push(self.registers[reg_index].0);
+                    }
+                }
+                let res = interpreter.run(prophet, values);
+                debug!("interpreter:{:?}", res);
+
+                if let Ok(out) = res {
+                    match out {
+                        Single(_) => panic!("not use single for return"),
+                        Multiple(values) => {
+                            debug!("prophet addr:{}", self.psp.0);
+                            for value in values {
+                                self.memory.write(
+                                    self.psp.0,
+                                    self.clk,
+                                    GoldilocksField::from_canonical_u64(0 as u64),
+                                    GoldilocksField::from_canonical_u64(
+                                        MemoryType::WriteOnce as u64,
+                                    ),
+                                    GoldilocksField::from_canonical_u64(
+                                        MemoryOperation::Write as u64,
+                                    ),
+                                    GoldilocksField::from_canonical_u64(
+                                        FilterLockForMain::True as u64,
+                                    ),
+                                    GoldilocksField::from_canonical_u64(1_u64),
+                                    GoldilocksField::from_canonical_u64(0_u64),
+                                    GoldilocksField::from_canonical_u64(0_u64),
+                                    GoldilocksField(value.get_number() as u64),
+                                );
+                                self.psp += GoldilocksField::ONE;
+                            }
+                        }
+                    }
+                }
+            }
 
             let instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
             debug!("execute instruction: {:?}", instruction);
@@ -308,8 +378,9 @@ impl Process {
             match opcode.as_str() {
                 //todo: not need move to arithmatic library
                 "mov" | "not" => {
-                    assert!(
-                        ops.len() == 3,
+                    assert_eq!(
+                        ops.len(),
+                        3,
                         "{}",
                         format!("{} params len is 2", opcode.as_str())
                     );
@@ -317,8 +388,12 @@ impl Process {
                     let value = self.get_index_value(ops[2]);
                     self.register_selector.op1 = value.0;
                     if let ImmediateOrRegName::RegName(op1_index) = value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
+                        if op1_index != (REG_NOT_USED as usize) {
+                            self.register_selector.op1_reg_sel[op1_index] =
+                                GoldilocksField::from_canonical_u64(1);
+                        } else {
+                            debug!("prophet addr:{}", value.0);
+                        }
                     }
 
                     match opcode.as_str() {
@@ -342,8 +417,9 @@ impl Process {
                     self.pc += step;
                 }
                 "eq" | "neq" => {
-                    assert!(
-                        ops.len() == 4,
+                    assert_eq!(
+                        ops.len(),
+                        4,
                         "{}",
                         format!("{} params len is 3", opcode.as_str())
                     );
@@ -394,8 +470,9 @@ impl Process {
                     self.pc += step;
                 }
                 "assert" => {
-                    assert!(
-                        ops.len() == 3,
+                    assert_eq!(
+                        ops.len(),
+                        3,
                         "{}",
                         format!("{} params len is 2", opcode.as_str())
                     );
@@ -429,8 +506,9 @@ impl Process {
                     self.pc += step;
                 }
                 "cjmp" => {
-                    assert!(
-                        ops.len() == 3,
+                    assert_eq!(
+                        ops.len(),
+                        3,
                         "{}",
                         format!("{} params len is 2", opcode.as_str())
                     );
@@ -452,8 +530,9 @@ impl Process {
                     }
                 }
                 "jmp" => {
-                    assert!(
-                        ops.len() == 2,
+                    assert_eq!(
+                        ops.len(),
+                        2,
                         "{}",
                         format!("{} params len is 1", opcode.as_str())
                     );
@@ -467,8 +546,9 @@ impl Process {
                     }
                 }
                 "add" | "mul" | "sub" => {
-                    assert!(
-                        ops.len() == 4,
+                    assert_eq!(
+                        ops.len(),
+                        4,
                         "{}",
                         format!("{} params len is 3", opcode.as_str())
                     );
@@ -518,8 +598,9 @@ impl Process {
                     self.pc += step;
                 }
                 "call" => {
-                    assert!(
-                        ops.len() == 2,
+                    assert_eq!(
+                        ops.len(),
+                        2,
                         "{}",
                         format!("{} params len is 1", opcode.as_str())
                     );
@@ -559,7 +640,7 @@ impl Process {
                     self.pc = call_addr.0 .0;
                 }
                 "ret" => {
-                    assert!(ops.len() == 1, "ret params len is 0");
+                    assert_eq!(ops.len(), 1, "ret params len is 0");
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RET as u8);
                     self.register_selector.op0 =
                         self.registers[FP_REG_INDEX] - GoldilocksField::ONE;
@@ -693,8 +774,9 @@ impl Process {
                     self.pc += step;
                 }
                 "range" => {
-                    assert!(
-                        ops.len() == 2,
+                    assert_eq!(
+                        ops.len(),
+                        2,
                         "{}",
                         format!("{} params len is 1", opcode.as_str())
                     );
@@ -715,8 +797,9 @@ impl Process {
                     self.pc += step;
                 }
                 "and" | "or" | "xor" => {
-                    assert!(
-                        ops.len() == 4,
+                    assert_eq!(
+                        ops.len(),
+                        4,
                         "{}",
                         format!("{} params len is 3", opcode.as_str())
                     );
@@ -771,8 +854,9 @@ impl Process {
                     self.pc += step;
                 }
                 "gte" => {
-                    assert!(
-                        ops.len() == 4,
+                    assert_eq!(
+                        ops.len(),
+                        4,
                         "{}",
                         format!("{} params len is 3", opcode.as_str())
                     );
@@ -806,7 +890,7 @@ impl Process {
                     self.register_selector.dst_reg_sel[dst_index] =
                         GoldilocksField::from_canonical_u64(1);
 
-                    let mut abs_diff = GoldilocksField::ZERO;
+                    let abs_diff;
                     if self.register_selector.dst.is_one() {
                         abs_diff = self.register_selector.op0 - self.register_selector.op1;
                     } else {
@@ -889,19 +973,22 @@ impl Process {
             let canonical_addr =
                 GoldilocksField::from_noncanonical_u64(*field_addr).to_canonical_u64();
             for cell in cells {
-                debug!("addr:{}, cell:{:?}", field_addr, cell);
+                debug!(
+                    "canonical_addr:{}, addr:{}, cell:{:?}",
+                    canonical_addr, field_addr, cell
+                );
 
                 if cell.region_prophet.is_one() {
-                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
-                        - GoldilocksField::from_canonical_u64(canonical_addr);
+                    diff_addr_cond =
+                        GoldilocksField::from_canonical_u64(GoldilocksField::ORDER - canonical_addr)
                 } else if cell.region_poseidon.is_one() {
-                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
-                        - GoldilocksField::from_canonical_u64(REGION_SPAN)
-                        - GoldilocksField::from_canonical_u64(canonical_addr);
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(
+                        GoldilocksField::ORDER - REGION_SPAN - canonical_addr,
+                    );
                 } else if cell.region_ecdsa.is_one() {
-                    diff_addr_cond = GoldilocksField::from_canonical_u64(GoldilocksField::ORDER)
-                        - GoldilocksField::from_canonical_u64(2 * REGION_SPAN)
-                        - GoldilocksField::from_canonical_u64(canonical_addr);
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(
+                        GoldilocksField::ORDER - 2 * REGION_SPAN - canonical_addr,
+                    );
                 } else {
                     diff_addr_cond = GoldilocksField::ZERO;
                 }

@@ -124,7 +124,9 @@ fn main() {
             }
 
             let mut process = Process::new();
-            process.execute(&mut program).expect("OlaVM execute fail");
+            process
+                .execute(&mut program, &mut None)
+                .expect("OlaVM execute fail");
             let path = sub_matches.get_one::<String>("output").expect("required");
             println!("Output trace file path: {}", path);
             let file = File::create(path).unwrap();

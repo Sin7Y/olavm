@@ -76,7 +76,7 @@ pub(crate) fn bench_memory_rw(inst_size: u64) {
 
     let mut process = Process::new();
     let start = Instant::now();
-    process.execute(&mut program);
+    process.execute(&mut program, &mut None);
     let exec_time = start.elapsed();
     println!(
         "exec_time: {}, exec steps: {}",

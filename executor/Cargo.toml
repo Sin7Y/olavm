@@ -14,8 +14,11 @@ serde_json = "1"
 serde = {version = "1" }
 serde_derive = {version = "1"}
 plonky2 = { path = "../plonky2/plonky2" }
-
+assembler = {path="../assembler"}
+interpreter = {path="../interpreter"}
 criterion = "0.4"
+regex = "1"
+
 
 [[bench]]
 name = "fibo_loop"
