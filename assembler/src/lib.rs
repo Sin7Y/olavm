@@ -1,12 +1,12 @@
 pub mod encode;
 mod error;
-mod operands;
-mod opcodes;
-mod hardware;
+pub mod operands;
+pub mod opcodes;
+pub mod hardware;
 mod asm;
 mod relocate;
-mod binary_program;
+pub mod binary_program;
 mod encoder;
 mod test_data_generator;
-mod decoder;
+pub mod decoder;
 
