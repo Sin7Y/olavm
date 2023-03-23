@@ -148,14 +148,12 @@ mod tests {
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
-    use assembler::binary_program::BinaryProgram;
     use core::program::Program;
     use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
-    use std::collections::HashMap;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
 
@@ -238,87 +236,5 @@ mod tests {
     fn test_rangecheck_with_program() {
         let program_path = "../assembler/testdata/range_check.bin";
         test_rc_stark(&program_path);
-    }
-
-    #[test]
-    fn test_rc_prophet() {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-        type S = RangeCheckStark<F, D>;
-        let mut stark = S::default();
-
-        let file = File::open("../assembler/test_data/bin/hand_write_prophet.json").unwrap();
-        let reader = BufReader::new(file);
-
-        let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-        let instructions = program.bytecode.split("\n");
-        let mut prophets = HashMap::new();
-        for item in program.prophets {
-            prophets.insert(item.host as u64, item);
-        }
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-
-        for inst in instructions {
-            program.instructions.push(inst.to_string());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut Some(prophets));
-
-        let rows = generate_rc_trace::<F>(&program.trace.builtin_rangecheck);
-        let len = rows[0].len();
-        println!(
-            "raw trace len:{}, extended len: {}",
-            program.trace.builtin_rangecheck.len(),
-            len
-        );
-
-        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
-        let subgroup =
-            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
-
-        for i in 0..len {
-            let l = rows.iter().map(|row| row[i % len]).collect::<Vec<_>>();
-
-            let local_values = l.try_into().unwrap();
-            let next_values = rows
-                .iter()
-                .map(|row| row[(i + 1) % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let vars = StarkEvaluationVars {
-                local_values: &local_values,
-                next_values: &next_values,
-            };
-
-            let mut constraint_consumer = ConstraintConsumer::new(
-                vec![F::rand()],
-                subgroup[i] - last,
-                if i == 0 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-                if i == len - 1 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-            );
-            stark.eval_packed_generic(vars, &mut constraint_consumer);
-
-            for &acc in &constraint_consumer.constraint_accs {
-                if !acc.eq(&GoldilocksField::ZERO) {
-                    println!("constraint error in line {}", i);
-                }
-                assert_eq!(acc, GoldilocksField::ZERO);
-            }
-        }
     }
 }

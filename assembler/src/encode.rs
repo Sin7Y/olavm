@@ -10,7 +10,6 @@ use log::debug;
 // use log::Level::Debug;
 use crate::opcodes::OlaOpcode;
 use regex::Regex;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 const FIELD_ORDER: u64 = 0xFFFFFFFF00000001;

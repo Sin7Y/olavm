@@ -70,7 +70,7 @@ impl BinaryInstruction {
         let mut is_op1_imm = false;
 
         match &self.op0 {
-            Some(OlaOperand::ImmediateOperand { value }) => {
+            Some(OlaOperand::ImmediateOperand { .. }) => {
                 return Err(format!(
                     "encode err, op0 cannot be immediate value: {}",
                     self
@@ -83,7 +83,7 @@ impl BinaryInstruction {
                 instruction_u64 |= register.binary_bit_mask_as_op0();
                 imm = Some(offset.clone())
             }
-            Some(OlaOperand::SpecialReg { special_reg }) => {
+            Some(OlaOperand::SpecialReg { .. }) => {
                 return Err(format!("encode err, op0 cannot be special reg: {}", self))
             }
             None => {}
@@ -111,7 +111,7 @@ impl BinaryInstruction {
             None => {}
         }
         match &self.dst {
-            Some(OlaOperand::ImmediateOperand { value }) => {
+            Some(OlaOperand::ImmediateOperand { .. }) => {
                 return Err(format!(
                     "encode err, dst cannot be ImmediateOperand: {}",
                     self
@@ -170,8 +170,8 @@ impl BinaryInstruction {
                 let matched = instruction_u64 & mask != 0;
                 (op, matched)
             })
-            .find(|(op, matched)| matched.clone())
-            .map(|(op, matched)| op.clone());
+            .find(|(_op, matched)| matched.clone())
+            .map(|(op, _matched)| op.clone());
         if matched_opcode.is_none() {
             return Err(format!(
                 "decode binary instruction error, no opcode matched: {}",
@@ -208,8 +208,8 @@ impl BinaryInstruction {
                 let matched = instruction_u64 & mask != 0;
                 (reg, matched)
             })
-            .find(|(reg, matched)| matched.clone())
-            .map(|(reg, matched)| OlaOperand::RegisterOperand {
+            .find(|(_reg, matched)| matched.clone())
+            .map(|(reg, _matched)| OlaOperand::RegisterOperand {
                 register: reg.clone(),
             });
 
@@ -226,8 +226,8 @@ impl BinaryInstruction {
                     let matched = instruction_u64 & mask != 0;
                     (reg, matched)
                 })
-                .find(|(reg, matched)| matched.clone())
-                .map(|(reg, matched)| reg.clone());
+                .find(|(_reg, matched)| matched.clone())
+                .map(|(reg, _matched)| reg.clone());
             if opcode == OlaOpcode::MSTORE || opcode == OlaOpcode::MLOAD {
                 if matched_op1_reg.is_none() {
                     return Err(format!(""));
@@ -259,8 +259,8 @@ impl BinaryInstruction {
                 let matched = instruction_u64 & mask != 0;
                 (reg, matched)
             })
-            .find(|(reg, matched)| matched.clone())
-            .map(|(reg, matched)| OlaOperand::RegisterOperand {
+            .find(|(_reg, matched)| matched.clone())
+            .map(|(reg, _matched)| OlaOperand::RegisterOperand {
                 register: reg.clone(),
             });
         Ok(BinaryInstruction {

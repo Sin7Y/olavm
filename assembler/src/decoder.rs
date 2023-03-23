@@ -64,7 +64,9 @@ pub fn decode_binary_program_to_instructions(
             return Err(format!("binary code error ==> {}", parsed.err().unwrap()));
         }
         let instruction = parsed.unwrap();
+        let instruction_len = instruction.binary_length();
         instructions.push(instruction);
+        host += instruction_len as usize;
     }
     Ok(instructions)
 }

@@ -1,6 +1,6 @@
 use crate::hardware::{OlaRegister, OlaSpecialRegister};
 use regex::Regex;
-use std::fmt::{write, Display, Formatter};
+use std::fmt::{Display, Formatter};
 use std::i128;
 use std::num::ParseIntError;
 use std::str::FromStr;
