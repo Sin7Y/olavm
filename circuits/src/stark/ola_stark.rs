@@ -443,10 +443,7 @@ mod tests {
 
     #[test]
     fn prophet_test() {
-        let file = File::open(
-            "../assembler/test_data/bin/hand_write_prophet.json",
-        )
-        .unwrap();
+        let file = File::open("../assembler/test_data/bin/hand_write_prophet.json").unwrap();
         let reader = BufReader::new(file);
 
         let program: BinaryProgram = serde_json::from_reader(reader).unwrap();

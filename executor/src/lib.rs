@@ -32,6 +32,9 @@ const FP_REG_INDEX: usize = 8;
 const REGION_SPAN: u64 = 2 ^ 32 - 1;
 const MEM_SPAN_SIZE: u64 = u32::MAX as u64;
 const PSP_START_ADDR: u64 = GoldilocksField::ORDER - MEM_SPAN_SIZE;
+const POSEIDON_START_ADDR: u64 = GoldilocksField::ORDER - 2 * MEM_SPAN_SIZE;
+const ECDSA_START_ADDR: u64 = GoldilocksField::ORDER - 3 * MEM_SPAN_SIZE;
+
 #[derive(Debug, Default)]
 pub struct Process {
     pub clk: u32,
@@ -235,6 +238,53 @@ impl Process {
         instuction
     }
 
+    pub fn prophet(&mut self, prophets: &HashMap<u64, Prophet>, pc: u64) {
+        let prophet = prophets.get(&pc).unwrap();
+        debug!("prophet code:{}", prophet.code);
+
+        let re = Regex::new(r"^%\{([\s\S]*)%}$").unwrap();
+
+        let code = re.captures(&prophet.code).unwrap().get(1).unwrap().as_str();
+        debug!("code:{}", code);
+        let mut interpreter = Interpreter::new(code);
+
+        let mut values = Vec::new();
+        for input in prophet.inputs.iter() {
+            if input.stored_in.eq("reg") {
+                let re = Regex::new(r"^r(\d)$").unwrap();
+                let cap = re.captures(&input.anchor).unwrap();
+                let reg_index = cap.get(1).unwrap().as_str().parse::<usize>().unwrap();
+                values.push(self.registers[reg_index].0);
+            }
+        }
+        let res = interpreter.run(prophet, values);
+        debug!("interpreter:{:?}", res);
+
+        if let Ok(out) = res {
+            match out {
+                Single(_) => panic!("not use single for return"),
+                Multiple(values) => {
+                    debug!("prophet addr:{}", self.psp.0);
+                    for value in values {
+                        self.memory.write(
+                            self.psp.0,
+                            0, //write， clk is 0
+                            GoldilocksField::from_canonical_u64(0 as u64),
+                            GoldilocksField::from_canonical_u64(MemoryType::WriteOnce as u64),
+                            GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
+                            GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
+                            GoldilocksField::from_canonical_u64(1_u64),
+                            GoldilocksField::from_canonical_u64(0_u64),
+                            GoldilocksField::from_canonical_u64(0_u64),
+                            GoldilocksField(value.get_number() as u64),
+                        );
+                        self.psp += GoldilocksField::ONE;
+                    }
+                }
+            }
+        }
+    }
+
     pub fn execute(
         &mut self,
         program: &mut Program,
@@ -314,56 +364,7 @@ impl Process {
             let pc_status = self.pc;
 
             if prophets_insert.get(&pc_status).is_some() {
-                let prophet = prophets_insert.get(&pc_status).unwrap();
-                debug!("prophet code:{}", prophet.code);
-
-                let re = Regex::new(r"^%\{([\s\S]*)%}$").unwrap();
-
-                let code = re.captures(&prophet.code).unwrap().get(1).unwrap().as_str();
-                debug!("code:{}", code);
-                let mut interpreter = Interpreter::new(code);
-
-                let mut values = Vec::new();
-                for input in prophet.inputs.iter() {
-                    if input.stored_in.eq("reg") {
-                        let re = Regex::new(r"^r(\d)$").unwrap();
-                        let cap = re.captures(&input.anchor).unwrap();
-                        let reg_index = cap.get(1).unwrap().as_str().parse::<usize>().unwrap();
-                        values.push(self.registers[reg_index].0);
-                    }
-                }
-                let res = interpreter.run(prophet, values);
-                debug!("interpreter:{:?}", res);
-
-                if let Ok(out) = res {
-                    match out {
-                        Single(_) => panic!("not use single for return"),
-                        Multiple(values) => {
-                            debug!("prophet addr:{}", self.psp.0);
-                            for value in values {
-                                self.memory.write(
-                                    self.psp.0,
-                                    self.clk,
-                                    GoldilocksField::from_canonical_u64(0 as u64),
-                                    GoldilocksField::from_canonical_u64(
-                                        MemoryType::WriteOnce as u64,
-                                    ),
-                                    GoldilocksField::from_canonical_u64(
-                                        MemoryOperation::Write as u64,
-                                    ),
-                                    GoldilocksField::from_canonical_u64(
-                                        FilterLockForMain::True as u64,
-                                    ),
-                                    GoldilocksField::from_canonical_u64(1_u64),
-                                    GoldilocksField::from_canonical_u64(0_u64),
-                                    GoldilocksField::from_canonical_u64(0_u64),
-                                    GoldilocksField(value.get_number() as u64),
-                                );
-                                self.psp += GoldilocksField::ONE;
-                            }
-                        }
-                    }
-                }
+                self.prophet(&prophets_insert, pc_status);
             }
 
             let instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
@@ -753,17 +754,39 @@ impl Process {
                         (self.register_selector.aux0 + self.register_selector.op1)
                             .to_canonical_u64(),
                     );
+
+                    let read_addr = (op1_value.0
+                        + GoldilocksField::from_canonical_u64(offset_addr))
+                    .to_canonical_u64();
+
+                    let mut is_rw;
+                    let mut region_prophet = GoldilocksField::ZERO;
+                    let mut region_poseidon = GoldilocksField::ZERO;
+                    let mut region_ecdsa = GoldilocksField::ZERO;
+
+                    if read_addr >= PSP_START_ADDR {
+                        region_prophet = GoldilocksField::ONE;
+                        is_rw = MemoryType::WriteOnce;
+                    } else if read_addr >= POSEIDON_START_ADDR {
+                        region_poseidon = GoldilocksField::ONE;
+                        is_rw = MemoryType::WriteOnce;
+                    } else if read_addr >= ECDSA_START_ADDR {
+                        region_ecdsa = GoldilocksField::ONE;
+                        is_rw = MemoryType::WriteOnce;
+                    } else {
+                        is_rw = MemoryType::ReadWrite;
+                    }
                     self.registers[dst_index] = self.memory.read(
                         (op1_value.0 + GoldilocksField::from_canonical_u64(offset_addr))
                             .to_canonical_u64(),
                         self.clk,
                         GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u64),
-                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                        GoldilocksField::from_canonical_u64(is_rw as u64),
                         GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
+                        region_prophet,
+                        region_poseidon,
+                        region_ecdsa,
                     );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u8);
 
@@ -970,6 +993,7 @@ impl Process {
 
         for (field_addr, cells) in self.memory.trace.iter() {
             let mut new_addr_flag = true;
+            let mut write_one_flag = false;
             let canonical_addr =
                 GoldilocksField::from_noncanonical_u64(*field_addr).to_canonical_u64();
             for cell in cells {
@@ -979,20 +1003,25 @@ impl Process {
                 );
 
                 if cell.region_prophet.is_one() {
-                    diff_addr_cond =
-                        GoldilocksField::from_canonical_u64(GoldilocksField::ORDER - canonical_addr)
+                    diff_addr_cond = GoldilocksField::from_canonical_u64(
+                        GoldilocksField::ORDER - canonical_addr,
+                    );
+                    write_one_flag = true;
                 } else if cell.region_poseidon.is_one() {
                     diff_addr_cond = GoldilocksField::from_canonical_u64(
                         GoldilocksField::ORDER - REGION_SPAN - canonical_addr,
                     );
+                    write_one_flag = true;
                 } else if cell.region_ecdsa.is_one() {
                     diff_addr_cond = GoldilocksField::from_canonical_u64(
                         GoldilocksField::ORDER - 2 * REGION_SPAN - canonical_addr,
                     );
+                    write_one_flag = true;
                 } else {
                     diff_addr_cond = GoldilocksField::ZERO;
                 }
                 if first_row_flag {
+                    let mut rc_value = GoldilocksField::ZERO;
                     let trace_cell = MemoryTraceCell {
                         addr: GoldilocksField::from_canonical_u64(canonical_addr),
                         clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
@@ -1010,7 +1039,7 @@ impl Process {
                         region_ecdsa: cell.region_ecdsa,
                         value: cell.value,
                         filter_looking_rc: GoldilocksField::ONE,
-                        rc_value: GoldilocksField::ZERO,
+                        rc_value,
                     };
                     program.trace.memory.push(trace_cell);
                     first_row_flag = false;
@@ -1022,7 +1051,15 @@ impl Process {
                     );
 
                     diff_addr = GoldilocksField::from_canonical_u64(canonical_addr - origin_addr);
-                    diff_addr_inv = diff_addr.inverse();
+                    let rc_value;
+
+                    if write_one_flag {
+                        diff_addr_inv = GoldilocksField::ZERO;
+                        rc_value = diff_addr_cond;
+                    } else {
+                        diff_addr_inv = diff_addr.inverse();
+                        rc_value = diff_addr;
+                    }
                     diff_clk = GoldilocksField::ZERO;
                     let trace_cell = MemoryTraceCell {
                         addr: GoldilocksField::from_canonical_u64(canonical_addr),
@@ -1041,7 +1078,7 @@ impl Process {
                         region_ecdsa: cell.region_ecdsa,
                         value: cell.value,
                         filter_looking_rc: GoldilocksField::ONE,
-                        rc_value: diff_addr,
+                        rc_value,
                     };
                     program.trace.memory.push(trace_cell);
                     new_addr_flag = false;
