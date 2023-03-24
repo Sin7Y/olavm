@@ -641,8 +641,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
     use crate::generation::cpu::generate_cpu_trace;
+    use assembler::binary_program::BinaryProgram;
+    use std::collections::HashMap;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     use {
@@ -655,7 +656,6 @@ mod tests {
         },
         plonky2_util::log2_strict,
     };
-    use assembler::binary_program::BinaryProgram;
 
     fn test_cpu_stark(program_path: &str) {
         const D: usize = 2;

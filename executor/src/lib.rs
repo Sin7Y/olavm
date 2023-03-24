@@ -363,10 +363,6 @@ impl Process {
             let registers_status = self.registers;
             let pc_status = self.pc;
 
-            if prophets_insert.get(&pc_status).is_some() {
-                self.prophet(&prophets_insert, pc_status);
-            }
-
             let instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
             debug!("execute instruction: {:?}", instruction);
             let ops: Vec<&str> = instruction.0.split_whitespace().collect();
@@ -954,6 +950,11 @@ impl Process {
                 }
                 _ => panic!("not match opcode:{}", opcode),
             }
+
+            if prophets_insert.get(&pc_status).is_some() {
+                self.prophet(&prophets_insert, pc_status);
+            }
+
             program.trace.insert_step(
                 self.clk,
                 pc_status,
