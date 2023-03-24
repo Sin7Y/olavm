@@ -65,21 +65,21 @@ pub(crate) fn encode_to_binary(bundle: RelocatedAsmBundle) -> Result<BinaryProgr
                         ProphetInput {
                             name: name.clone(),
                             stored_in: String::from("reg"),
-                            anchor: String::from("r0"),
+                            anchor: String::from("r1"),
                             offset: 0,
                         }
                     } else if index == 1 {
                         ProphetInput {
                             name: name.clone(),
                             stored_in: String::from("reg"),
-                            anchor: String::from("r1"),
+                            anchor: String::from("r2"),
                             offset: 0,
                         }
                     } else if index == 2 {
                         ProphetInput {
                             name: name.clone(),
                             stored_in: String::from("reg"),
-                            anchor: String::from("r2"),
+                            anchor: String::from("r3"),
                             offset: 0,
                         }
                     } else {
