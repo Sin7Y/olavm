@@ -1,5 +1,6 @@
 use crate::asm::{AsmRow, OlaAsmInstruction};
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -7,6 +8,80 @@ use std::str::FromStr;
 pub(crate) struct AsmBundle {
     program: String,
     prophets: Vec<AsmProphet>,
+}
+
+#[derive(Debug, Clone)]
+struct AsmScope {
+    label: String,
+    lines: Vec<String>,
+}
+
+impl AsmBundle {
+    fn generate_sorted_asm_scopes(&self) -> Result<Vec<AsmScope>, String> {
+        let mut lines = self.program.lines();
+        let mut scopes: Vec<AsmScope> = vec![];
+        let mut current_scope_label: String = String::new();
+        let mut current_scope_lines: Vec<String> = vec![];
+        let mut line_num = 0;
+        loop {
+            if let Some(line) = lines.next() {
+                let processed_line = line_pre_process(line);
+                if processed_line.is_empty() {
+                    continue;
+                }
+
+                let row_res = AsmRow::from_str(processed_line.clone());
+                if row_res.is_err() {
+                    let err_msg = row_res.err().unwrap();
+                    return Err(format!("line {}: {} ==> {}", line_num, line, err_msg));
+                }
+                let row = row_res.unwrap();
+                match row {
+                    AsmRow::LabelCall(label) => {
+                        if !current_scope_lines.is_empty() {
+                            let scope = AsmScope {
+                                label: current_scope_label.clone(),
+                                lines: current_scope_lines.clone(),
+                            };
+                            scopes.push(scope);
+                        }
+                        current_scope_label = label;
+                        current_scope_lines.clear();
+                        current_scope_lines.push(processed_line.to_string())
+                    }
+                    _ => {
+                        current_scope_lines.push(processed_line.to_string());
+                    }
+                };
+            } else {
+                if !current_scope_lines.is_empty() {
+                    let scope = AsmScope {
+                        label: current_scope_label.clone(),
+                        lines: current_scope_lines.clone(),
+                    };
+                    scopes.push(scope);
+                }
+                break;
+            }
+            line_num += 1;
+        }
+        scopes.sort_by(|a, b| {
+            if a.label == "main" {
+                Ordering::Less
+            } else if b.label == "main" {
+                Ordering::Greater
+            } else {
+                Ordering::Equal
+            }
+        });
+        if scopes.is_empty() {
+            return Err(format!("generate scopes error, no scope found"));
+        }
+        if scopes.first().unwrap().label != "main" {
+            return Err(format!("generate scopes error, no main scope found"));
+        }
+        Ok(scopes)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +101,17 @@ pub(crate) struct RelocatedAsmBundle {
 }
 
 pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, String> {
+    let scopes_res = bundle.generate_sorted_asm_scopes();
+    if scopes_res.is_err() {
+        return Err(format!(
+            "asm relocate err ==> {}",
+            scopes_res.err().unwrap()
+        ));
+    }
+    let scopes = scopes_res.unwrap();
+    let scopes_codes: Vec<String> = scopes.iter().map(|scope| scope.lines.join("\n")).collect();
+    let resorted_program = scopes_codes.join("\n");
+
     let mut instructions: Vec<OlaAsmInstruction> = vec![];
     let mut mapper_label_call: HashMap<String, usize> = HashMap::new();
     let mut mapper_label_jmp: HashMap<String, usize> = HashMap::new();
@@ -34,20 +120,14 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
     let mut counter: usize = 0;
     let mut label_stack: Vec<AsmRow> = vec![];
 
-    let mut lines = bundle.program.lines();
+    let mut lines = resorted_program.lines();
 
-    let mut line_num = 0;
     loop {
         if let Some(line) = lines.next() {
-            let processed_line = line_pre_process(line);
-            if processed_line.is_empty() {
-                continue;
-            }
-
-            let row_res = AsmRow::from_str(processed_line);
+            let row_res = AsmRow::from_str(line);
             if row_res.is_err() {
                 let err_msg = row_res.err().unwrap();
-                return Err(format!("line {}: {} ==> {}", line_num, line, err_msg));
+                return Err(format!("{} ==> {}", line, err_msg));
             }
             let row = row_res.unwrap();
             match row {
@@ -73,8 +153,8 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
                         match cached_label {
                             AsmRow::LabelCall(_) => {
                                 return Err(format!(
-                                    "line {}: {} ==> more than one call label attached",
-                                    line_num, line
+                                    "{} ==> more than one call label attached",
+                                    line
                                 ));
                             }
                             _ => {}
@@ -87,8 +167,8 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
                         match cached_label {
                             AsmRow::LabelJmp(_) => {
                                 return Err(format!(
-                                    "line {}: {} ==> more than one jmp label attached",
-                                    line_num, line
+                                    "{} ==> more than one jmp label attached",
+                                    line
                                 ));
                             }
                             _ => {}
@@ -101,8 +181,8 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
                         match cached_label {
                             AsmRow::LabelProphet(_) => {
                                 return Err(format!(
-                                    "line {}: {} ==> more than one prophet label attached",
-                                    line_num, line
+                                    "{} ==> more than one prophet label attached",
+                                    line
                                 ));
                             }
                             _ => {}
@@ -114,7 +194,6 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
         } else {
             break;
         }
-        line_num += 1;
     }
 
     let mut prophets: HashMap<usize, AsmProphet> = HashMap::new();

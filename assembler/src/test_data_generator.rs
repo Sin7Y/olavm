@@ -5,6 +5,14 @@ mod tests {
     use std::fs;
 
     #[test]
+    fn generate_prophet_sqrt() {
+        generate_from_file(
+            "prophet_sqrt.json".to_string(),
+            "prophet_sqrt.json".to_string(),
+        );
+    }
+
+    #[test]
     fn generate_hand_write_prophet() {
         generate_from_file(
             "hand_write_prophet.json".to_string(),
@@ -63,7 +71,7 @@ mod tests {
 
         let output_path = format!("test_data/bin/{}", output_file_name);
         let pretty = serde_json::to_string_pretty(&program).unwrap();
-        std::fs::write(output_path, pretty).unwrap();
+        fs::write(output_path, pretty).unwrap();
         println!("{}", json_str);
     }
 }

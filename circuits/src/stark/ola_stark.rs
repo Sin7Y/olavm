@@ -325,6 +325,7 @@ mod tests {
     use crate::stark::verifier::verify_proof;
     use anyhow::Result;
     use assembler::binary_program::BinaryProgram;
+    use assembler::encoder::encode_asm_from_json_file;
     use core::program::Program;
     use executor::Process;
     use log::{debug, LevelFilter};
@@ -442,11 +443,17 @@ mod tests {
     }
 
     #[test]
-    fn prophet_test() {
-        let file = File::open("../assembler/test_data/bin/hand_write_prophet.json").unwrap();
-        let reader = BufReader::new(file);
+    fn test_ola_prophet_hand_write() {
+        test_by_asm_json("../assembler/test_data/asm/hand_write_prophet.json".to_string());
+    }
 
-        let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
+    #[test]
+    fn test_ola_prophet_sqrt() {
+        test_by_asm_json("../assembler/test_data/asm/prophet_sqrt.json".to_string());
+    }
+
+    fn test_by_asm_json(path: String) {
+        let program = encode_asm_from_json_file(path).unwrap();
         let instructions = program.bytecode.split("\n");
         let mut prophets = HashMap::new();
         for item in program.prophets {

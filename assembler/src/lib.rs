@@ -2,7 +2,7 @@ mod asm;
 pub mod binary_program;
 pub mod decoder;
 pub mod encode;
-mod encoder;
+pub mod encoder;
 mod error;
 pub mod hardware;
 pub mod opcodes;

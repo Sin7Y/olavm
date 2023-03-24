@@ -1,8 +1,16 @@
 use crate::binary_program::{BinaryInstruction, BinaryProgram, Prophet, ProphetInput};
 use crate::operands::{ImmediateValue, OlaAsmOperand, OlaOperand};
-use crate::relocate::RelocatedAsmBundle;
+use crate::relocate::{asm_relocate, AsmBundle, RelocatedAsmBundle};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+pub fn encode_asm_from_json_file(path: String) -> Result<BinaryProgram, String> {
+    let json_str = std::fs::read_to_string(path).unwrap();
+    let bundle: AsmBundle = serde_json::from_str(json_str.as_str()).unwrap();
+    let relocated = asm_relocate(bundle).unwrap();
+    let program = encode_to_binary(relocated).unwrap();
+    Ok(program)
+}
 
 pub(crate) fn encode_to_binary(bundle: RelocatedAsmBundle) -> Result<BinaryProgram, String> {
     let asm_instructions = bundle.instructions;

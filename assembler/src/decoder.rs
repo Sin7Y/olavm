@@ -95,8 +95,12 @@ fn get_instruction_length(instruction: String) -> Result<u8, String> {
 mod tests {
     use crate::binary_program::BinaryProgram;
     use crate::decoder::decode_binary_program_to_instructions;
-    use crate::encoder::encode_to_binary;
-    use crate::relocate::{asm_relocate, AsmBundle};
+    use crate::encoder::encode_asm_from_json_file;
+
+    #[test]
+    fn test_decode_prophet_sqrt() {
+        test_decode("prophet_sqrt.json".to_string());
+    }
 
     #[test]
     fn test_decode_hand_write_prophet() {
@@ -140,10 +144,7 @@ mod tests {
 
     fn test_decode(file_name: String) {
         let input_path = format!("test_data/asm/{}", file_name);
-        let json_str = std::fs::read_to_string(&input_path).unwrap();
-        let bundle: AsmBundle = serde_json::from_str(json_str.as_str()).unwrap();
-        let relocated = asm_relocate(bundle).unwrap();
-        let encoded_program = encode_to_binary(relocated).unwrap();
+        let encoded_program = encode_asm_from_json_file(input_path).unwrap();
 
         let program_json = serde_json::to_string_pretty(&encoded_program).unwrap();
         let deserialized_program: BinaryProgram =
@@ -156,6 +157,7 @@ mod tests {
             for bin in encoded {
                 regenerated_binary_vec.push(bin);
             }
+            // println!("{}", instruction.get_asm_form_code());
         }
         let regenerated_binary = regenerated_binary_vec.join("\n");
         assert_eq!(regenerated_binary, encoded_program.bytecode);
