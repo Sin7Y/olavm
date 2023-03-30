@@ -152,8 +152,29 @@ impl Parser {
                     let mut returns: Vec<Arc<RwLock<(dyn Node)>>> = vec![];
                     if self.get_current_token() == ReturnDel {
                         self.consume(&ReturnDel);
-                        self.consume(&LParen);
-                        while self.get_current_token() == I32 || self.get_current_token() == Felt {
+
+                        if self.get_current_token() == LParen {
+                            self.consume(&LParen);
+                            while self.get_current_token() == I32
+                                || self.get_current_token() == Felt
+                            {
+                                let type_node = self.type_spec();
+                                if self.get_current_token() == LBracket {
+                                    let len;
+                                    array_type_node!(self, len);
+                                    let token =
+                                        Array(Box::new(type_node.token), len.parse().unwrap());
+                                    let node = TypeNode::new(token);
+                                    returns.push(Arc::new(RwLock::new(node)));
+                                } else {
+                                    returns.push(Arc::new(RwLock::new(type_node)));
+                                }
+                                if Comma == self.get_current_token() {
+                                    self.consume(&Comma);
+                                }
+                            }
+                            self.consume(&RParen);
+                        } else {
                             let type_node = self.type_spec();
                             if self.get_current_token() == LBracket {
                                 let len;
@@ -168,7 +189,6 @@ impl Parser {
                                 self.consume(&Comma);
                             }
                         }
-                        self.consume(&RParen);
                     }
                     let block = self.block();
                     let node = FunctionNode::new(Id(id), params, returns, block);

@@ -304,7 +304,7 @@ impl Process {
 
             let mut immediate_data = GoldilocksField::ZERO;
 
-            let next_instr = if (instrs_len - 2) > pc {
+            let next_instr = if (instrs_len - 2) >= pc {
                 program.instructions[(pc + 1) as usize].trim()
             } else {
                 ""
