@@ -656,107 +656,40 @@ mod tests {
         },
         plonky2_util::log2_strict,
     };
-
-    fn test_cpu_stark(program_path: &str) {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-        type S = CpuStark<F, D>;
-
-        let file = File::open(program_path).unwrap();
-        let instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-
-        for inst in instructions {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut None);
-
-        let (cpu_rows, beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
-
-        let mut stark = S::default();
-        stark.set_compress_challenge(beta).unwrap();
-        let len = cpu_rows[0].len();
-        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
-        let subgroup =
-            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
-        for i in 0..len {
-            let local_values = cpu_rows
-                .iter()
-                .map(|row| row[i % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let next_values = cpu_rows
-                .iter()
-                .map(|row| row[(i + 1) % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let vars = StarkEvaluationVars {
-                local_values: &local_values,
-                next_values: &next_values,
-            };
-
-            let mut constraint_consumer = ConstraintConsumer::new(
-                vec![F::rand()],
-                subgroup[i] - last,
-                if i == 0 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-                if i == len - 1 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-            );
-            stark.eval_packed_generic(vars, &mut constraint_consumer);
-
-            for &acc in &constraint_consumer.constraint_accs {
-                assert_eq!(acc, GoldilocksField::ZERO);
-            }
-        }
-    }
+    use assembler::encoder::encode_asm_from_json_file;
 
     #[test]
     fn test_fibo_use_loop() {
-        let program_path = "../assembler/testdata/fib_loop.bin";
-        test_cpu_stark(program_path);
+        let program_path = "../assembler/test_data/asm/fib_loop.json";
+        test_cpu_with_asm_path(program_path.to_string());
     }
 
     #[test]
     fn test_memory() {
-        let program_path = "../assembler/testdata/memory.bin";
-        test_cpu_stark(program_path);
+        let program_path = "../assembler/test_data/asm/memory.json";
+        test_cpu_with_asm_path(program_path.to_string());
     }
 
     #[test]
     fn test_call() {
-        let program_path = "../assembler/testdata/call.bin";
-        test_cpu_stark(program_path);
+        let program_path = "../assembler/test_data/asm/call.json";
+        test_cpu_with_asm_path(program_path.to_string());
     }
 
     #[test]
-    fn test_cpu_prophet() {
+    fn test_sqrt() {
+        let program_path = "../assembler/test_data/asm/sqrt.json";
+        test_cpu_with_asm_path(program_path.to_string());
+    }
+
+    fn test_cpu_with_asm_path(path: String) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = CpuStark<F, D>;
         let mut stark = S::default();
 
-        let file = File::open("../assembler/test_data/bin/hand_write_prophet.json").unwrap();
-        let reader = BufReader::new(file);
-
-        let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
+        let program = encode_asm_from_json_file(path).unwrap();
         let instructions = program.bytecode.split("\n");
         let mut prophets = HashMap::new();
         for item in program.prophets {
