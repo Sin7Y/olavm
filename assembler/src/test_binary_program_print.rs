@@ -19,13 +19,16 @@ mod tests {
         println!("============== {} ==================", input_file_name);
         println!("instruction length: {}", instructions.len());
         println!("============== instructions ==============");
+        let mut line: u64 = 0;
         for instruction in instructions {
-            println!("{}", instruction.get_asm_form_code());
-            let prophet_desc = match instruction.prophet {
+            println!("{}: {}", line, instruction.get_asm_form_code());
+            let option_prophet = instruction.clone().prophet;
+            let prophet_desc = match option_prophet {
                 Some(prophet) => format!("{}", prophet.code),
                 None => String::from("None"),
             };
             println!("prophet: {}", prophet_desc);
+            line += instruction.binary_length() as u64;
         }
     }
 }
