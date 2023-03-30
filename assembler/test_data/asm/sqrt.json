@@ -3,7 +3,7 @@
   "prophets": [
     {
       "label": ".PROPHET6_0",
-      "code": "%{\n    entry() {\n        cid.r = mod(cid.x, cid.y);\n    }\n    function mod(felt x, felt y) -> felt {\n        return x % y;\n    }\n%}",
+      "code": "%{\n    function mod(felt x, felt y) -> felt {\n        return x % y;\n    }\n    entry() {\n        cid.r = mod(cid.x, cid.y);\n    }\n%}",
       "inputs": [
         "cid.x",
         "cid.y"
@@ -14,7 +14,7 @@
     },
     {
       "label": ".PROPHET6_1",
-      "code": "%{\n    entry() {\n        cid.q = div(cid.x, cid.y);\n    }\n    function div(felt x, felt y) -> felt {\n        return x / y;\n    }\n%}",
+      "code": "%{\n    function div(felt x, felt y) -> felt {\n        return x / y;\n    }\n    entry() {\n        cid.q = div(cid.x, cid.y);\n    }\n%}",
       "inputs": [
         "cid.x",
         "cid.y"
@@ -25,7 +25,7 @@
     },
     {
       "label": ".PROPHET6_2",
-      "code": "%{\n    entry() {\n        cid.r = mod(cid.x, cid.y);\n    }\n    function mod(felt x, felt y) -> felt {\n        return x % y;\n    }\n%}",
+      "code": "%{\n    function mod(felt x, felt y) -> felt {\n        return x % y;\n    }\n    entry() {\n        cid.r = mod(cid.x, cid.y);\n    }\n%}",
       "inputs": [
         "cid.x",
         "cid.y"
@@ -36,7 +36,7 @@
     },
     {
       "label": ".PROPHET6_3",
-      "code": "%{\n    entry() {\n        cid.q = div(cid.x, cid.y);\n    }\n    function div(felt x, felt y) -> felt {\n        return x / y;\n    }\n%}",
+      "code": "%{\n    function div(felt x, felt y) -> felt {\n        return x / y;\n    }\n    entry() {\n        cid.q = div(cid.x, cid.y);\n    }\n%}",
       "inputs": [
         "cid.x",
         "cid.y"
@@ -47,7 +47,7 @@
     },
     {
       "label": ".PROPHET6_4",
-      "code": "%{\n    entry() {\n        cid.r = mod(cid.x, cid.y);\n    }\n    function mod(felt x, felt y) -> felt {\n        return x % y;\n    }\n%}",
+      "code": "%{\n    function mod(felt x, felt y) -> felt {\n        return x % y;\n    }\n    entry() {\n        cid.r = mod(cid.x, cid.y);\n    }\n%}",
       "inputs": [
         "cid.x",
         "cid.y"
@@ -58,7 +58,7 @@
     },
     {
       "label": ".PROPHET6_5",
-      "code": "%{\n    entry() {\n        cid.q = div(cid.x, cid.y);\n    }\n    function div(felt x, felt y) -> felt {\n        return x / y;\n    }\n%}",
+      "code": "%{\n    function div(felt x, felt y) -> felt {\n        return x / y;\n    }\n    entry() {\n        cid.q = div(cid.x, cid.y);\n    }\n%}",
       "inputs": [
         "cid.x",
         "cid.y"
