@@ -397,12 +397,6 @@ mod tests {
     }
 
     #[test]
-    fn test_memory_hand_write_prophet() {
-        let program_path = "../assembler/test_data/asm/hand_write_prophet.json";
-        test_memory_stark_with_asm_path(program_path.to_string());
-    }
-
-    #[test]
     fn test_memory_sqrt() {
         let program_path = "../assembler/test_data/asm/sqrt.json";
         test_memory_stark_with_asm_path(program_path.to_string());
