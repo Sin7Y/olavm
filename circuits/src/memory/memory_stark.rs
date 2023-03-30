@@ -369,7 +369,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 
 mod tests {
     use crate::generation::memory::generate_memory_trace;
-    use crate::memory::columns::NUM_MEM_COLS;
+    use crate::memory::columns::{get_memory_col_name_map, NUM_MEM_COLS};
     use crate::memory::memory_stark::MemoryStark;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
@@ -480,6 +480,17 @@ mod tests {
             stark.eval_packed_generic(vars, &mut constraint_consumer);
 
             for &acc in &constraint_consumer.constraint_accs {
+                if !acc.eq(&GoldilocksField::ZERO) {
+                    println!("constraint error in line {}", i);
+                    let m = get_memory_col_name_map();
+                    println!("{:>20}\t{:>20}\t{:>20}", "name", "lv", "nv");
+                    for col in m.keys() {
+                        let name = m.get(col).unwrap();
+                        let lv = vars.local_values[*col].0;
+                        let nv = vars.next_values[*col].0;
+                        println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+                    }
+                }
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
         }
