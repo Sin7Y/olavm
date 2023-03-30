@@ -926,7 +926,7 @@ impl Process {
                     );
 
                     program.trace.insert_cmp(
-                        self.registers[op0_index],
+                        self.register_selector.op0,
                         value.0,
                         self.register_selector.dst,
                         abs_diff,
