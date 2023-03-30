@@ -9,3 +9,6 @@ pub mod opcodes;
 pub mod operands;
 mod relocate;
 mod test_data_generator;
+mod test_binary_program_print;
+
+

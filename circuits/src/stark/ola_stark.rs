@@ -452,6 +452,11 @@ mod tests {
         test_by_asm_json("../assembler/test_data/asm/prophet_sqrt.json".to_string());
     }
 
+    #[test]
+    fn test_ola_sqrt() {
+        test_by_asm_json("../assembler/test_data/asm/sqrt.json".to_string());
+    }
+
     fn test_by_asm_json(path: String) {
         let program = encode_asm_from_json_file(path).unwrap();
         let instructions = program.bytecode.split("\n");

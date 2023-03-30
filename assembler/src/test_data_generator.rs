@@ -5,6 +5,14 @@ mod tests {
     use std::fs;
 
     #[test]
+    fn generate_sqrt() {
+        generate_from_file(
+            "sqrt.json".to_string(),
+            "sqrt.json".to_string(),
+        );
+    }
+
+    #[test]
     fn generate_prophet_sqrt() {
         generate_from_file(
             "prophet_sqrt.json".to_string(),

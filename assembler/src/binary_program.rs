@@ -345,10 +345,14 @@ impl Display for BinaryInstruction {
             Some(op) => format!("{}", op),
             None => String::from("None"),
         };
+        let prophet_desc = match &self.prophet {
+            Some(prophet) => format!("{}", prophet.code),
+            None => String::from("None"),
+        };
         write!(
             f,
-            "BinaryInstruction ==> opcode: {}, op0: {}, op1: {}, dst: {}",
-            self.opcode, op0, op1, dst
+            "BinaryInstruction ==> opcode: {}, op0: {}, op1: {}, dst: {}, prophet: {}",
+            self.opcode, op0, op1, dst, prophet_desc
         )
     }
 }
