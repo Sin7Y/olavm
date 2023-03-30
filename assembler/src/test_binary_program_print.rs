@@ -21,7 +21,12 @@ mod tests {
         println!("instruction length: {}", instructions.len());
         println!("============== instructions ==============");
         for instruction in instructions {
-            println!("{}", instruction);
+            println!("{}", instruction.get_asm_form_code());
+            let prophet_desc = match instruction.prophet {
+                Some(prophet) => format!("{}", prophet.code),
+                None => String::from("None"),
+            };
+            println!("prophet: {}", prophet_desc);
         }
     }
 }
