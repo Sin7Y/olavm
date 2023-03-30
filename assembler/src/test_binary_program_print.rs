@@ -15,8 +15,7 @@ mod tests {
         let bundle: AsmBundle = serde_json::from_str(json_str.as_str()).unwrap();
         let relocated = asm_relocate(bundle).unwrap();
         let program = encode_to_binary(relocated).unwrap();
-        let instructions =
-            decode_binary_program_to_instructions(program).unwrap();
+        let instructions = decode_binary_program_to_instructions(program).unwrap();
         println!("============== {} ==================", input_file_name);
         println!("instruction length: {}", instructions.len());
         println!("============== instructions ==============");

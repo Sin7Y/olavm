@@ -643,6 +643,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 mod tests {
     use crate::generation::cpu::generate_cpu_trace;
     use assembler::binary_program::BinaryProgram;
+    use assembler::encoder::encode_asm_from_json_file;
     use std::collections::HashMap;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
@@ -656,7 +657,6 @@ mod tests {
         },
         plonky2_util::log2_strict,
     };
-    use assembler::encoder::encode_asm_from_json_file;
 
     #[test]
     fn test_fibo_use_loop() {

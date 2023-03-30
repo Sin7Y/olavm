@@ -6,10 +6,7 @@ mod tests {
 
     #[test]
     fn generate_sqrt() {
-        generate_from_file(
-            "sqrt.json".to_string(),
-            "sqrt.json".to_string(),
-        );
+        generate_from_file("sqrt.json".to_string(), "sqrt.json".to_string());
     }
 
     #[test]

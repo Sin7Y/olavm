@@ -25,5 +25,9 @@ name = "fibo_loop"
 harness = false
 
 [[bench]]
-name = "memory_rw"
+name = "sqrt_iteration"
+harness = false
+
+[[bench]]
+name = "sqrt_prophet"
 harness = false

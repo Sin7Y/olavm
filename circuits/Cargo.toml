@@ -46,3 +46,11 @@ harness = false
 [[bench]]
 name = "fibo_loop_prover"
 harness = false
+
+[[bench]]
+name = "sqrt_iteration"
+harness = false
+
+[[bench]]
+name = "sqrt_prophet"
+harness = false

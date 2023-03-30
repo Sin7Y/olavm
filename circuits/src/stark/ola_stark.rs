@@ -457,7 +457,7 @@ mod tests {
         test_by_asm_json("../assembler/test_data/asm/sqrt.json".to_string());
     }
 
-    fn test_by_asm_json(path: String) {
+    pub fn test_by_asm_json(path: String) {
         let program = encode_asm_from_json_file(path).unwrap();
         let instructions = program.bytecode.split("\n");
         let mut prophets = HashMap::new();
