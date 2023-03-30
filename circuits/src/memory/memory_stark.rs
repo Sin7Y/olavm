@@ -374,25 +374,53 @@ mod tests {
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
+    use assembler::encoder::encode_asm_from_json_file;
     use core::program::Program;
     use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
+    use std::collections::HashMap;
+    use std::io::BufRead;
 
-    #[allow(unused)]
-    fn test_memory_stark(program_path: &str) {
+    #[test]
+    fn test_memory_with_program() {
+        let program_path = "../assembler/test_data/asm/memory.json";
+        test_memory_stark_with_asm_path(program_path.to_string());
+    }
+
+    #[test]
+    fn test_memory_fib_loop() {
+        let program_path = "../assembler/test_data/asm/fibo_loop.json";
+        test_memory_stark_with_asm_path(program_path.to_string());
+    }
+
+    #[test]
+    fn test_memory_hand_write_prophet() {
+        let program_path = "../assembler/test_data/asm/hand_write_prophet.json";
+        test_memory_stark_with_asm_path(program_path.to_string());
+    }
+
+    #[test]
+    fn test_memory_sqrt() {
+        let program_path = "../assembler/test_data/asm/sqrt.json";
+        test_memory_stark_with_asm_path(program_path.to_string());
+    }
+
+    fn test_memory_stark_with_asm_path(path: String) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = MemoryStark<F, D>;
         let stark = S::default();
 
-        let file = File::open(program_path).unwrap();
-        let mut instructions = BufReader::new(file).lines();
+        let program = encode_asm_from_json_file(path).unwrap();
+        let instructions = program.bytecode.split("\n");
+        let mut prophets = HashMap::new();
+        for item in program.prophets {
+            prophets.insert(item.host as u64, item);
+        }
 
         let mut program: Program = Program {
             instructions: Vec::new(),
@@ -400,11 +428,11 @@ mod tests {
         };
 
         for inst in instructions {
-            program.instructions.push(inst.unwrap());
+            program.instructions.push(inst.to_string());
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut None);
+        let _ = process.execute(&mut program, &mut Some(prophets));
 
         let rows = generate_memory_trace(&program.trace.memory);
         let len = rows[0].len();
@@ -455,11 +483,5 @@ mod tests {
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
         }
-    }
-
-    #[test]
-    fn test_memory_with_program() {
-        let program_path = "../assembler/testdata/memory.bin";
-        test_memory_stark(program_path);
     }
 }
