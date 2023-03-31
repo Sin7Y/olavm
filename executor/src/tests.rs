@@ -462,9 +462,10 @@ fn sqrt_newton_iteration_test() {
         panic!("execute err:{:?}", res);
     }
 
-    println!("vm trace: {:?}", program.trace);
+    // println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
     let mut file = File::create("sqrt.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
+

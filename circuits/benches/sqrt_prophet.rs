@@ -36,10 +36,16 @@ pub fn test_by_asm_json(path: String) {
     }
 
     let mut process = Process::new();
-    let _ = process.execute(&mut program, &mut Some(prophets));
+    let now = Instant::now();
 
+    let _ = process.execute(&mut program, &mut Some(prophets));
+    info!("exec time:{}", now.elapsed().as_millis());
     let mut ola_stark = OlaStark::default();
+    let now = Instant::now();
     let (traces, public_values) = generate_traces(&program, &mut ola_stark);
+    info!("generate_traces time:{}", now.elapsed().as_millis());
+    let now = Instant::now();
+
     let config = StarkConfig::standard_fast_config();
     let proof = prove_with_traces::<F, C, D>(
         &ola_stark,
@@ -48,6 +54,7 @@ pub fn test_by_asm_json(path: String) {
         public_values,
         &mut TimingTree::default(),
     );
+    info!("prove_with_traces time:{}", now.elapsed().as_millis());
 
     if let Ok(proof) = proof {
         let ola_stark = OlaStark::default();
@@ -59,10 +66,6 @@ pub fn test_by_asm_json(path: String) {
 }
 
 fn sqrt_prophet_benchmark(c: &mut Criterion) {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Info)
-        .try_init();
-
     let mut group = c.benchmark_group("sqrt_prophet");
     let input = 0;
     group.bench_with_input(BenchmarkId::from_parameter(1), &input, |b, _| {
