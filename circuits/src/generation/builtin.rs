@@ -278,6 +278,17 @@ pub fn generate_rc_trace<F: RichField>(
     trace[rangecheck::FIX_RANGE_CHECK_U16] = (0..rangecheck::RANGE_CHECK_U16_SIZE)
         .map(|i| F::from_canonical_usize(i))
         .collect();
+    if trace[rangecheck::FIX_RANGE_CHECK_U16].len() < ext_trace_len {
+        let append_start = trace[rangecheck::FIX_RANGE_CHECK_U16].len();
+        let append_end_exclusive = ext_trace_len;
+        let append_value = trace[rangecheck::FIX_RANGE_CHECK_U16]
+            .last()
+            .unwrap()
+            .clone();
+        (append_start..append_end_exclusive).for_each(|_| {
+            trace[rangecheck::FIX_RANGE_CHECK_U16].push(append_value.clone());
+        });
+    }
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace[rangecheck::LIMB_LO],
