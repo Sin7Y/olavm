@@ -18,6 +18,8 @@ assembler = {path="../assembler"}
 interpreter = {path="../interpreter"}
 criterion = "0.4"
 regex = "1"
+anyhow = "1.0.70"
+thiserror = "1.0.40"
 
 
 [[bench]]
