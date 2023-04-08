@@ -229,7 +229,7 @@ pub struct ImmediateValue {
 
 impl ImmediateValue {
     const ORDER: u64 = 0xFFFFFFFF00000001;
-    fn to_u64(&self) -> Result<u64, ParseIntError> {
+    pub fn to_u64(&self) -> Result<u64, ParseIntError> {
         let without_prefix = self.hex.trim_start_matches("0x");
         return u64::from_str_radix(without_prefix, 16);
     }
