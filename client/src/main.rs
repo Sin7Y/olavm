@@ -1,7 +1,7 @@
 extern crate clap;
 
 use assembler::binary_program::BinaryProgram;
-use assembler::encode::Encoder;
+use assembler::encoder::encode_asm_from_json_file;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::prover::prove;
@@ -11,12 +11,11 @@ use clap::{arg, Command};
 use core::program::Program;
 use core::trace::trace::Trace;
 use executor::Process;
-use log::debug;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
-use std::fs::{metadata, File};
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::fs::{self, metadata, File};
+use std::io::{BufReader, Read, Write};
 
 #[allow(dead_code)]
 const D: usize = 2;
@@ -68,40 +67,13 @@ fn main() {
 
     match matches.subcommand() {
         Some(("asm", sub_matches)) => {
-            let path = sub_matches.get_one::<String>("input").expect("required");
-            println!("Input assemble file path: {}", path);
-            let file = File::open(path).unwrap();
-
-            let mut encoder: Encoder = Default::default();
-            let mut input_lines = BufReader::new(file).lines();
-            let mut asm_codes = Vec::new();
-            loop {
-                let asm = input_lines.next();
-                if let Some(asm) = asm {
-                    debug!("asm code:{:?}", asm);
-                    asm_codes.push(asm.unwrap());
-                } else {
-                    break;
-                }
-            }
-
-            let raw_insts = encoder.assemble_link(asm_codes);
-            let path = sub_matches.get_one::<String>("output").expect("required");
-            println!("Output olavm raw codes file path: {}", path);
-            let file = File::create(path).unwrap();
-            let mut fout = BufWriter::new(file);
-
-            for line in raw_insts {
-                let res = fout.write_all((line + "\n").as_bytes());
-                if res.is_err() {
-                    debug!("file write_all err: {:?}", res);
-                }
-            }
-
-            let res = fout.flush();
-            if res.is_err() {
-                debug!("file flush res: {:?}", res);
-            }
+            let input_path = sub_matches.get_one::<String>("input").expect("required");
+            println!("Input assemble file path: {}", input_path);
+            let program = encode_asm_from_json_file(input_path.clone()).unwrap();
+            let output_path = sub_matches.get_one::<String>("output").expect("required");
+            println!("Output OlaVM raw codes file path: {}", output_path);
+            let pretty = serde_json::to_string_pretty(&program).unwrap();
+            fs::write(output_path, pretty).unwrap();
             println!("Asm done!");
         }
         Some(("run", sub_matches)) => {
