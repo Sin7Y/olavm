@@ -1,11 +1,13 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    str::FromStr,
-};
+use core::trace::trace::Trace;
+use std::{collections::HashMap, str::FromStr};
 
 use crate::{
     error::OlaRunnerError,
-    vm::ola_vm::{OlaContext, NUM_GENERAL_PURPOSE_REGISTER},
+    vm::ola_vm::OlaContext,
+    vm_trace_generator::{
+        generate_vm_trace, IntermediateRowBitwise, IntermediateRowComparison, IntermediateRowCpu,
+        IntermediateRowMemory, IntermediateRowRangeCheck, RangeCheckRequester,
+    },
 };
 use anyhow::{anyhow, bail, Ok, Result};
 use assembler::{
@@ -26,55 +28,6 @@ use plonky2::field::{
 use regex::Regex;
 
 #[derive(Debug, Clone)]
-struct IntermediateRowCpu {
-    clk: u64,
-    pc: u64,
-    psp: u64,
-    registers: [GoldilocksField; NUM_GENERAL_PURPOSE_REGISTER],
-    instruction: BinaryInstruction,
-    op0: GoldilocksField,
-    op1: GoldilocksField,
-    dst: GoldilocksField,
-    aux0: GoldilocksField,
-    aux1: GoldilocksField,
-}
-
-#[derive(Debug, Clone)]
-struct IntermediateRowMemory {
-    addr: u64,
-    value: GoldilocksField,
-    is_write: bool,
-    opcode: Option<OlaOpcode>,
-}
-
-#[derive(Debug, Clone)]
-enum RangeCheckRequester {
-    Cpu,
-    Memory,
-    Comparison,
-}
-#[derive(Debug, Clone)]
-struct IntermediateRowRangeCheck {
-    value: GoldilocksField,
-    requester: RangeCheckRequester,
-}
-
-#[derive(Debug, Clone)]
-struct IntermediateRowBitwise {
-    opcode: GoldilocksField,
-    op0: GoldilocksField,
-    op1: GoldilocksField,
-    res: GoldilocksField,
-}
-
-#[derive(Debug, Clone)]
-struct IntermediateRowComparison {
-    op0: GoldilocksField,
-    op1: GoldilocksField,
-    is_gte: bool,
-}
-
-#[derive(Debug, Clone)]
 struct IntermediateTraceStepAppender {
     cpu: IntermediateRowCpu,
     memory: Option<Vec<IntermediateRowMemory>>,
@@ -84,12 +37,12 @@ struct IntermediateTraceStepAppender {
 }
 
 #[derive(Debug, Clone)]
-struct IntermediateTraceCollector {
-    cpu: Vec<IntermediateRowCpu>,
-    memory: BTreeMap<u64, Vec<IntermediateRowMemory>>,
-    range_check: Vec<IntermediateRowRangeCheck>,
-    bitwise: Vec<IntermediateRowBitwise>,
-    comparison: Vec<IntermediateRowComparison>,
+pub(crate) struct IntermediateTraceCollector {
+    pub(crate) cpu: Vec<IntermediateRowCpu>,
+    pub(crate) memory: Vec<IntermediateRowMemory>,
+    pub(crate) range_check: Vec<IntermediateRowRangeCheck>,
+    pub(crate) bitwise: Vec<IntermediateRowBitwise>,
+    pub(crate) comparison: Vec<IntermediateRowComparison>,
 }
 
 impl Default for IntermediateTraceCollector {
@@ -109,14 +62,9 @@ impl IntermediateTraceCollector {
         self.cpu.push(appender.cpu);
         match appender.memory {
             Some(rows) => {
-                rows.iter().for_each(|row| {
-                    self.memory
-                        .entry(row.addr)
-                        .and_modify(|v| {
-                            v.push(row.clone());
-                        })
-                        .or_insert_with(|| vec![row.clone()]);
-                });
+                for row in rows {
+                    self.memory.push(row);
+                }
             }
             None => {}
         }
@@ -173,6 +121,17 @@ impl OlaRunner {
             trace_collector: IntermediateTraceCollector::default(),
             is_ended: false,
         })
+    }
+
+    pub fn run_to_end(&mut self) -> Result<Trace> {
+        loop {
+            if self.is_ended {
+                break;
+            }
+            let appender = self.run_one_step()?;
+            self.trace_collector.append(appender);
+        }
+        generate_vm_trace(&self.instructions, &self.trace_collector)
     }
 
     fn run_one_step(&mut self) -> Result<IntermediateTraceStepAppender> {
@@ -362,12 +321,14 @@ impl OlaRunner {
 
                 let rows_memory = vec![
                     IntermediateRowMemory {
+                        clk: self.context.clk.clone(),
                         addr: trace_op0.clone().to_canonical_u64(),
                         value: trace_dst.clone(),
                         is_write: true,
                         opcode: Some(OlaOpcode::CALL),
                     },
                     IntermediateRowMemory {
+                        clk: self.context.clk.clone(),
                         addr: trace_aux0.clone().to_canonical_u64(),
                         value: trace_aux1.clone(),
                         is_write: false,
@@ -416,12 +377,14 @@ impl OlaRunner {
                 };
                 let rows_memory = vec![
                     IntermediateRowMemory {
+                        clk: self.context.clk.clone(),
                         addr: trace_op0.clone().to_canonical_u64(),
                         value: trace_dst.clone(),
                         is_write: false,
                         opcode: Some(OlaOpcode::RET),
                     },
                     IntermediateRowMemory {
+                        clk: self.context.clk.clone(),
                         addr: trace_aux0.clone().to_canonical_u64(),
                         value: trace_aux1.clone(),
                         is_write: false,
@@ -462,6 +425,7 @@ impl OlaRunner {
                     aux1: trace_aux1.clone(),
                 };
                 let rows_memory = vec![IntermediateRowMemory {
+                    clk: self.context.clk.clone(),
                     addr: addr.clone().to_canonical_u64(),
                     value: trace_dst.clone(),
                     is_write: false,
@@ -502,6 +466,7 @@ impl OlaRunner {
                     aux1: trace_aux1.clone(),
                 };
                 let rows_memory = vec![IntermediateRowMemory {
+                    clk: self.context.clk.clone(),
                     addr: addr.clone().to_canonical_u64(),
                     value: trace_op0.clone(),
                     is_write: true,
@@ -833,6 +798,7 @@ impl OlaRunner {
                 interpreter::utils::number::NumberRet::Multiple(values) => {
                     for value in values {
                         rows_memory.push(IntermediateRowMemory {
+                            clk: 0,
                             addr: self.context.psp.clone(),
                             value: GoldilocksField(value.get_number() as u64),
                             is_write: true,

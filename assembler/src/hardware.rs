@@ -16,6 +16,20 @@ pub enum OlaRegister {
 }
 
 impl OlaRegister {
+    pub fn index(&self) -> u8 {
+        match self {
+            OlaRegister::R8 => 8,
+            OlaRegister::R7 => 7,
+            OlaRegister::R6 => 6,
+            OlaRegister::R5 => 5,
+            OlaRegister::R4 => 4,
+            OlaRegister::R3 => 3,
+            OlaRegister::R2 => 2,
+            OlaRegister::R1 => 1,
+            OlaRegister::R0 => 0,
+        }
+    }
+
     fn binary_bit_shift_as_op0(&self) -> u8 {
         match self {
             OlaRegister::R8 => 61,

@@ -1,3 +1,3 @@
 pub mod program;
 pub mod trace;
-mod utils;
+pub mod utils;

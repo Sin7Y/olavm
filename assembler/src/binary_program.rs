@@ -64,7 +64,7 @@ impl BinaryInstruction {
         len
     }
 
-    pub(crate) fn encode(&self) -> Result<Vec<String>, String> {
+    pub fn encode(&self) -> Result<Vec<String>, String> {
         let mut instruction_u64: u64 = 0;
         let mut imm: Option<ImmediateValue> = None;
         let mut is_op1_imm = false;
