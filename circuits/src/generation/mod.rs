@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::stark::ola_stark::{OlaStark, NUM_TABLES};
 use crate::stark::proof::PublicValues;
-use crate::stark::util::{trace_rows_to_poly_values, trace_to_poly_values};
+use crate::stark::util::trace_to_poly_values;
 
 use self::builtin::{generate_bitwise_trace, generate_cmp_trace, generate_rc_trace};
 use self::cpu::generate_cpu_trace;

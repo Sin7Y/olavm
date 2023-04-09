@@ -642,6 +642,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 #[cfg(test)]
 mod tests {
     use crate::generation::cpu::generate_cpu_trace;
+    use assembler::binary_program::BinaryProgram;
+    use assembler::encoder::encode_asm_from_json_file;
+    use std::collections::HashMap;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     use {
@@ -655,14 +658,43 @@ mod tests {
         plonky2_util::log2_strict,
     };
 
-    fn test_cpu_stark(program_path: &str) {
+    #[test]
+    fn test_fibo_use_loop() {
+        let program_path = "../assembler/test_data/asm/fib_loop.json";
+        test_cpu_with_asm_path(program_path.to_string());
+    }
+
+    #[test]
+    fn test_memory() {
+        let program_path = "../assembler/test_data/asm/memory.json";
+        test_cpu_with_asm_path(program_path.to_string());
+    }
+
+    #[test]
+    fn test_call() {
+        let program_path = "../assembler/test_data/asm/call.json";
+        test_cpu_with_asm_path(program_path.to_string());
+    }
+
+    #[test]
+    fn test_sqrt() {
+        let program_path = "../assembler/test_data/asm/sqrt.json";
+        test_cpu_with_asm_path(program_path.to_string());
+    }
+
+    fn test_cpu_with_asm_path(path: String) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = CpuStark<F, D>;
+        let mut stark = S::default();
 
-        let file = File::open(program_path).unwrap();
-        let instructions = BufReader::new(file).lines();
+        let program = encode_asm_from_json_file(path).unwrap();
+        let instructions = program.bytecode.split("\n");
+        let mut prophets = HashMap::new();
+        for item in program.prophets {
+            prophets.insert(item.host as u64, item);
+        }
 
         let mut program: Program = Program {
             instructions: Vec::new(),
@@ -670,11 +702,11 @@ mod tests {
         };
 
         for inst in instructions {
-            program.instructions.push(inst.unwrap());
+            program.instructions.push(inst.to_string());
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program);
+        let _ = process.execute(&mut program, &mut Some(prophets));
 
         let (cpu_rows, beta) =
             generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
@@ -723,23 +755,5 @@ mod tests {
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
         }
-    }
-
-    #[test]
-    fn test_fibo_use_loop() {
-        let program_path = "../assembler/testdata/fib_loop.bin";
-        test_cpu_stark(program_path);
-    }
-
-    #[test]
-    fn test_memory() {
-        let program_path = "../assembler/testdata/memory.bin";
-        test_cpu_stark(program_path);
-    }
-
-    #[test]
-    fn test_call() {
-        let program_path = "../assembler/testdata/call.bin";
-        test_cpu_stark(program_path);
     }
 }

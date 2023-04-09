@@ -324,11 +324,14 @@ mod tests {
     use crate::stark::util::trace_rows_to_poly_values;
     use crate::stark::verifier::verify_proof;
     use anyhow::Result;
+    use assembler::binary_program::BinaryProgram;
+    use assembler::encoder::encode_asm_from_json_file;
     use core::program::Program;
     use executor::Process;
-    use log::debug;
+    use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
+    use std::collections::HashMap;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     use std::mem;
@@ -358,7 +361,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program);
+        let _ = process.execute(&mut program, &mut None);
 
         let mut ola_stark = OlaStark::default();
         let (traces, public_values) = generate_traces(&program, &mut ola_stark);
@@ -437,5 +440,60 @@ mod tests {
     fn fibo_use_loop_memory_decode() -> Result<()> {
         let program_path = "../assembler/testdata/fib_loop.bin";
         test_ola_stark(program_path)
+    }
+
+    #[test]
+    fn test_ola_prophet_hand_write() {
+        test_by_asm_json("../assembler/test_data/asm/hand_write_prophet.json".to_string());
+    }
+
+    #[test]
+    fn test_ola_prophet_sqrt() {
+        test_by_asm_json("../assembler/test_data/asm/prophet_sqrt.json".to_string());
+    }
+
+    #[test]
+    fn test_ola_sqrt() {
+        test_by_asm_json("../assembler/test_data/asm/sqrt.json".to_string());
+    }
+
+    pub fn test_by_asm_json(path: String) {
+        let program = encode_asm_from_json_file(path).unwrap();
+        let instructions = program.bytecode.split("\n");
+        let mut prophets = HashMap::new();
+        for item in program.prophets {
+            prophets.insert(item.host as u64, item);
+        }
+
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+        };
+
+        for inst in instructions {
+            program.instructions.push(inst.to_string());
+        }
+
+        let mut process = Process::new();
+        let _ = process.execute(&mut program, &mut Some(prophets));
+
+        let mut ola_stark = OlaStark::default();
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
+        let config = StarkConfig::standard_fast_config();
+        let proof = prove_with_traces::<F, C, D>(
+            &ola_stark,
+            &config,
+            traces,
+            public_values,
+            &mut TimingTree::default(),
+        );
+
+        if let Ok(proof) = proof {
+            let ola_stark = OlaStark::default();
+            let verify_res = verify_proof(ola_stark, proof, &config);
+            println!("verify result:{:?}", verify_res);
+        } else {
+            println!("proof err:{:?}", proof);
+        }
     }
 }

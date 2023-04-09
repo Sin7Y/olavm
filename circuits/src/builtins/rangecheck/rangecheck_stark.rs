@@ -178,7 +178,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program);
+        let _ = process.execute(&mut program, &mut None);
 
         let rows = generate_rc_trace::<F>(&program.trace.builtin_rangecheck);
         let len = rows[0].len();

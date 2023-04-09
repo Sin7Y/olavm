@@ -2,11 +2,15 @@ use crate::error::ProcessorError;
 use core::program::instruction::{Opcode, *};
 use log::debug;
 
-const REG_NOT_USED: u8 = 0xff;
+pub(crate) const REG_NOT_USED: u8 = 0xff;
+
 fn parse_hex_str(hex_str: &str) -> Result<u64, ProcessorError> {
     let res = u64::from_str_radix(hex_str, 16);
     match res {
-        Err(_) => Err(ProcessorError::ParseIntError),
+        Err(_) => {
+            debug!("hex_str:{}", hex_str);
+            Err(ProcessorError::ParseIntError)
+        }
         Ok(num) => Ok(num),
     }
 }

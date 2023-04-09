@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 // Memory Trace.
 // ┌───────┬──────┬─────┬────┬──────────┬───────┬───────────┬───────────────┬──────────┬────────────────┬
 // │ is_rw │ addr │ clk │ op │ is_write │ value │ diff_addr │ diff_addr_inv │
@@ -26,3 +28,36 @@ pub(crate) const COL_MEM_RC_VALUE: usize = COL_MEM_REGION_ECDSA + 1;
 pub(crate) const COL_MEM_FILTER_LOOKING_RC: usize = COL_MEM_RC_VALUE + 1;
 
 pub(crate) const NUM_MEM_COLS: usize = COL_MEM_FILTER_LOOKING_RC + 1;
+
+pub(crate) fn get_memory_col_name_map() -> BTreeMap<usize, String> {
+    let mut m: BTreeMap<usize, String> = BTreeMap::new();
+    m.insert(COL_MEM_IS_RW, String::from("IS_RW"));
+    m.insert(COL_MEM_ADDR, String::from("ADDR"));
+    m.insert(COL_MEM_CLK, String::from("CLK"));
+    m.insert(COL_MEM_OP, String::from("OP"));
+    m.insert(COL_MEM_IS_WRITE, String::from("IS_WRITE"));
+    m.insert(COL_MEM_VALUE, String::from("VALUE"));
+    m.insert(COL_MEM_DIFF_ADDR, String::from("DIFF_ADDR"));
+    m.insert(COL_MEM_DIFF_ADDR_INV, String::from("DIFF_ADDR_INV"));
+    m.insert(COL_MEM_DIFF_CLK, String::from("DIFF_CLK"));
+    m.insert(COL_MEM_DIFF_ADDR_COND, String::from("DIFF_ADDR_COND"));
+    m.insert(
+        COL_MEM_FILTER_LOOKED_FOR_MAIN,
+        String::from("FILTER_LOOKED_FOR_MAIN"),
+    );
+    m.insert(COL_MEM_RW_ADDR_UNCHANGED, String::from("RW_ADDR_UNCHANGED"));
+    m.insert(COL_MEM_REGION_PROPHET, String::from("REGION_PROPHET"));
+    m.insert(COL_MEM_REGION_POSEIDON, String::from("REGION_POSEIDON"));
+    m.insert(COL_MEM_REGION_ECDSA, String::from("REGION_ECDSA"));
+    m.insert(COL_MEM_RC_VALUE, String::from("RC_VALUE"));
+    m.insert(COL_MEM_FILTER_LOOKING_RC, String::from("FILTER_LOOKING_RC"));
+    m
+}
+
+#[test]
+fn print_memory_cols() {
+    let m = get_memory_col_name_map();
+    for (col, name) in m {
+        println!("{}: {}", col, name);
+    }
+}

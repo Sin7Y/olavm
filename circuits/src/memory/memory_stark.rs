@@ -82,11 +82,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let lv = vars.local_values;
         let nv = vars.next_values;
 
-        let p = P::ZEROS - P::ONES;
+        let p = P::ZEROS;
         let span = P::Scalar::from_canonical_u64(2_u64.pow(32).sub(1));
 
         let op = lv[COL_MEM_OP];
         let is_rw = lv[COL_MEM_IS_RW];
+        let nv_is_rw = nv[COL_MEM_IS_RW];
         let region_prophet = lv[COL_MEM_REGION_PROPHET];
         let region_poseidon = lv[COL_MEM_REGION_POSEIDON];
         let region_ecdsa = lv[COL_MEM_REGION_ECDSA];
@@ -136,7 +137,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         // for rw_addr_unchanged
         yield_constr.constraint_first_row(rw_addr_unchanged);
         yield_constr.constraint_transition(
-            is_rw * (P::ONES - nv_rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
+            is_rw * nv_is_rw * (P::ONES - nv_rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
         );
 
         // for region division: 1. one of four region is selected; 2. binary
@@ -199,9 +200,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let lv = vars.local_values;
         let nv = vars.next_values;
 
-        let p = builder.constant_extension(
-            F::Extension::from_canonical_u64(0).sub(F::Extension::from_canonical_u64(1)),
-        );
+        let p = builder.constant_extension(F::Extension::from_canonical_u64(0));
         let span =
             builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(32).sub(1)));
 
@@ -370,30 +369,52 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 
 mod tests {
     use crate::generation::memory::generate_memory_trace;
-    use crate::memory::columns::NUM_MEM_COLS;
+    use crate::memory::columns::{get_memory_col_name_map, NUM_MEM_COLS};
     use crate::memory::memory_stark::MemoryStark;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
+    use assembler::encoder::encode_asm_from_json_file;
     use core::program::Program;
     use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
+    use std::collections::HashMap;
+    use std::io::BufRead;
 
-    #[allow(unused)]
-    fn test_memory_stark(program_path: &str) {
+    #[test]
+    fn test_memory_with_program() {
+        let program_path = "../assembler/test_data/asm/memory.json";
+        test_memory_stark_with_asm_path(program_path.to_string());
+    }
+
+    #[test]
+    fn test_memory_fib_loop() {
+        let program_path = "../assembler/test_data/asm/fibo_loop.json";
+        test_memory_stark_with_asm_path(program_path.to_string());
+    }
+
+    #[test]
+    fn test_memory_sqrt() {
+        let program_path = "../assembler/test_data/asm/sqrt.json";
+        test_memory_stark_with_asm_path(program_path.to_string());
+    }
+
+    fn test_memory_stark_with_asm_path(path: String) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = MemoryStark<F, D>;
         let stark = S::default();
 
-        let file = File::open(program_path).unwrap();
-        let mut instructions = BufReader::new(file).lines();
+        let program = encode_asm_from_json_file(path).unwrap();
+        let instructions = program.bytecode.split("\n");
+        let mut prophets = HashMap::new();
+        for item in program.prophets {
+            prophets.insert(item.host as u64, item);
+        }
 
         let mut program: Program = Program {
             instructions: Vec::new(),
@@ -401,11 +422,11 @@ mod tests {
         };
 
         for inst in instructions {
-            program.instructions.push(inst.unwrap());
+            program.instructions.push(inst.to_string());
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program);
+        let _ = process.execute(&mut program, &mut Some(prophets));
 
         let rows = generate_memory_trace(&program.trace.memory);
         let len = rows[0].len();
@@ -453,14 +474,19 @@ mod tests {
             stark.eval_packed_generic(vars, &mut constraint_consumer);
 
             for &acc in &constraint_consumer.constraint_accs {
+                if !acc.eq(&GoldilocksField::ZERO) {
+                    println!("constraint error in line {}", i);
+                    let m = get_memory_col_name_map();
+                    println!("{:>20}\t{:>20}\t{:>20}", "name", "lv", "nv");
+                    for col in m.keys() {
+                        let name = m.get(col).unwrap();
+                        let lv = vars.local_values[*col].0;
+                        let nv = vars.next_values[*col].0;
+                        println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+                    }
+                }
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
         }
-    }
-
-    #[test]
-    fn test_memory_with_program() {
-        let program_path = "../assembler/testdata/memory.bin";
-        test_memory_stark(program_path);
     }
 }

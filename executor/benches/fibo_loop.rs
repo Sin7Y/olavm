@@ -24,31 +24,80 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
     // jmp 8
     // end
     let program_src = format!(
-        "0x4000000840000000
-         {:#x}
-        0x4000001040000000
-        0x1
-        0x4000002040000000
-        0x1
-        0x4000004040000000
-        0x0
-        0x0020800100000000
-        0x4000000010000000
-        0x18
-        0x0040408400000000
-        0x0000401040000000
-        0x0001002040000000
-        0x4000008040000000
-        0x1
-        0x4000010040000000
-        0x1
-        0x4000020040000000
-        0x2
-        0x0802020400000000
-        0x0101004400000000
-        0x4000000020000000
-        0x8
-        0x0000000000800000",
+        "0x6000080400000000
+0x4
+0x2010000001000000
+0xfffffffeffffffff
+0x4000001040000000
+{:#x}
+0x4000000008000000
+0xb
+0x6000080400000000
+0xfffffffefffffffd
+0x0000000000800000
+0x6000080400000000
+0x5
+0x0000200840000000
+0x0030000001000000
+0xffffffff00000000
+0x4000000840000000
+0x0
+0x0030000001000000
+0xfffffffeffffffff
+0x4000000840000000
+0x1
+0x0030000001000000
+0xfffffffefffffffe
+0x4000000840000000
+0x1
+0x0030000001000000
+0xfffffffefffffffd
+0x4000000840000000
+0x2
+0x0030000001000000
+0xfffffffefffffffc
+0x4000000020000000
+0x22
+0x0010000802000000
+0xfffffffefffffffc
+0x0010001002000000
+0xffffffff00000000
+0x0040100800010000
+0x4020000010000000
+0x2b
+0x4000000020000000
+0x44
+0x0010001002000000
+0xfffffffeffffffff
+0x0010002002000000
+0xfffffffefffffffe
+0x0040400c00000000
+0x0030000001000000
+0xfffffffefffffffd
+0x0010000802000000
+0xfffffffefffffffe
+0x0030000001000000
+0xfffffffeffffffff
+0x0010000802000000
+0xfffffffefffffffd
+0x0030000001000000
+0xfffffffefffffffe
+0x4000000020000000
+0x3c
+0x0010001002000000
+0xfffffffefffffffc
+0x4040000c00000000
+0x1
+0x0030000001000000
+0xfffffffefffffffc
+0x4000000020000000
+0x22
+0x0010000802000000
+0xfffffffefffffffd
+0x6000080400000000
+0xfffffffefffffffc
+0x0000000004000000
+",
         inst_size
     );
     debug!("program_src:{:?}", program_src);
@@ -66,7 +115,7 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
 
     let mut process = Process::new();
     let start = Instant::now();
-    process.execute(&mut program);
+    process.execute(&mut program, &mut None);
     let exec_time = start.elapsed();
     info!(
         "exec_time: {}, exec steps: {}",

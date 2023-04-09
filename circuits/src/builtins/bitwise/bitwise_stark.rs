@@ -413,7 +413,7 @@ pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
 mod tests {
     use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
     use crate::builtins::bitwise::columns::get_bitwise_col_name_map;
-    use crate::generation::builtin::{generate_bitwise_trace, generate_cmp_trace};
+    use crate::generation::builtin::generate_bitwise_trace;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
@@ -423,7 +423,6 @@ mod tests {
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
-    use std::borrow::Borrow;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
 
@@ -448,7 +447,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program);
+        let _ = process.execute(&mut program, &mut None);
 
         let (rows, bitwise_beta) =
             generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);

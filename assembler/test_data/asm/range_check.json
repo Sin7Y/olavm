@@ -1,0 +1,4 @@
+{
+  "program": "mov r0 8\nmov r1 2\nmov r2 3\nadd r3 r0 r1\nmul r4 r3 r2\nrange r4\nend",
+  "prophets": []
+}
