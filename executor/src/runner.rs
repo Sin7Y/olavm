@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    str::FromStr,
+};
 
 use crate::{
     error::OlaRunnerError,
@@ -6,15 +9,21 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Ok, Result};
 use assembler::{
+    binary_program::Prophet,
+    hardware::{OlaRegister, OlaSpecialRegister},
+};
+use assembler::{
     binary_program::{BinaryInstruction, BinaryProgram},
     decoder::decode_binary_program_from_file,
     opcodes::OlaOpcode,
     operands::OlaOperand,
 };
+use interpreter::interpreter::Interpreter;
 use plonky2::field::{
     goldilocks_field::GoldilocksField,
     types::{Field, PrimeField64},
 };
+use regex::Regex;
 
 #[derive(Debug, Clone)]
 struct IntermediateRowCpu {
@@ -170,9 +179,8 @@ impl OlaRunner {
         if self.is_ended {
             return Err(anyhow!("{}", OlaRunnerError::RunAfterEndedError));
         }
-
-        let instruction = match self.instructions.get(&self.context.pc.clone()) {
-            Some(it) => it,
+        let instruction = match self.instructions.get(&self.context.pc) {
+            Some(it) => it.clone(),
             None => {
                 return Err(anyhow!(
                     "{}",
@@ -184,7 +192,7 @@ impl OlaRunner {
             }
         };
 
-        let appender = match instruction.opcode {
+        let mut appender = match instruction.opcode {
             OlaOpcode::ADD
             | OlaOpcode::MUL
             | OlaOpcode::EQ
@@ -599,6 +607,37 @@ impl OlaRunner {
             }
         };
 
+        match &instruction.prophet {
+            Some(prophet) => {
+                let rows_memory_prophet = self.on_prophet(prophet)?;
+                match appender.memory {
+                    Some(memory) => {
+                        let mut appended = memory.clone();
+                        rows_memory_prophet.iter().for_each(|row| {
+                            appended.push(row.clone());
+                        });
+                        appender = IntermediateTraceStepAppender {
+                            cpu: appender.cpu.clone(),
+                            memory: Some(appended),
+                            range_check: appender.range_check.clone(),
+                            bitwise: appender.bitwise.clone(),
+                            comparison: appender.comparison.clone(),
+                        }
+                    }
+                    None => {
+                        appender = IntermediateTraceStepAppender {
+                            cpu: appender.cpu.clone(),
+                            memory: Some(rows_memory_prophet),
+                            range_check: appender.range_check.clone(),
+                            bitwise: appender.bitwise.clone(),
+                            comparison: appender.comparison.clone(),
+                        }
+                    }
+                }
+            }
+            None => {}
+        }
+
         Ok(appender)
     }
 
@@ -705,54 +744,30 @@ impl OlaRunner {
     fn get_operand_value(&self, operand: OlaOperand) -> Result<GoldilocksField> {
         match operand {
             OlaOperand::ImmediateOperand { value } => Ok(GoldilocksField(value.to_u64()?)),
-            OlaOperand::RegisterOperand { register } => match register {
-                assembler::hardware::OlaRegister::R0 => Ok(self.context.registers[0].clone()),
-                assembler::hardware::OlaRegister::R1 => Ok(self.context.registers[1].clone()),
-                assembler::hardware::OlaRegister::R2 => Ok(self.context.registers[2].clone()),
-                assembler::hardware::OlaRegister::R3 => Ok(self.context.registers[3].clone()),
-                assembler::hardware::OlaRegister::R4 => Ok(self.context.registers[4].clone()),
-                assembler::hardware::OlaRegister::R5 => Ok(self.context.registers[5].clone()),
-                assembler::hardware::OlaRegister::R6 => Ok(self.context.registers[6].clone()),
-                assembler::hardware::OlaRegister::R7 => Ok(self.context.registers[7].clone()),
-                assembler::hardware::OlaRegister::R8 => Ok(self.context.registers[8].clone()),
-            },
-            OlaOperand::RegisterWithOffset { register, offset } => match register {
-                assembler::hardware::OlaRegister::R0 => {
-                    Ok(self.context.registers[0].clone() + GoldilocksField(offset.to_u64()?))
-                }
-                assembler::hardware::OlaRegister::R1 => {
-                    Ok(self.context.registers[1].clone() + GoldilocksField(offset.to_u64()?))
-                }
-                assembler::hardware::OlaRegister::R2 => {
-                    Ok(self.context.registers[2].clone() + GoldilocksField(offset.to_u64()?))
-                }
-                assembler::hardware::OlaRegister::R3 => {
-                    Ok(self.context.registers[3].clone() + GoldilocksField(offset.to_u64()?))
-                }
-                assembler::hardware::OlaRegister::R4 => {
-                    Ok(self.context.registers[4].clone() + GoldilocksField(offset.to_u64()?))
-                }
-                assembler::hardware::OlaRegister::R5 => {
-                    Ok(self.context.registers[5].clone() + GoldilocksField(offset.to_u64()?))
-                }
-                assembler::hardware::OlaRegister::R6 => {
-                    Ok(self.context.registers[6].clone() + GoldilocksField(offset.to_u64()?))
-                }
-                assembler::hardware::OlaRegister::R7 => {
-                    Ok(self.context.registers[7].clone() + GoldilocksField(offset.to_u64()?))
-                }
-                assembler::hardware::OlaRegister::R8 => {
-                    Ok(self.context.registers[8].clone() + GoldilocksField(offset.to_u64()?))
-                }
-            },
+            OlaOperand::RegisterOperand { register } => Ok(self.get_register_value(register)),
+            OlaOperand::RegisterWithOffset { register, offset } => {
+                Ok(self.get_register_value(register) + GoldilocksField(offset.to_u64()?))
+            }
             OlaOperand::SpecialReg { special_reg } => match special_reg {
-                assembler::hardware::OlaSpecialRegister::PC => {
+                OlaSpecialRegister::PC => {
                     bail!("pc cannot be an operand {}", 1)
                 }
-                assembler::hardware::OlaSpecialRegister::PSP => {
-                    Ok(GoldilocksField(self.context.psp.clone()))
-                }
+                OlaSpecialRegister::PSP => Ok(GoldilocksField(self.context.psp.clone())),
             },
+        }
+    }
+
+    fn get_register_value(&self, register: OlaRegister) -> GoldilocksField {
+        match register {
+            OlaRegister::R0 => self.context.registers[0].clone(),
+            OlaRegister::R1 => self.context.registers[1].clone(),
+            OlaRegister::R2 => self.context.registers[2].clone(),
+            OlaRegister::R3 => self.context.registers[3].clone(),
+            OlaRegister::R4 => self.context.registers[4].clone(),
+            OlaRegister::R5 => self.context.registers[5].clone(),
+            OlaRegister::R6 => self.context.registers[6].clone(),
+            OlaRegister::R7 => self.context.registers[7].clone(),
+            OlaRegister::R8 => self.context.registers[8].clone(),
         }
     }
 
@@ -761,44 +776,10 @@ impl OlaRunner {
         operand: OlaOperand,
     ) -> Result<(GoldilocksField, GoldilocksField)> {
         match operand {
-            OlaOperand::RegisterWithOffset { register, offset } => match register {
-                assembler::hardware::OlaRegister::R0 => Ok((
-                    self.context.registers[0].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-                assembler::hardware::OlaRegister::R1 => Ok((
-                    self.context.registers[1].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-                assembler::hardware::OlaRegister::R2 => Ok((
-                    self.context.registers[2].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-                assembler::hardware::OlaRegister::R3 => Ok((
-                    self.context.registers[3].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-                assembler::hardware::OlaRegister::R4 => Ok((
-                    self.context.registers[4].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-                assembler::hardware::OlaRegister::R5 => Ok((
-                    self.context.registers[5].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-                assembler::hardware::OlaRegister::R6 => Ok((
-                    self.context.registers[6].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-                assembler::hardware::OlaRegister::R7 => Ok((
-                    self.context.registers[7].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-                assembler::hardware::OlaRegister::R8 => Ok((
-                    self.context.registers[8].clone(),
-                    GoldilocksField(offset.to_u64()?),
-                )),
-            },
+            OlaOperand::RegisterWithOffset { register, offset } => Ok((
+                self.get_register_value(register),
+                GoldilocksField(offset.to_u64()?),
+            )),
             _ => bail!("error split anchor and offset"),
         }
     }
@@ -807,15 +788,15 @@ impl OlaRunner {
         match dst_operand {
             OlaOperand::ImmediateOperand { value } => bail!("invalid dst operand {}", value),
             OlaOperand::RegisterOperand { register } => match register {
-                assembler::hardware::OlaRegister::R0 => self.context.registers[0] = result,
-                assembler::hardware::OlaRegister::R1 => self.context.registers[1] = result,
-                assembler::hardware::OlaRegister::R2 => self.context.registers[2] = result,
-                assembler::hardware::OlaRegister::R3 => self.context.registers[3] = result,
-                assembler::hardware::OlaRegister::R4 => self.context.registers[4] = result,
-                assembler::hardware::OlaRegister::R5 => self.context.registers[5] = result,
-                assembler::hardware::OlaRegister::R6 => self.context.registers[6] = result,
-                assembler::hardware::OlaRegister::R7 => self.context.registers[7] = result,
-                assembler::hardware::OlaRegister::R8 => self.context.registers[8] = result,
+                OlaRegister::R0 => self.context.registers[0] = result,
+                OlaRegister::R1 => self.context.registers[1] = result,
+                OlaRegister::R2 => self.context.registers[2] = result,
+                OlaRegister::R3 => self.context.registers[3] = result,
+                OlaRegister::R4 => self.context.registers[4] = result,
+                OlaRegister::R5 => self.context.registers[5] = result,
+                OlaRegister::R6 => self.context.registers[6] = result,
+                OlaRegister::R7 => self.context.registers[7] = result,
+                OlaRegister::R8 => self.context.registers[8] = result,
             },
             OlaOperand::RegisterWithOffset { register, offset } => {
                 bail!("invalid dst operand {}-{}", register, offset)
@@ -823,5 +804,47 @@ impl OlaRunner {
             OlaOperand::SpecialReg { special_reg } => bail!("invalid dst operand {}", special_reg),
         }
         Ok(())
+    }
+
+    fn on_prophet(&mut self, prophet: &Prophet) -> Result<Vec<IntermediateRowMemory>> {
+        let mut rows_memory: Vec<IntermediateRowMemory> = vec![];
+
+        let re = Regex::new(r"^%\{([\s\S]*)%}$").unwrap();
+        let code = re.captures(&prophet.code).unwrap().get(1).unwrap().as_str();
+        let mut interpreter = Interpreter::new(code);
+        let mut values = Vec::new();
+        for input in prophet.inputs.iter() {
+            if input.stored_in.eq("reg") {
+                let register_res = OlaRegister::from_str(&input.anchor);
+                match register_res {
+                    std::result::Result::Ok(register) => {
+                        values.push(self.get_register_value(register).to_canonical_u64())
+                    }
+                    Err(err) => return Err(anyhow!("{}", err)),
+                }
+            }
+        }
+        let prophet_result = interpreter.run(prophet, values);
+        match prophet_result {
+            std::result::Result::Ok(result) => match result {
+                interpreter::utils::number::NumberRet::Single(_) => {
+                    return Err(anyhow!("{}", OlaRunnerError::ProphetReturnTypeError))
+                }
+                interpreter::utils::number::NumberRet::Multiple(values) => {
+                    for value in values {
+                        rows_memory.push(IntermediateRowMemory {
+                            addr: self.context.psp.clone(),
+                            value: GoldilocksField(value.get_number() as u64),
+                            is_write: true,
+                            opcode: None,
+                        })
+                    }
+                    self.context.psp += 1;
+                }
+            },
+            Err(err) => return Err(anyhow!("{}", err)),
+        }
+
+        Ok(rows_memory)
     }
 }

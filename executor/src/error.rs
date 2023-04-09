@@ -44,4 +44,6 @@ pub(crate) enum OlaRunnerError {
     },
     #[error("range check failed: `{0}`")]
     RangeCheckFailedError(u64),
+    #[error("unsupported prophet return type")]
+    ProphetReturnTypeError,
 }
