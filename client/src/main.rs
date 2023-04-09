@@ -16,6 +16,7 @@ use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
 use std::fs::{self, metadata, File};
 use std::io::{BufReader, Read, Write};
+use std::time::Instant;
 
 #[allow(dead_code)]
 const D: usize = 2;
@@ -98,15 +99,21 @@ fn main() {
             for inst in instructions {
                 program.instructions.push(inst.to_string());
             }
-
+            let now = Instant::now();
             let mut process = Process::new();
             process
-                .execute(&mut program, &mut None)
+                .execute(&mut program, &mut Some(prophets))
                 .expect("OlaVM execute fail");
+            println!("exec time:{}", now.elapsed().as_millis());
+
+            let now = Instant::now();
+
             let path = sub_matches.get_one::<String>("output").expect("required");
             println!("Output trace file path: {}", path);
-            let file = File::create(path).unwrap();
+            let mut file = File::create(path).unwrap();
             serde_json::to_writer(file, &program.trace).unwrap();
+            println!("write time:{}", now.elapsed().as_millis());
+
             println!("Run done!");
         }
         Some(("prove", sub_matches)) => {
