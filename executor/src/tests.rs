@@ -468,4 +468,3 @@ fn sqrt_newton_iteration_test() {
     let mut file = File::create("sqrt.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
-

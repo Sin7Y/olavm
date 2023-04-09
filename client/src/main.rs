@@ -1,5 +1,6 @@
 extern crate clap;
 
+use assembler::binary_program::BinaryProgram;
 use assembler::encode::Encoder;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
@@ -13,6 +14,7 @@ use executor::Process;
 use log::debug;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
+use std::collections::HashMap;
 use std::fs::{metadata, File};
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 
@@ -105,22 +107,24 @@ fn main() {
         Some(("run", sub_matches)) => {
             let path = sub_matches.get_one::<String>("input").expect("required");
             println!("Input program file path: {}", path);
+            let file = File::open(&path).unwrap();
+
+            let reader = BufReader::new(file);
+
+            let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
+            let instructions = program.bytecode.split("\n");
+            let mut prophets = HashMap::new();
+            for item in program.prophets {
+                prophets.insert(item.host as u64, item);
+            }
 
             let mut program: Program = Program {
                 instructions: Vec::new(),
                 trace: Default::default(),
             };
 
-            let file = File::open(path).unwrap();
-            let mut input_lines = BufReader::new(file).lines();
-            loop {
-                let inst = input_lines.next();
-                if let Some(inst) = inst {
-                    debug!("inst:{:?}", inst);
-                    program.instructions.push(inst.unwrap());
-                } else {
-                    break;
-                }
+            for inst in instructions {
+                program.instructions.push(inst.to_string());
             }
 
             let mut process = Process::new();
