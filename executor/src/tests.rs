@@ -1,10 +1,10 @@
+use crate::runner::OlaRunner;
 use crate::Process;
 use assembler::binary_program::BinaryProgram;
 use core::program::Program;
 use log::{debug, LevelFilter};
-use regex::Regex;
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 
@@ -469,3 +469,19 @@ fn sqrt_newton_iteration_test() {
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
+#[test]
+fn wtf() {
+    println!("==== begin ====");
+    let mut runner =
+        OlaRunner::new_from_program_file(String::from("/Users/Softcloud/develop/zk/sin7y/olavm/assembler/test_data/bin/fibo_loop.json"))
+            .unwrap();
+    println!("runner init success");
+    println!("==== bytecode ====");
+    println!("{}", runner.program.bytecode);
+    println!("================");
+    let trace = runner.run_to_end().unwrap();
+    println!("runner run end");
+    let output_path = String::from("wtf.txt");
+    let pretty = serde_json::to_string_pretty(&trace).unwrap();
+    fs::write(output_path, pretty).unwrap();
+}

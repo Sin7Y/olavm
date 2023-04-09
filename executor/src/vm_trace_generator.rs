@@ -92,9 +92,11 @@ pub(crate) fn generate_vm_trace(
         };
 
         let imm_val = match encoded_imm_str {
-            Some(imm_str) => GoldilocksField::from_canonical_u64(
-                u64::from_str_radix(imm_str.as_str(), 16).unwrap(),
-            ),
+            Some(imm_str) => {
+                let imm_str_without_prefix = imm_str.trim_start_matches("0x");
+                let imm_u64 = u64::from_str_radix(imm_str_without_prefix, 16).unwrap();
+                GoldilocksField(imm_u64)
+            }
             None => GoldilocksField::default(),
         };
         inst_dump.insert(
@@ -104,7 +106,8 @@ pub(crate) fn generate_vm_trace(
                 imm_flag,
                 index.clone(),
                 GoldilocksField::from_canonical_u64(
-                    u64::from_str_radix(encoded_instruction_with_body.as_str(), 16).unwrap(),
+                    u64::from_str_radix(encoded_instruction_with_body.trim_start_matches("0x"), 16)
+                        .unwrap(),
                 ),
                 imm_val,
             ),
@@ -147,13 +150,14 @@ fn generate_vm_trace_cpu(intermediate_rows: &Vec<IntermediateRowCpu>) -> Result<
     for inter_row in intermediate_rows {
         let instruction_encoded = inter_row.instruction.encode().unwrap();
         let instruction_str = instruction_encoded[0].as_str();
-        let instruction =
-            GoldilocksField::from_canonical_u64(u64::from_str_radix(instruction_str, 16).unwrap());
+        let instruction = GoldilocksField::from_canonical_u64(
+            u64::from_str_radix(instruction_str.trim_start_matches("0x"), 16).unwrap(),
+        );
         let immediate_data = if inter_row.instruction.binary_length() == 1 {
             GoldilocksField::default()
         } else {
             GoldilocksField::from_canonical_u64(
-                u64::from_str_radix(instruction_encoded[1].as_str(), 16).unwrap(),
+                u64::from_str_radix(instruction_encoded[1].trim_start_matches("0x"), 16).unwrap(),
             )
         };
         let opcode =
@@ -250,16 +254,14 @@ fn generate_vm_trace_memory(
 ) -> Result<(Vec<MemoryTraceCell>, Vec<IntermediateRowRangeCheck>)> {
     let mut sorted_inter_rows: Vec<IntermediateRowMemory> = intermediate_rows.clone();
     sorted_inter_rows.sort_by(|r0, r1| {
-        let diff_addr = r0.addr - r1.addr;
-        let diff_clk = r0.clk - r1.clk;
-        if diff_addr < 0 {
+        if r0.addr < r1.addr {
             Ordering::Less
-        } else if diff_addr > 0 {
+        } else if r0.addr > r1.addr {
             Ordering::Greater
         } else {
-            if diff_clk < 0 {
+            if r0.clk < r1.clk {
                 Ordering::Less
-            } else if diff_clk > 0 {
+            } else if r0.clk > r1.clk {
                 Ordering::Greater
             } else {
                 Ordering::Equal

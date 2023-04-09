@@ -20,6 +20,10 @@ pub(crate) enum OlaMemoryError {
 
 #[derive(Error, Debug)]
 pub(crate) enum OlaRunnerError {
+    #[error("runner decode instructions error, `{0}`")]
+    DecodeInstructionsError(String),
+    #[error("runner decode program from instructions error, `{0}`")]
+    DecodeProgramError(String),
     #[error("runner init error, `{0}`")]
     RunnerInitError(String),
     #[error("memory access error")]

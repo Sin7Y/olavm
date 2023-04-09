@@ -87,8 +87,8 @@ impl IntermediateTraceCollector {
 
 #[derive(Debug)]
 pub struct OlaRunner {
-    program: BinaryProgram,
-    instructions: HashMap<u64, BinaryInstruction>,
+    pub program: BinaryProgram,
+    pub instructions: HashMap<u64, BinaryInstruction>,
     context: OlaContext,
     trace_collector: IntermediateTraceCollector,
     is_ended: bool,
@@ -98,7 +98,7 @@ impl OlaRunner {
     pub fn new_from_program_file(path: String) -> Result<Self> {
         let instruction_vec = match decode_binary_program_from_file(path) {
             std::result::Result::Ok(it) => it,
-            Err(err) => bail!("{}", err),
+            Err(err) => return Err(anyhow!("{}", OlaRunnerError::DecodeInstructionsError(err))),
         };
         Self::new_from_instruction_vec(instruction_vec)
     }
@@ -112,7 +112,7 @@ impl OlaRunner {
         });
         let program = match BinaryProgram::from_instructions(instruction_vec) {
             std::result::Result::Ok(it) => it,
-            Err(err) => bail!("{}", err),
+            Err(err) => return Err(anyhow!("{}", OlaRunnerError::DecodeProgramError(err))),
         };
         Ok(OlaRunner {
             program,
@@ -434,7 +434,7 @@ impl OlaRunner {
 
                 self.context.clk += 1;
                 self.context.pc += instruction.binary_length() as u64;
-                self.update_dst_reg(trace_dst.clone(), instruction.op1.clone().unwrap())?;
+                self.update_dst_reg(trace_dst.clone(), instruction.dst.clone().unwrap())?;
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
@@ -475,6 +475,10 @@ impl OlaRunner {
 
                 self.context.clk += 1;
                 self.context.pc += instruction.binary_length() as u64;
+                let _ = self.context.memory.store_in_segment_read_write(
+                    addr.clone().to_canonical_u64(),
+                    trace_op0.clone(),
+                );
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
@@ -764,9 +768,15 @@ impl OlaRunner {
                 OlaRegister::R8 => self.context.registers[8] = result,
             },
             OlaOperand::RegisterWithOffset { register, offset } => {
-                bail!("invalid dst operand {}-{}", register, offset)
+                bail!(
+                    "dst operand cannot be RegisterWithOffset, register {}, offset {}",
+                    register,
+                    offset
+                )
             }
-            OlaOperand::SpecialReg { special_reg } => bail!("invalid dst operand {}", special_reg),
+            OlaOperand::SpecialReg { special_reg } => {
+                bail!("dst operand cannot be SpecialReg {}", special_reg)
+            }
         }
         Ok(())
     }
@@ -797,6 +807,10 @@ impl OlaRunner {
                 }
                 interpreter::utils::number::NumberRet::Multiple(values) => {
                     for value in values {
+                        let _ = self.context.memory.store_in_segment_prophet(
+                            self.context.psp.clone(),
+                            GoldilocksField(value.get_number() as u64),
+                        );
                         rows_memory.push(IntermediateRowMemory {
                             clk: 0,
                             addr: self.context.psp.clone(),
