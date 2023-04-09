@@ -115,7 +115,7 @@ impl OlaMemory {
     }
 
     pub(crate) fn store_in_segment_read_write(
-        &self,
+        &mut self,
         addr: u64,
         value: GoldilocksField,
     ) -> Result<()> {
@@ -129,7 +129,11 @@ impl OlaMemory {
         Ok(())
     }
 
-    pub(crate) fn store_in_segment_prophet(&self, addr: u64, value: GoldilocksField) -> Result<()> {
+    pub(crate) fn store_in_segment_prophet(
+        &mut self,
+        addr: u64,
+        value: GoldilocksField,
+    ) -> Result<()> {
         if !OlaMemorySegment::is_addr_in_segment_prophet(addr) {
             return Err(anyhow!(
                 "{}",

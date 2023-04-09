@@ -175,7 +175,7 @@ impl OlaRunner {
         })
     }
 
-    pub fn run_one_step(&mut self) -> Result<IntermediateTraceStepAppender> {
+    fn run_one_step(&mut self) -> Result<IntermediateTraceStepAppender> {
         if self.is_ended {
             return Err(anyhow!("{}", OlaRunnerError::RunAfterEndedError));
         }
