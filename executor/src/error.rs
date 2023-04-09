@@ -10,10 +10,12 @@ pub enum ProcessorError {
 
 #[derive(Error, Debug)]
 pub(crate) enum OlaMemoryError {
+    #[error("address out of bounds: `{0}`")]
+    AddressOutOfBoundsError(u64),
     #[error("cannot read an address that has not yet been written")]
-    ReadBeforeWrite,
-    #[error("invalid address to write: `{0}`")]
-    WriteInvalidAddr(u64),
+    ReadBeforeWriteError,
+    #[error("invalid address to mstore: `{0}`")]
+    InvalidAddrToMStoreError(u64),
 }
 
 #[derive(Error, Debug)]
@@ -23,7 +25,23 @@ pub(crate) enum OlaRunnerError {
     #[error("memory access error")]
     MemoryError(#[from] OlaMemoryError),
     #[error("cannot run after runner is ended")]
-    RunAfterEnded,
-    #[error("instruction not found (pc {pc:?} , clk {clk:?})")]
-    InstructionNotFound { clk: u64, pc: u64 },
+    RunAfterEndedError,
+    #[error("instruction not found (pc {pc:?}, clk {clk:?})")]
+    InstructionNotFoundError { clk: u64, pc: u64 },
+    #[error("assert failed (pc {pc:?}, clk {clk:?}, op0 {op0:?}, op1 {op1:?})")]
+    AssertFailError {
+        clk: u64,
+        pc: u64,
+        op0: u64,
+        op1: u64,
+    },
+    #[error("flag must be binary, clk {clk:?}, pc {pc:?}, opcode {opcode:?}, flag {flag:?}")]
+    FlagNotBinaryError {
+        clk: u64,
+        pc: u64,
+        opcode: String,
+        flag: u64,
+    },
+    #[error("range check failed: `{0}`")]
+    RangeCheckFailedError(u64),
 }

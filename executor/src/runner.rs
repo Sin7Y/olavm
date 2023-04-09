@@ -1,20 +1,27 @@
 use std::collections::{BTreeMap, HashMap};
 
-use crate::{error::OlaRunnerError, vm::ola_vm::OlaContext};
+use crate::{
+    error::OlaRunnerError,
+    vm::ola_vm::{OlaContext, NUM_GENERAL_PURPOSE_REGISTER},
+};
 use anyhow::{anyhow, bail, Ok, Result};
 use assembler::{
     binary_program::{BinaryInstruction, BinaryProgram},
-    decoder::{decode_binary_program_from_file, decode_binary_program_to_instructions},
+    decoder::decode_binary_program_from_file,
     opcodes::OlaOpcode,
     operands::OlaOperand,
 };
-use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::{
+    goldilocks_field::GoldilocksField,
+    types::{Field, PrimeField64},
+};
 
 #[derive(Debug, Clone)]
 struct IntermediateRowCpu {
     clk: u64,
     pc: u64,
     psp: u64,
+    registers: [GoldilocksField; NUM_GENERAL_PURPOSE_REGISTER],
     instruction: BinaryInstruction,
     op0: GoldilocksField,
     op1: GoldilocksField,
@@ -27,6 +34,7 @@ struct IntermediateRowCpu {
 struct IntermediateRowMemory {
     addr: u64,
     value: GoldilocksField,
+    is_write: bool,
     opcode: Option<OlaOpcode>,
 }
 
@@ -158,49 +166,62 @@ impl OlaRunner {
         })
     }
 
-    pub fn run_one_step(&self) -> Result<IntermediateTraceStepAppender> {
+    pub fn run_one_step(&mut self) -> Result<IntermediateTraceStepAppender> {
         if self.is_ended {
-            return Err(anyhow!("{}", OlaRunnerError::RunAfterEnded));
+            return Err(anyhow!("{}", OlaRunnerError::RunAfterEndedError));
         }
 
-        let clk_before = self.context.clk.clone();
-        let pc_before = self.context.pc.clone();
-        let psp_before = self.context.psp.clone();
-        let mut registers_before = self.context.registers.clone();
-
-        let instruction = match self.instructions.get(&pc_before) {
+        let instruction = match self.instructions.get(&self.context.pc.clone()) {
             Some(it) => it,
             None => {
                 return Err(anyhow!(
                     "{}",
-                    OlaRunnerError::InstructionNotFound {
-                        clk: clk_before.clone(),
-                        pc: pc_before.clone()
+                    OlaRunnerError::InstructionNotFoundError {
+                        clk: self.context.clk.clone(),
+                        pc: self.context.pc.clone()
                     }
                 ))
             }
         };
 
-        let appended = match instruction.opcode {
-            OlaOpcode::ADD => {
-                let op0 = self.get_operand_value(instruction.op0.unwrap().clone())?;
-                let op1 = self.get_operand_value(instruction.op1.unwrap().clone())?;
-                let result = op0 + op1;
+        let appender = match instruction.opcode {
+            OlaOpcode::ADD
+            | OlaOpcode::MUL
+            | OlaOpcode::EQ
+            | OlaOpcode::AND
+            | OlaOpcode::OR
+            | OlaOpcode::XOR
+            | OlaOpcode::NEQ
+            | OlaOpcode::GTE => self.on_two_operands_arithmetic_op(instruction.clone())?,
+            OlaOpcode::ASSERT => {
+                let trace_op0 = self.get_operand_value(instruction.op0.clone().unwrap())?;
+                let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
+                if trace_op0.0 != trace_op1.0 {
+                    return Err(anyhow!(
+                        "{}",
+                        OlaRunnerError::AssertFailError {
+                            clk: self.context.clk.clone(),
+                            pc: self.context.pc.clone(),
+                            op0: trace_op0.0,
+                            op1: trace_op1.0
+                        }
+                    ));
+                }
                 let row_cpu = IntermediateRowCpu {
                     clk: self.context.clk.clone(),
                     pc: self.context.pc.clone(),
                     psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
                     instruction: instruction.clone(),
-                    op0,
-                    op1,
-                    dst: result.clone(),
+                    op0: trace_op0,
+                    op1: trace_op1,
+                    dst: GoldilocksField::default(),
                     aux0: GoldilocksField::default(),
                     aux1: GoldilocksField::default(),
                 };
 
                 self.context.clk += 1;
                 self.context.pc += instruction.binary_length() as u64;
-                self.update_dst_reg(result.clone(), instruction.dst.unwrap().clone())?;
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
@@ -210,27 +231,475 @@ impl OlaRunner {
                     comparison: None,
                 }
             }
-            OlaOpcode::MUL => todo!(),
-            OlaOpcode::EQ => todo!(),
-            OlaOpcode::ASSERT => todo!(),
-            OlaOpcode::MOV => todo!(),
-            OlaOpcode::JMP => todo!(),
-            OlaOpcode::CJMP => todo!(),
-            OlaOpcode::CALL => todo!(),
-            OlaOpcode::RET => todo!(),
-            OlaOpcode::MLOAD => todo!(),
-            OlaOpcode::MSTORE => todo!(),
-            OlaOpcode::END => todo!(),
-            OlaOpcode::RC => todo!(),
-            OlaOpcode::AND => todo!(),
-            OlaOpcode::OR => todo!(),
-            OlaOpcode::XOR => todo!(),
-            OlaOpcode::NOT => todo!(),
-            OlaOpcode::NEQ => todo!(),
-            OlaOpcode::GTE => todo!(),
-        }
 
-        Ok(IntermediateTraceStepAppender::default())
+            OlaOpcode::MOV => {
+                let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: GoldilocksField::default(),
+                    op1: trace_op1.clone(),
+                    dst: trace_op1.clone(),
+                    aux0: GoldilocksField::default(),
+                    aux1: GoldilocksField::default(),
+                };
+
+                self.context.clk += 1;
+                self.context.pc += instruction.binary_length() as u64;
+                self.update_dst_reg(trace_op1.clone(), instruction.dst.clone().unwrap())?;
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: None,
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::JMP => {
+                let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: GoldilocksField::default(),
+                    op1: trace_op1.clone(),
+                    dst: GoldilocksField::default(),
+                    aux0: GoldilocksField::default(),
+                    aux1: GoldilocksField::default(),
+                };
+
+                self.context.clk += 1;
+                self.context.pc = trace_op1.clone().to_noncanonical_u64();
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: None,
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::CJMP => {
+                let trace_op0 = self.get_operand_value(instruction.op0.clone().unwrap())?;
+                let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
+                let flag = trace_op0.clone().to_noncanonical_u64();
+                if flag != 0 && flag != 1 {
+                    return Err(anyhow!(
+                        "{}",
+                        OlaRunnerError::FlagNotBinaryError {
+                            clk: self.context.clk.clone(),
+                            pc: self.context.pc.clone(),
+                            opcode: instruction.opcode.token(),
+                            flag: trace_op0.0
+                        }
+                    ));
+                }
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: trace_op0.clone(),
+                    op1: trace_op1.clone(),
+                    dst: GoldilocksField::default(),
+                    aux0: GoldilocksField::default(),
+                    aux1: GoldilocksField::default(),
+                };
+
+                self.context.clk += 1;
+                self.context.pc = if flag == 1 {
+                    trace_op1.clone().to_noncanonical_u64()
+                } else {
+                    self.context.pc + instruction.binary_length() as u64
+                };
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: None,
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::CALL => {
+                let trace_op0 = self.context.get_fp().clone() - GoldilocksField(1);
+                let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
+                let trace_dst =
+                    GoldilocksField(self.context.pc + instruction.binary_length() as u64);
+                let trace_aux0 = self.context.get_fp().clone() - GoldilocksField(2);
+                let trace_aux1 = self
+                    .context
+                    .memory
+                    .read(trace_aux0.clone().to_canonical_u64())?;
+
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: trace_op0.clone(),
+                    op1: trace_op1.clone(),
+                    dst: trace_dst.clone(),
+                    aux0: trace_aux0.clone(),
+                    aux1: trace_aux1.clone(),
+                };
+
+                let rows_memory = vec![
+                    IntermediateRowMemory {
+                        addr: trace_op0.clone().to_canonical_u64(),
+                        value: trace_dst.clone(),
+                        is_write: true,
+                        opcode: Some(OlaOpcode::CALL),
+                    },
+                    IntermediateRowMemory {
+                        addr: trace_aux0.clone().to_canonical_u64(),
+                        value: trace_aux1.clone(),
+                        is_write: false,
+                        opcode: Some(OlaOpcode::CALL),
+                    },
+                ];
+
+                self.context.clk += 1;
+                self.context.pc = trace_op1.clone().to_canonical_u64();
+                self.context.memory.store_in_segment_read_write(
+                    trace_op0.clone().to_canonical_u64(),
+                    trace_dst.clone(),
+                );
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: Some(rows_memory),
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::RET => {
+                let trace_op0 = self.context.get_fp().clone() - GoldilocksField(1);
+                let trace_dst = self
+                    .context
+                    .memory
+                    .read(trace_op0.clone().to_canonical_u64())?;
+                let trace_aux0 = self.context.get_fp().clone() - GoldilocksField(2);
+                let trace_aux1 = self
+                    .context
+                    .memory
+                    .read(trace_aux0.clone().to_canonical_u64())?;
+
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: trace_op0.clone(),
+                    op1: GoldilocksField::default(),
+                    dst: trace_dst.clone(),
+                    aux0: trace_aux0.clone(),
+                    aux1: trace_aux1.clone(),
+                };
+                let rows_memory = vec![
+                    IntermediateRowMemory {
+                        addr: trace_op0.clone().to_canonical_u64(),
+                        value: trace_dst.clone(),
+                        is_write: false,
+                        opcode: Some(OlaOpcode::RET),
+                    },
+                    IntermediateRowMemory {
+                        addr: trace_aux0.clone().to_canonical_u64(),
+                        value: trace_aux1.clone(),
+                        is_write: false,
+                        opcode: Some(OlaOpcode::RET),
+                    },
+                ];
+
+                self.context.clk += 1;
+                self.context.pc = trace_dst.clone().to_canonical_u64();
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: Some(rows_memory),
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::MLOAD => {
+                let (anchor_addr, offset) =
+                    self.split_register_offset_operand(instruction.op1.clone().unwrap())?;
+                let addr = anchor_addr + offset;
+                let trace_op1 = anchor_addr.clone();
+                let trace_dst = self.context.memory.read(addr.to_canonical_u64())?;
+                let trace_aux0 = offset.clone();
+                let trace_aux1 = addr;
+
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: GoldilocksField::default(),
+                    op1: trace_op1.clone(),
+                    dst: trace_dst.clone(),
+                    aux0: trace_aux0.clone(),
+                    aux1: trace_aux1.clone(),
+                };
+                let rows_memory = vec![IntermediateRowMemory {
+                    addr: addr.clone().to_canonical_u64(),
+                    value: trace_dst.clone(),
+                    is_write: false,
+                    opcode: Some(OlaOpcode::MLOAD),
+                }];
+
+                self.context.clk += 1;
+                self.context.pc += instruction.binary_length() as u64;
+                self.update_dst_reg(trace_dst.clone(), instruction.op1.clone().unwrap())?;
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: Some(rows_memory),
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::MSTORE => {
+                let (anchor_addr, offset) =
+                    self.split_register_offset_operand(instruction.op1.clone().unwrap())?;
+                let addr = anchor_addr + offset;
+                let trace_op0 = self.get_operand_value(instruction.op0.clone().unwrap())?;
+                let trace_op1 = anchor_addr.clone();
+                let trace_aux0 = offset.clone();
+                let trace_aux1 = addr;
+
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: trace_op0.clone(),
+                    op1: trace_op1.clone(),
+                    dst: GoldilocksField::default(),
+                    aux0: trace_aux0.clone(),
+                    aux1: trace_aux1.clone(),
+                };
+                let rows_memory = vec![IntermediateRowMemory {
+                    addr: addr.clone().to_canonical_u64(),
+                    value: trace_op0.clone(),
+                    is_write: true,
+                    opcode: Some(OlaOpcode::MSTORE),
+                }];
+
+                self.context.clk += 1;
+                self.context.pc += instruction.binary_length() as u64;
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: Some(rows_memory),
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::END => {
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: GoldilocksField::default(),
+                    op1: GoldilocksField::default(),
+                    dst: GoldilocksField::default(),
+                    aux0: GoldilocksField::default(),
+                    aux1: GoldilocksField::default(),
+                };
+
+                self.is_ended = true;
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: None,
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::RC => {
+                let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
+                let value = trace_op1.clone().to_canonical_u64();
+                if value >= 1 << 32 {
+                    return Err(anyhow!("{}", OlaRunnerError::RangeCheckFailedError(value)));
+                }
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: GoldilocksField::default(),
+                    op1: trace_op1.clone(),
+                    dst: GoldilocksField::default(),
+                    aux0: GoldilocksField::default(),
+                    aux1: GoldilocksField::default(),
+                };
+                let rows_range_check = vec![IntermediateRowRangeCheck {
+                    value: trace_op1.clone(),
+                    requester: RangeCheckRequester::Cpu,
+                }];
+
+                self.context.clk += 1;
+                self.context.pc += instruction.binary_length() as u64;
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: None,
+                    range_check: Some(rows_range_check),
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+            OlaOpcode::NOT => {
+                let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
+                let trace_dst = GoldilocksField::NEG_ONE - trace_op1;
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: GoldilocksField::default(),
+                    op1: trace_op1.clone(),
+                    dst: trace_dst.clone(),
+                    aux0: GoldilocksField::default(),
+                    aux1: GoldilocksField::default(),
+                };
+
+                self.context.clk += 1;
+                self.context.pc += instruction.binary_length() as u64;
+                self.update_dst_reg(trace_dst.clone(), instruction.dst.clone().unwrap())?;
+
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: None,
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
+        };
+
+        Ok(appender)
+    }
+
+    fn on_two_operands_arithmetic_op(
+        &mut self,
+        instruction: BinaryInstruction,
+    ) -> Result<IntermediateTraceStepAppender> {
+        let mut row_bitwise: Option<IntermediateRowBitwise> = None;
+        let mut row_comparison: Option<IntermediateRowComparison> = None;
+        let mut aux0 = GoldilocksField::default();
+
+        let trace_op0 = self.get_operand_value(instruction.op0.clone().unwrap())?;
+        let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
+        let trace_dst: GoldilocksField = match instruction.opcode {
+            OlaOpcode::ADD => trace_op0 + trace_op1,
+            OlaOpcode::MUL => trace_op0 * trace_op1,
+            OlaOpcode::EQ => {
+                let eq = trace_op0.0 == trace_op1.0;
+                aux0 = if eq {
+                    GoldilocksField::default()
+                } else {
+                    (trace_op0 - trace_op1).inverse()
+                };
+                GoldilocksField(eq as u64)
+            }
+            OlaOpcode::AND => {
+                let result = trace_op0.0 & trace_op1.0;
+                row_bitwise = Some(IntermediateRowBitwise {
+                    opcode: GoldilocksField(instruction.opcode.binary_bit_mask()),
+                    op0: trace_op0.clone(),
+                    op1: trace_op1.clone(),
+                    res: GoldilocksField(result),
+                });
+                GoldilocksField(result)
+            }
+            OlaOpcode::OR => {
+                let result = trace_op0.0 | trace_op1.0;
+                row_bitwise = Some(IntermediateRowBitwise {
+                    opcode: GoldilocksField(instruction.opcode.binary_bit_mask()),
+                    op0: trace_op0.clone(),
+                    op1: trace_op1.clone(),
+                    res: GoldilocksField(result),
+                });
+                GoldilocksField(result)
+            }
+            OlaOpcode::XOR => {
+                let result = trace_op0.0 ^ trace_op1.0;
+                row_bitwise = Some(IntermediateRowBitwise {
+                    opcode: GoldilocksField(instruction.opcode.binary_bit_mask()),
+                    op0: trace_op0.clone(),
+                    op1: trace_op1.clone(),
+                    res: GoldilocksField(result),
+                });
+                GoldilocksField(result)
+            }
+            OlaOpcode::NEQ => {
+                let neq = trace_op0.0 != trace_op1.0;
+                aux0 = if neq {
+                    (trace_op0 - trace_op1).inverse()
+                } else {
+                    GoldilocksField::default()
+                };
+                GoldilocksField(neq as u64)
+            }
+            OlaOpcode::GTE => {
+                row_comparison = Some(IntermediateRowComparison {
+                    op0: trace_op0.clone(),
+                    op1: trace_op1.clone(),
+                    is_gte: true,
+                });
+                GoldilocksField((trace_op0.0 >= trace_op1.0) as u64)
+            }
+            _ => bail!(
+                "invalid two operands arithmetic opcode {}",
+                instruction.opcode.clone()
+            ),
+        };
+        let row_cpu = IntermediateRowCpu {
+            clk: self.context.clk.clone(),
+            pc: self.context.pc.clone(),
+            psp: self.context.psp.clone(),
+            registers: self.context.registers.clone(),
+            instruction: instruction.clone(),
+            op0: trace_op0,
+            op1: trace_op1,
+            dst: trace_dst.clone(),
+            aux0: aux0.clone(),
+            aux1: GoldilocksField::default(),
+        };
+
+        self.context.clk += 1;
+        self.context.pc += instruction.binary_length() as u64;
+        self.update_dst_reg(trace_dst.clone(), instruction.dst.clone().unwrap())?;
+
+        Ok(IntermediateTraceStepAppender {
+            cpu: row_cpu,
+            memory: None,
+            range_check: None,
+            bitwise: row_bitwise,
+            comparison: row_comparison,
+        })
     }
 
     fn get_operand_value(&self, operand: OlaOperand) -> Result<GoldilocksField> {
@@ -287,23 +756,70 @@ impl OlaRunner {
         }
     }
 
-    fn update_dst_reg(&self, result: GoldilocksField, dst_operand: OlaOperand) -> Result<()> {
+    fn split_register_offset_operand(
+        &self,
+        operand: OlaOperand,
+    ) -> Result<(GoldilocksField, GoldilocksField)> {
+        match operand {
+            OlaOperand::RegisterWithOffset { register, offset } => match register {
+                assembler::hardware::OlaRegister::R0 => Ok((
+                    self.context.registers[0].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+                assembler::hardware::OlaRegister::R1 => Ok((
+                    self.context.registers[1].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+                assembler::hardware::OlaRegister::R2 => Ok((
+                    self.context.registers[2].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+                assembler::hardware::OlaRegister::R3 => Ok((
+                    self.context.registers[3].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+                assembler::hardware::OlaRegister::R4 => Ok((
+                    self.context.registers[4].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+                assembler::hardware::OlaRegister::R5 => Ok((
+                    self.context.registers[5].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+                assembler::hardware::OlaRegister::R6 => Ok((
+                    self.context.registers[6].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+                assembler::hardware::OlaRegister::R7 => Ok((
+                    self.context.registers[7].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+                assembler::hardware::OlaRegister::R8 => Ok((
+                    self.context.registers[8].clone(),
+                    GoldilocksField(offset.to_u64()?),
+                )),
+            },
+            _ => bail!("error split anchor and offset"),
+        }
+    }
+
+    fn update_dst_reg(&mut self, result: GoldilocksField, dst_operand: OlaOperand) -> Result<()> {
         match dst_operand {
             OlaOperand::ImmediateOperand { value } => bail!("invalid dst operand {}", value),
-            OlaOperand::RegisterOperand { register } => {
-                match register {
-                    assembler::hardware::OlaRegister::R0 => self.context.registers[0] = result,
-                    assembler::hardware::OlaRegister::R1 => self.context.registers[1] = result,
-                    assembler::hardware::OlaRegister::R2 => self.context.registers[2] = result,
-                    assembler::hardware::OlaRegister::R3 => self.context.registers[3] = result,
-                    assembler::hardware::OlaRegister::R4 => self.context.registers[4] = result,
-                    assembler::hardware::OlaRegister::R5 => self.context.registers[5] = result,
-                    assembler::hardware::OlaRegister::R6 => self.context.registers[6] = result,
-                    assembler::hardware::OlaRegister::R7 => self.context.registers[7] = result,
-                    assembler::hardware::OlaRegister::R8 => self.context.registers[8] = result,
-                }
+            OlaOperand::RegisterOperand { register } => match register {
+                assembler::hardware::OlaRegister::R0 => self.context.registers[0] = result,
+                assembler::hardware::OlaRegister::R1 => self.context.registers[1] = result,
+                assembler::hardware::OlaRegister::R2 => self.context.registers[2] = result,
+                assembler::hardware::OlaRegister::R3 => self.context.registers[3] = result,
+                assembler::hardware::OlaRegister::R4 => self.context.registers[4] = result,
+                assembler::hardware::OlaRegister::R5 => self.context.registers[5] = result,
+                assembler::hardware::OlaRegister::R6 => self.context.registers[6] = result,
+                assembler::hardware::OlaRegister::R7 => self.context.registers[7] = result,
+                assembler::hardware::OlaRegister::R8 => self.context.registers[8] = result,
             },
-            OlaOperand::RegisterWithOffset { register, offset } => bail!("invalid dst operand {}-{}", register, offset),
+            OlaOperand::RegisterWithOffset { register, offset } => {
+                bail!("invalid dst operand {}-{}", register, offset)
+            }
             OlaOperand::SpecialReg { special_reg } => bail!("invalid dst operand {}", special_reg),
         }
         Ok(())

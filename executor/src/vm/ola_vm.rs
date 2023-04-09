@@ -1,5 +1,8 @@
+use anyhow::{anyhow, Ok, Result};
 use plonky2::field::{goldilocks_field::GoldilocksField, types::Field64};
 use std::collections::HashMap;
+
+use crate::error::OlaMemoryError;
 
 pub(crate) const NUM_GENERAL_PURPOSE_REGISTER: usize = 9;
 pub const MEM_REGION_SPAN: u64 = u32::MAX as u64;
@@ -28,6 +31,12 @@ impl Default for OlaContext {
     }
 }
 
+impl OlaContext {
+    pub(crate) fn get_fp(&self) -> GoldilocksField {
+        self.registers[8]
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum OlaMemorySegment {
     ReadWrite,
@@ -37,6 +46,30 @@ pub enum OlaMemorySegment {
 }
 
 impl OlaMemorySegment {
+    pub fn is_addr_in_segment_read_write(addr: u64) -> bool {
+        let segment = OlaMemorySegment::ReadWrite;
+        Self::is_addr_in_segment(addr, segment)
+    }
+
+    pub fn is_addr_in_segment_prophet(addr: u64) -> bool {
+        let segment = OlaMemorySegment::Prophet;
+        Self::is_addr_in_segment(addr, segment)
+    }
+
+    pub fn is_addr_in_segment_poseidon(addr: u64) -> bool {
+        let segment = OlaMemorySegment::Poseidon;
+        Self::is_addr_in_segment(addr, segment)
+    }
+
+    pub fn is_addr_in_segment_ecdsa(addr: u64) -> bool {
+        let segment = OlaMemorySegment::Ecdsa;
+        Self::is_addr_in_segment(addr, segment)
+    }
+
+    fn is_addr_in_segment(addr: u64, segment: OlaMemorySegment) -> bool {
+        addr >= segment.low_limit_inclusive() && addr < segment.upper_limit_exclusive()
+    }
+
     pub fn low_limit_inclusive(&self) -> u64 {
         match self {
             OlaMemorySegment::ReadWrite => 0,
@@ -58,15 +91,52 @@ impl OlaMemorySegment {
 
 #[derive(Debug)]
 pub(crate) struct OlaMemory {
-    pub(crate) read_write_segment: HashMap<u64, GoldilocksField>,
-    pub(crate) prophet_segment: HashMap<u64, GoldilocksField>,
+    memory: HashMap<u64, GoldilocksField>,
 }
 
 impl Default for OlaMemory {
     fn default() -> Self {
         Self {
-            read_write_segment: Default::default(),
-            prophet_segment: Default::default(),
+            memory: Default::default(),
         }
+    }
+}
+
+impl OlaMemory {
+    pub(crate) fn read(&self, addr: u64) -> Result<GoldilocksField> {
+        if addr >= GoldilocksField::ORDER {
+            return Err(anyhow!("{}", OlaMemoryError::AddressOutOfBoundsError(addr)));
+        }
+        let stored = self.memory.get(&addr);
+        match stored {
+            Some(value) => return Ok(value.clone()),
+            None => return Err(anyhow!("{}", OlaMemoryError::ReadBeforeWriteError)),
+        }
+    }
+
+    pub(crate) fn store_in_segment_read_write(
+        &self,
+        addr: u64,
+        value: GoldilocksField,
+    ) -> Result<()> {
+        if !OlaMemorySegment::is_addr_in_segment_read_write(addr) {
+            return Err(anyhow!(
+                "{}",
+                OlaMemoryError::InvalidAddrToMStoreError(addr)
+            ));
+        }
+        self.memory.insert(addr, value);
+        Ok(())
+    }
+
+    pub(crate) fn store_in_segment_prophet(&self, addr: u64, value: GoldilocksField) -> Result<()> {
+        if !OlaMemorySegment::is_addr_in_segment_prophet(addr) {
+            return Err(anyhow!(
+                "{}",
+                OlaMemoryError::InvalidAddrToMStoreError(addr)
+            ));
+        }
+        self.memory.insert(addr, value);
+        Ok(())
     }
 }
