@@ -97,14 +97,14 @@ pub(crate) fn generate_vm_trace(
                 let imm_u64 = u64::from_str_radix(imm_str_without_prefix, 16).unwrap();
                 GoldilocksField(imm_u64)
             }
-            None => GoldilocksField::default(),
+            None => GoldilocksField::ZERO,
         };
         inst_dump.insert(
             index.clone(),
             (
                 instruction.get_asm_form_code(),
                 imm_flag,
-                index.clone(),
+                instruction.binary_length() as u64,
                 GoldilocksField::from_canonical_u64(
                     u64::from_str_radix(encoded_instruction_with_body.trim_start_matches("0x"), 16)
                         .unwrap(),
@@ -154,7 +154,7 @@ fn generate_vm_trace_cpu(intermediate_rows: &Vec<IntermediateRowCpu>) -> Result<
             u64::from_str_radix(instruction_str.trim_start_matches("0x"), 16).unwrap(),
         );
         let immediate_data = if inter_row.instruction.binary_length() == 1 {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         } else {
             GoldilocksField::from_canonical_u64(
                 u64::from_str_radix(instruction_encoded[1].trim_start_matches("0x"), 16).unwrap(),
@@ -165,9 +165,9 @@ fn generate_vm_trace_cpu(intermediate_rows: &Vec<IntermediateRowCpu>) -> Result<
         let op1_imm = match inter_row.instruction.op1.clone() {
             Some(op1) => match op1 {
                 OlaOperand::ImmediateOperand { .. } => GoldilocksField::ONE,
-                _ => GoldilocksField::default(),
+                _ => GoldilocksField::ZERO,
             },
-            None => GoldilocksField::default(),
+            None => GoldilocksField::ZERO,
         };
 
         let mut op0_reg_sel: [GoldilocksField; NUM_GENERAL_PURPOSE_REGISTER] =
@@ -292,36 +292,40 @@ fn generate_vm_trace_memory(
         let clk = GoldilocksField(local_inter_row.clk);
         let op = match local_inter_row.opcode {
             Some(opcode) => GoldilocksField(opcode.binary_bit_mask()),
-            None => GoldilocksField::default(),
+            None => GoldilocksField::ZERO,
         };
         let is_write = GoldilocksField(local_inter_row.is_write as u64);
         let value = local_inter_row.value;
         let diff_addr = if is_first_row {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         } else {
-            GoldilocksField(local_inter_row.addr - sorted_inter_rows[index - 1].clone().addr)
+            GoldilocksField(local_inter_row.addr - sorted_inter_rows[index - 1].addr)
         };
 
         let diff_addr_inv = if is_in_read_write {
             if diff_addr.0 == 0 {
-                GoldilocksField::default()
+                GoldilocksField::ZERO
             } else {
                 diff_addr.inverse()
             }
         } else {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         };
 
         let diff_clk = if is_first_row {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         } else if is_in_read_write {
-            clk - GoldilocksField(sorted_inter_rows[index - 1].clone().clk)
+            if local_inter_row.addr == sorted_inter_rows[index - 1].addr {
+                clk - GoldilocksField(sorted_inter_rows[index - 1].clk)
+            } else {
+                GoldilocksField::ZERO
+            }
         } else {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         };
 
         let diff_addr_cond = if is_in_read_write {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         } else if is_in_prophet {
             GoldilocksField(
                 OlaMemorySegment::Prophet.upper_limit_exclusive() - local_inter_row.addr,
@@ -337,37 +341,37 @@ fn generate_vm_trace_memory(
         let filter_looked_for_main = if is_in_read_write {
             GoldilocksField::ONE
         } else if local_inter_row.is_write {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         } else {
             GoldilocksField::ONE
         };
 
         let rw_addr_unchanged = if is_first_row {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         } else if is_in_read_write {
             if local_inter_row.addr == sorted_inter_rows[index - 1].clone().addr {
                 GoldilocksField::ONE
             } else {
-                GoldilocksField::default()
+                GoldilocksField::ZERO
             }
         } else {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         };
 
         let region_prophet = if is_in_prophet {
             GoldilocksField::ONE
         } else {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         };
         let region_poseidon = if is_in_poseidon {
             GoldilocksField::ONE
         } else {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         };
         let region_ecdsa = if is_in_ecdsa {
             GoldilocksField::ONE
         } else {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         };
 
         let rc_value = if is_in_read_write {
@@ -465,7 +469,7 @@ fn generate_vm_trace_comparison(
         let gte = if inter_row.is_gte {
             GoldilocksField::ONE
         } else {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         };
         let abs_diff = if inter_row.is_gte {
             op0 - op1
@@ -473,7 +477,7 @@ fn generate_vm_trace_comparison(
             op1 - op0
         };
         let abs_diff_inv = if abs_diff == GoldilocksField::ZERO {
-            GoldilocksField::default()
+            GoldilocksField::ZERO
         } else {
             abs_diff.inverse()
         };
@@ -508,15 +512,15 @@ fn generate_vm_trace_range_check(
 
         let filter_looked_for_memory = match inter_row.requester {
             RangeCheckRequester::Memory => GoldilocksField::ONE,
-            _ => GoldilocksField::default(),
+            _ => GoldilocksField::ZERO,
         };
         let filter_looked_for_cpu = match inter_row.requester {
             RangeCheckRequester::Cpu => GoldilocksField::ONE,
-            _ => GoldilocksField::default(),
+            _ => GoldilocksField::ZERO,
         };
         let filter_looked_for_comparison = match inter_row.requester {
             RangeCheckRequester::Comparison => GoldilocksField::ONE,
-            _ => GoldilocksField::default(),
+            _ => GoldilocksField::ZERO,
         };
 
         let row = RangeCheckRow {

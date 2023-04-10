@@ -481,7 +481,7 @@ fn wtf() {
     println!("================");
     let trace = runner.run_to_end().unwrap();
     println!("runner run end");
-    let output_path = String::from("wtf.txt");
+    let output_path = String::from("wtf_fibo_loop.txt");
     let pretty = serde_json::to_string_pretty(&trace).unwrap();
     fs::write(output_path, pretty).unwrap();
 }

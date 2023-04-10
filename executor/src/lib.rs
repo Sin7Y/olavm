@@ -27,8 +27,8 @@ mod memory;
 #[cfg(test)]
 mod tests;
 mod vm;
-mod runner;
-mod vm_trace_generator;
+pub mod runner;
+pub mod vm_trace_generator;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 8;

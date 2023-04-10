@@ -207,11 +207,11 @@ impl OlaRunner {
                     psp: self.context.psp.clone(),
                     registers: self.context.registers.clone(),
                     instruction: instruction.clone(),
-                    op0: GoldilocksField::default(),
+                    op0: GoldilocksField::ZERO,
                     op1: trace_op1.clone(),
                     dst: trace_op1.clone(),
-                    aux0: GoldilocksField::default(),
-                    aux1: GoldilocksField::default(),
+                    aux0: GoldilocksField::ZERO,
+                    aux1: GoldilocksField::ZERO,
                 };
 
                 self.context.clk += 1;
@@ -234,11 +234,11 @@ impl OlaRunner {
                     psp: self.context.psp.clone(),
                     registers: self.context.registers.clone(),
                     instruction: instruction.clone(),
-                    op0: GoldilocksField::default(),
+                    op0: GoldilocksField::ZERO,
                     op1: trace_op1.clone(),
-                    dst: GoldilocksField::default(),
-                    aux0: GoldilocksField::default(),
-                    aux1: GoldilocksField::default(),
+                    dst: GoldilocksField::ZERO,
+                    aux0: GoldilocksField::ZERO,
+                    aux1: GoldilocksField::ZERO,
                 };
 
                 self.context.clk += 1;
@@ -275,9 +275,9 @@ impl OlaRunner {
                     instruction: instruction.clone(),
                     op0: trace_op0.clone(),
                     op1: trace_op1.clone(),
-                    dst: GoldilocksField::default(),
-                    aux0: GoldilocksField::default(),
-                    aux1: GoldilocksField::default(),
+                    dst: GoldilocksField::ZERO,
+                    aux0: GoldilocksField::ZERO,
+                    aux1: GoldilocksField::ZERO,
                 };
 
                 self.context.clk += 1;
@@ -296,11 +296,12 @@ impl OlaRunner {
                 }
             }
             OlaOpcode::CALL => {
-                let trace_op0 = self.context.get_fp().clone() - GoldilocksField(1);
+                let trace_op0 = self.context.get_fp().clone() - GoldilocksField::ONE;
                 let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
-                let trace_dst =
-                    GoldilocksField(self.context.pc + instruction.binary_length() as u64);
-                let trace_aux0 = self.context.get_fp().clone() - GoldilocksField(2);
+                let trace_dst = GoldilocksField::from_canonical_u64(
+                    self.context.pc + instruction.binary_length() as u64,
+                );
+                let trace_aux0 = self.context.get_fp().clone() - GoldilocksField::TWO;
                 let trace_aux1 = self
                     .context
                     .memory
@@ -338,7 +339,7 @@ impl OlaRunner {
 
                 self.context.clk += 1;
                 self.context.pc = trace_op1.clone().to_canonical_u64();
-                self.context.memory.store_in_segment_read_write(
+                let _ = self.context.memory.store_in_segment_read_write(
                     trace_op0.clone().to_canonical_u64(),
                     trace_dst.clone(),
                 );
@@ -352,12 +353,12 @@ impl OlaRunner {
                 }
             }
             OlaOpcode::RET => {
-                let trace_op0 = self.context.get_fp().clone() - GoldilocksField(1);
+                let trace_op0 = self.context.get_fp().clone() - GoldilocksField::ONE;
                 let trace_dst = self
                     .context
                     .memory
                     .read(trace_op0.clone().to_canonical_u64())?;
-                let trace_aux0 = self.context.get_fp().clone() - GoldilocksField(2);
+                let trace_aux0 = self.context.get_fp().clone() - GoldilocksField::TWO;
                 let trace_aux1 = self
                     .context
                     .memory
@@ -370,7 +371,7 @@ impl OlaRunner {
                     registers: self.context.registers.clone(),
                     instruction: instruction.clone(),
                     op0: trace_op0.clone(),
-                    op1: GoldilocksField::default(),
+                    op1: GoldilocksField::ZERO,
                     dst: trace_dst.clone(),
                     aux0: trace_aux0.clone(),
                     aux1: trace_aux1.clone(),
@@ -406,11 +407,12 @@ impl OlaRunner {
             OlaOpcode::MLOAD => {
                 let (anchor_addr, offset) =
                     self.split_register_offset_operand(instruction.op1.clone().unwrap())?;
-                let addr = anchor_addr + offset;
+                let addr =
+                    GoldilocksField::from_canonical_u64((anchor_addr + offset).to_canonical_u64());
                 let trace_op1 = anchor_addr.clone();
                 let trace_dst = self.context.memory.read(addr.to_canonical_u64())?;
                 let trace_aux0 = offset.clone();
-                let trace_aux1 = addr;
+                let trace_aux1 = addr.clone();
 
                 let row_cpu = IntermediateRowCpu {
                     clk: self.context.clk.clone(),
@@ -418,7 +420,7 @@ impl OlaRunner {
                     psp: self.context.psp.clone(),
                     registers: self.context.registers.clone(),
                     instruction: instruction.clone(),
-                    op0: GoldilocksField::default(),
+                    op0: GoldilocksField::ZERO,
                     op1: trace_op1.clone(),
                     dst: trace_dst.clone(),
                     aux0: trace_aux0.clone(),
@@ -447,11 +449,13 @@ impl OlaRunner {
             OlaOpcode::MSTORE => {
                 let (anchor_addr, offset) =
                     self.split_register_offset_operand(instruction.op1.clone().unwrap())?;
-                let addr = anchor_addr + offset;
+
+                let addr =
+                    GoldilocksField::from_canonical_u64((anchor_addr + offset).to_canonical_u64());
                 let trace_op0 = self.get_operand_value(instruction.op0.clone().unwrap())?;
                 let trace_op1 = anchor_addr.clone();
                 let trace_aux0 = offset.clone();
-                let trace_aux1 = addr;
+                let trace_aux1 = addr.clone();
 
                 let row_cpu = IntermediateRowCpu {
                     clk: self.context.clk.clone(),
@@ -461,9 +465,9 @@ impl OlaRunner {
                     instruction: instruction.clone(),
                     op0: trace_op0.clone(),
                     op1: trace_op1.clone(),
-                    dst: GoldilocksField::default(),
-                    aux0: trace_aux0.clone(),
-                    aux1: trace_aux1.clone(),
+                    dst: GoldilocksField::ZERO,
+                    aux0: trace_aux0,
+                    aux1: trace_aux1,
                 };
                 let rows_memory = vec![IntermediateRowMemory {
                     clk: self.context.clk.clone(),
@@ -495,11 +499,11 @@ impl OlaRunner {
                     psp: self.context.psp.clone(),
                     registers: self.context.registers.clone(),
                     instruction: instruction.clone(),
-                    op0: GoldilocksField::default(),
-                    op1: GoldilocksField::default(),
-                    dst: GoldilocksField::default(),
-                    aux0: GoldilocksField::default(),
-                    aux1: GoldilocksField::default(),
+                    op0: GoldilocksField::ZERO,
+                    op1: GoldilocksField::ZERO,
+                    dst: GoldilocksField::ZERO,
+                    aux0: GoldilocksField::ZERO,
+                    aux1: GoldilocksField::ZERO,
                 };
 
                 self.is_ended = true;
@@ -524,11 +528,11 @@ impl OlaRunner {
                     psp: self.context.psp.clone(),
                     registers: self.context.registers.clone(),
                     instruction: instruction.clone(),
-                    op0: GoldilocksField::default(),
+                    op0: GoldilocksField::ZERO,
                     op1: trace_op1.clone(),
-                    dst: GoldilocksField::default(),
-                    aux0: GoldilocksField::default(),
-                    aux1: GoldilocksField::default(),
+                    dst: GoldilocksField::ZERO,
+                    aux0: GoldilocksField::ZERO,
+                    aux1: GoldilocksField::ZERO,
                 };
                 let rows_range_check = vec![IntermediateRowRangeCheck {
                     value: trace_op1.clone(),
@@ -555,11 +559,11 @@ impl OlaRunner {
                     psp: self.context.psp.clone(),
                     registers: self.context.registers.clone(),
                     instruction: instruction.clone(),
-                    op0: GoldilocksField::default(),
+                    op0: GoldilocksField::ZERO,
                     op1: trace_op1.clone(),
                     dst: trace_dst.clone(),
-                    aux0: GoldilocksField::default(),
-                    aux1: GoldilocksField::default(),
+                    aux0: GoldilocksField::ZERO,
+                    aux1: GoldilocksField::ZERO,
                 };
 
                 self.context.clk += 1;
@@ -621,55 +625,65 @@ impl OlaRunner {
         let trace_op0 = self.get_operand_value(instruction.op0.clone().unwrap())?;
         let trace_op1 = self.get_operand_value(instruction.op1.clone().unwrap())?;
         let trace_dst: GoldilocksField = match instruction.opcode {
-            OlaOpcode::ADD => trace_op0 + trace_op1,
-            OlaOpcode::MUL => trace_op0 * trace_op1,
+            OlaOpcode::ADD => {
+                GoldilocksField::from_canonical_u64((trace_op0 + trace_op1).to_canonical_u64())
+            }
+            OlaOpcode::MUL => {
+                GoldilocksField::from_canonical_u64((trace_op0 * trace_op1).to_canonical_u64())
+            }
             OlaOpcode::EQ => {
                 let eq = trace_op0.0 == trace_op1.0;
                 aux0 = if eq {
-                    GoldilocksField::default()
+                    GoldilocksField::ZERO
                 } else {
                     (trace_op0 - trace_op1).inverse()
                 };
-                GoldilocksField(eq as u64)
+                GoldilocksField::from_canonical_u64(eq as u64)
             }
             OlaOpcode::AND => {
                 let result = trace_op0.0 & trace_op1.0;
                 row_bitwise = Some(IntermediateRowBitwise {
-                    opcode: GoldilocksField(instruction.opcode.binary_bit_mask()),
+                    opcode: GoldilocksField::from_canonical_u64(
+                        instruction.opcode.binary_bit_mask(),
+                    ),
                     op0: trace_op0.clone(),
                     op1: trace_op1.clone(),
-                    res: GoldilocksField(result),
+                    res: GoldilocksField::from_canonical_u64(result),
                 });
-                GoldilocksField(result)
+                GoldilocksField::from_canonical_u64(result)
             }
             OlaOpcode::OR => {
                 let result = trace_op0.0 | trace_op1.0;
                 row_bitwise = Some(IntermediateRowBitwise {
-                    opcode: GoldilocksField(instruction.opcode.binary_bit_mask()),
+                    opcode: GoldilocksField::from_canonical_u64(
+                        instruction.opcode.binary_bit_mask(),
+                    ),
                     op0: trace_op0.clone(),
                     op1: trace_op1.clone(),
-                    res: GoldilocksField(result),
+                    res: GoldilocksField::from_canonical_u64(result),
                 });
-                GoldilocksField(result)
+                GoldilocksField::from_canonical_u64(result)
             }
             OlaOpcode::XOR => {
                 let result = trace_op0.0 ^ trace_op1.0;
                 row_bitwise = Some(IntermediateRowBitwise {
-                    opcode: GoldilocksField(instruction.opcode.binary_bit_mask()),
+                    opcode: GoldilocksField::from_canonical_u64(
+                        instruction.opcode.binary_bit_mask(),
+                    ),
                     op0: trace_op0.clone(),
                     op1: trace_op1.clone(),
-                    res: GoldilocksField(result),
+                    res: GoldilocksField::from_canonical_u64(result),
                 });
-                GoldilocksField(result)
+                GoldilocksField::from_canonical_u64(result)
             }
             OlaOpcode::NEQ => {
                 let neq = trace_op0.0 != trace_op1.0;
                 aux0 = if neq {
                     (trace_op0 - trace_op1).inverse()
                 } else {
-                    GoldilocksField::default()
+                    GoldilocksField::ZERO
                 };
-                GoldilocksField(neq as u64)
+                GoldilocksField::from_canonical_u64(neq as u64)
             }
             OlaOpcode::GTE => {
                 row_comparison = Some(IntermediateRowComparison {
@@ -677,7 +691,7 @@ impl OlaRunner {
                     op1: trace_op1.clone(),
                     is_gte: true,
                 });
-                GoldilocksField((trace_op0.0 >= trace_op1.0) as u64)
+                GoldilocksField::from_canonical_u64((trace_op0.0 >= trace_op1.0) as u64)
             }
             _ => bail!(
                 "invalid two operands arithmetic opcode {}",
@@ -694,7 +708,7 @@ impl OlaRunner {
             op1: trace_op1,
             dst: trace_dst.clone(),
             aux0: aux0.clone(),
-            aux1: GoldilocksField::default(),
+            aux1: GoldilocksField::ZERO,
         };
 
         self.context.clk += 1;
@@ -712,16 +726,20 @@ impl OlaRunner {
 
     fn get_operand_value(&self, operand: OlaOperand) -> Result<GoldilocksField> {
         match operand {
-            OlaOperand::ImmediateOperand { value } => Ok(GoldilocksField(value.to_u64()?)),
-            OlaOperand::RegisterOperand { register } => Ok(self.get_register_value(register)),
-            OlaOperand::RegisterWithOffset { register, offset } => {
-                Ok(self.get_register_value(register) + GoldilocksField(offset.to_u64()?))
+            OlaOperand::ImmediateOperand { value } => {
+                Ok(GoldilocksField::from_canonical_u64(value.to_u64()?))
             }
+            OlaOperand::RegisterOperand { register } => Ok(self.get_register_value(register)),
+            OlaOperand::RegisterWithOffset { register, offset } => Ok(self
+                .get_register_value(register)
+                + GoldilocksField::from_canonical_u64(offset.to_u64()?)),
             OlaOperand::SpecialReg { special_reg } => match special_reg {
                 OlaSpecialRegister::PC => {
-                    bail!("pc cannot be an operand {}", 1)
+                    bail!("pc cannot be an operand")
                 }
-                OlaSpecialRegister::PSP => Ok(GoldilocksField(self.context.psp.clone())),
+                OlaSpecialRegister::PSP => Ok(GoldilocksField::from_canonical_u64(
+                    self.context.psp.clone(),
+                )),
             },
         }
     }
@@ -747,7 +765,7 @@ impl OlaRunner {
         match operand {
             OlaOperand::RegisterWithOffset { register, offset } => Ok((
                 self.get_register_value(register),
-                GoldilocksField(offset.to_u64()?),
+                GoldilocksField::from_canonical_u64(offset.to_u64()?),
             )),
             _ => bail!("error split anchor and offset"),
         }
@@ -809,12 +827,12 @@ impl OlaRunner {
                     for value in values {
                         let _ = self.context.memory.store_in_segment_prophet(
                             self.context.psp.clone(),
-                            GoldilocksField(value.get_number() as u64),
+                            GoldilocksField::from_canonical_u64(value.get_number() as u64),
                         );
                         rows_memory.push(IntermediateRowMemory {
                             clk: 0,
                             addr: self.context.psp.clone(),
-                            value: GoldilocksField(value.get_number() as u64),
+                            value: GoldilocksField::from_canonical_u64(value.get_number() as u64),
                             is_write: true,
                             opcode: None,
                         })
