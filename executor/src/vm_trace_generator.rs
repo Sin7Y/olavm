@@ -10,8 +10,13 @@ use crate::{
     runner::IntermediateTraceCollector,
     vm::ola_vm::{OlaMemorySegment, NUM_GENERAL_PURPOSE_REGISTER},
 };
-use anyhow::{Ok, Result};
-use assembler::{binary_program::BinaryInstruction, opcodes::OlaOpcode, operands::OlaOperand};
+use anyhow::{bail, Ok, Result};
+use assembler::{
+    binary_program::{BinaryInstruction, BinaryProgram},
+    decoder::decode_binary_program_to_instructions,
+    opcodes::OlaOpcode,
+    operands::OlaOperand,
+};
 use core::utils::split_limbs_from_field;
 use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 
@@ -66,7 +71,7 @@ pub(crate) struct IntermediateRowComparison {
 }
 
 pub(crate) fn generate_vm_trace(
-    instructions: &HashMap<u64, BinaryInstruction>,
+    program: &BinaryProgram,
     collector: &IntermediateTraceCollector,
 ) -> Result<Trace> {
     let mut inst_dump: HashMap<u64, (String, u8, u64, GoldilocksField, GoldilocksField)> =
@@ -74,7 +79,15 @@ pub(crate) fn generate_vm_trace(
     let mut raw_instructions: HashMap<u64, String> = HashMap::new();
     let mut raw_binary_instructions: Vec<String> = vec![];
 
-    for (index, instruction) in instructions.iter() {
+    let instructions = match decode_binary_program_to_instructions(program.clone()) {
+        std::result::Result::Ok(decoded) => decoded,
+        Err(reason) => bail!(
+            "generate trace error, decode instruction from program failed: {}",
+            reason
+        ),
+    };
+    let mut index: u64 = 0;
+    for instruction in instructions {
         let mut dumped_instruction_strs = instruction.encode().unwrap();
         let encoded_instruction_with_body = dumped_instruction_strs[0].clone();
         let encoded_imm_str = if dumped_instruction_strs.len() == 2 {
@@ -83,13 +96,28 @@ pub(crate) fn generate_vm_trace(
             None
         };
 
-        let imm_flag = match instruction.op1.clone() {
+        let imm_with_op0 = match instruction.op0.clone() {
             Some(operand) => match operand {
-                OlaOperand::ImmediateOperand { value: _ } => 1u8,
-                _ => 0u8,
+                OlaOperand::RegisterWithOffset {
+                    register: _,
+                    offset: _,
+                } => true,
+                _ => false,
             },
-            None => 0u8,
+            None => false,
         };
+        let imm_with_op1 = match instruction.op1.clone() {
+            Some(operand) => match operand {
+                OlaOperand::ImmediateOperand { value: _ } => true,
+                OlaOperand::RegisterWithOffset {
+                    register: _,
+                    offset: _,
+                } => true,
+                _ => false,
+            },
+            None => false,
+        };
+        let imm_flag = imm_with_op0 || imm_with_op1;
 
         let imm_val = match encoded_imm_str {
             Some(imm_str) => {
@@ -103,7 +131,7 @@ pub(crate) fn generate_vm_trace(
             index.clone(),
             (
                 instruction.get_asm_form_code(),
-                imm_flag,
+                imm_flag as u8,
                 instruction.binary_length() as u64,
                 GoldilocksField::from_canonical_u64(
                     u64::from_str_radix(encoded_instruction_with_body.trim_start_matches("0x"), 16)
@@ -112,8 +140,9 @@ pub(crate) fn generate_vm_trace(
                 imm_val,
             ),
         );
-        raw_instructions.insert(index.clone(), encoded_instruction_with_body);
+        raw_instructions.insert(index.clone(), instruction.get_asm_form_code());
         raw_binary_instructions.append(&mut dumped_instruction_strs);
+        index += instruction.binary_length() as u64;
     }
 
     let exec = generate_vm_trace_cpu(&collector.cpu)?;

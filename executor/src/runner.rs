@@ -131,7 +131,7 @@ impl OlaRunner {
             let appender = self.run_one_step()?;
             self.trace_collector.append(appender);
         }
-        generate_vm_trace(&self.instructions, &self.trace_collector)
+        generate_vm_trace(&self.program, &self.trace_collector)
     }
 
     fn run_one_step(&mut self) -> Result<IntermediateTraceStepAppender> {
@@ -686,12 +686,13 @@ impl OlaRunner {
                 GoldilocksField::from_canonical_u64(neq as u64)
             }
             OlaOpcode::GTE => {
+                let is_gte = trace_op0.0 >= trace_op1.0;
                 row_comparison = Some(IntermediateRowComparison {
                     op0: trace_op0.clone(),
                     op1: trace_op1.clone(),
-                    is_gte: true,
+                    is_gte,
                 });
-                GoldilocksField::from_canonical_u64((trace_op0.0 >= trace_op1.0) as u64)
+                GoldilocksField::from_canonical_u64(is_gte as u64)
             }
             _ => bail!(
                 "invalid two operands arithmetic opcode {}",
