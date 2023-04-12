@@ -472,9 +472,10 @@ fn sqrt_newton_iteration_test() {
 #[test]
 fn wtf() {
     println!("==== begin ====");
-    let mut runner =
-        OlaRunner::new_from_program_file(String::from("/Users/Softcloud/develop/zk/sin7y/olavm/assembler/test_data/bin/fibo_loop.json"))
-            .unwrap();
+    let mut runner = OlaRunner::new_from_program_file(String::from(
+        "../assembler/test_data/bin/fibo_loop.json",
+    ))
+    .unwrap();
     println!("runner init success");
     println!("==== bytecode ====");
     println!("{}", runner.program.bytecode);
@@ -484,4 +485,28 @@ fn wtf() {
     let output_path = String::from("wtf_fibo_loop.txt");
     let pretty = serde_json::to_string_pretty(&trace).unwrap();
     fs::write(output_path, pretty).unwrap();
+}
+
+#[test]
+fn statistic_exec() {
+    println!("==== begin ====");
+    let mut runner =
+        OlaRunner::new_from_program_file(String::from("../assembler/test_data/bin/sqrt.json"))
+            .unwrap();
+    let _ = runner.run_to_end().unwrap();
+    let mut total_cnt = 0;
+    let mut op_to_cnt: HashMap<String, u64> = HashMap::new();
+    for row in runner.trace_collector.cpu {
+        let key = row.instruction.opcode.to_string();
+        let cnt = match op_to_cnt.get(&key) {
+            Some(cnt_pre) => cnt_pre + 1,
+            None => 1,
+        };
+        op_to_cnt.insert(key, cnt);
+        total_cnt += 1;
+    }
+    println!("total line: {}", total_cnt);
+    for (key, cnt) in op_to_cnt {
+        println!("opcode: {}, cnt: {}", key, cnt);
+    }
 }

@@ -90,7 +90,7 @@ pub struct OlaRunner {
     pub program: BinaryProgram,
     pub instructions: HashMap<u64, BinaryInstruction>,
     context: OlaContext,
-    trace_collector: IntermediateTraceCollector,
+    pub(crate) trace_collector: IntermediateTraceCollector,
     is_ended: bool,
 }
 
