@@ -13,7 +13,7 @@ use crate::sema::symbol::{BuiltIn, SymbolTable};
 use crate::utils::number::Number::Nil;
 use crate::utils::number::NumberRet::{Multiple, Single};
 use crate::utils::number::{number_from_token, Number, NumberResult};
-use assembler::binary_program::Prophet;
+use core::program::binary_program::Prophet;
 use log::debug;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};

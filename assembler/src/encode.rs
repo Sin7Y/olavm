@@ -8,7 +8,7 @@ use crate::error::AssemblerError;
 // use core::program::FIELD_ORDER;
 use log::debug;
 // use log::Level::Debug;
-use crate::opcodes::OlaOpcode;
+use core::vm::opcodes::OlaOpcode;
 use regex::Regex;
 use std::collections::HashMap;
 

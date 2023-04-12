@@ -11,13 +11,10 @@ use crate::{
     vm::ola_vm::{OlaMemorySegment, NUM_GENERAL_PURPOSE_REGISTER},
 };
 use anyhow::{bail, Ok, Result};
-use assembler::{
-    binary_program::{BinaryInstruction, BinaryProgram},
-    decoder::decode_binary_program_to_instructions,
-    opcodes::OlaOpcode,
-    operands::OlaOperand,
-};
+use core::program::decoder::decode_binary_program_to_instructions;
+use core::program::binary_program::{BinaryInstruction, BinaryProgram};
 use core::utils::split_limbs_from_field;
+use core::vm::{opcodes::OlaOpcode, operands::OlaOperand};
 use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 
 #[derive(Debug, Clone)]

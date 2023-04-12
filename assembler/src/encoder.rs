@@ -1,6 +1,7 @@
-use crate::binary_program::{BinaryInstruction, BinaryProgram, Prophet, ProphetInput};
-use crate::operands::{ImmediateValue, OlaAsmOperand, OlaOperand};
+use crate::operands::OlaAsmOperand;
 use crate::relocate::{asm_relocate, AsmBundle, RelocatedAsmBundle};
+use core::program::binary_program::{BinaryInstruction, BinaryProgram, Prophet, ProphetInput};
+use core::vm::operands::{ImmediateValue, OlaOperand};
 use std::collections::HashMap;
 use std::str::FromStr;
 

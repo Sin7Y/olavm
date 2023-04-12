@@ -1,4 +1,4 @@
-use core::trace::trace::Trace;
+use core::{program::decoder::decode_binary_program_from_file, trace::trace::Trace};
 use std::{collections::HashMap, str::FromStr};
 
 use crate::{
@@ -10,16 +10,13 @@ use crate::{
     },
 };
 use anyhow::{anyhow, bail, Ok, Result};
-use assembler::{
-    binary_program::Prophet,
+use core::program::binary_program::{BinaryInstruction, BinaryProgram, Prophet};
+use core::vm::{
     hardware::{OlaRegister, OlaSpecialRegister},
-};
-use assembler::{
-    binary_program::{BinaryInstruction, BinaryProgram},
-    decoder::decode_binary_program_from_file,
     opcodes::OlaOpcode,
     operands::OlaOperand,
 };
+
 use interpreter::interpreter::Interpreter;
 use plonky2::field::{
     goldilocks_field::GoldilocksField,

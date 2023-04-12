@@ -1,5 +1,5 @@
-use crate::opcodes::OlaOpcode;
 use crate::operands::OlaAsmOperand;
+use core::vm::opcodes::OlaOpcode;
 use regex::Regex;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -256,9 +256,11 @@ impl FromStr for AsmRow {
 #[cfg(test)]
 mod tests {
     use crate::asm::{split_ola_asm_pieces, AsmRow, OlaAsmInstruction};
-    use crate::hardware::OlaRegister;
-    use crate::opcodes::OlaOpcode;
-    use crate::operands::{ImmediateValue, OlaAsmOperand};
+
+    use crate::operands::OlaAsmOperand;
+    use core::vm::hardware::OlaRegister;
+    use core::vm::opcodes::OlaOpcode;
+    use core::vm::operands::ImmediateValue;
     use std::str::FromStr;
 
     #[test]

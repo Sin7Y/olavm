@@ -1,6 +1,6 @@
 use crate::runner::OlaRunner;
 use crate::Process;
-use assembler::binary_program::BinaryProgram;
+use core::program::binary_program::BinaryProgram;
 use core::program::Program;
 use log::{debug, LevelFilter};
 use std::collections::HashMap;
@@ -470,12 +470,11 @@ fn sqrt_newton_iteration_test() {
 }
 
 #[test]
-fn wtf() {
+fn test_vm_run() {
     println!("==== begin ====");
-    let mut runner = OlaRunner::new_from_program_file(String::from(
-        "../assembler/test_data/bin/fibo_loop.json",
-    ))
-    .unwrap();
+    let mut runner =
+        OlaRunner::new_from_program_file(String::from("../assembler/test_data/bin/fibo_loop.json"))
+            .unwrap();
     println!("runner init success");
     println!("==== bytecode ====");
     println!("{}", runner.program.bytecode);

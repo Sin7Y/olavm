@@ -1,10 +1,15 @@
-use core::vm::hardware::{OlaRegister, OlaSpecialRegister};
-use core::vm::opcodes::OlaOpcode;
-use core::vm::operands::{ImmediateValue, OlaOperand};
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
+
+use crate::vm::{
+    hardware::{OlaRegister, OlaSpecialRegister},
+    opcodes::OlaOpcode,
+    operands::{ImmediateValue, OlaOperand},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BinaryProgram {
@@ -141,10 +146,7 @@ impl BinaryInstruction {
         Ok(codes)
     }
 
-    pub(crate) fn decode(
-        binary_code: Vec<String>,
-        prophet: Option<Prophet>,
-    ) -> Result<Self, String> {
+    pub fn decode(binary_code: Vec<String>, prophet: Option<Prophet>) -> Result<Self, String> {
         if binary_code.is_empty() {
             return Err(format!(
                 "decode binary instruction error, empty binary code."
