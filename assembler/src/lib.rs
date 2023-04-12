@@ -1,6 +1,4 @@
 mod asm;
-pub mod binary_program;
-pub mod encode;
 pub mod encoder;
 mod error;
 pub mod operands;

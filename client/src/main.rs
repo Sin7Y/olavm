@@ -1,6 +1,5 @@
 extern crate clap;
 
-use assembler::binary_program::BinaryProgram;
 use assembler::encoder::encode_asm_from_json_file;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
@@ -8,6 +7,7 @@ use circuits::stark::prover::prove;
 use circuits::stark::serialization::Buffer;
 use circuits::stark::verifier::verify_proof;
 use clap::{arg, Command};
+use core::program::binary_program::BinaryProgram;
 use core::program::Program;
 use core::trace::trace::Trace;
 use executor::Process;

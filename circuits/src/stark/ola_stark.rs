@@ -324,8 +324,8 @@ mod tests {
     use crate::stark::util::trace_rows_to_poly_values;
     use crate::stark::verifier::verify_proof;
     use anyhow::Result;
-    use assembler::binary_program::BinaryProgram;
     use assembler::encoder::encode_asm_from_json_file;
+    use core::program::binary_program::BinaryProgram;
     use core::program::Program;
     use executor::Process;
     use log::{debug, LevelFilter};
