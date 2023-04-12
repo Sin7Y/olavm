@@ -1,3 +1,4 @@
+use core::program::binary_program::Prophet;
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -15,7 +16,6 @@ use crate::sema::symbol::Symbol::FuncSymbol;
 use crate::utils::number::Number::{Bool, Nil};
 use crate::utils::number::NumberRet::{Multiple, Single};
 use crate::utils::number::{Number, NumberResult, NumberRet};
-use assembler::binary_program::Prophet;
 use log::debug;
 
 #[macro_export]

@@ -1,10 +1,10 @@
+use crate::runner::OlaRunner;
 use crate::Process;
-use assembler::binary_program::BinaryProgram;
+use core::program::binary_program::BinaryProgram;
 use core::program::Program;
 use log::{debug, LevelFilter};
-use regex::Regex;
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 
@@ -467,4 +467,45 @@ fn sqrt_newton_iteration_test() {
 
     let mut file = File::create("sqrt.txt").unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn test_vm_run() {
+    println!("==== begin ====");
+    let mut runner =
+        OlaRunner::new_from_program_file(String::from("../assembler/test_data/bin/fibo_loop.json"))
+            .unwrap();
+    println!("runner init success");
+    println!("==== bytecode ====");
+    println!("{}", runner.program.bytecode);
+    println!("================");
+    let trace = runner.run_to_end().unwrap();
+    println!("runner run end");
+    let output_path = String::from("wtf_fibo_loop.txt");
+    let pretty = serde_json::to_string_pretty(&trace).unwrap();
+    fs::write(output_path, pretty).unwrap();
+}
+
+#[test]
+fn statistic_exec() {
+    println!("==== begin ====");
+    let mut runner =
+        OlaRunner::new_from_program_file(String::from("../assembler/test_data/bin/sqrt.json"))
+            .unwrap();
+    let _ = runner.run_to_end().unwrap();
+    let mut total_cnt = 0;
+    let mut op_to_cnt: HashMap<String, u64> = HashMap::new();
+    for row in runner.trace_collector.cpu {
+        let key = row.instruction.opcode.to_string();
+        let cnt = match op_to_cnt.get(&key) {
+            Some(cnt_pre) => cnt_pre + 1,
+            None => 1,
+        };
+        op_to_cnt.insert(key, cnt);
+        total_cnt += 1;
+    }
+    println!("total line: {}", total_cnt);
+    for (key, cnt) in op_to_cnt {
+        println!("opcode: {}, cnt: {}", key, cnt);
+    }
 }

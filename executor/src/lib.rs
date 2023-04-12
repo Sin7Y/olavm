@@ -1,7 +1,7 @@
 use crate::decode::{decode_raw_instruction, REG_NOT_USED};
 use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
-use assembler::binary_program::Prophet;
+use core::program::binary_program::Prophet;
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{
     Add, And, Assert, CJmp, Call, End, Equal, Gte, ImmediateOrRegName, Instruction, Jmp, Mload,
@@ -24,8 +24,11 @@ mod decode;
 pub mod error;
 mod memory;
 
+pub mod runner;
 #[cfg(test)]
 mod tests;
+mod vm;
+pub mod vm_trace_generator;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 8;

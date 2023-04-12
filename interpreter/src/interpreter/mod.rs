@@ -5,7 +5,7 @@ use crate::parser::node::Node;
 use crate::parser::Parser;
 use crate::sema::SymTableGen;
 use crate::utils::number::NumberResult;
-use assembler::binary_program::Prophet;
+use core::program::binary_program::Prophet;
 use log::debug;
 use std::sync::{Arc, RwLock};
 

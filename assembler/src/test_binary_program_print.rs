@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::decoder::decode_binary_program_to_instructions;
+    use core::program::decoder::decode_binary_program_to_instructions;
     use crate::encoder::encode_to_binary;
     use crate::relocate::{asm_relocate, AsmBundle};
 
