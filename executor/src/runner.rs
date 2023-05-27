@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use crate::{
     error::OlaRunnerError,
-    vm::ola_vm::OlaContext,
+    vm::ola_vm::{OlaContext, NUM_GENERAL_PURPOSE_REGISTER},
     vm_trace_generator::{
         generate_vm_trace, IntermediateRowBitwise, IntermediateRowComparison, IntermediateRowCpu,
         IntermediateRowMemory, IntermediateRowRangeCheck, RangeCheckRequester,
@@ -31,6 +31,35 @@ struct IntermediateTraceStepAppender {
     range_check: Option<Vec<IntermediateRowRangeCheck>>,
     bitwise: Option<IntermediateRowBitwise>,
     comparison: Option<IntermediateRowComparison>,
+}
+
+impl Default for IntermediateTraceStepAppender {
+    fn default() -> Self {
+        Self {
+            cpu: IntermediateRowCpu {
+                clk: 0,
+                pc: 0,
+                psp: 0,
+                registers: [GoldilocksField::default(); NUM_GENERAL_PURPOSE_REGISTER],
+                instruction: BinaryInstruction {
+                    opcode: OlaOpcode::RET,
+                    op0: None,
+                    op1: None,
+                    dst: None,
+                    prophet: None,
+                },
+                op0: GoldilocksField::default(),
+                op1: GoldilocksField::default(),
+                dst: GoldilocksField::default(),
+                aux0: GoldilocksField::default(),
+                aux1: GoldilocksField::default(),
+            },
+            memory: None,
+            range_check: None,
+            bitwise: None,
+            comparison: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -189,10 +218,7 @@ impl OlaRunner {
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
-                    memory: None,
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
 
@@ -217,10 +243,7 @@ impl OlaRunner {
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
-                    memory: None,
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::JMP => {
@@ -243,10 +266,7 @@ impl OlaRunner {
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
-                    memory: None,
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::CJMP => {
@@ -286,10 +306,7 @@ impl OlaRunner {
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
-                    memory: None,
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::CALL => {
@@ -344,9 +361,7 @@ impl OlaRunner {
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
                     memory: Some(rows_memory),
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::RET => {
@@ -396,9 +411,7 @@ impl OlaRunner {
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
                     memory: Some(rows_memory),
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::MLOAD => {
@@ -438,9 +451,7 @@ impl OlaRunner {
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
                     memory: Some(rows_memory),
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::MSTORE => {
@@ -484,9 +495,7 @@ impl OlaRunner {
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
                     memory: Some(rows_memory),
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::END => {
@@ -507,10 +516,7 @@ impl OlaRunner {
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
-                    memory: None,
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::RC => {
@@ -541,10 +547,8 @@ impl OlaRunner {
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
-                    memory: None,
                     range_check: Some(rows_range_check),
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::NOT => {
@@ -569,10 +573,7 @@ impl OlaRunner {
 
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
-                    memory: None,
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
             OlaOpcode::POSEIDON => {
@@ -591,10 +592,7 @@ impl OlaRunner {
                 };
                 IntermediateTraceStepAppender {
                     cpu: row_cpu,
-                    memory: None,
-                    range_check: None,
-                    bitwise: None,
-                    comparison: None,
+                    ..Default::default()
                 }
             }
         };
