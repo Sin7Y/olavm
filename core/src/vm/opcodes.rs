@@ -24,6 +24,7 @@ pub enum OlaOpcode {
     NOT,
     NEQ,
     GTE,
+    POSEIDON,
 }
 
 impl Display for OlaOpcode {
@@ -56,6 +57,7 @@ impl OlaOpcode {
             OlaOpcode::NOT => "not".to_string(),
             OlaOpcode::NEQ => "neq".to_string(),
             OlaOpcode::GTE => "gte".to_string(),
+            OlaOpcode::POSEIDON => "poseidon".to_string(),
         }
     }
 
@@ -80,6 +82,7 @@ impl OlaOpcode {
             OlaOpcode::NOT => 18,
             OlaOpcode::NEQ => 17,
             OlaOpcode::GTE => 16,
+            OlaOpcode::POSEIDON => 15,
         }
     }
 

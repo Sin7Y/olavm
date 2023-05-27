@@ -184,6 +184,12 @@ fn split_ola_asm_pieces(
             }
             Ok((opcode, None, None, None))
         }
+        OlaOpcode::POSEIDON => {
+            if ops.len() != 0 {
+                return Err(format!("invalid operand size: {}", asm_line));
+            }
+            Ok((opcode, None, None, None))
+        }
     }
 }
 

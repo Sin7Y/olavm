@@ -575,6 +575,28 @@ impl OlaRunner {
                     comparison: None,
                 }
             }
+            OlaOpcode::POSEIDON => {
+                // todo add poseidon trace.
+                let row_cpu = IntermediateRowCpu {
+                    clk: self.context.clk.clone(),
+                    pc: self.context.pc.clone(),
+                    psp: self.context.psp.clone(),
+                    registers: self.context.registers.clone(),
+                    instruction: instruction.clone(),
+                    op0: GoldilocksField::ZERO,
+                    op1: GoldilocksField::ZERO,
+                    dst: GoldilocksField::ZERO,
+                    aux0: GoldilocksField::ZERO,
+                    aux1: GoldilocksField::ZERO,
+                };
+                IntermediateTraceStepAppender {
+                    cpu: row_cpu,
+                    memory: None,
+                    range_check: None,
+                    bitwise: None,
+                    comparison: None,
+                }
+            }
         };
 
         match &instruction.prophet {
