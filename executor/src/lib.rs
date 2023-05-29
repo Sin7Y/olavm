@@ -8,9 +8,7 @@ use core::program::instruction::{
     Mov, Mstore, Mul, Neq, Not, Opcode, Or, Range, Ret, Sub, Xor,
 };
 use core::program::{Program, REGISTER_NUM};
-use core::trace::trace::{
-    BitwiseOperation, ComparisonOperation, MemoryTraceCell, RegisterSelector,
-};
+use core::trace::trace::{ComparisonOperation, MemoryTraceCell, RegisterSelector};
 use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType};
 use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -806,12 +804,11 @@ impl Process {
                     self.register_selector.dst_reg_sel[dst_index] =
                         GoldilocksField::from_canonical_u64(1);
 
-                    let mut abs_diff = GoldilocksField::ZERO;
-                    if self.register_selector.dst.is_one() {
-                        abs_diff = self.register_selector.op0 - self.register_selector.op1;
+                    let abs_diff = if self.register_selector.dst.is_one() {
+                        self.register_selector.op0 - self.register_selector.op1
                     } else {
-                        abs_diff = self.register_selector.op1 - self.register_selector.op0;
-                    }
+                        self.register_selector.op1 - self.register_selector.op0
+                    };
 
                     program.trace.insert_rangecheck(
                         abs_diff,

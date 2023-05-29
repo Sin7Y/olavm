@@ -30,7 +30,7 @@ fn memory_test() {
         .filter_level(LevelFilter::Debug)
         .try_init();
     let file = File::open("../assembler/testdata/memory.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    let instructions = BufReader::new(file).lines();
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
@@ -62,7 +62,7 @@ fn range_check_test() {
     //end
 
     let file = File::open("../assembler/testdata/range_check.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    let instructions = BufReader::new(file).lines();
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
@@ -98,7 +98,7 @@ fn bitwise_test() {
     //end
 
     let file = File::open("../assembler/testdata/bitwise.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    let instructions = BufReader::new(file).lines();
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
@@ -144,7 +144,7 @@ fn comparison_test() {
     //    ret"
 
     let file = File::open("../assembler/testdata/comparison.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    let instructions = BufReader::new(file).lines();
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
@@ -200,7 +200,7 @@ fn call_test() {
     //   ret
 
     let file = File::open("../assembler/testdata/call.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    let instructions = BufReader::new(file).lines();
 
     let mut program: Program = Program {
         instructions: Vec::new(),
@@ -273,7 +273,7 @@ fn fibo_use_loop_decode() {
     //   ret
 
     let file = File::open("../assembler/testdata/fib_loop.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    let instructions = BufReader::new(file).lines();
 
     let mut program: Program = Program {
         instructions: Vec::new(),
@@ -352,7 +352,7 @@ fn fibo_recursive() {
     //   add r8 r8 -9
     //   ret
     let file = File::open("../assembler/testdata/fib_recursive.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    let instructions = BufReader::new(file).lines();
 
     let mut program: Program = Program {
         instructions: Vec::new(),

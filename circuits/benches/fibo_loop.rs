@@ -1,16 +1,15 @@
 use circuits::generation::generate_traces;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
-use circuits::stark::proof::PublicValues;
 use circuits::stark::prover::prove_with_traces;
 use circuits::stark::verifier::verify_proof;
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::Process;
-use log::{debug, error, info, logger, LevelFilter};
+use log::{info, LevelFilter};
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -74,7 +73,7 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
     let mut process = Process::new();
 
     let start = Instant::now();
-    process.execute(&mut program);
+    process.execute(&mut program).unwrap();
 
     let exec_time = start.elapsed();
     info!(

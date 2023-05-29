@@ -1,5 +1,4 @@
 use crate::error::AssemblerError;
-use crate::error::AssemblerError::ParseIntError;
 use core::program::instruction::Opcode;
 use core::program::instruction::{
     IMM_FLAG_FIELD_BIT_POSITION, IMM_INSTRUCTION_LEN, NO_IMM_INSTRUCTION_LEN,
@@ -7,7 +6,6 @@ use core::program::instruction::{
 };
 use core::program::FIELD_ORDER;
 use log::debug;
-use log::Level::Debug;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -379,12 +377,11 @@ impl Encoder {
                 //mstore [r8,-3] r4
                 let inst = item.trim();
                 let ops: Vec<&str> = inst.split(" ").collect();
-                let mut modify_inst = Default::default();
-                if ops[0].eq("mload") {
+                let modify_inst = if ops[0].eq("mload") {
                     let mut fp_offset = ops.get(2).unwrap().to_string();
-                    let mut dst_reg = ops.get(1).unwrap().to_string();
+                    let dst_reg = ops.get(1).unwrap().to_string();
                     fp_offset = fp_offset.replace("[", "").replace("]", "");
-                    let mut base_offset: Vec<&str> = fp_offset.split(",").collect();
+                    let base_offset: Vec<&str> = fp_offset.split(",").collect();
                     let mut offset: u64 = 0;
                     let base_reg = base_offset.get(0).unwrap();
                     if base_offset.get(1).is_some() {
@@ -395,16 +392,16 @@ impl Encoder {
                             offset = FIELD_ORDER - (offset_i32.abs() as u64);
                         }
                     }
-                    modify_inst = format!("mload {} {} {} ", dst_reg, base_reg, offset);
+                    format!("mload {} {} {} ", dst_reg, base_reg, offset)
                 } else if ops[0].eq("mstore") {
                     let mut fp_offset = ops.get(1).unwrap().to_string();
-                    let mut dst_reg = ops.get(2).unwrap().to_string();
+                    let dst_reg = ops.get(2).unwrap().to_string();
                     fp_offset = fp_offset
                         .replace("[", "")
                         .replace("]", "")
                         .trim()
                         .to_string();
-                    let mut base_offset: Vec<&str> = fp_offset.split(",").collect();
+                    let base_offset: Vec<&str> = fp_offset.split(",").collect();
                     let mut offset: u64 = 0;
                     let base_reg = base_offset.get(0).unwrap();
                     if base_offset.get(1).is_some() {
@@ -415,10 +412,10 @@ impl Encoder {
                             offset = FIELD_ORDER - (offset_i32.abs() as u64);
                         }
                     }
-                    modify_inst = format!("mstore {} {} {}", base_reg, dst_reg, offset);
+                    format!("mstore {} {} {}", base_reg, dst_reg, offset)
                 } else {
                     panic!("unknown instruction")
-                }
+                };
 
                 self.asm_code.insert(index + 1, modify_inst);
                 cur_asm_len += 1;
@@ -455,6 +452,7 @@ mod tests {
     use std::fs::File;
     use std::io::{BufWriter, Write};
 
+    #[allow(dead_code)]
     fn write_encode_to_file(raw_insts: Vec<String>, path: &str) {
         let file = File::create(path).unwrap();
         let mut fout = BufWriter::new(file);

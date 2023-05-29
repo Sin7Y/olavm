@@ -18,9 +18,9 @@ fn fft_in_place() {
     let twiddles = super::get_twiddles::<F>(n);
     super::serial::fft_in_place(&mut p, &twiddles, 1, 1, 0);
     super::permute(&mut p);
-    p;
 }
 
+#[allow(dead_code)]
 fn build_domain(size: usize) -> Vec<F> {
     let g = F::primitive_root_of_unity(log2_strict(size));
     g.powers().take(size).collect()

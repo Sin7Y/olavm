@@ -1,9 +1,7 @@
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::Process;
-use log::{debug, error, info};
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
+use log::debug;
 use std::time::Instant;
 
 pub(crate) fn bench_memory_rw(inst_size: u64) {
@@ -76,7 +74,7 @@ pub(crate) fn bench_memory_rw(inst_size: u64) {
 
     let mut process = Process::new();
     let start = Instant::now();
-    process.execute(&mut program);
+    process.execute(&mut program).unwrap();
     let exec_time = start.elapsed();
     println!(
         "exec_time: {}, exec steps: {}",
@@ -90,15 +88,13 @@ fn memory_benchmark(c: &mut Criterion) {
         .default_format_timestamp(true)
         .try_init();
 
-    type F = GoldilocksField;
-
     let mut group = c.benchmark_group("memory_rw");
 
     for inst_size in [0x6000, 0x40000, 0x200000] {
         group.bench_with_input(
             BenchmarkId::from_parameter(inst_size),
             &inst_size,
-            |b, p| {
+            |b, _p| {
                 b.iter(|| {
                     bench_memory_rw(inst_size);
                 });

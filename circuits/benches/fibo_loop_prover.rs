@@ -2,7 +2,6 @@ use circuits::generation::generate_traces;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::prover::prove_with_traces;
-use circuits::stark::serialization::Buffer;
 use core::program::Program;
 use criterion::{criterion_group, criterion_main, Criterion};
 use executor::Process;
@@ -73,7 +72,7 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program);
+    process.execute(&mut program).unwrap();
 
     let mut group = c.benchmark_group("fibo_loop_prover");
 

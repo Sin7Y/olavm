@@ -1,15 +1,13 @@
-use std::borrow::BorrowMut;
-use std::collections::BTreeMap;
-
 use itertools::Itertools;
 use maybe_rayon::*;
 use plonky2_field::cfft::get_twiddles;
-use plonky2_field::extension::{Extendable, FieldExtension};
-use plonky2_field::fft::FftRootTable;
+use plonky2_field::extension::Extendable;
 use plonky2_field::packed::PackedField;
 use plonky2_field::polynomial::{PolynomialCoeffs, PolynomialValues};
 use plonky2_field::types::Field;
 use plonky2_util::{log2_strict, reverse_index_bits_in_place};
+use std::borrow::BorrowMut;
+use std::collections::BTreeMap;
 
 use crate::fri::proof::FriProof;
 use crate::fri::prover::fri_proof;
@@ -20,7 +18,6 @@ use crate::hash::merkle_tree::MerkleTree;
 use crate::iop::challenger::Challenger;
 use crate::plonk::config::{GenericConfig, Hasher};
 use crate::timed;
-use crate::util::reducing::ReducingFactor;
 use crate::util::reverse_bits;
 use crate::util::timing::TimingTree;
 use crate::util::transpose;
