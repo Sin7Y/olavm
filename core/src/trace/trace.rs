@@ -176,6 +176,37 @@ pub struct CmpRow {
     pub filter_looking_rc: GoldilocksField,
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct PoseidonCell {
+    pub input: [GoldilocksField; 12],
+    pub full_0_1: [GoldilocksField; 12],
+    pub full_0_2: [GoldilocksField; 12],
+    pub full_0_3: [GoldilocksField; 12],
+    pub partial: [GoldilocksField; 22],
+    pub full_1_0: [GoldilocksField; 12],
+    pub full_1_1: [GoldilocksField; 12],
+    pub full_1_2: [GoldilocksField; 12],
+    pub full_1_3: [GoldilocksField; 12],
+    pub output: [GoldilocksField; 12],
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct PoseidonTraceCell {
+    pub is_storage: GoldilocksField,
+    pub idx_storage_batch: GoldilocksField,
+    pub idx_storage_tree_layer: GoldilocksField,
+    pub input: [GoldilocksField; 12],
+    pub full_0_1: [GoldilocksField; 12],
+    pub full_0_2: [GoldilocksField; 12],
+    pub full_0_3: [GoldilocksField; 12],
+    pub partial: [GoldilocksField; 22],
+    pub full_1_0: [GoldilocksField; 12],
+    pub full_1_1: [GoldilocksField; 12],
+    pub full_1_2: [GoldilocksField; 12],
+    pub full_1_3: [GoldilocksField; 12],
+    pub output: [GoldilocksField; 12],
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
     //(inst_asm_str, imm_flag, step, inst_encode, imm_val)

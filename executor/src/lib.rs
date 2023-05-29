@@ -29,6 +29,7 @@ pub mod runner;
 mod tests;
 mod vm;
 pub mod vm_trace_generator;
+mod poseidon;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 8;
