@@ -19,7 +19,9 @@ criterion = "0.4"
 regex = "1"
 anyhow = "1.0.70"
 thiserror = "1.0.40"
-
+rocksdb = { version = "0.21", default-features = false, features = ["snappy"] }
+tempfile = "3"
+itertools = "0.10"
 
 [[bench]]
 name = "fibo_loop"

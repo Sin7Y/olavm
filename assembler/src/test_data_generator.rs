@@ -66,6 +66,11 @@ mod tests {
         generate_from_file("fibo_loop.json".to_string(), "fibo_loop.json".to_string());
     }
 
+    #[test]
+    fn generate_store_loop() {
+        generate_from_file("storage.json".to_string(), "storage.json".to_string());
+    }
+
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin");
         let input_path = format!("test_data/asm/{}", input_file_name);

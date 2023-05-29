@@ -27,6 +27,9 @@ class OpcodeValue(Enum):
     SEL_NOT = 2 ** 18
     SEL_NEQ = 2 ** 17
     SEL_GTE = 2 ** 16
+    SEL_POSEIDON = 2 ** 15
+    SEL_SLOAD = 2 ** 14
+    SEL_SSTORE = 2 ** 13
 
 
 class JsonMainTraceColumnType(Enum):
@@ -60,7 +63,9 @@ class JsonMainTraceColumnType(Enum):
     SEL_NOT = 'sel_not'
     SEL_NEQ = 'sel_neq'
     SEL_GTE = 'sel_gte'
-
+    SEL_POSEIDON = 'sel_poseidon'
+    SEL_SSTORE = 'sel_sstore'
+    SEL_SLOAD = 'sel_sload'
 
 class MainTraceColumnType(Enum):
     CLK = 'clk'
@@ -137,6 +142,9 @@ class MainTraceColumnType(Enum):
     SEL_NOT = 'sel_not'
     SEL_NEQ = 'sel_neq'
     SEL_GTE = 'sel_gte'
+    SEL_POSEIDON = 'sel_poseidon'
+    SEL_SSTORE = 'sel_sstore'
+    SEL_SLOAD = 'sel_sload'
 
 
 class MemoryTraceColumnType(Enum):
@@ -195,6 +203,37 @@ class ComparisonTraceColumnType(Enum):
     ABS_DIFF_INV = 'abs_diff_inv'
     FILTER_LOOKING_FOR_RANGE_CHECK = 'filter_looking_rc'
 
+class StorageTraceColumnType(Enum):
+    CLK = 'clk'
+    DIFF_CLK = 'diff_clk'
+    OP = 'opcode'
+    ROOT = 'root'
+    ADD = 'addr'
+    VALUE = 'value'
+
+class StorageHashTraceColumnType(Enum):
+    IDX_STORAGE = 'idx_storage'
+    LAYER = 'layer'
+    LAYER_BIT = 'layer_bit'
+    ADDR_ACC = 'addr_acc'
+    IS_LAYER64 = 'is_layer64'
+    IS_LAYER128 = 'is_layer128'
+    IS_LAYER192 = 'is_layer192'
+    IS_LAYER256 = 'is_layer256'
+    ADDR = 'addr'
+    CAPS = 'caps'
+    PATHS = 'paths'
+    SIBLINGS = 'siblings'
+    DELTAS = 'deltas'
+    FULL_0_1 = 'full_0_1'
+    FULL_0_2 = 'full_0_2'
+    FULL_0_3 = 'full_0_3'
+    PARTIAL = 'partial'
+    FULL_1_0 = 'full_1_0'
+    FULL_1_1 = 'full_1_1'
+    FULL_1_2 = 'full_1_2'
+    FULL_1_3 = 'full_1_3'
+    OUTPUT = 'output'
 
 def generate_columns_of_title(worksheet, trace_column_title):
     col = 0
@@ -302,7 +341,8 @@ def main():
                         or data.value == "sel_mload" or data.value == "sel_mstore" or data.value == "sel_end" \
                         or data.value == "sel_range_check" or data.value == "sel_and" or data.value == "sel_or" \
                         or data.value == "sel_xor" or data.value == "sel_not" or data.value == "sel_neq" \
-                        or data.value == "sel_gte" \
+                        or data.value == "sel_gte" or data.value == "sel_poseidon" or  data.value == "sel_sload"  \
+                        or data.value == "sel_sstore" \
                         :
                     # print("sel:{0}:{1}".format(row["opcode"], OpcodeValue[data.name].value))
                     if row["opcode"] == OpcodeValue[data.name].value:
@@ -390,6 +430,49 @@ def main():
             col += 1
         row_index += 1
 
+    # Storage Trace
+    worksheet = workbook.add_worksheet("StorageTrace")
+    generate_columns_of_title(worksheet, StorageTraceColumnType)
+
+    # generate storage trace table
+    row_index = 1
+    for row in trace_json["storage"]:
+        col = 0
+        for data in StorageTraceColumnType:
+            if data.value == "root" or data.value == "addr" or  data.value == "value":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif args.format == 'hex':
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
+    # Storage Hash Trace
+    worksheet = workbook.add_worksheet("HashStorageTrace")
+    generate_columns_of_title(worksheet, StorageHashTraceColumnType)
+
+    # generate storage hash trace table
+    row_index = 1
+    for row in trace_json["store_hashes"]:
+        col = 0
+        for data in StorageHashTraceColumnType:
+            if data.value == "addr" or data.value == "caps" or  data.value == "paths" or \
+               data.value == "siblings" or data.value == "deltas" or  data.value == "full_0_1" or\
+               data.value == "full_0_2" or data.value == "full_0_3" or  data.value == "partial" or\
+               data.value == "full_1_0" or data.value == "full_1_1" or  data.value == "full_1_2" or \
+               data.value == "full_1_3" or  data.value == "output" or data.value == "addr_acc":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif args.format == 'hex':
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
     workbook.close()
 
 

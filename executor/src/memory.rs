@@ -1,9 +1,22 @@
 use crate::GoldilocksField;
-use core::trace::trace::MemoryCell;
 use plonky2::field::types::Field;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 const INIT_MEMORY_DATA: u64 = 0x0;
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct MemoryCell {
+    pub clk: u32,
+    pub is_rw: GoldilocksField,
+    pub op: GoldilocksField,
+    pub is_write: GoldilocksField,
+    pub filter_looked_for_main: GoldilocksField,
+    pub region_prophet: GoldilocksField,
+    pub region_poseidon: GoldilocksField,
+    pub region_ecdsa: GoldilocksField,
+    pub value: GoldilocksField,
+}
 
 #[derive(Debug, Default)]
 pub struct MemoryTree {

@@ -151,7 +151,7 @@ impl FromStr for OlaSpecialRegister {
 
 #[cfg(test)]
 mod tests {
-    use crate::hardware::{OlaRegister, OlaSpecialRegister};
+    use crate::vm::hardware::{OlaRegister, OlaSpecialRegister};
     use std::str::FromStr;
 
     #[test]

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use plonky2::{hash::hash_types::RichField, field::extension::Extendable};
+use plonky2::{field::extension::Extendable, hash::hash_types::RichField};
 
 use crate::stark::stark::Stark;
 

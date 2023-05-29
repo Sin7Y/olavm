@@ -49,7 +49,6 @@ pub fn decode_raw_instruction(
         match op_code {
             Opcode::ADD
             | Opcode::MUL
-            | Opcode::SUB
             | Opcode::AND
             | Opcode::OR
             | Opcode::XOR
@@ -165,7 +164,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::RET | Opcode::END => {
+            Opcode::RET | Opcode::END | Opcode::SLOAD | Opcode::SSTORE | Opcode::POSEIDON => {
                 instruction += &op_code.to_string();
             }
         };

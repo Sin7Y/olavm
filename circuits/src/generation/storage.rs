@@ -19,8 +19,8 @@ pub fn generate_storage_trace<F: RichField>(cells: &[StorageRow]) -> [Vec<F>; CO
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; COL_STORAGE_NUM];
     for (i, c) in cells.iter().enumerate() {
-        trace[COL_STORAGE_CLK][i] = F::from_canonical_u64(c.clk);
-        trace[COL_STORAGE_DIFF_CLK][i] = F::from_canonical_u64(c.diff_clk);
+        trace[COL_STORAGE_CLK][i] = F::from_canonical_u64(c.clk.into());
+        trace[COL_STORAGE_DIFF_CLK][i] = F::from_canonical_u64(c.diff_clk.into());
         trace[COL_STORAGE_OPCODE][i] = F::from_canonical_u64(c.opcode.to_canonical_u64());
         for j in 0..4 {
             trace[COL_STORAGE_ROOT_RANGE.start + j][i] =
