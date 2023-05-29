@@ -146,7 +146,7 @@ where
     let i = offset;
     let j = offset + stride;
     let temp = values[i];
-    values[j] = values[j] * twiddle;
+    values[j] *= twiddle;
     values[i] = temp + values[j];
     values[j] = temp - values[j];
 }

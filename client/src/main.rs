@@ -171,7 +171,7 @@ fn main() {
             println!("Input file path: {}", path);
 
             let mut file = File::open(path).unwrap();
-            let metadata = metadata(&path).expect("unable to read metadata");
+            let metadata = metadata(path).expect("unable to read metadata");
             let mut buffer = vec![0; metadata.len() as usize];
             file.read(&mut buffer).expect("buffer overflow");
 

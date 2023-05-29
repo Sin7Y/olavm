@@ -25,7 +25,7 @@ pub struct Encoder {
 
 impl Encoder {
     pub fn get_reg_index(&self, reg_str: &str) -> Result<usize, AssemblerError> {
-        let first = reg_str.chars().nth(0);
+        let first = reg_str.chars().next();
         if first.is_none() {
             panic!("wrong reg name:{}", reg_str);
         }
@@ -49,18 +49,18 @@ impl Encoder {
             } else {
                 let src_i64 = res.unwrap();
                 if src_i64 < 0 {
-                    src = Ok(FIELD_ORDER - (src_i64.abs() as u64));
+                    src = Ok(FIELD_ORDER - src_i64.unsigned_abs());
                 } else {
                     src = Ok(src_i64 as u64);
                 }
             }
         } else {
-            src = u64::from_str_radix(&op_str[2..].to_string(), 16);
+            src = u64::from_str_radix(&op_str[2..], 16);
         }
 
         if src.is_ok() {
             let data: u64 = src.unwrap();
-            return Ok((ImmediateFlag::Used, data));
+            Ok((ImmediateFlag::Used, data))
         } else if re.is_match(op_str) {
             let reg_index = self.get_reg_index(op_str)?;
             return Ok((ImmediateFlag::NoUsed, reg_index as u64));
@@ -75,7 +75,7 @@ impl Encoder {
     }
 
     pub fn encode_instruction(&self, raw_inst: &str) -> Result<Vec<String>, AssemblerError> {
-        let ops: Vec<_> = raw_inst.trim().split_whitespace().collect();
+        let ops: Vec<_> = raw_inst.split_whitespace().collect();
         let opcode = ops.first().unwrap().to_lowercase();
         let mut raw_instruction: u64 = 0;
         let mut instuction = Vec::new();
@@ -265,7 +265,7 @@ impl Encoder {
     }
 
     pub fn get_inst_len(&self, raw_inst: &str) -> Result<u64, AssemblerError> {
-        let ops: Vec<_> = raw_inst.trim().split_whitespace().collect();
+        let ops: Vec<_> = raw_inst.split_whitespace().collect();
         let opcode = ops.first().unwrap().to_lowercase();
         debug!("get instruction length opcode: {}", opcode.as_str());
 
@@ -318,10 +318,8 @@ impl Encoder {
                         panic!("can not use base and offset all immediate");
                     }
                     return Ok(IMM_INSTRUCTION_LEN);
-                } else {
-                    if op3_value != 0 {
-                        return Ok(IMM_INSTRUCTION_LEN);
-                    }
+                } else if op3_value != 0 {
+                    return Ok(IMM_INSTRUCTION_LEN);
                 }
             }
             "mload" => {
@@ -337,10 +335,8 @@ impl Encoder {
                         panic!("can not use base and offset all immediate");
                     }
                     return Ok(IMM_INSTRUCTION_LEN);
-                } else {
-                    if op3_value != 0 {
-                        return Ok(IMM_INSTRUCTION_LEN);
-                    }
+                } else if op3_value != 0 {
+                    return Ok(IMM_INSTRUCTION_LEN);
                 }
             }
             _ => return Ok(NO_IMM_INSTRUCTION_LEN),
@@ -358,7 +354,7 @@ impl Encoder {
             }
             let item = self.asm_code.get(index).unwrap();
             debug!("item:{:?}", item);
-            if item.contains(":") {
+            if item.contains(':') {
                 let mut label = item.trim().to_string();
                 label.remove(label.len() - 1);
                 self.labels.insert(label, self.pc);
@@ -369,47 +365,43 @@ impl Encoder {
                 self.asm_code.remove(index);
                 cur_asm_len -= 1;
                 continue;
-            } else if item.contains("[") {
+            } else if item.contains('[') {
                 // not r5 3
                 // add r5 r5 1
                 // add r5 r8 r5
                 // mstore r5, r4
                 //mstore [r8,-3] r4
                 let inst = item.trim();
-                let ops: Vec<&str> = inst.split(" ").collect();
+                let ops: Vec<&str> = inst.split(' ').collect();
                 let modify_inst = if ops[0].eq("mload") {
                     let mut fp_offset = ops.get(2).unwrap().to_string();
                     let dst_reg = ops.get(1).unwrap().to_string();
-                    fp_offset = fp_offset.replace("[", "").replace("]", "");
-                    let base_offset: Vec<&str> = fp_offset.split(",").collect();
+                    fp_offset = fp_offset.replace(['[', ']'], "");
+                    let base_offset: Vec<&str> = fp_offset.split(',').collect();
                     let mut offset: u64 = 0;
-                    let base_reg = base_offset.get(0).unwrap();
+                    let base_reg = base_offset.first().unwrap();
                     if base_offset.get(1).is_some() {
                         let offset_i32 =
                             i32::from_str_radix(base_offset.get(1).unwrap(), 10).unwrap();
 
                         if offset_i32 < 0 {
-                            offset = FIELD_ORDER - (offset_i32.abs() as u64);
+                            offset = FIELD_ORDER - (offset_i32.unsigned_abs() as u64);
                         }
                     }
                     format!("mload {} {} {} ", dst_reg, base_reg, offset)
                 } else if ops[0].eq("mstore") {
                     let mut fp_offset = ops.get(1).unwrap().to_string();
                     let dst_reg = ops.get(2).unwrap().to_string();
-                    fp_offset = fp_offset
-                        .replace("[", "")
-                        .replace("]", "")
-                        .trim()
-                        .to_string();
-                    let base_offset: Vec<&str> = fp_offset.split(",").collect();
+                    fp_offset = fp_offset.replace(['[', ']'], "").trim().to_string();
+                    let base_offset: Vec<&str> = fp_offset.split(',').collect();
                     let mut offset: u64 = 0;
-                    let base_reg = base_offset.get(0).unwrap();
+                    let base_reg = base_offset.first().unwrap();
                     if base_offset.get(1).is_some() {
                         let offset_i32 =
                             i32::from_str_radix(base_offset.get(1).unwrap(), 10).unwrap();
 
                         if offset_i32 < 0 {
-                            offset = FIELD_ORDER - (offset_i32.abs() as u64);
+                            offset = FIELD_ORDER - (offset_i32.unsigned_abs() as u64);
                         }
                     }
                     format!("mstore {} {} {}", base_reg, dst_reg, offset)
@@ -423,7 +415,7 @@ impl Encoder {
                 cur_asm_len -= 1;
                 continue;
             }
-            let len = self.get_inst_len(&item).unwrap();
+            let len = self.get_inst_len(item).unwrap();
             self.pc += len;
             index += 1;
         }

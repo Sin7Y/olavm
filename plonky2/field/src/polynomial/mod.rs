@@ -67,7 +67,7 @@ impl<F: Field> PolynomialValues<F> {
     /// Returns the polynomial whose evaluation on the coset `shift*H` is
     /// `self`.
     pub fn coset_ifft(self, shift: F) -> PolynomialCoeffs<F> {
-        let mut v = self.values.clone();
+        let mut v = self.values;
         let inv_twiddles = get_inv_twiddles::<F>(v.len());
         interpolate_poly_with_offset(&mut v, &inv_twiddles, shift);
         PolynomialCoeffs { coeffs: v }

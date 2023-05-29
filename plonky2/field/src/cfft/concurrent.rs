@@ -29,7 +29,7 @@ pub fn evaluate_poly_with_offset<F: Field>(
         .enumerate()
         .for_each(|(i, chunk)| {
             let idx = super::permute_index(blowup_factor, i) as u64;
-            let offset = g.exp_u64(idx.into()) * domain_offset;
+            let offset = g.exp_u64(idx) * domain_offset;
             clone_and_shift(p, chunk, offset);
             split_radix_fft(chunk, twiddles);
         });
@@ -63,10 +63,10 @@ where
         .par_chunks_mut(batch_size)
         .enumerate()
         .for_each(|(i, batch)| {
-            let mut offset = domain_offset.exp_u64(((i * batch_size) as u64).into()) * inv_len;
+            let mut offset = domain_offset.exp_u64((i * batch_size) as u64) * inv_len;
             for coeff in batch.iter_mut() {
-                *coeff = *coeff * offset;
-                offset = offset * domain_offset;
+                *coeff *= offset;
+                offset *= domain_offset;
             }
         });
 }
@@ -99,7 +99,7 @@ pub(super) fn split_radix_fft<F: Field>(values: &mut [F], twiddles: &[F]) {
     // generator of the domain should be in the middle of twiddles
     let n = values.len();
     let g = twiddles[twiddles.len() / 2];
-    debug_assert_eq!(g.exp_u64((n as u64).into()), F::ONE);
+    debug_assert_eq!(g.exp_u64(n as u64), F::ONE);
 
     let inner_len = 1_usize << (log2_strict(n) / 2);
     let outer_len = n / inner_len;
@@ -113,7 +113,7 @@ pub(super) fn split_radix_fft<F: Field>(values: &mut [F], twiddles: &[F]) {
     // apply inner FFTs
     values
         .par_chunks_mut(outer_len)
-        .for_each(|row| super::serial::fft_in_place(row, &twiddles, stretch, stretch, 0));
+        .for_each(|row| super::serial::fft_in_place(row, twiddles, stretch, stretch, 0));
 
     // transpose inner x inner x stretch square matrix
     transpose_square_stretch(values, inner_len, stretch);
@@ -125,14 +125,14 @@ pub(super) fn split_radix_fft<F: Field>(values: &mut [F], twiddles: &[F]) {
         .for_each(|(i, row)| {
             if i > 0 {
                 let i = super::permute_index(inner_len, i);
-                let inner_twiddle = g.exp_u64((i as u64).into());
+                let inner_twiddle = g.exp_u64(i as u64);
                 let mut outer_twiddle = inner_twiddle;
                 for element in row.iter_mut().skip(1) {
-                    *element = (*element) * outer_twiddle;
-                    outer_twiddle = outer_twiddle * inner_twiddle;
+                    *element *= outer_twiddle;
+                    outer_twiddle *= inner_twiddle;
                 }
             }
-            super::serial::fft_in_place(row, &twiddles, 1, 1, 0)
+            super::serial::fft_in_place(row, twiddles, 1, 1, 0)
         });
 }
 
@@ -190,10 +190,10 @@ fn clone_and_shift<F: Field>(source: &[F], destination: &mut [F], offset: F) {
         .zip(destination.par_chunks_mut(batch_size))
         .enumerate()
         .for_each(|(i, (source, destination))| {
-            let mut factor = offset.exp_u64(((i * batch_size) as u64).into());
+            let mut factor = offset.exp_u64((i * batch_size) as u64);
             for (s, d) in source.iter().zip(destination.iter_mut()) {
                 *d = (*s) * factor;
-                factor = factor * offset;
+                factor *= offset;
             }
         });
 }

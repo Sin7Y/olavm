@@ -15,7 +15,7 @@ type F = <C as GenericConfig<D>>::F;
 
 pub(crate) fn bench_fibo_loop_prover(program: &Program) {
     let mut ola_stark = OlaStark::default();
-    let (traces, public_values) = generate_traces(&program, &mut ola_stark);
+    let (traces, public_values) = generate_traces(program, &mut ola_stark);
     let config = StarkConfig::standard_fast_config();
 
     let _ = prove_with_traces::<F, C, D>(

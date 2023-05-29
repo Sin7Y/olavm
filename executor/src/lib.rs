@@ -26,7 +26,7 @@ mod tests;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 8;
-const REGION_SPAN: u64 = 2 ^ 32 - 1;
+const REGION_SPAN: u64 = 2 ^ (32 - 1);
 
 #[derive(Debug, Default)]
 pub struct Process {
@@ -59,7 +59,7 @@ impl Process {
     }
 
     pub fn get_reg_index(&self, reg_str: &str) -> usize {
-        let first = reg_str.chars().nth(0);
+        let first = reg_str.chars().next();
         if first.is_none() {
             panic!("get wrong reg index:{}", reg_str);
         }
@@ -76,14 +76,14 @@ impl Process {
         let value;
         if src.is_ok() {
             let data: u64 = src.unwrap();
-            return (
+            (
                 GoldilocksField::from_canonical_u64(data),
                 ImmediateOrRegName::Immediate(GoldilocksField::from_canonical_u64(data)),
-            );
+            )
         } else {
             let src_index = self.get_reg_index(op_str);
             value = self.registers[src_index];
-            return (value, ImmediateOrRegName::RegName(src_index));
+            (value, ImmediateOrRegName::RegName(src_index))
         }
     }
 
