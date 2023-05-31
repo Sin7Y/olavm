@@ -1,15 +1,19 @@
 use std::marker::PhantomData;
 
+use plonky2::{hash::hash_types::RichField, field::extension::Extendable};
+
 use crate::stark::stark::Stark;
 
-use super::columns::{COL_STORAGE_CLK, COL_STORAGE_DIFF_CLK, COL_STORAGE_LOOKING_RC};
+use super::columns::{
+    COL_STORAGE_CLK, COL_STORAGE_DIFF_CLK, COL_STORAGE_LOOKING_RC, COL_STORAGE_NUM,
+};
 
 pub struct StorageStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<F, D> {
-    const COLUMNS: usize;
+    const COLUMNS: usize = COL_STORAGE_NUM;
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,

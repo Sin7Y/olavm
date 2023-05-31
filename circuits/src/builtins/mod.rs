@@ -4,3 +4,4 @@ pub mod rangecheck;
 pub mod rangecheck_small_limbs;
 pub mod poseidon;
 pub mod storage;
+pub mod poseidon_utils;
