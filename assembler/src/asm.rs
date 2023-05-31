@@ -178,13 +178,11 @@ fn split_ola_asm_pieces(
             Ok((opcode, None, Some(op1.clone()), None))
         }
 
-        OlaOpcode::RET | OlaOpcode::END => {
-            if ops.len() != 0 {
-                return Err(format!("invalid operand size: {}", asm_line));
-            }
-            Ok((opcode, None, None, None))
-        }
-        OlaOpcode::POSEIDON => {
+        OlaOpcode::RET
+        | OlaOpcode::END
+        | OlaOpcode::POSEIDON
+        | OlaOpcode::SLOAD
+        | OlaOpcode::SSTORE => {
             if ops.len() != 0 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }

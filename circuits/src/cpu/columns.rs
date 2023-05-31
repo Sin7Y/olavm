@@ -94,11 +94,11 @@ pub(crate) const COL_S_END: usize = COL_S_MSTORE + 1;
 // ┼───────┼───────┼───────┼───────┼───────┼
 // │   0   │   1   │   0   │   0   │   0   │
 // ┴───────┴───────┴───────┴───────┴───────┴
-// ┬───────┬───────┬────────────┬─────────┬
-// │ s_neq │ s_gte │ s_poseidon │ s_ecdsa │
-// ┼───────┼───────┼────────────┼─────────┼
-// │   0   │   0   │      0     │    0    │
-// ┴───────┴───────┴────────────┴─────────┴
+// ┬───────┬───────┬────────────┬───────┬───────┬
+// │ s_neq │ s_gte │ s_poseidon │ sload │ sstore|
+// ┼───────┼───────┼────────────┼───────┼───────|
+// │   0   │   0   │      0     │    0  │   0   |
+// ┴───────┴───────┴────────────┴───────┴───────┴
 pub(crate) const COL_S_RC: usize = COL_S_END + 1;
 pub(crate) const COL_S_AND: usize = COL_S_RC + 1;
 pub(crate) const COL_S_OR: usize = COL_S_AND + 1;
@@ -107,7 +107,8 @@ pub(crate) const COL_S_NOT: usize = COL_S_XOR + 1;
 pub(crate) const COL_S_NEQ: usize = COL_S_NOT + 1;
 pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
-pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
+pub(crate) const COL_S_SLOAD: usize = COL_S_PSDN + 1;
+pub(crate) const COL_S_SSTORE: usize = COL_S_SLOAD + 1;
 
 // Program consistence relate columns(6):
 // ┬──────────┬────────┬──────────┬──────────┬─────────────┬──────────────┐
@@ -115,7 +116,7 @@ pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
 // ┼──────────┼────────┼──────────┼──────────┼─────────────┼──────────────|
 // │     0    │    1   │     0    │     0    │       1     │       0      |
 // ┴──────────┴────────┴──────────┴──────────┴─────────────┴──────────────┘
-pub(crate) const COL_RAW_INST: usize = COL_S_ECDSA + 1;
+pub(crate) const COL_RAW_INST: usize = COL_S_SSTORE + 1;
 pub(crate) const COL_RAW_PC: usize = COL_RAW_INST + 1;
 pub(crate) const COL_ZIP_RAW: usize = COL_RAW_PC + 1;
 pub(crate) const COL_ZIP_EXED: usize = COL_ZIP_RAW + 1;
@@ -168,7 +169,8 @@ fn print_cpu_cols() {
     println!("COL_S_NEQ: {}", COL_S_NEQ);
     println!("COL_S_GTE: {}", COL_S_GTE);
     println!("COL_S_PSDN: {}", COL_S_PSDN);
-    println!("COL_S_ECDSA: {}", COL_S_ECDSA);
+    println!("COL_S_SLOAD: {}", COL_S_SLOAD);
+    println!("COL_S_SSTORE {}", COL_S_SSTORE);
     println!("COL_RAW_INST: {}", COL_RAW_INST);
     println!("COL_RAW_PC: {}", COL_RAW_PC);
     println!("COL_ZIP_RAW: {}", COL_ZIP_RAW);

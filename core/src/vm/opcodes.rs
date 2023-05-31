@@ -25,6 +25,8 @@ pub enum OlaOpcode {
     NEQ,
     GTE,
     POSEIDON,
+    SLOAD,
+    SSTORE,
 }
 
 impl Display for OlaOpcode {
@@ -58,6 +60,8 @@ impl OlaOpcode {
             OlaOpcode::NEQ => "neq".to_string(),
             OlaOpcode::GTE => "gte".to_string(),
             OlaOpcode::POSEIDON => "poseidon".to_string(),
+            OlaOpcode::SLOAD => "sload".to_string(),
+            OlaOpcode::SSTORE => "sstore".to_string(),
         }
     }
 
@@ -83,6 +87,8 @@ impl OlaOpcode {
             OlaOpcode::NEQ => 17,
             OlaOpcode::GTE => 16,
             OlaOpcode::POSEIDON => 15,
+            OlaOpcode::SLOAD => 14,
+            OlaOpcode::SSTORE => 13,
         }
     }
 

@@ -1,3 +1,5 @@
+use core::vm::opcodes::OlaOpcode;
+
 use {
     super::{columns::*, *},
     crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -98,7 +100,7 @@ pub struct CpuStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> CpuStark<F, D> {
-    pub const OPCODE_SHIFTS: Range<u32> = 14..35;
+    pub const OPCODE_SHIFTS: Range<u32> = 13..35;
     pub const OP1_IMM_SHIFT: u32 = 62;
     pub const OP0_SHIFT_START: u32 = 61;
     pub const OP1_SHIFT_START: u32 = 52;
@@ -169,7 +171,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             lv[COL_S_NEQ],
             lv[COL_S_GTE],
             lv[COL_S_PSDN],
-            lv[COL_S_ECDSA],
+            lv[COL_S_SLOAD],
+            lv[COL_S_SSTORE],
         ];
 
         op_selectors
@@ -275,7 +278,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             &regs[..REGISTER_NUM - 1],
             &n_regs[..REGISTER_NUM - 1]
         ) {
-            yield_constr.constraint_transition((P::ONES - *dst) * (*n_r - *l_r));
+            let not_multi_dst = (lv[COL_OPCODE]
+                - P::Scalar::from_canonical_u64(OlaOpcode::POSEIDON.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::SLOAD.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::SSTORE.binary_bit_mask()));
+            yield_constr.constraint_transition(not_multi_dst * (P::ONES - *dst) * (*n_r - *l_r));
         }
         // fp
         yield_constr.constraint_transition(
@@ -381,7 +390,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             lv[COL_S_NEQ],
             lv[COL_S_GTE],
             lv[COL_S_PSDN],
-            lv[COL_S_ECDSA],
+            lv[COL_S_SLOAD],
+            lv[COL_S_SSTORE],
         ];
         op_selectors.iter().for_each(|s| {
             let s_boolean = builder.sub_extension(one, *s);
@@ -563,9 +573,23 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             &regs[..REGISTER_NUM - 1],
             &n_regs[..REGISTER_NUM - 1]
         ) {
+            let opcode_poseidon = builder.constant_extension(F::Extension::from_canonical_u64(
+                OlaOpcode::POSEIDON.binary_bit_mask(),
+            ));
+            let opcode_sload = builder.constant_extension(F::Extension::from_canonical_u64(
+                OlaOpcode::SLOAD.binary_bit_mask(),
+            ));
+            let opcode_sstore = builder.constant_extension(F::Extension::from_canonical_u64(
+                OlaOpcode::SSTORE.binary_bit_mask(),
+            ));
+            let not_poseidon = builder.sub_extension(lv[COL_OPCODE], opcode_poseidon);
+            let not_sload = builder.sub_extension(lv[COL_OPCODE], opcode_sload);
+            let not_sstore = builder.sub_extension(lv[COL_OPCODE], opcode_sstore);
+            let not_multi_dst = builder.mul_many_extension([not_poseidon, not_sload, not_sstore]);
+
             let r_diff = builder.sub_extension(*n_r, *l_r);
             let dst_boolean = builder.sub_extension(one, *dst);
-            let reg_cs = builder.mul_extension(dst_boolean, r_diff);
+            let reg_cs = builder.mul_many_extension([not_multi_dst, dst_boolean, r_diff]);
             yield_constr.constraint_transition(builder, reg_cs);
         }
 
@@ -642,11 +666,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 #[cfg(test)]
 mod tests {
     use crate::generation::cpu::generate_cpu_trace;
-    use assembler::binary_program::BinaryProgram;
     use assembler::encoder::encode_asm_from_json_file;
     use std::collections::HashMap;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
+    use std::io::BufRead;
     use {
         super::*,
         core::program::Program,

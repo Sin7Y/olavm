@@ -327,8 +327,11 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::RET | OlaOpcode::END => format!("{}", self.opcode.token()),
-            OlaOpcode::POSEIDON => format!("{}", self.opcode.token()),
+            OlaOpcode::RET
+            | OlaOpcode::END
+            | OlaOpcode::POSEIDON
+            | OlaOpcode::SLOAD
+            | OlaOpcode::SSTORE => format!("{}", self.opcode.token()),
         }
     }
 }
