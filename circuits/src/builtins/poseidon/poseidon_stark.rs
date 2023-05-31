@@ -53,7 +53,7 @@ impl<F: RichField, const D: usize> PoseidonStark<F, D> {
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark<F, D> {
-    const COLUMNS: usize = COL_NUM_POSEIDON;
+    const COLUMNS: usize = NUM_POSEIDON_COLS;
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,

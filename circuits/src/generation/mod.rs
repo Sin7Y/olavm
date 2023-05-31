@@ -19,6 +19,7 @@ use self::memory::generate_memory_trace;
 pub mod builtin;
 pub mod cpu;
 pub mod memory;
+pub mod poseidon;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 /// Inputs needed for trace generation.

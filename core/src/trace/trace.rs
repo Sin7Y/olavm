@@ -3,8 +3,10 @@ use crate::utils::split_limbs_from_field;
 use crate::utils::split_u16_limbs_from_field;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
+use plonky2::field::types::PrimeField64;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Display;
 
 pub const OPCODE_END_SEL_INDEX: usize = 0;
 pub const OPCODE_MSTORE_SEL_INDEX: usize = OPCODE_END_SEL_INDEX + 1;
@@ -177,7 +179,7 @@ pub struct CmpRow {
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct PoseidonCell {
+pub struct PoseidonRow {
     pub input: [GoldilocksField; 12],
     pub full_0_1: [GoldilocksField; 12],
     pub full_0_2: [GoldilocksField; 12],
@@ -190,21 +192,50 @@ pub struct PoseidonCell {
     pub output: [GoldilocksField; 12],
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct PoseidonTraceCell {
-    pub is_storage: GoldilocksField,
-    pub idx_storage_batch: GoldilocksField,
-    pub idx_storage_tree_layer: GoldilocksField,
-    pub input: [GoldilocksField; 12],
-    pub full_0_1: [GoldilocksField; 12],
-    pub full_0_2: [GoldilocksField; 12],
-    pub full_0_3: [GoldilocksField; 12],
-    pub partial: [GoldilocksField; 22],
-    pub full_1_0: [GoldilocksField; 12],
-    pub full_1_1: [GoldilocksField; 12],
-    pub full_1_2: [GoldilocksField; 12],
-    pub full_1_3: [GoldilocksField; 12],
-    pub output: [GoldilocksField; 12],
+impl Display for PoseidonRow {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let format_state = |state: [GoldilocksField; 12]| -> String {
+            state
+                .iter()
+                .map(|x| format!("0x{:x}", x.to_canonical_u64()))
+                .collect::<Vec<String>>()
+                .join(", ")
+        };
+        let format_partial = |name: String, state: [GoldilocksField; 22]| -> String {
+            state
+                .iter()
+                .map(|x| format!("0x{:x}", x.to_canonical_u64()))
+                .collect::<Vec<String>>()
+                .join(", ")
+        };
+        let input = format!("input: {}", format_state(self.input));
+        let full_0_1 = format!("full_0_1: {}", format_state(self.full_0_1));
+        let full_0_2 = format!("full_0_2: {}", format_state(self.full_0_2));
+        let full_0_3 = format!("full_0_3: {}", format_state(self.full_0_3));
+        let partial = format!(
+            "partial: {}",
+            format_partial("partial".to_string(), self.partial)
+        );
+        let full_1_0 = format!("full_1_0: {}", format_state(self.full_1_0));
+        let full_1_1 = format!("full_1_1: {}", format_state(self.full_1_1));
+        let full_1_2 = format!("full_1_2: {}", format_state(self.full_1_2));
+        let full_1_3 = format!("full_1_3: {}", format_state(self.full_1_3));
+        let output = format!("output: {}", format_state(self.output));
+        write!(
+            f,
+            "{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}",
+            input,
+            full_0_1,
+            full_0_2,
+            full_0_3,
+            partial,
+            full_1_0,
+            full_1_1,
+            full_1_2,
+            full_1_3,
+            output
+        )
+    }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
