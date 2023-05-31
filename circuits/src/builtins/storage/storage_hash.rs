@@ -9,7 +9,7 @@ use crate::{
 };
 use core::util::poseidon_utils::{
     constant_layer_field, mds_layer_field, mds_partial_layer_fast_field, mds_partial_layer_init,
-    partial_first_constant_layer, sbox_layer_field, sbox_monomial, POSEIDON_STATE_WIDTH,
+    partial_first_constant_layer, sbox_layer_field, sbox_monomial,
 };
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},

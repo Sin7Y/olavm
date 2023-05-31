@@ -11,7 +11,7 @@ use crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::packed::PackedField;
-use plonky2::hash::poseidon::{Poseidon, ALL_ROUND_CONSTANTS};
+use plonky2::hash::poseidon::Poseidon;
 use plonky2::hash::{hash_types::RichField, poseidon};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 

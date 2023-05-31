@@ -382,7 +382,6 @@ mod tests {
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
     use std::collections::HashMap;
-    use std::io::BufRead;
 
     #[test]
     fn test_memory_with_program() {
