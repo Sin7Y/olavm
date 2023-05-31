@@ -1,6 +1,5 @@
+use core::util::poseidon_utils::POSEIDON_PARTIAL_ROUND_NUM;
 use std::ops::Range;
-
-use crate::builtins::poseidon::columns::POSEIDON_PARTIAL_ROUND_NUM;
 
 pub(crate) const COL_STORAGE_CLK: usize = 0;
 pub(crate) const COL_STORAGE_DIFF_CLK: usize = COL_STORAGE_CLK + 1;

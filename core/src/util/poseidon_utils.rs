@@ -1,26 +1,29 @@
-use std::ops::Mul;
-
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, ops::Square, packed::PackedField, types::Field},
+    field::{goldilocks_field::GoldilocksField, packed::PackedField, types::Field},
     hash::poseidon::{Poseidon, ALL_ROUND_CONSTANTS},
 };
 
-use super::poseidon::columns::POSEIDON_STATE_WIDTH;
+pub const POSEIDON_STATE_WIDTH: usize = 12;
 
-pub(crate) fn constant_layer_field<P: PackedField>(state: &mut [P; 12], round_ctr: usize) {
+pub const POSEIDON_INPUT_NUM: usize = 12;
+pub const POSEIDON_OUTPUT_NUM: usize = 12;
+
+pub const POSEIDON_PARTIAL_ROUND_NUM: usize = 22;
+
+pub fn constant_layer_field<P: PackedField>(state: &mut [P; 12], round_ctr: usize) {
     for i in 0..12 {
         state[i] += P::Scalar::from_canonical_u64(ALL_ROUND_CONSTANTS[i + 12 * round_ctr]);
     }
 }
 
-pub(crate) fn sbox_monomial<P: PackedField>(x: P) -> P {
+pub fn sbox_monomial<P: PackedField>(x: P) -> P {
     let x2 = x.square();
     let x4 = x2.square();
     let x3 = x * x2;
     x3 * x4
 }
 
-pub(crate) fn sbox_layer_field<P: PackedField>(state: &mut [P; POSEIDON_STATE_WIDTH]) {
+pub fn sbox_layer_field<P: PackedField>(state: &mut [P; POSEIDON_STATE_WIDTH]) {
     for i in 0..POSEIDON_STATE_WIDTH {
         state[i] = sbox_monomial(state[i]);
     }
@@ -36,7 +39,7 @@ fn mds_row_shf_field<P: PackedField>(r: usize, v: &[P; POSEIDON_STATE_WIDTH]) ->
     res
 }
 
-pub(crate) fn mds_layer_field<P: PackedField>(
+pub fn mds_layer_field<P: PackedField>(
     state: &[P; POSEIDON_STATE_WIDTH],
 ) -> [P; POSEIDON_STATE_WIDTH] {
     let mut res = [P::ZEROS; POSEIDON_STATE_WIDTH];
@@ -46,7 +49,7 @@ pub(crate) fn mds_layer_field<P: PackedField>(
     res
 }
 
-pub(crate) fn partial_first_constant_layer<P: PackedField>(state: &mut [P; POSEIDON_STATE_WIDTH]) {
+pub fn partial_first_constant_layer<P: PackedField>(state: &mut [P; POSEIDON_STATE_WIDTH]) {
     for i in 0..12 {
         if i < POSEIDON_STATE_WIDTH {
             state[i] += P::Scalar::from_canonical_u64(
@@ -56,7 +59,7 @@ pub(crate) fn partial_first_constant_layer<P: PackedField>(state: &mut [P; POSEI
     }
 }
 
-pub(crate) fn mds_partial_layer_init<P: PackedField>(
+pub fn mds_partial_layer_init<P: PackedField>(
     state: &[P; POSEIDON_STATE_WIDTH],
 ) -> [P; POSEIDON_STATE_WIDTH] {
     let mut result = [P::ZEROS; POSEIDON_STATE_WIDTH];
@@ -76,7 +79,7 @@ pub(crate) fn mds_partial_layer_init<P: PackedField>(
     result
 }
 
-pub(crate) fn mds_partial_layer_fast_field<P: PackedField>(
+pub fn mds_partial_layer_fast_field<P: PackedField>(
     state: &[P; POSEIDON_STATE_WIDTH],
     r: usize,
 ) -> [P; POSEIDON_STATE_WIDTH] {

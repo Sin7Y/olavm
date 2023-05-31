@@ -1,26 +1,22 @@
 use std::marker::PhantomData;
 
+use crate::{
+    builtins::storage::columns::{
+        COL_STORAGE_HASH_FULL_ROUND_0_1_STATE_RANGE, COL_STORAGE_HASH_FULL_ROUND_0_2_STATE_RANGE,
+        COL_STORAGE_HASH_FULL_ROUND_0_3_STATE_RANGE,
+    },
+    stark::stark::Stark,
+};
+use core::util::poseidon_utils::{
+    constant_layer_field, mds_layer_field, mds_partial_layer_fast_field, mds_partial_layer_init,
+    partial_first_constant_layer, sbox_layer_field, sbox_monomial, POSEIDON_STATE_WIDTH,
+};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::{
         hash_types::RichField,
         poseidon::{self, Poseidon},
     },
-};
-
-use crate::{
-    builtins::{
-        poseidon_utils::{
-            constant_layer_field, mds_layer_field, mds_partial_layer_fast_field,
-            mds_partial_layer_init, partial_first_constant_layer, sbox_layer_field, sbox_monomial,
-        },
-        storage::columns::{
-            COL_STORAGE_HASH_FULL_ROUND_0_1_STATE_RANGE,
-            COL_STORAGE_HASH_FULL_ROUND_0_2_STATE_RANGE,
-            COL_STORAGE_HASH_FULL_ROUND_0_3_STATE_RANGE,
-        },
-    },
-    stark::stark::Stark,
 };
 
 use super::columns::*;
