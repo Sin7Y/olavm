@@ -1,11 +1,15 @@
-use core::trace::trace::PoseidonCell;
+use core::{
+    trace::trace::PoseidonCell,
+    util::poseidon_utils::{
+        constant_layer_field, mds_layer_field, mds_partial_layer_fast_field,
+        mds_partial_layer_init, partial_first_constant_layer, sbox_layer_field, sbox_monomial,
+        POSEIDON_INPUT_NUM,
+    },
+};
 
 use plonky2::{
     field::{goldilocks_field::GoldilocksField, types::Field},
-    hash::{
-        hashing::SPONGE_WIDTH,
-        poseidon::{self, Poseidon},
-    },
+    hash::poseidon::{self, Poseidon},
 };
 
 pub(crate) enum PoseidonType {
@@ -29,7 +33,7 @@ fn calculate_poseidon_and_generate_intermediate_trace_row(
         full_1_3: [GoldilocksField::default(); 12],
         output: [GoldilocksField::default(); 12],
     };
-    let mut full_input = [GoldilocksField::default(); SPONGE_WIDTH];
+    let mut full_input = [GoldilocksField::default(); POSEIDON_INPUT_NUM];
     full_input[0] = match poseidon_type {
         PoseidonType::Normal => GoldilocksField::default(),
         PoseidonType::Variant => GoldilocksField::ONE,
@@ -42,7 +46,7 @@ fn calculate_poseidon_and_generate_intermediate_trace_row(
 
     // First set of full rounds.
     for r in 0..poseidon::HALF_N_FULL_ROUNDS {
-        <GoldilocksField as Poseidon>::constant_layer_field(&mut state, round_ctr);
+        constant_layer_field(&mut state, round_ctr);
         match r {
             1 => {
                 cell.full_0_1[..].clone_from_slice(&state[..]);
@@ -55,35 +59,31 @@ fn calculate_poseidon_and_generate_intermediate_trace_row(
             }
             _ => {}
         }
-        <GoldilocksField as Poseidon>::sbox_layer_field(&mut state);
-        state = <GoldilocksField as Poseidon>::mds_layer_field(&state);
+        sbox_layer_field(&mut state);
+        state = mds_layer_field(&state);
         round_ctr += 1;
     }
 
     // Partial rounds.
-    <GoldilocksField as Poseidon>::partial_first_constant_layer(&mut state);
-    state = <GoldilocksField as Poseidon>::mds_partial_layer_init(&state);
+    partial_first_constant_layer(&mut state);
+    state = mds_partial_layer_init(&state);
     for r in 0..(poseidon::N_PARTIAL_ROUNDS - 1) {
         let sbox_in = state[0];
         cell.partial[r] = sbox_in;
-        state[0] = <GoldilocksField as Poseidon>::sbox_monomial(sbox_in);
-        state[0] += GoldilocksField::from_canonical_u64(
-            <GoldilocksField as Poseidon>::FAST_PARTIAL_ROUND_CONSTANTS[r],
-        );
-        state = <GoldilocksField as Poseidon>::mds_partial_layer_fast_field(&state, r);
+        state[0] = sbox_monomial(sbox_in);
+        state[0] +=
+            GoldilocksField::from_canonical_u64(GoldilocksField::FAST_PARTIAL_ROUND_CONSTANTS[r]);
+        state = mds_partial_layer_fast_field(&state, r);
     }
     let sbox_in = state[0];
     cell.partial[poseidon::N_PARTIAL_ROUNDS - 1] = sbox_in;
-    state[0] = <GoldilocksField as Poseidon>::sbox_monomial(sbox_in);
-    state = <GoldilocksField as Poseidon>::mds_partial_layer_fast_field(
-        &state,
-        poseidon::N_PARTIAL_ROUNDS - 1,
-    );
+    state[0] = sbox_monomial(sbox_in);
+    state = mds_partial_layer_fast_field(&state, poseidon::N_PARTIAL_ROUNDS - 1);
     round_ctr += poseidon::N_PARTIAL_ROUNDS;
 
     // Second set of full rounds.
     for r in 0..poseidon::HALF_N_FULL_ROUNDS {
-        <GoldilocksField as Poseidon>::constant_layer_field(&mut state, round_ctr);
+        constant_layer_field(&mut state, round_ctr);
         match r {
             0 => {
                 cell.full_1_0[..].clone_from_slice(&state[..]);
@@ -99,8 +99,8 @@ fn calculate_poseidon_and_generate_intermediate_trace_row(
             }
             _ => {}
         }
-        <GoldilocksField as Poseidon>::sbox_layer_field(&mut state);
-        state = <GoldilocksField as Poseidon>::mds_layer_field(&state);
+        sbox_layer_field(&mut state);
+        state = mds_layer_field(&state);
         round_ctr += 1;
     }
 
