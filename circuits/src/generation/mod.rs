@@ -20,6 +20,7 @@ pub mod builtin;
 pub mod cpu;
 pub mod memory;
 pub mod poseidon;
+pub mod storage;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 /// Inputs needed for trace generation.

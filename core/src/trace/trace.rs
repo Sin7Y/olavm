@@ -238,6 +238,42 @@ impl Display for PoseidonRow {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct StorageRow {
+    pub clk: u64,
+    pub diff_clk: u64,
+    pub opcode: GoldilocksField,
+    pub root: [GoldilocksField; 4],
+    pub addr: [GoldilocksField; 4],
+    pub value: [GoldilocksField; 4],
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct StorageHashRow {
+    pub idx_storage: u64,
+    pub layer: u64,
+    pub layer_bit: u64,
+    pub addr_acc: GoldilocksField,
+    pub is_layer64: bool,
+    pub is_layer128: bool,
+    pub is_layer192: bool,
+    pub is_layer256: bool,
+    pub addr: [GoldilocksField; 4],
+    pub caps: [GoldilocksField; 4],
+    pub paths: [GoldilocksField; 4],
+    pub siblings: [GoldilocksField; 4],
+    pub deltas: [GoldilocksField; 4],
+    pub full_0_1: [GoldilocksField; 12],
+    pub full_0_2: [GoldilocksField; 12],
+    pub full_0_3: [GoldilocksField; 12],
+    pub partial: [GoldilocksField; 22],
+    pub full_1_0: [GoldilocksField; 12],
+    pub full_1_1: [GoldilocksField; 12],
+    pub full_1_2: [GoldilocksField; 12],
+    pub full_1_3: [GoldilocksField; 12],
+    pub output: [GoldilocksField; 12],
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
     //(inst_asm_str, imm_flag, step, inst_encode, imm_val)
