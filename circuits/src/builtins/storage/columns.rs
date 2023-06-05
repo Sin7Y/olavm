@@ -1,5 +1,5 @@
 use core::util::poseidon_utils::POSEIDON_PARTIAL_ROUND_NUM;
-use std::{collections::BTreeMap, ops::Range};
+use std::ops::Range;
 
 pub(crate) const COL_STORAGE_CLK: usize = 0;
 pub(crate) const COL_STORAGE_DIFF_CLK: usize = COL_STORAGE_CLK + 1;
@@ -60,32 +60,5 @@ pub(crate) const COL_STORAGE_HASH_FULL_ROUND_1_2_STATE_RANGE: Range<usize> =
 pub(crate) const COL_STORAGE_HASH_FULL_ROUND_1_3_STATE_RANGE: Range<usize> =
     COL_STORAGE_HASH_FULL_ROUND_1_2_STATE_RANGE.end
         ..COL_STORAGE_HASH_FULL_ROUND_1_2_STATE_RANGE.end + 12;
-pub(crate) const STORAGE_HASH_NUM: usize = COL_STORAGE_HASH_FULL_ROUND_1_3_STATE_RANGE.end;
-
-pub(crate) fn get_storage_col_name_map() -> BTreeMap<usize, String> {
-    let mut m: BTreeMap<usize, String> = BTreeMap::new();
-    m.insert(COL_STORAGE_CLK, String::from("COL_STORAGE_CLK"));
-    m.insert(COL_STORAGE_DIFF_CLK, String::from("COL_STORAGE_DIFF_CLK"));
-    m.insert(COL_STORAGE_OPCODE, String::from("COL_STORAGE_OPCODE"));
-    for (index, col) in COL_STORAGE_ROOT_RANGE.into_iter().enumerate() {
-        let name = format!("COL_STORAGE_ROOT_LIMB_{}", index);
-        m.insert(col, name);
-    }
-    for (index, col) in COL_STORAGE_ADDR_RANGE.into_iter().enumerate() {
-        let name = format!("COL_STORAGE_ADDR_LIMB_{}", index);
-        m.insert(col, name);
-    }
-    for (index, col) in COL_STORAGE_VALUE_RANGE.into_iter().enumerate() {
-        let name = format!("COL_STORAGE_VALUE_LIMB_{}", index);
-        m.insert(col, name);
-    }
-    m.insert(
-        COL_STORAGE_FILTER_LOOKED_FOR_MAIN,
-        String::from("COL_STORAGE_FILTER_LOOKED_FOR_MAIN"),
-    );
-    m.insert(
-        COL_STORAGE_LOOKING_RC,
-        String::from("COL_STORAGE_LOOKING_RC"),
-    );
-    m
-}
+pub(crate) const FILTER_LOOKED_FOR_STORAGE: usize = COL_STORAGE_HASH_FULL_ROUND_1_3_STATE_RANGE.end;
+pub(crate) const STORAGE_HASH_NUM: usize = FILTER_LOOKED_FOR_STORAGE + 1;

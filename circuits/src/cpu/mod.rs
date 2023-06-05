@@ -9,3 +9,4 @@ mod mov;
 mod mstore;
 mod mul;
 mod ret;
+mod poseidon;

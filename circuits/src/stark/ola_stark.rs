@@ -3,10 +3,10 @@ use super::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use super::stark::Stark;
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
-use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
+use crate::builtins::poseidon::poseidon_stark::{self, PoseidonStark};
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
-use crate::builtins::storage::storage_hash::StorageHashStark;
-use crate::builtins::storage::storage_stark::StorageStark;
+use crate::builtins::storage::storage_hash::{self, StorageHashStark};
+use crate::builtins::storage::storage_stark::{self, StorageStark};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::{
@@ -101,6 +101,9 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
         ctl_cmp_cpu(),
         ctl_cmp_rangecheck(),
         ctl_rangecheck_cpu(),
+        ctl_cpu_poseidon(),
+        ctl_cpu_storage(),
+        ctl_storage_hash(),
     ]
 }
 
@@ -243,6 +246,54 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
             Table::RangeCheck,
             rangecheck_stark::ctl_data_with_cpu(),
             Some(rangecheck_stark::ctl_filter_with_cpu()),
+        ),
+        None,
+    )
+}
+
+fn ctl_cpu_poseidon<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_poseidon(),
+            Some(cpu_stark::ctl_filter_with_poseidon()),
+        )],
+        TableWithColumns::new(
+            Table::Poseidon,
+            poseidon_stark::ctl_data_with_cpu(),
+            Some(poseidon_stark::ctl_filter_with_cpu()),
+        ),
+        None,
+    )
+}
+
+fn ctl_cpu_storage<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_storage(),
+            Some(cpu_stark::ctl_filter_with_storage()),
+        )],
+        TableWithColumns::new(
+            Table::Storage,
+            storage_stark::ctl_data_with_cpu(),
+            Some(storage_stark::ctl_filter_with_cpu()),
+        ),
+        None,
+    )
+}
+
+fn ctl_storage_hash<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Storage,
+            storage_stark::ctl_data_with_hash(),
+            Some(storage_stark::ctl_filter_with_hash()),
+        )],
+        TableWithColumns::new(
+            Table::StorageHash,
+            storage_hash::ctl_data_with_storage(),
+            Some(storage_hash::ctl_filter_with_storage()),
         ),
         None,
     )
