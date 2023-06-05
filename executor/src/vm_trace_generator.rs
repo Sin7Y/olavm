@@ -1,6 +1,7 @@
 use core::{
     trace::trace::{
-        BitwiseCombinedRow, CmpRow, MemoryTraceCell, RangeCheckRow, RegisterSelector, Step, Trace,
+        BitwiseCombinedRow, CmpRow, MemoryTraceCell, PoseidonRow, RangeCheckRow, RegisterSelector,
+        Step, StorageHashRow, StorageRow, Trace,
     },
     utils::split_u16_limbs_from_field,
 };
@@ -11,8 +12,8 @@ use crate::{
     vm::ola_vm::{OlaMemorySegment, NUM_GENERAL_PURPOSE_REGISTER},
 };
 use anyhow::{bail, Ok, Result};
-use core::program::decoder::decode_binary_program_to_instructions;
 use core::program::binary_program::{BinaryInstruction, BinaryProgram};
+use core::program::decoder::decode_binary_program_to_instructions;
 use core::utils::split_limbs_from_field;
 use core::vm::{opcodes::OlaOpcode, operands::OlaOperand};
 use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
@@ -159,6 +160,11 @@ pub(crate) fn generate_vm_trace(
     }
     let builtin_rangecheck = generate_vm_trace_range_check(rc_intermediate_rows)?;
 
+    // todo
+    let builtin_posiedon: Vec<PoseidonRow> = vec![];
+    let builtin_storage: Vec<StorageRow> = vec![];
+    let builtin_storage_hash: Vec<StorageHashRow> = vec![];
+
     Ok(Trace {
         instructions: inst_dump,
         raw_instructions,
@@ -168,6 +174,9 @@ pub(crate) fn generate_vm_trace(
         builtin_rangecheck,
         builtin_bitwise_combined,
         builtin_cmp,
+        builtin_posiedon,
+        builtin_storage,
+        builtin_storage_hash,
     })
 }
 

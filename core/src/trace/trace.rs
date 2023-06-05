@@ -287,6 +287,9 @@ pub struct Trace {
     pub builtin_rangecheck: Vec<RangeCheckRow>,
     pub builtin_bitwise_combined: Vec<BitwiseCombinedRow>,
     pub builtin_cmp: Vec<CmpRow>,
+    pub builtin_posiedon: Vec<PoseidonRow>,
+    pub builtin_storage: Vec<StorageRow>,
+    pub builtin_storage_hash: Vec<StorageHashRow>,
 }
 
 impl Trace {

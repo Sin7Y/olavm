@@ -15,6 +15,8 @@ use crate::stark::util::trace_to_poly_values;
 use self::builtin::{generate_bitwise_trace, generate_cmp_trace, generate_rc_trace};
 use self::cpu::generate_cpu_trace;
 use self::memory::generate_memory_trace;
+use self::poseidon::generate_poseidon_trace;
+use self::storage::{generate_storage_hash_trace, generate_storage_trace};
 
 pub mod builtin;
 pub mod cpu;
@@ -47,6 +49,15 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let rc_rows = generate_rc_trace(&program.trace.builtin_rangecheck);
     let rc_trace = trace_to_poly_values(rc_rows);
 
+    let poseidon_rows = generate_poseidon_trace(&program.trace.builtin_posiedon);
+    let poseidon_trace = trace_to_poly_values(poseidon_rows);
+
+    let storage_rows = generate_storage_trace(&program.trace.builtin_storage);
+    let storage_trace = trace_to_poly_values(storage_rows);
+
+    let storage_hash_rows = generate_storage_hash_trace(&program.trace.builtin_storage_hash);
+    let storage_hash_trace = trace_to_poly_values(storage_hash_rows);
+
     ola_stark
         .cpu_stark
         .set_compress_challenge(cpu_beta)
@@ -56,7 +67,16 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         .set_compress_challenge(bitwise_beta)
         .unwrap();
 
-    let traces = [cpu_trace, memory_trace, bitwise_trace, cmp_trace, rc_trace];
+    let traces = [
+        cpu_trace,
+        memory_trace,
+        bitwise_trace,
+        cmp_trace,
+        rc_trace,
+        poseidon_trace,
+        storage_trace,
+        storage_hash_trace,
+    ];
     let public_values = PublicValues {};
     (traces, public_values)
 }
