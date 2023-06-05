@@ -3,7 +3,10 @@ use super::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use super::stark::Stark;
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
+use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
+use crate::builtins::storage::storage_hash::StorageHashStark;
+use crate::builtins::storage::storage_stark::StorageStark;
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::{
@@ -22,6 +25,9 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub bitwise_stark: BitwiseStark<F, D>,
     pub cmp_stark: CmpStark<F, D>,
     pub rangecheck_stark: RangeCheckStark<F, D>,
+    pub poseidon_stark: PoseidonStark<F, D>,
+    pub storage_stark: StorageStark<F, D>,
+    pub storage_hash_stark: StorageHashStark<F, D>,
 
     pub cross_table_lookups: Vec<CrossTableLookup<F>>,
 }
@@ -34,6 +40,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
             bitwise_stark: BitwiseStark::default(),
             cmp_stark: CmpStark::default(),
             rangecheck_stark: RangeCheckStark::default(),
+            poseidon_stark: PoseidonStark::default(),
+            storage_stark: StorageStark::default(),
+            storage_hash_stark: StorageHashStark::default(),
             cross_table_lookups: all_cross_table_lookups(),
         }
     }
@@ -47,6 +56,9 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.bitwise_stark.num_permutation_batches(config),
             self.cmp_stark.num_permutation_batches(config),
             self.rangecheck_stark.num_permutation_batches(config),
+            self.poseidon_stark.num_permutation_batches(config),
+            self.storage_stark.num_permutation_batches(config),
+            self.storage_hash_stark.num_permutation_batches(config),
         ]
     }
 
@@ -57,6 +69,9 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.bitwise_stark.permutation_batch_size(),
             self.cmp_stark.permutation_batch_size(),
             self.rangecheck_stark.permutation_batch_size(),
+            self.poseidon_stark.permutation_batch_size(),
+            self.storage_stark.permutation_batch_size(),
+            self.storage_hash_stark.permutation_batch_size(),
         ]
     }
 }
@@ -69,13 +84,14 @@ pub enum Table {
     Bitwise = 2,
     Cmp = 3,
     RangeCheck = 4,
-    BitwiseFixed = 5,
-    RangecheckFixed = 6,
+    Poseidon = 5,
+    Storage = 6,
+    StorageHash = 7,
     // program table
-    Program = 7,
+    // Program = 8,
 }
 
-pub(crate) const NUM_TABLES: usize = 5;
+pub(crate) const NUM_TABLES: usize = 8;
 
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     vec![

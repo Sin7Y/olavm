@@ -15,6 +15,7 @@ use plonky2::hash::poseidon::Poseidon;
 use plonky2::hash::{hash_types::RichField, poseidon};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
+#[derive(Copy, Clone, Default)]
 pub struct PoseidonStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

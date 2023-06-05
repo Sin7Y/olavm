@@ -1,3 +1,3 @@
 pub mod columns;
-mod storage_hash;
 pub mod storage_stark;
+pub mod storage_hash;

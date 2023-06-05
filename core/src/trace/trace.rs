@@ -178,7 +178,7 @@ pub struct CmpRow {
     pub filter_looking_rc: GoldilocksField,
 }
 
-#[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct PoseidonRow {
     pub input: [GoldilocksField; 12],
     pub full_0_1: [GoldilocksField; 12],
@@ -201,7 +201,7 @@ impl Display for PoseidonRow {
                 .collect::<Vec<String>>()
                 .join(", ")
         };
-        let format_partial = |_name: String, state: [GoldilocksField; 22]| -> String {
+        let format_partial = |name: String, state: [GoldilocksField; 22]| -> String {
             state
                 .iter()
                 .map(|x| format!("0x{:x}", x.to_canonical_u64()))
@@ -240,8 +240,8 @@ impl Display for PoseidonRow {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct StorageRow {
-    pub clk: u32,
-    pub diff_clk: u32,
+    pub clk: u64,
+    pub diff_clk: u64,
     pub opcode: GoldilocksField,
     pub root: [GoldilocksField; 4],
     pub addr: [GoldilocksField; 4],
@@ -287,8 +287,9 @@ pub struct Trace {
     pub builtin_rangecheck: Vec<RangeCheckRow>,
     pub builtin_bitwise_combined: Vec<BitwiseCombinedRow>,
     pub builtin_cmp: Vec<CmpRow>,
-    pub storage: Vec<StorageRow>,
-    pub store_hashes: Vec<StorageHashRow>,
+    pub builtin_posiedon: Vec<PoseidonRow>,
+    pub builtin_storage: Vec<StorageRow>,
+    pub builtin_storage_hash: Vec<StorageHashRow>,
 }
 
 impl Trace {
@@ -387,24 +388,5 @@ impl Trace {
             register_selector,
         };
         self.exec.push(step);
-    }
-
-    pub fn insert_storage(
-        &mut self,
-        clk: u32,
-        diff_clk: u32,
-        opcode: GoldilocksField,
-        root: [GoldilocksField; 4],
-        addr: [GoldilocksField; 4],
-        value: [GoldilocksField; 4],
-    ) {
-        self.storage.push(StorageRow {
-            clk,
-            diff_clk,
-            opcode,
-            root,
-            addr,
-            value,
-        });
     }
 }

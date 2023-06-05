@@ -19,7 +19,9 @@ use super::vanishing_poly::eval_vanishing_poly;
 use super::vars::StarkEvaluationVars;
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
+use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
+use crate::builtins::storage::storage_hash::StorageHashStark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::MemoryStark;
 
@@ -34,6 +36,8 @@ where
     [(); BitwiseStark::<F, D>::COLUMNS]:,
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
+    [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); StorageHashStark::<F, D>::COLUMNS]:,
     [(); C::Hasher::HASH_SIZE]:,
 {
     let AllProofChallenges {
@@ -49,6 +53,9 @@ where
         mut bitwise_stark,
         cmp_stark,
         rangecheck_stark,
+        poseidon_stark,
+        storage_stark,
+        storage_hash_stark,
         cross_table_lookups,
     } = ola_stark;
 
@@ -106,6 +113,30 @@ where
         &all_proof.stark_proofs[Table::RangeCheck as usize],
         &stark_challenges[Table::RangeCheck as usize],
         &ctl_vars_per_table[Table::RangeCheck as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        poseidon_stark,
+        &all_proof.stark_proofs[Table::Poseidon as usize],
+        &stark_challenges[Table::Poseidon as usize],
+        &ctl_vars_per_table[Table::Poseidon as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        storage_stark,
+        &all_proof.stark_proofs[Table::Storage as usize],
+        &stark_challenges[Table::Storage as usize],
+        &ctl_vars_per_table[Table::Storage as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        storage_hash_stark,
+        &all_proof.stark_proofs[Table::StorageHash as usize],
+        &stark_challenges[Table::StorageHash as usize],
+        &ctl_vars_per_table[Table::StorageHash as usize],
         config,
     )?;
 

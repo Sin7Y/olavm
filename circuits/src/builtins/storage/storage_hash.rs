@@ -20,7 +20,7 @@ use plonky2::{
 };
 
 use super::columns::*;
-
+#[derive(Copy, Clone, Default)]
 pub struct StorageHashStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
