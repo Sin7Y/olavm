@@ -144,6 +144,11 @@ pub fn generate_storage_hash_trace<F: RichField>(
             trace[COL_STORAGE_HASH_FULL_ROUND_1_3_STATE_RANGE.start + j][i] =
                 F::from_canonical_u64(c.full_1_3[j].to_canonical_u64());
         }
+
+        trace[FILTER_LOOKED_FOR_STORAGE][i] = match c.layer - 1 {
+            0 => F::ONE,
+            _ => F::ZERO,
+        }
     }
 
     // Pad trace to power of two.
