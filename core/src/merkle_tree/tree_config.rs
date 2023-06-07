@@ -1,6 +1,6 @@
 use crate::crypto::hash::Hasher;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
-use crate::types::merkle_tree::{NodeEntry, TREE_VALUE_LEN, TreeKey, TreeValue, ZkHash};
+use crate::types::merkle_tree::{NodeEntry, TreeKey, TreeValue, ZkHash, TREE_VALUE_LEN};
 
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;

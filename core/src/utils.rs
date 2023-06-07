@@ -1,7 +1,7 @@
+use crate::types::merkle_tree::TREE_VALUE_LEN;
 use byteorder::ReadBytesExt;
 use byteorder::{ByteOrder, LittleEndian};
 use plonky2::field::goldilocks_field::GoldilocksField;
-use crate::types::merkle_tree::TREE_VALUE_LEN;
 
 pub const U8_BITS_MASK: u64 = 0xff;
 pub const U16_BITS_MASK: u64 = 0xffff;

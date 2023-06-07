@@ -1,7 +1,7 @@
+use crate::types::merkle_tree::TREE_VALUE_LEN;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use serde::{Deserialize, Serialize};
-use crate::types::merkle_tree::TREE_VALUE_LEN;
 
 pub type Address = [GoldilocksField; 4];
 

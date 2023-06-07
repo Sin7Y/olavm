@@ -3,7 +3,7 @@ use crate::crypto::poseidon_trace::{
     calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType,
 };
 use crate::trace::trace::PoseidonRow;
-use crate::types::merkle_tree::{tree_key_default, TREE_VALUE_LEN, TreeKey, TreeValue};
+use crate::types::merkle_tree::{tree_key_default, TreeKey, TreeValue, TREE_VALUE_LEN};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 
@@ -22,7 +22,10 @@ impl Hasher<TreeValue> for PoseidonHasher {
         } else {
             let mut input = [GoldilocksField::ZERO; 8];
             input[0..elems.len()].clone_from_slice(&elems);
-            let hash = calculate_poseidon_and_generate_intermediate_trace_row(input, PoseidonType::Variant);
+            let hash = calculate_poseidon_and_generate_intermediate_trace_row(
+                input,
+                PoseidonType::Variant,
+            );
             hash.0
         }
     }
@@ -33,7 +36,7 @@ impl Hasher<TreeValue> for PoseidonHasher {
 
         let mut input = [GoldilocksField::ZERO; 8];
         input[0..TREE_VALUE_LEN].clone_from_slice(lhs);
-        input[TREE_VALUE_LEN..TREE_VALUE_LEN*2].clone_from_slice(rhs);
+        input[TREE_VALUE_LEN..TREE_VALUE_LEN * 2].clone_from_slice(rhs);
 
         calculate_poseidon_and_generate_intermediate_trace_row(input, PoseidonType::Variant)
     }

@@ -7,7 +7,7 @@ use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use crate::types::merkle_tree::{u256_to_tree_key, NodeEntry, TreeKey, TreeKeyU256, TreeValue};
 use core::iter;
 use itertools::Itertools;
-use log::{debug};
+use log::debug;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use std::collections::HashMap;

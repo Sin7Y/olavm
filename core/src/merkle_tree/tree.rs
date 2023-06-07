@@ -1,8 +1,7 @@
-
 use crate::merkle_tree::db::RocksDB;
 use crate::merkle_tree::log::{StorageLogKind, WitnessStorageLog};
 use crate::merkle_tree::patch::{TreePatch, Update, UpdatesBatch};
-use crate::merkle_tree::storage::{Storage};
+use crate::merkle_tree::storage::Storage;
 use crate::merkle_tree::tree_config::TreeConfig;
 use crate::merkle_tree::utils::idx_to_merkle_path;
 use crate::merkle_tree::TreeError;
@@ -19,10 +18,9 @@ use std::borrow::{Borrow, BorrowMut};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 
-
 use std::iter::once;
 use std::sync::Arc;
-use std::time::Instant;
+
 use web3::types::U256;
 
 #[derive(Debug)]

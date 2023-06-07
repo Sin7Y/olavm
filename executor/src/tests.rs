@@ -517,6 +517,43 @@ fn storage_test() {
 }
 
 #[test]
+fn storage_multi_keys_test() {
+    let _ = env_logger::builder()
+        .filter_level(LevelFilter::Info)
+        .default_format()
+        .try_init();
+    let file = File::open("../assembler/test_data/bin/storage_multi_keys.json").unwrap();
+    let reader = BufReader::new(file);
+
+    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
+    let instructions = program.bytecode.split("\n");
+    let mut prophets = HashMap::new();
+    for item in program.prophets {
+        prophets.insert(item.host as u64, item);
+    }
+
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+
+    for inst in instructions {
+        program.instructions.push(inst.to_string());
+    }
+
+    let mut process = Process::new();
+
+    let res = process.execute(&mut program, &mut Some(prophets));
+    if res.is_err() {
+        panic!("execute err:{:?}", res);
+    }
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("storage_multi_keys.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
 fn gen_storage_table() {
     let mut program: Program = Program {
         instructions: Vec::new(),

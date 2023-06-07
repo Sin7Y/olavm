@@ -67,8 +67,13 @@ mod tests {
     }
 
     #[test]
-    fn generate_store_loop() {
+    fn generate_store() {
         generate_from_file("storage.json".to_string(), "storage.json".to_string());
+    }
+
+    #[test]
+    fn generate_store_multi_keys() {
+        generate_from_file("storage_multi_keys.json".to_string(), "storage_multi_keys.json".to_string());
     }
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {

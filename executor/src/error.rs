@@ -6,6 +6,12 @@ pub enum ProcessorError {
     ParseIntError,
     /// parse integer to opcode fail
     ParseOpcodeError,
+    /// interpreter not use single value for return
+    InterpreterReturnSingle,
+    /// U32 range check fail, value out range
+    U32RangeCheckFail,
+    /// Assert fail
+    AssertFail(String)
 }
 
 #[derive(Error, Debug)]

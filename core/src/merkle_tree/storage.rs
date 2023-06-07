@@ -122,7 +122,6 @@ impl Storage {
             .group_by(|(_, &(block, _))| block)
             .into_iter()
             .map(|(_block, group)| {
-                // group.map(|x| info!("{:?}", x.clone()));
                 let mut repeated_writes = Vec::new();
                 let mut initial_writes = Vec::new();
                 let previous_index = current_index;

@@ -3,10 +3,10 @@ use core::types::merkle_tree::TreeValue;
 use core::types::merkle_tree::ZkHash;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{HashMap};
 use std::marker::Destruct;
 
-use core::types::merkle_tree::{tree_key_default, tree_key_to_u256};
+use core::types::merkle_tree::{tree_key_default};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -23,7 +23,7 @@ impl Ord for StorageCell {
         self.clk.cmp(&other.clk)
     }
 
-    fn max(self, other: Self) -> Self
+    fn max(self, _other: Self) -> Self
     where
         Self: Sized,
         Self: Destruct,
@@ -31,7 +31,7 @@ impl Ord for StorageCell {
         todo!()
     }
 
-    fn min(self, other: Self) -> Self
+    fn min(self, _other: Self) -> Self
     where
         Self: Sized,
         Self: Destruct,
@@ -39,7 +39,7 @@ impl Ord for StorageCell {
         todo!()
     }
 
-    fn clamp(self, min: Self, max: Self) -> Self
+    fn clamp(self, _min: Self, _max: Self) -> Self
     where
         Self: Sized,
         Self: Destruct,

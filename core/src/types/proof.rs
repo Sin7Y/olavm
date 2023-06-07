@@ -1,7 +1,6 @@
 use crate::types::merkle_tree::{TreeKey, TreeValue};
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StorageLogMetadata {
     pub root_hash: TreeKey,

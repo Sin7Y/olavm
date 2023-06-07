@@ -3,13 +3,13 @@
 use crate::decode::{decode_raw_instruction, REG_NOT_USED};
 use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
-use core::crypto::poseidon_trace::{calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType};
 use crate::storage::StorageTree;
+
 use core::merkle_tree::db::{Database, RocksDB};
 use core::merkle_tree::log::StorageLog;
 use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
-use core::merkle_tree::utils::idx_to_merkle_path;
+
 use core::program::binary_program::Prophet;
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
@@ -18,10 +18,10 @@ use core::trace::trace::{ComparisonOperation, MemoryTraceCell, RegisterSelector}
 use core::trace::trace::{
     FilterLockForMain, MemoryOperation, MemoryType, StorageHashRow, StorageRow,
 };
+use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::tree_key_to_leaf_index;
 use core::types::merkle_tree::{tree_key_to_u256, u8_arr_to_tree_key, TreeKeyU256, TREE_VALUE_LEN};
-use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
@@ -31,8 +31,8 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
-use std::iter::once;
-use std::ops::Mul;
+
+
 use std::time::Instant;
 use tempfile::TempDir;
 
@@ -132,7 +132,7 @@ impl Process {
         }
     }
 
-    pub fn prophet(&mut self, prophets: &HashMap<u64, Prophet>, pc: u64) {
+    pub fn prophet(&mut self, prophets: &HashMap<u64, Prophet>, pc: u64) -> Result<(), ProcessorError> {
         let prophet = prophets.get(&pc).unwrap();
         debug!("prophet code:{}", prophet.code);
 
@@ -156,7 +156,7 @@ impl Process {
 
         if let Ok(out) = res {
             match out {
-                Single(_) => panic!("not use single for return"),
+                Single(_) => return Err(ProcessorError::ParseIntError),
                 Multiple(values) => {
                     debug!("prophet addr:{}", self.psp.0);
                     for value in values {
@@ -177,6 +177,7 @@ impl Process {
                 }
             }
         }
+        Ok(())
     }
 
     pub fn execute(
@@ -384,10 +385,10 @@ impl Process {
                     let op_type = match opcode.as_str() {
                         "assert" => {
                             if self.registers[op0_index] != value.0 {
-                                panic!(
+                                return Err(ProcessorError::AssertFail(format!(
                                     "assert fail: left: {}, right: {}",
                                     self.registers[op0_index], value.0
-                                );
+                                )))
                             }
                             Opcode::ASSERT
                         }
@@ -688,10 +689,14 @@ impl Process {
                         format!("{} params len is 1", opcode.as_str())
                     );
                     let op1_index = self.get_reg_index(ops[1]);
+                    if self.registers[op1_index].0 > u32::MAX as u64 {
+                        return Err(ProcessorError::U32RangeCheckFail)
+                    }
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
                     self.register_selector.op1 = self.registers[op1_index];
                     self.register_selector.op1_reg_sel[op1_index] =
                         GoldilocksField::from_canonical_u64(1);
+
                     program.trace.insert_rangecheck(
                         self.registers[op1_index],
                         (
@@ -902,7 +907,7 @@ impl Process {
             }
 
             if prophets_insert.get(&pc_status).is_some() {
-                self.prophet(&prophets_insert, pc_status);
+                self.prophet(&prophets_insert, pc_status)?
             }
 
             program.trace.insert_step(
@@ -928,53 +933,53 @@ impl Process {
             }
         }
 
-        info!("root_hash:{:?}", self.account_tree.root_hash());
-        let roots = self.gen_storage_hash_table(program);
-        self.gen_storage_table(program, roots);
+        let hash_roots = self.gen_storage_hash_table(program);
+        self.gen_storage_table(program, hash_roots);
 
         self.gen_memory_table(program);
 
         Ok(())
     }
 
-    pub fn gen_storage_hash_table(&mut self, program: &mut Program) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
+    pub fn gen_storage_hash_table(
+        &mut self,
+        program: &mut Program,
+    ) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
         let trace = std::mem::replace(&mut self.storage_log, Vec::new());
         let hash_traces = self.account_tree.process_block(trace.iter());
         self.account_tree.save();
 
         let mut root_hashes = Vec::new();
 
-        for (chunk, log) in hash_traces
-            .chunks(ROOT_TREE_DEPTH)
-            .enumerate()
-            .zip(trace)
-        {
+        for (chunk, log) in hash_traces.chunks(ROOT_TREE_DEPTH).enumerate().zip(trace) {
             let mut root_hash = [GoldilocksField::ZERO; TREE_VALUE_LEN];
             root_hash.clone_from_slice(&chunk.1.last().unwrap().0.output[0..4]);
             root_hashes.push(root_hash);
             let mut acc = GoldilocksField::ZERO;
             let key = tree_key_to_u256(&log.storage_log.key);
 
-            let mut rows: Vec<_> = chunk.1.iter()
+            let rows: Vec<_> = chunk
+                .1
+                .iter()
                 .rev()
                 .enumerate()
                 .map(|item| {
-                    let layer_bit = ((key >> (255-item.0)) & TreeKeyU256::one()).as_u64();
+                    let layer_bit = ((key >> (255 - item.0)) & TreeKeyU256::one()).as_u64();
                     let layer = (item.0 + 1) as u64;
 
                     acc = acc * GoldilocksField::from_canonical_u64(2)
                         + GoldilocksField::from_canonical_u64(layer_bit);
-                    let mut deltas= [GoldilocksField::ZERO; TREE_VALUE_LEN];
+                    let mut deltas = [GoldilocksField::ZERO; TREE_VALUE_LEN];
                     if layer_bit == 1 {
                         for i in 0..TREE_VALUE_LEN {
-                            deltas[i] = item.1.2[i] - item.1.1[i]
+                            deltas[i] = item.1 .2[i] - item.1 .1[i]
                         }
                     } else if layer_bit == 0 {
                     } else {
                         panic!("layer_bit is 0 or 1");
                     }
                     let row = StorageHashRow {
-                        idx_storage: (chunk.0+1) as u64,
+                        idx_storage: (chunk.0 + 1) as u64,
                         layer,
                         layer_bit,
                         addr_acc: acc,
@@ -1009,12 +1014,15 @@ impl Process {
                 })
                 .collect();
             program.trace.store_hashes.extend(rows);
-
         }
         root_hashes
     }
 
-    pub fn gen_storage_table(&mut self, program: &mut Program, mut hash_roots: Vec<[GoldilocksField; 4]>) {
+    pub fn gen_storage_table(
+        &mut self,
+        program: &mut Program,
+        mut hash_roots: Vec<[GoldilocksField; 4]>,
+    ) {
         if hash_roots.is_empty() {
             return;
         }
@@ -1024,15 +1032,15 @@ impl Process {
         let mut pre_clk = 0;
         let first_row = traces.remove(0);
 
-            program.trace.storage.push(StorageRow {
-                clk: first_row.clk,
-                diff_clk: 0,
-                opcode: first_row.op,
-                addr: first_row.addr,
-                value: first_row.value,
-                root: hash_roots.remove(0),
-            });
-            pre_clk = first_row.clk;
+        program.trace.storage.push(StorageRow {
+            clk: first_row.clk,
+            diff_clk: 0,
+            opcode: first_row.op,
+            addr: first_row.addr,
+            value: first_row.value,
+            root: hash_roots.remove(0),
+        });
+        pre_clk = first_row.clk;
 
         for (item, root) in traces.iter().zip(hash_roots) {
             program.trace.storage.push(StorageRow {
