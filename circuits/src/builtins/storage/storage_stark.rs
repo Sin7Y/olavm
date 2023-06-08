@@ -8,6 +8,7 @@ use super::columns::{
     COL_STORAGE_CLK, COL_STORAGE_DIFF_CLK, COL_STORAGE_LOOKING_RC, COL_STORAGE_NUM,
 };
 
+#[derive(Copy, Clone, Default)]
 pub struct StorageStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
@@ -45,5 +46,59 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
 
     fn constraint_degree(&self) -> usize {
         2
+    }
+}
+
+mod tests {
+    use crate::stark::constraint_consumer::ConstraintConsumer;
+    use crate::stark::stark::Stark;
+    use crate::stark::vars::StarkEvaluationVars;
+    use crate::test_utils::test_stark_with_asm_path;
+    use crate::{
+        builtins::storage::{columns::COL_STORAGE_NUM, storage_stark::StorageStark},
+        generation::storage::generate_storage_trace,
+    };
+    use core::trace::trace::{StorageRow, Trace};
+    use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_storage() {
+        let file_name = "storage.json".to_string();
+        test_storage_with_asm_file_name(file_name);
+    }
+
+    #[test]
+    fn test_storage_multi_keys() {
+        let file_name = "storage_multi_keys.json".to_string();
+        test_storage_with_asm_file_name(file_name);
+    }
+
+    fn test_storage_with_asm_file_name(file_name: String) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = StorageStark<F, D>;
+        let stark = S::default();
+
+        let get_trace_rows = |trace: Trace| trace.storage;
+        let generate_trace = |rows: &[StorageRow]| generate_storage_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_STORAGE_NUM>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
+            };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+        );
     }
 }
