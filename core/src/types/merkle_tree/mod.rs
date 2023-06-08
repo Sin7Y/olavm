@@ -105,7 +105,7 @@ pub fn tree_key_to_u256(value: &TreeKey) -> TreeKeyU256 {
         .iter()
         .enumerate()
         .fold(TreeKeyU256::zero(), |acc, (index, item)| {
-            acc + (U256::from(item.0) << 64 * index)
+            (acc << 64) + U256::from(item.0)
         })
 }
 
@@ -114,8 +114,8 @@ pub fn u256_to_tree_key(value: &TreeKeyU256) -> TreeKey {
         .0
         .iter()
         .enumerate()
-        .fold([GoldilocksField::ZERO; 4], |mut tree_key, (index, item)| {
-            tree_key[index] = GoldilocksField::from_canonical_u64(*item);
+        .fold([GoldilocksField::ZERO; TREE_VALUE_LEN], |mut tree_key, (index, item)| {
+            tree_key[TREE_VALUE_LEN - index - 1] = GoldilocksField::from_canonical_u64(*item);
             tree_key
         })
 }
