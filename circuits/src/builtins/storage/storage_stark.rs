@@ -50,6 +50,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
 }
 
 mod tests {
+    use crate::builtins::storage::columns::get_storage_col_name_map;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
@@ -94,11 +95,28 @@ mod tests {
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
                 stark.eval_packed_generic(vars, constraint_consumer);
             };
+        let error_hook = |i: usize,
+                          vars: StarkEvaluationVars<
+            GoldilocksField,
+            GoldilocksField,
+            COL_STORAGE_NUM,
+        >| {
+            println!("constraint error in line {}", i);
+            let m = get_storage_col_name_map();
+            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+            for col in m.keys() {
+                let name = m.get(col).unwrap();
+                let lv = vars.local_values[*col].0;
+                let nv = vars.next_values[*col].0;
+                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+            }
+        };
         test_stark_with_asm_path(
             program_path.to_string(),
             get_trace_rows,
             generate_trace,
             eval_packed_generic,
+            Some(error_hook),
         );
     }
 }

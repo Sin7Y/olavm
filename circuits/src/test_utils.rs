@@ -14,16 +14,18 @@ use crate::stark::{
     constraint_consumer::ConstraintConsumer, stark::Stark, vars::StarkEvaluationVars,
 };
 
-pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E>(
+pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     path: String,
     get_trace_rows: fn(Trace) -> Vec<Row>,
     generate_trace: fn(&[Row]) -> [Vec<GoldilocksField>; COL_NUM],
     eval_packed_generic: E,
+    error_hook: Option<H>,
 ) where
     E: Fn(
         StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_NUM>,
         &mut ConstraintConsumer<GoldilocksField>,
     ) -> (),
+    H: Fn(usize, StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_NUM>) -> (),
 {
     let program = encode_asm_from_json_file(path).unwrap();
     let instructions = program.bytecode.split("\n");
@@ -93,17 +95,12 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E>(
         eval_packed_generic(vars, &mut constraint_consumer);
 
         for &acc in &constraint_consumer.constraint_accs {
-            // if !acc.eq(&GoldilocksField::ZERO) {
-            //     println!("constraint error in line {}", i);
-            //     let m = get_memory_col_name_map();
-            //     println!("{:>20}\t{:>20}\t{:>20}", "name", "lv", "nv");
-            //     for col in m.keys() {
-            //         let name = m.get(col).unwrap();
-            //         let lv = vars.local_values[*col].0;
-            //         let nv = vars.next_values[*col].0;
-            //         println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
-            //     }
-            // }
+            if !acc.eq(&GoldilocksField::ZERO) {
+                match error_hook {
+                    Some(ref hook) => hook(i, vars),
+                    None => {}
+                }
+            }
             assert_eq!(acc, GoldilocksField::ZERO);
         }
     }
