@@ -114,7 +114,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         // idx_storage constraints
         yield_constr.constraint_first_row(P::ONES - lv_idx_storage);
         yield_constr.constraint_transition(
-            lv_idx_storage
+            nv_idx_storage
                 * (nv_idx_storage - lv_idx_storage)
                 * (nv_idx_storage - lv_idx_storage - P::ONES),
         );
