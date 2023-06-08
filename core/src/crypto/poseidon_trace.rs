@@ -12,15 +12,18 @@ use plonky2::{
     hash::poseidon::{self, Poseidon},
 };
 
+pub const POSEIDON_INPUT_VALUE_LEN: usize = 8;
+pub const POSEIDON_OUTPUT_VALUE_LEN: usize = 4;
+
 pub enum PoseidonType {
     Normal,
     Variant,
 }
 
 pub fn calculate_poseidon_and_generate_intermediate_trace_row(
-    input: [GoldilocksField; 8],
+    input: [GoldilocksField; POSEIDON_INPUT_VALUE_LEN],
     poseidon_type: PoseidonType,
-) -> ([GoldilocksField; 4], PoseidonRow) {
+) -> ([GoldilocksField; POSEIDON_OUTPUT_VALUE_LEN], PoseidonRow) {
     let mut cell = PoseidonRow {
         input: [GoldilocksField::default(); 12],
         full_0_1: [GoldilocksField::default(); 12],
