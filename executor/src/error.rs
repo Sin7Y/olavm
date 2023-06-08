@@ -11,7 +11,7 @@ pub enum ProcessorError {
     /// U32 range check fail, value out range
     U32RangeCheckFail,
     /// Assert fail
-    AssertFail(String)
+    AssertFail(String),
 }
 
 #[derive(Error, Debug)]
