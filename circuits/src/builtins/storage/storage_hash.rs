@@ -96,9 +96,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         let lv_deltas: [P; 4] = vars.local_values[COL_STORAGE_HASH_DELTA_RANGE]
             .try_into()
             .unwrap();
-        let nv_hash: [P; 4] = vars.next_values[COL_STORAGE_HASH_OUTPUT_RANGE]
+        let output: [P; 12] = vars.next_values[COL_STORAGE_HASH_OUTPUT_RANGE]
             .try_into()
             .unwrap();
+        let nv_hash: [P; 4] = [output[0], output[1], output[2], output[3]];
         let lv_filter = vars.local_values[FILTER_LOOKED_FOR_STORAGE];
 
         // cap should be 1,0,0,0
@@ -275,4 +276,74 @@ pub fn ctl_data_with_storage<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_filter_with_storage<F: Field>() -> Column<F> {
     Column::single(FILTER_LOOKED_FOR_STORAGE)
+}
+
+mod test {
+    use crate::builtins::storage::columns::{get_storage_hash_col_name_map, STORAGE_HASH_NUM};
+    use crate::{
+        builtins::storage::{storage_hash::StorageHashStark, storage_stark::StorageStark},
+        generation::storage::generate_storage_hash_trace,
+        stark::{constraint_consumer::ConstraintConsumer, stark::Stark, vars::StarkEvaluationVars},
+        test_utils::test_stark_with_asm_path,
+    };
+    use core::trace::trace::{StorageHashRow, Trace};
+    use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_storage_hash() {
+        let file_name = "storage.json".to_string();
+        test_storage_hash_with_asm_file_name(file_name);
+    }
+
+    #[test]
+    fn test_storage_hash_multi_keys() {
+        let file_name = "storage_multi_keys.json".to_string();
+        test_storage_hash_with_asm_file_name(file_name);
+    }
+
+    fn test_storage_hash_with_asm_file_name(file_name: String) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = StorageHashStark<F, D>;
+        let stark = S::default();
+
+        let get_trace_rows = |trace: Trace| trace.builtin_storage_hash;
+        let generate_trace = |rows: &[StorageHashRow]| generate_storage_hash_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, STORAGE_HASH_NUM>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
+            };
+        let error_hook = |i: usize,
+                          vars: StarkEvaluationVars<
+            GoldilocksField,
+            GoldilocksField,
+            STORAGE_HASH_NUM,
+        >| {
+            println!("constraint error in line {}", i);
+            let m = get_storage_hash_col_name_map();
+            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+            for col in m.keys() {
+                let name = m.get(col).unwrap();
+                let lv = vars.local_values[*col].0;
+                let nv = vars.next_values[*col].0;
+                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+            }
+        };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+        );
+    }
 }
