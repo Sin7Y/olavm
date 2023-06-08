@@ -33,7 +33,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
         yield_constr.constraint_transition(nv_clk * (nv_clk - lv_clk - nv_diff_clk));
         // rc filter constraint
         yield_constr.constraint(filter_looking_rc * (P::ONES - filter_looking_rc));
-        yield_constr.constraint(lv_diff_clk * (P::ONES - lv_diff_clk));
+        yield_constr.constraint(lv_diff_clk * (P::ONES - filter_looking_rc));
     }
 
     fn eval_ext_circuit(
