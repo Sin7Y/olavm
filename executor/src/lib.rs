@@ -852,8 +852,8 @@ impl Process {
                     let mut store_value = [GoldilocksField::ZERO; 4];
 
                     for i in 0..4 {
-                        store_addr[3-i] = self.registers[i + 4];
-                        store_value[3-i] = self.registers[i];
+                        store_addr[i] = self.registers[i + 4];
+                        store_value[i] = self.registers[i];
                     }
 
                     self.storage_log.push(WitnessStorageLog {
@@ -875,7 +875,7 @@ impl Process {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u8);
                     let mut store_addr = [GoldilocksField::ZERO; 4];
                     for i in 0..4 {
-                        store_addr[3-i] = self.registers[i + 4];
+                        store_addr[i] = self.registers[i + 4];
                     }
                     let path = tree_key_to_leaf_index(&store_addr);
 
@@ -893,7 +893,7 @@ impl Process {
                     }
 
                     for i in 0..4 {
-                        self.registers[3-i] = read_value[i];
+                        self.registers[i + 0] = read_value[i];
                     }
 
                     self.storage_log.push(WitnessStorageLog {
