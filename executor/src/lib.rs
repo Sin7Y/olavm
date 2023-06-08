@@ -893,7 +893,7 @@ impl Process {
                     }
 
                     for i in 0..4 {
-                        self.registers[i + 0] = read_value[i];
+                        self.registers[i] = read_value[i];
                     }
 
                     self.storage_log.push(WitnessStorageLog {
