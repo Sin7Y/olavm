@@ -236,6 +236,18 @@ class StorageHashTraceColumnType(Enum):
     FULL_1_3 = 'full_1_3'
     OUTPUT = 'output'
 
+class PoseidonHashTraceColumnType(Enum):
+    INPUT = "input"
+    FULL_0_1 = 'full_0_1'
+    FULL_0_2 = 'full_0_2'
+    FULL_0_3 = 'full_0_3'
+    PARTIAL = 'partial'
+    FULL_1_0 = 'full_1_0'
+    FULL_1_1 = 'full_1_1'
+    FULL_1_2 = 'full_1_2'
+    FULL_1_3 = 'full_1_3'
+    OUTPUT = 'output'
+
 def generate_columns_of_title(worksheet, trace_column_title):
     col = 0
     title_row = 0
@@ -472,6 +484,23 @@ def main():
                                     row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
             else:
                 worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
+    # Poseidon Hash Trace
+    worksheet = workbook.add_worksheet("PoseidonTrace")
+    generate_columns_of_title(worksheet, PoseidonHashTraceColumnType)
+
+    # generate poseidon hash trace table
+    row_index = 1
+    for row in trace_json["builtin_posiedon"]:
+        col = 0
+        for data in PoseidonHashTraceColumnType:
+            if data.value == "input" or  data.value == "full_0_1" or \
+                    data.value == "full_0_2" or data.value == "full_0_3" or  data.value == "partial" or \
+                    data.value == "full_1_0" or data.value == "full_1_1" or  data.value == "full_1_2" or \
+                    data.value == "full_1_3" or  data.value == "output":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
             col += 1
         row_index += 1
     workbook.close()

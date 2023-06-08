@@ -23,6 +23,10 @@ use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::tree_key_to_leaf_index;
 use core::types::merkle_tree::{tree_key_to_u256, u8_arr_to_tree_key, TreeKeyU256, TREE_VALUE_LEN};
 
+use core::crypto::poseidon_trace::{
+    calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
+    POSEIDON_OUTPUT_VALUE_LEN,
+};
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
 use itertools::Itertools;
@@ -32,6 +36,7 @@ use plonky2::field::types::{Field, Field64, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
+use crate::vm::ola_vm::OlaMemorySegment::Poseidon;
 use std::time::Instant;
 use tempfile::TempDir;
 
@@ -907,6 +912,24 @@ impl Process {
                         store_addr,
                         tree_key_default(),
                     );
+                    self.pc += step;
+                }
+                "poseidon" => {
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::POSEIDON as u8);
+                    let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
+                    for i in 0..POSEIDON_INPUT_VALUE_LEN {
+                        input[i] = self.registers[i];
+                    }
+
+                    let row = calculate_poseidon_and_generate_intermediate_trace_row(
+                        input,
+                        PoseidonType::Normal,
+                    );
+                    for i in 0..POSEIDON_OUTPUT_VALUE_LEN {
+                        self.registers[i] = row.0[i];
+                    }
+
+                    program.trace.builtin_posiedon.push(row.1);
                     self.pc += step;
                 }
                 _ => panic!("not match opcode:{}", opcode),
