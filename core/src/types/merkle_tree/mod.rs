@@ -110,14 +110,13 @@ pub fn tree_key_to_u256(value: &TreeKey) -> TreeKeyU256 {
 }
 
 pub fn u256_to_tree_key(value: &TreeKeyU256) -> TreeKey {
-    value
-        .0
-        .iter()
-        .enumerate()
-        .fold([GoldilocksField::ZERO; TREE_VALUE_LEN], |mut tree_key, (index, item)| {
+    value.0.iter().enumerate().fold(
+        [GoldilocksField::ZERO; TREE_VALUE_LEN],
+        |mut tree_key, (index, item)| {
             tree_key[TREE_VALUE_LEN - index - 1] = GoldilocksField::from_canonical_u64(*item);
             tree_key
-        })
+        },
+    )
 }
 
 pub fn u8_arr_to_tree_key(value: &Vec<u8>) -> TreeKey {
