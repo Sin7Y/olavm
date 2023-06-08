@@ -169,7 +169,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
 
         // path continuity constraints
         for i in 0..4 {
-            yield_constr.constraint(lv_idx_storage * lv_is_layer256 * (lv_paths[i] - nv_hash[i]));
+            yield_constr.constraint(
+                lv_idx_storage * (P::ONES - lv_is_layer256) * (lv_paths[i] - nv_hash[i]),
+            );
         }
 
         // delta = layer_bit * (sibling - path)
