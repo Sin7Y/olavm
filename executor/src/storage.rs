@@ -3,10 +3,10 @@ use core::types::merkle_tree::TreeValue;
 use core::types::merkle_tree::ZkHash;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use std::cmp::Ordering;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::marker::Destruct;
 
-use core::types::merkle_tree::{tree_key_default};
+use core::types::merkle_tree::tree_key_default;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]

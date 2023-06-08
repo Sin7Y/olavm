@@ -32,7 +32,6 @@ use plonky2::field::types::{Field, Field64, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
-
 use std::time::Instant;
 use tempfile::TempDir;
 
@@ -132,7 +131,11 @@ impl Process {
         }
     }
 
-    pub fn prophet(&mut self, prophets: &HashMap<u64, Prophet>, pc: u64) -> Result<(), ProcessorError> {
+    pub fn prophet(
+        &mut self,
+        prophets: &HashMap<u64, Prophet>,
+        pc: u64,
+    ) -> Result<(), ProcessorError> {
         let prophet = prophets.get(&pc).unwrap();
         debug!("prophet code:{}", prophet.code);
 
@@ -388,7 +391,7 @@ impl Process {
                                 return Err(ProcessorError::AssertFail(format!(
                                     "assert fail: left: {}, right: {}",
                                     self.registers[op0_index], value.0
-                                )))
+                                )));
                             }
                             Opcode::ASSERT
                         }
@@ -690,7 +693,7 @@ impl Process {
                     );
                     let op1_index = self.get_reg_index(ops[1]);
                     if self.registers[op1_index].0 > u32::MAX as u64 {
-                        return Err(ProcessorError::U32RangeCheckFail)
+                        return Err(ProcessorError::U32RangeCheckFail);
                     }
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
                     self.register_selector.op1 = self.registers[op1_index];
