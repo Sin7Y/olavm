@@ -6,15 +6,19 @@ use std::marker::PhantomData;
 
 use crate::builtins::poseidon::columns::*;
 use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use crate::stark::cross_table_lookup::Column;
 use crate::stark::stark::Stark;
 use crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use itertools::Itertools;
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::packed::PackedField;
+use plonky2::field::types::Field;
 use plonky2::hash::poseidon::Poseidon;
 use plonky2::hash::{hash_types::RichField, poseidon};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
+#[derive(Copy, Clone, Default)]
 pub struct PoseidonStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
@@ -131,4 +135,26 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
     fn constraint_degree(&self) -> usize {
         7
     }
+}
+
+pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_POSEIDON_INPUT_RANGE.start + 4,
+        COL_POSEIDON_INPUT_RANGE.start + 5,
+        COL_POSEIDON_INPUT_RANGE.start + 6,
+        COL_POSEIDON_INPUT_RANGE.start + 7,
+        COL_POSEIDON_INPUT_RANGE.start + 8,
+        COL_POSEIDON_INPUT_RANGE.start + 9,
+        COL_POSEIDON_INPUT_RANGE.start + 10,
+        COL_POSEIDON_INPUT_RANGE.start + 11,
+        COL_POSEIDON_OUTPUT_RANGE.start,
+        COL_POSEIDON_OUTPUT_RANGE.start + 1,
+        COL_POSEIDON_OUTPUT_RANGE.start + 2,
+        COL_POSEIDON_OUTPUT_RANGE.start + 3,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
+    Column::single(COL_POSEIDON_FILTER_LOOKED_FOR_MAIN)
 }

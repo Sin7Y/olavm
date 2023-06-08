@@ -22,7 +22,9 @@ use plonky2_util::{log2_ceil, log2_strict};
 use super::ola_stark::{OlaStark, Table, NUM_TABLES};
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
+use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
+use crate::builtins::storage::storage_hash::StorageHashStark;
 //use crate::columns::NUM_CPU_COLS;
 use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;
@@ -55,6 +57,8 @@ where
     [(); BitwiseStark::<F, D>::COLUMNS]:,
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
+    [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); StorageHashStark::<F, D>::COLUMNS]:,
 {
     let (traces, public_values) = generate_traces(program, ola_stark);
     prove_with_traces(ola_stark, config, traces, public_values, timing)
@@ -77,6 +81,8 @@ where
     [(); BitwiseStark::<F, D>::COLUMNS]:,
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
+    [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); StorageHashStark::<F, D>::COLUMNS]:,
 {
     let rate_bits = config.fri_config.rate_bits;
     let cap_height = config.fri_config.cap_height;
@@ -171,6 +177,36 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    let poseidon_proof = prove_single_table(
+        &ola_stark.poseidon_stark,
+        config,
+        &trace_poly_values[Table::Poseidon as usize],
+        &trace_commitments[Table::Poseidon as usize],
+        &ctl_data_per_table[Table::Poseidon as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    let storage_proof = prove_single_table(
+        &ola_stark.storage_stark,
+        config,
+        &trace_poly_values[Table::Storage as usize],
+        &trace_commitments[Table::Storage as usize],
+        &ctl_data_per_table[Table::Storage as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    let storage_hash_proof = prove_single_table(
+        &ola_stark.storage_hash_stark,
+        config,
+        &trace_poly_values[Table::StorageHash as usize],
+        &trace_commitments[Table::StorageHash as usize],
+        &ctl_data_per_table[Table::StorageHash as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
 
     let stark_proofs = [
         cpu_proof,
@@ -178,12 +214,18 @@ where
         bitwise_proof,
         cmp_proof,
         rangecheck_proof,
+        poseidon_proof,
+        storage_proof,
+        storage_hash_proof,
     ];
 
     let compress_challenges = [
         ola_stark.cpu_stark.get_compress_challenge().unwrap(),
         F::ZERO,
         ola_stark.bitwise_stark.get_compress_challenge().unwrap(),
+        F::ZERO,
+        F::ZERO,
+        F::ZERO,
         F::ZERO,
         F::ZERO,
     ];

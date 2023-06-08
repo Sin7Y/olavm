@@ -1,6 +1,7 @@
 use core::{
     trace::trace::{
-        BitwiseCombinedRow, CmpRow, MemoryTraceCell, RangeCheckRow, RegisterSelector, Step, Trace,
+        BitwiseCombinedRow, CmpRow, MemoryTraceCell, PoseidonRow, RangeCheckRow, RegisterSelector,
+        Step, StorageHashRow, StorageRow, Trace,
     },
     utils::split_u16_limbs_from_field,
 };
@@ -159,6 +160,11 @@ pub(crate) fn generate_vm_trace(
     }
     let builtin_rangecheck = generate_vm_trace_range_check(rc_intermediate_rows)?;
 
+    // todo
+    let builtin_posiedon: Vec<PoseidonRow> = vec![];
+    let builtin_storage: Vec<StorageRow> = vec![];
+    let builtin_storage_hash: Vec<StorageHashRow> = vec![];
+
     Ok(Trace {
         instructions: inst_dump,
         raw_instructions,
@@ -168,8 +174,9 @@ pub(crate) fn generate_vm_trace(
         builtin_rangecheck,
         builtin_bitwise_combined,
         builtin_cmp,
-        storage: Vec::new(),
-        store_hashes: Vec::new(),
+        builtin_posiedon,
+        builtin_storage,
+        builtin_storage_hash,
     })
 }
 

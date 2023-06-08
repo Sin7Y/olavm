@@ -60,7 +60,8 @@ pub(crate) const COL_STORAGE_HASH_FULL_ROUND_1_2_STATE_RANGE: Range<usize> =
 pub(crate) const COL_STORAGE_HASH_FULL_ROUND_1_3_STATE_RANGE: Range<usize> =
     COL_STORAGE_HASH_FULL_ROUND_1_2_STATE_RANGE.end
         ..COL_STORAGE_HASH_FULL_ROUND_1_2_STATE_RANGE.end + 12;
-pub(crate) const STORAGE_HASH_NUM: usize = COL_STORAGE_HASH_FULL_ROUND_1_3_STATE_RANGE.end;
+pub(crate) const FILTER_LOOKED_FOR_STORAGE: usize = COL_STORAGE_HASH_FULL_ROUND_1_3_STATE_RANGE.end;
+pub(crate) const STORAGE_HASH_NUM: usize = FILTER_LOOKED_FOR_STORAGE + 1;
 
 pub(crate) fn get_storage_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();

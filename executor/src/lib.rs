@@ -1013,7 +1013,7 @@ impl Process {
                     row
                 })
                 .collect();
-            program.trace.store_hashes.extend(rows);
+            program.trace.builtin_storage_hash.extend(rows);
         }
         root_hashes
     }
@@ -1032,7 +1032,7 @@ impl Process {
         let mut pre_clk = 0;
         let first_row = traces.remove(0);
 
-        program.trace.storage.push(StorageRow {
+        program.trace.builtin_storage.push(StorageRow {
             clk: first_row.clk,
             diff_clk: 0,
             opcode: first_row.op,
@@ -1043,7 +1043,7 @@ impl Process {
         pre_clk = first_row.clk;
 
         for (item, root) in traces.iter().zip(hash_roots) {
-            program.trace.storage.push(StorageRow {
+            program.trace.builtin_storage.push(StorageRow {
                 clk: item.clk,
                 diff_clk: item.clk - pre_clk,
                 opcode: item.op,

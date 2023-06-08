@@ -456,7 +456,7 @@ def main():
 
     # generate storage hash trace table
     row_index = 1
-    for row in trace_json["store_hashes"]:
+    for row in trace_json["builtin_storage_hash"]:
         col = 0
         for data in StorageHashTraceColumnType:
             if data.value == "addr" or data.value == "caps" or  data.value == "paths" or \

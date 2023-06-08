@@ -1,13 +1,17 @@
+use itertools::Itertools;
+use plonky2::{
+    field::{extension::Extendable, types::Field},
+    hash::hash_types::RichField,
+};
 use std::marker::PhantomData;
 
-use plonky2::{field::extension::Extendable, hash::hash_types::RichField};
-
-use crate::stark::stark::Stark;
+use crate::stark::{cross_table_lookup::Column, stark::Stark};
 
 use super::columns::{
-    COL_STORAGE_CLK, COL_STORAGE_DIFF_CLK, COL_STORAGE_LOOKING_RC, COL_STORAGE_NUM,
+    COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_DIFF_CLK,
+    COL_STORAGE_FILTER_LOOKED_FOR_MAIN, COL_STORAGE_LOOKING_RC, COL_STORAGE_NUM,
+    COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE, COL_STORAGE_VALUE_RANGE,
 };
-
 #[derive(Copy, Clone, Default)]
 pub struct StorageStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
@@ -49,6 +53,47 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
     }
 }
 
+pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_STORAGE_CLK,
+        COL_STORAGE_OPCODE,
+        COL_STORAGE_ADDR_RANGE.start,
+        COL_STORAGE_ADDR_RANGE.start + 1,
+        COL_STORAGE_ADDR_RANGE.start + 2,
+        COL_STORAGE_ADDR_RANGE.start + 3,
+        COL_STORAGE_VALUE_RANGE.start,
+        COL_STORAGE_VALUE_RANGE.start + 1,
+        COL_STORAGE_VALUE_RANGE.start + 2,
+        COL_STORAGE_VALUE_RANGE.start + 3,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
+    Column::single(COL_STORAGE_FILTER_LOOKED_FOR_MAIN)
+}
+
+pub fn ctl_data_with_hash<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_STORAGE_ROOT_RANGE.start,
+        COL_STORAGE_ROOT_RANGE.start + 1,
+        COL_STORAGE_ROOT_RANGE.start + 2,
+        COL_STORAGE_ROOT_RANGE.start + 3,
+        COL_STORAGE_ADDR_RANGE.start,
+        COL_STORAGE_ADDR_RANGE.start + 1,
+        COL_STORAGE_ADDR_RANGE.start + 2,
+        COL_STORAGE_ADDR_RANGE.start + 3,
+        COL_STORAGE_VALUE_RANGE.start,
+        COL_STORAGE_VALUE_RANGE.start + 1,
+        COL_STORAGE_VALUE_RANGE.start + 2,
+        COL_STORAGE_VALUE_RANGE.start + 3,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_hash<F: Field>() -> Column<F> {
+    Column::single(COL_STORAGE_FILTER_LOOKED_FOR_MAIN)
+}
 mod tests {
     use crate::builtins::storage::columns::get_storage_col_name_map;
     use crate::stark::constraint_consumer::ConstraintConsumer;
@@ -88,7 +133,7 @@ mod tests {
         type S = StorageStark<F, D>;
         let stark = S::default();
 
-        let get_trace_rows = |trace: Trace| trace.storage;
+        let get_trace_rows = |trace: Trace| trace.builtin_storage;
         let generate_trace = |rows: &[StorageRow]| generate_storage_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_STORAGE_NUM>,

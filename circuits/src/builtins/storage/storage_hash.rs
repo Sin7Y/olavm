@@ -5,14 +5,15 @@ use crate::{
         COL_STORAGE_HASH_FULL_ROUND_0_1_STATE_RANGE, COL_STORAGE_HASH_FULL_ROUND_0_2_STATE_RANGE,
         COL_STORAGE_HASH_FULL_ROUND_0_3_STATE_RANGE,
     },
-    stark::stark::Stark,
+    stark::{cross_table_lookup::Column, stark::Stark},
 };
 use core::util::poseidon_utils::{
     constant_layer_field, mds_layer_field, mds_partial_layer_fast_field, mds_partial_layer_init,
     partial_first_constant_layer, sbox_layer_field, sbox_monomial,
 };
+use itertools::Itertools;
 use plonky2::{
-    field::{extension::Extendable, goldilocks_field::GoldilocksField},
+    field::{extension::Extendable, goldilocks_field::GoldilocksField, types::Field},
     hash::{
         hash_types::RichField,
         poseidon::{self, Poseidon},
@@ -20,7 +21,7 @@ use plonky2::{
 };
 
 use super::columns::*;
-
+#[derive(Copy, Clone, Default)]
 pub struct StorageHashStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
@@ -95,12 +96,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         let lv_deltas: [P; 4] = vars.local_values[COL_STORAGE_HASH_DELTA_RANGE]
             .try_into()
             .unwrap();
-        let lv_hash: [P; 4] = vars.local_values[COL_STORAGE_HASH_OUTPUT_RANGE]
-            .try_into()
-            .unwrap();
         let nv_hash: [P; 4] = vars.next_values[COL_STORAGE_HASH_OUTPUT_RANGE]
             .try_into()
             .unwrap();
+        let lv_filter = vars.local_values[FILTER_LOOKED_FOR_STORAGE];
 
         // cap should be 1,0,0,0
         lv_cap.iter().enumerate().for_each(|(i, cap_ele)| {
@@ -162,6 +161,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         yield_constr.constraint(lv_is_layer128 * (lv_addr_acc - lv_addrs[1]));
         yield_constr.constraint(lv_is_layer192 * (lv_addr_acc - lv_addrs[2]));
         yield_constr.constraint(lv_is_layer256 * (lv_addr_acc - lv_addrs[3]));
+
+        // ctl filter
+        yield_constr.constraint(lv_filter * (P::ONES - lv_filter));
+        yield_constr.constraint(lv_filter * (lv_layer - lv_filter));
 
         // path continuity constraints
         for i in 0..4 {
@@ -250,4 +253,26 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
     fn constraint_degree(&self) -> usize {
         7
     }
+}
+
+pub fn ctl_data_with_storage<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_STORAGE_HASH_OUTPUT_RANGE.start,
+        COL_STORAGE_HASH_OUTPUT_RANGE.start + 1,
+        COL_STORAGE_HASH_OUTPUT_RANGE.start + 2,
+        COL_STORAGE_HASH_OUTPUT_RANGE.start + 3,
+        COL_STORAGE_ADDR_RANGE.start,
+        COL_STORAGE_ADDR_RANGE.start + 1,
+        COL_STORAGE_ADDR_RANGE.start + 2,
+        COL_STORAGE_ADDR_RANGE.start + 3,
+        COL_STORAGE_HASH_PATH_RANGE.start,
+        COL_STORAGE_HASH_PATH_RANGE.start + 1,
+        COL_STORAGE_HASH_PATH_RANGE.start + 2,
+        COL_STORAGE_HASH_PATH_RANGE.start + 3,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_storage<F: Field>() -> Column<F> {
+    Column::single(FILTER_LOOKED_FOR_STORAGE)
 }
