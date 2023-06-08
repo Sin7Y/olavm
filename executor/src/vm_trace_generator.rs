@@ -46,6 +46,7 @@ pub(crate) enum RangeCheckRequester {
     Cpu,
     Memory,
     Comparison,
+    Storage,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct IntermediateRowRangeCheck {
@@ -557,6 +558,10 @@ fn generate_vm_trace_range_check(
             RangeCheckRequester::Comparison => GoldilocksField::ONE,
             _ => GoldilocksField::ZERO,
         };
+        let filter_looked_for_storage = match inter_row.requester {
+            RangeCheckRequester::Storage => GoldilocksField::ONE,
+            _ => GoldilocksField::ZERO,
+        };
 
         let row = RangeCheckRow {
             val,
@@ -565,6 +570,7 @@ fn generate_vm_trace_range_check(
             filter_looked_for_memory,
             filter_looked_for_cpu,
             filter_looked_for_comparison,
+            filter_looked_for_storage,
         };
         rows.push(row);
     }
