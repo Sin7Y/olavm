@@ -139,6 +139,7 @@ pub struct RangeCheckRow {
     pub filter_looked_for_memory: GoldilocksField,
     pub filter_looked_for_cpu: GoldilocksField,
     pub filter_looked_for_comparison: GoldilocksField,
+    pub filter_looked_for_storage: GoldilocksField,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -353,7 +354,12 @@ impl Trace {
         &mut self,
         input: GoldilocksField,
         //tuple.0 for memory, tuple.1 for cpu, tuple.2 for cmp,
-        filter_looked_for_memory_cpu_cmp: (GoldilocksField, GoldilocksField, GoldilocksField),
+        filter_looked_for_memory_cpu_cmp: (
+            GoldilocksField,
+            GoldilocksField,
+            GoldilocksField,
+            GoldilocksField,
+        ),
     ) {
         let split_limbs = split_u16_limbs_from_field(&input);
         self.builtin_rangecheck.push(RangeCheckRow {
@@ -363,6 +369,7 @@ impl Trace {
             filter_looked_for_memory: filter_looked_for_memory_cpu_cmp.0,
             filter_looked_for_cpu: filter_looked_for_memory_cpu_cmp.1,
             filter_looked_for_comparison: filter_looked_for_memory_cpu_cmp.2,
+            filter_looked_for_storage: filter_looked_for_memory_cpu_cmp.3,
         });
     }
 

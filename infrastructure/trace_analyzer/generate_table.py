@@ -174,6 +174,7 @@ class RangeCheckTraceColumnType(Enum):
     FILTER_LOOKED_FOR_MEMORY = 'filter_looked_for_memory'
     FILTER_LOOKED_FOR_CPU = 'filter_looked_for_cpu'
     FILTER_LOOKED_FOR_CMP = 'filter_looked_for_comparison'
+    FILTER_LOOKED_FOR_STORE = 'filter_looked_for_storage'
 
 
 class BitwiseTraceColumnType(Enum):
@@ -436,7 +437,7 @@ def main():
 
     # generate storage trace table
     row_index = 1
-    for row in trace_json["storage"]:
+    for row in trace_json["builtin_storage"]:
         col = 0
         for data in StorageTraceColumnType:
             if data.value == "root" or data.value == "addr" or  data.value == "value":

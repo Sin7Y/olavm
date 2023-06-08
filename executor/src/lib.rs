@@ -706,6 +706,7 @@ impl Process {
                             GoldilocksField::ZERO,
                             GoldilocksField::ONE,
                             GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
                         ),
                     );
 
@@ -818,6 +819,7 @@ impl Process {
                             GoldilocksField::ZERO,
                             GoldilocksField::ZERO,
                             GoldilocksField::ONE,
+                            GoldilocksField::ZERO,
                         ),
                     );
 
@@ -866,6 +868,7 @@ impl Process {
                         store_value,
                         tree_key_default(),
                     );
+
                     self.pc += step;
                 }
                 "sload" => {
@@ -1033,28 +1036,29 @@ impl Process {
         let mut traces: Vec<_> = trace.into_iter().flat_map(|e| e.1).collect();
         traces.sort_by(|a, b| a.cmp(b));
         let mut pre_clk = 0;
-        let first_row = traces.remove(0);
-
-        program.trace.builtin_storage.push(StorageRow {
-            clk: first_row.clk,
-            diff_clk: 0,
-            opcode: first_row.op,
-            addr: first_row.addr,
-            value: first_row.value,
-            root: hash_roots.remove(0),
-        });
-        pre_clk = first_row.clk;
-
-        for (item, root) in traces.iter().zip(hash_roots) {
-            program.trace.builtin_storage.push(StorageRow {
-                clk: item.clk,
-                diff_clk: item.clk - pre_clk,
-                opcode: item.op,
-                addr: item.addr,
-                value: item.value,
+        for (item, root) in traces.iter().enumerate().zip(hash_roots) {
+            let mut diff_clk = 0;
+            if item.0 != 0 {
+                diff_clk = item.1.clk - pre_clk;
+            }
+            program.trace.insert_storage(
+                item.1.clk,
+                diff_clk,
+                item.1.op,
                 root,
-            });
-            pre_clk = item.clk;
+                item.1.addr,
+                item.1.value,
+            );
+            program.trace.insert_rangecheck(
+                GoldilocksField::from_canonical_u64(diff_clk as u64),
+                (
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ONE,
+                ),
+            );
+            pre_clk = item.1.clk;
         }
     }
 
@@ -1195,6 +1199,7 @@ impl Process {
                     program.trace.memory.last().unwrap().rc_value,
                     (
                         GoldilocksField::ONE,
+                        GoldilocksField::ZERO,
                         GoldilocksField::ZERO,
                         GoldilocksField::ZERO,
                     ),
