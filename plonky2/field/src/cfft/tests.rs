@@ -29,7 +29,7 @@ fn fft_in_place() {
 }
 
 #[test]
-fn fft_2_24() {
+fn fft_2_20() {
     type F = GoldilocksField;
     let degree: usize = 1 << 20;
     let degree_padded = degree.next_power_of_two();
@@ -70,7 +70,7 @@ fn fft_2_24() {
 }
 
 #[test]
-fn ifft_2_24() {
+fn ifft_2_20() {
     type F = GoldilocksField;
     let degree: usize = 1 << 20;
     let degree_padded = degree.next_power_of_two();
