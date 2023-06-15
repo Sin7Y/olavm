@@ -1,4 +1,4 @@
-use std::{io::Write, fs::File, path::Path};
+use std::{io::{Write, self}, fs::File, path::Path};
 
 use plonky2_util::log2_strict;
 
