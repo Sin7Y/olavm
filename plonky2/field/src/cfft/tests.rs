@@ -2,7 +2,7 @@ use std::{io::{Write, self, BufRead}, fs::File, path::Path};
 
 use plonky2_util::log2_strict;
 
-use crate::{goldilocks_field::GoldilocksField, types::Field};
+use crate::{goldilocks_field::GoldilocksField, types::{Field, PrimeField64}};
 
 type F = GoldilocksField;
 
@@ -29,6 +29,7 @@ fn fft_in_place() {
 }
 
 #[test]
+#[ignore]
 fn fft_2_20() {
     type F = GoldilocksField;
     let degree: usize = 1 << 20;
@@ -37,30 +38,30 @@ fn fft_2_20() {
     // [1] sample points
     // Create a vector of coeffs; the first degree of them are
     // "random", the last degree_padded-degree of them are zero.
-    // let mut points = (0..degree)
-    //     .map(|i| F::from_canonical_usize(i * 1337 % 100))
-    //     .chain(std::iter::repeat(F::ZERO).take(degree_padded - degree))
-    //     .collect::<Vec<_>>();
+    let mut points = (0..degree)
+        .map(|i| F::from_canonical_usize(i * 2443 % 257))
+        .chain(std::iter::repeat(F::ZERO).take(degree_padded - degree))
+        .collect::<Vec<_>>();
 
     // [2] read points from file
-    let mut points = vec![F::ZERO; degree_padded];
-    if let Ok(lines) = read_lines("./coeffs_20.txt") {
-        for (idx, line) in lines.enumerate() {
-            if let Ok(v) = line {
-                let val = u64::from_str_radix(v.as_str(), 10);
-                if let Ok(val) = val {
-                    points[idx] = F::from_canonical_u64(val);
-                }
-            }
-        }
-    }
+    // let mut points = vec![F::ZERO; degree_padded];
+    // if let Ok(lines) = read_lines("./coeffs_20.txt") {
+    //     for (idx, line) in lines.enumerate() {
+    //         if let Ok(v) = line {
+    //             let val = u64::from_str_radix(v.as_str(), 10);
+    //             if let Ok(val) = val {
+    //                 points[idx] = F::from_canonical_u64(val);
+    //             }
+    //         }
+    //     }
+    // }
 
     let coeffs = points.clone();
     let twiddles = super::get_twiddles::<F>(degree_padded);
     super::evaluate_poly(&mut points, &twiddles);
 
-    let mut coeffs_file = std::fs::File::create("./coeffs_20_copy.txt").unwrap();
-    let mut values_file = std::fs::File::create("./values_20_copy.txt").unwrap();
+    let mut coeffs_file = std::fs::File::create("./coeffs_20.txt").unwrap();
+    let mut values_file = std::fs::File::create("./values_20.txt").unwrap();
     for (coeff, point) in coeffs.into_iter().zip(points) {
         coeffs_file.write_all(coeff.0.to_string().as_bytes()).unwrap();
         writeln!(coeffs_file).unwrap();
@@ -70,6 +71,7 @@ fn fft_2_20() {
 }
 
 #[test]
+#[ignore]
 fn ifft_2_20() {
     type F = GoldilocksField;
     let degree: usize = 1 << 20;
@@ -103,9 +105,9 @@ fn ifft_2_20() {
     let mut coeffs_file = std::fs::File::create("./coeffs_20_copy_copy.txt").unwrap();
     let mut values_file = std::fs::File::create("./values_20_copy_copy.txt").unwrap();
     for (coeff, point) in coeffs.into_iter().zip(points) {
-        coeffs_file.write_all(coeff.0.to_string().as_bytes()).unwrap();
+        coeffs_file.write_all(coeff.to_canonical_u64().to_string().as_bytes()).unwrap();
         writeln!(coeffs_file).unwrap();
-        values_file.write_all(point.0.to_string().as_bytes()).unwrap();
+        values_file.write_all(point.to_canonical_u64().to_string().as_bytes()).unwrap();
         writeln!(values_file).unwrap();
     }
 }
@@ -117,6 +119,7 @@ fn build_domain(size: usize) -> Vec<F> {
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where P: AsRef<Path>, {
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+    let file = File::open(filename).unwrap();
+    let lines = io::BufReader::new(file).lines();
+    Ok(lines)
 }

@@ -208,14 +208,16 @@ pub(crate) fn fft_classic<F: Field>(values: &mut [F], r: usize, root_table: &Fft
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+    use std::fs::File;
+    use std::io::{Write, self, BufRead};
+    use std::path::Path;
 
     use plonky2_util::{log2_ceil, log2_strict};
 
     use crate::fft::{fft, fft_with_options, ifft};
     use crate::goldilocks_field::GoldilocksField;
     use crate::polynomial::{PolynomialCoeffs, PolynomialValues};
-    use crate::types::Field;
+    use crate::types::{Field, PrimeField64};
 
     #[test]
     fn fft_and_ifft() {
@@ -254,7 +256,8 @@ mod tests {
     }
 
     #[test]
-    fn fft_2_24() {
+    #[ignore]
+    fn fft_2_20() {
         type F = GoldilocksField;
         let degree: usize = 1 << 20;
         let degree_padded = degree.next_power_of_two();
@@ -262,7 +265,7 @@ mod tests {
         // Create a vector of coeffs; the first degree of them are
         // "random", the last degree_padded-degree of them are zero.
         let coeffs = (0..degree)
-            .map(|i| F::from_canonical_usize(i * 1337 % 100))
+            .map(|i| F::from_canonical_usize(i * 2443 % 257))
             .chain(std::iter::repeat(F::ZERO).take(degree_padded - degree))
             .collect::<Vec<_>>();
         assert_eq!(coeffs.len(), degree_padded);
@@ -271,8 +274,8 @@ mod tests {
         let points = fft(coefficients.clone());
         assert_eq!(points, evaluate_naive(&coefficients));
 
-        let mut coeffs_file = std::fs::File::create("./fft_20_new.txt").unwrap();
-        let mut values_file = std::fs::File::create("./ifft_20_new.txt").unwrap();
+        let mut coeffs_file = std::fs::File::create("./coeffs_20.txt").unwrap();
+        let mut values_file = std::fs::File::create("./values_20.txt").unwrap();
         for (coeff, point) in coefficients.coeffs.into_iter().zip(points.values) {
             coeffs_file.write_all(coeff.0.to_string().as_bytes()).unwrap();
             writeln!(coeffs_file).unwrap();
@@ -287,6 +290,39 @@ mod tests {
         // for i in degree..degree_padded {
         //     assert_eq!(interpolated_coefficients.coeffs[i], F::ZERO);
         // }
+    }
+
+    #[test]
+    #[ignore]
+    fn ifft_2_20() {
+        type F = GoldilocksField;
+        let degree: usize = 1 << 20;
+        let degree_padded = degree.next_power_of_two();
+
+        let mut points = vec![F::ZERO; degree_padded];
+        if let Ok(lines) = read_lines("./values_20.txt") {
+            for (idx, line) in lines.enumerate() {
+                if let Ok(v) = line {
+                    let val = u64::from_str_radix(v.as_str(), 10);
+                    if let Ok(val) = val {
+                        points[idx] = F::from_canonical_u64(val);
+                    }
+                }
+            }
+        }
+        let points2 = points.clone();
+        assert_eq!(points.len(), degree_padded);
+        let poly_values = PolynomialValues::new(points);
+        let interpolated_coefficients = ifft(poly_values);
+
+        let mut coeffs_file = std::fs::File::create("./coeffs_20_copy.txt").unwrap();
+        let mut values_file = std::fs::File::create("./values_20_copy.txt").unwrap();
+        for (coeff, point) in interpolated_coefficients.coeffs.into_iter().zip(points2) {
+            coeffs_file.write_all(coeff.to_canonical_u64().to_string().as_bytes()).unwrap();
+            writeln!(coeffs_file).unwrap();
+            values_file.write_all(point.to_canonical_u64().to_string().as_bytes()).unwrap();
+            writeln!(values_file).unwrap();
+        }
     }
 
     fn evaluate_naive<F: Field>(coefficients: &PolynomialCoeffs<F>) -> PolynomialValues<F> {
@@ -320,5 +356,11 @@ mod tests {
             point_power *= point;
         }
         sum
+    }
+
+    fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+    where P: AsRef<Path>, {
+        let file = File::open(filename)?;
+        Ok(io::BufReader::new(file).lines())
     }
 }

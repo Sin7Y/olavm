@@ -129,7 +129,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
-    if evaluations[0].as_any().is::<GoldilocksField>() {
+    if evaluations[0].as_any().is::<GoldilocksField>() == false {
         let p2 = ntt(evaluations, true);
         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
             *item1 = item2;
