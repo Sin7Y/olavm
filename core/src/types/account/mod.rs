@@ -34,7 +34,7 @@ impl AccountTreeId {
 
     pub fn from_fixed_bytes(value: [u8; 20]) -> Self {
         let mut address = [GoldilocksField::ZERO; TREE_VALUE_LEN];
-        for index in 0..4 {
+        for index in 0..TREE_VALUE_LEN {
             let value = u64::from_le_bytes([
                 value[0 + index * 5],
                 value[1 + index * 5],

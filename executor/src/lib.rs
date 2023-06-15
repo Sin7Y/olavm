@@ -22,6 +22,8 @@ use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::tree_key_to_leaf_index;
 use core::types::merkle_tree::{tree_key_to_u256, u8_arr_to_tree_key, TreeKeyU256, TREE_VALUE_LEN};
+use core::types::storage::StorageKey;
+use core::types::account::AccountTreeId;
 
 use core::crypto::poseidon_trace::{
     calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
@@ -35,6 +37,7 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
+use core::types::account::Address;
 
 use crate::vm::ola_vm::OlaMemorySegment::Poseidon;
 use std::time::Instant;
@@ -63,6 +66,7 @@ const ECDSA_START_ADDR: u64 = GoldilocksField::ORDER - 3 * MEM_SPAN_SIZE;
 #[derive(Debug)]
 pub struct Process {
     pub clk: u32,
+    pub ctx_registers_stack: Vec<Address>,
     pub registers: [GoldilocksField; REGISTER_NUM],
     pub register_selector: RegisterSelector,
     pub pc: u64,
@@ -84,6 +88,7 @@ impl Process {
         let account_tree = AccountTree::new(db);
         Self {
             clk: 0,
+            ctx_registers_stack: Vec::new(),
             registers: [Default::default(); REGISTER_NUM],
             register_selector: Default::default(),
             pc: 0,
@@ -853,46 +858,57 @@ impl Process {
                 }
                 "sstore" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u8);
-                    let mut store_addr = [GoldilocksField::ZERO; 4];
+                    let mut slot_key = [GoldilocksField::ZERO; 4];
                     let mut store_value = [GoldilocksField::ZERO; 4];
 
                     for i in 0..4 {
-                        store_addr[i] = self.registers[i + 4];
+                        slot_key[i] = self.registers[i + 4];
                         store_value[i] = self.registers[i];
                     }
+                    let storage_key = StorageKey::new(AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()), slot_key);
+                    let (tree_key, hash_row) = storage_key.hashed_key();
+
 
                     self.storage_log.push(WitnessStorageLog {
-                        storage_log: StorageLog::new_write_log(store_addr, store_value),
+                        storage_log: StorageLog::new_write_log(tree_key, store_value),
                         previous_value: tree_key_default(),
                     });
 
                     self.storage.write(
                         self.clk,
                         GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u64),
-                        store_addr,
+                        tree_key,
                         store_value,
                         tree_key_default(),
                     );
+                    self.register_selector.op0 = tree_key[0];
+                    self.register_selector.op1 = tree_key[1];
+                    self.register_selector.dst = tree_key[2];
+                    self.register_selector.aux0 = tree_key[3];
+                    program.trace.builtin_posiedon.push(hash_row);
 
                     self.pc += step;
                 }
                 "sload" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u8);
-                    let mut store_addr = [GoldilocksField::ZERO; 4];
+                    let mut slot_key = [GoldilocksField::ZERO; 4];
                     for i in 0..4 {
-                        store_addr[i] = self.registers[i + 4];
+                        slot_key[i] = self.registers[i + 4];
                     }
-                    let path = tree_key_to_leaf_index(&store_addr);
+
+                    let storage_key = StorageKey::new(AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()), slot_key);
+                    let (tree_key, hash_row) = storage_key.hashed_key();
+                    let path = tree_key_to_leaf_index(&tree_key);
 
                     let read_value;
-                    if let Some(data) = self.storage.trace.get(&store_addr) {
+                    if let Some(data) = self.storage.trace.get(&tree_key) {
                         read_value = data.last().unwrap().value.clone();
                     } else {
                         let read_db = self.account_tree.storage.hash(&path);
                         if let Some(value) = read_db {
                             read_value = u8_arr_to_tree_key(&value);
                         } else {
-                            warn!("sload can not read data from addr:{:?}", store_addr);
+                            warn!("sload can not read data from addr:{:?}", tree_key);
                             read_value = tree_key_default();
                         }
                     }
@@ -901,17 +917,24 @@ impl Process {
                         self.registers[i] = read_value[i];
                     }
 
+
                     self.storage_log.push(WitnessStorageLog {
-                        storage_log: StorageLog::new_read_log(store_addr, read_value),
+                        storage_log: StorageLog::new_read_log(tree_key, read_value),
                         previous_value: tree_key_default(),
                     });
 
                     self.storage.read(
                         self.clk,
                         GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
-                        store_addr,
+                        tree_key,
                         tree_key_default(),
                     );
+
+                    self.register_selector.op0 = tree_key[0];
+                    self.register_selector.op1 = tree_key[1];
+                    self.register_selector.dst = tree_key[2];
+                    self.register_selector.aux0 = tree_key[3];
+                    program.trace.builtin_posiedon.push(hash_row);
                     self.pc += step;
                 }
                 "poseidon" => {
@@ -928,7 +951,10 @@ impl Process {
                     for i in 0..POSEIDON_OUTPUT_VALUE_LEN {
                         self.registers[i] = row.0[i];
                     }
-
+                    self.register_selector.op0 = row.0[0];
+                    self.register_selector.op1 = row.0[1];
+                    self.register_selector.dst = row.0[2];
+                    self.register_selector.aux0 = row.0[3];
                     program.trace.builtin_posiedon.push(row.1);
                     self.pc += step;
                 }
