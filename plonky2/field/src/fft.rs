@@ -208,6 +208,8 @@ pub(crate) fn fft_classic<F: Field>(values: &mut [F], r: usize, root_table: &Fft
 
 #[cfg(test)]
 mod tests {
+    use std::io::Write;
+
     use plonky2_util::{log2_ceil, log2_strict};
 
     use crate::fft::{fft, fft_with_options, ifft};
@@ -249,6 +251,42 @@ mod tests {
                 fft_with_options(zero_tail, Some(r), None)
             );
         }
+    }
+
+    #[test]
+    fn fft_2_24() {
+        type F = GoldilocksField;
+        let degree: usize = 1 << 20;
+        let degree_padded = degree.next_power_of_two();
+
+        // Create a vector of coeffs; the first degree of them are
+        // "random", the last degree_padded-degree of them are zero.
+        let coeffs = (0..degree)
+            .map(|i| F::from_canonical_usize(i * 1337 % 100))
+            .chain(std::iter::repeat(F::ZERO).take(degree_padded - degree))
+            .collect::<Vec<_>>();
+        assert_eq!(coeffs.len(), degree_padded);
+        let coefficients = PolynomialCoeffs { coeffs };
+
+        let points = fft(coefficients.clone());
+        assert_eq!(points, evaluate_naive(&coefficients));
+
+        let mut coeffs_file = std::fs::File::create("./fft_20_new.txt").unwrap();
+        let mut values_file = std::fs::File::create("./ifft_20_new.txt").unwrap();
+        for (coeff, point) in coefficients.coeffs.into_iter().zip(points.values) {
+            coeffs_file.write_all(coeff.0.to_string().as_bytes()).unwrap();
+            writeln!(coeffs_file).unwrap();
+            values_file.write_all(point.0.to_string().as_bytes()).unwrap();
+            writeln!(values_file).unwrap();
+        }
+
+        // let interpolated_coefficients = ifft(points);
+        // for i in 0..degree {
+        //     assert_eq!(interpolated_coefficients.coeffs[i], coefficients.coeffs[i]);
+        // }
+        // for i in degree..degree_padded {
+        //     assert_eq!(interpolated_coefficients.coeffs[i], F::ZERO);
+        // }
     }
 
     fn evaluate_naive<F: Field>(coefficients: &PolynomialCoeffs<F>) -> PolynomialValues<F> {

@@ -1,11 +1,12 @@
 use plonky2_util::log2_strict;
 
-use crate::types::Field;
+use crate::{types::Field, goldilocks_field::GoldilocksField, cfft::ntt::ntt};
 
 #[cfg(feature = "parallel")]
 mod concurrent;
 
 mod serial;
+mod ntt;
 
 #[cfg(test)]
 mod tests;
@@ -37,11 +38,18 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
-    if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
-        #[cfg(feature = "parallel")]
-        concurrent::evaluate_poly(p, twiddles);
+    if p[0].as_any().is::<GoldilocksField>() == false {
+        let p2 = ntt(p, false);
+        for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+            *item1 = item2;
+        }
     } else {
-        serial::evaluate_poly(p, twiddles);
+        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
+            #[cfg(feature = "parallel")]
+            concurrent::evaluate_poly(p, twiddles);
+        } else {
+            serial::evaluate_poly(p, twiddles);
+        }
     }
 }
 
@@ -121,11 +129,18 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
-    if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
-        #[cfg(feature = "parallel")]
-        concurrent::interpolate_poly(evaluations, inv_twiddles);
+    if evaluations[0].as_any().is::<GoldilocksField>() {
+        let p2 = ntt(evaluations, true);
+        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+            *item1 = item2;
+        }
     } else {
-        serial::interpolate_poly(evaluations, inv_twiddles);
+        if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
+            #[cfg(feature = "parallel")]
+            concurrent::interpolate_poly(evaluations, inv_twiddles);
+        } else {
+            serial::interpolate_poly(evaluations, inv_twiddles);
+        }
     }
 }
 
