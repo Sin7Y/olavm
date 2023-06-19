@@ -642,7 +642,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 #[cfg(test)]
 mod tests {
     use crate::generation::cpu::generate_cpu_trace;
-    use assembler::binary_program::BinaryProgram;
+    // use assembler::binary_program::BinaryProgram;
     use assembler::encoder::encode_asm_from_json_file;
     use std::collections::HashMap;
     use std::fs::File;
