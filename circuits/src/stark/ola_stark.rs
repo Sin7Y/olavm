@@ -394,6 +394,7 @@ mod tests {
     use assembler::encoder::encode_asm_from_json_file;
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
+    use std::path::PathBuf;
     use executor::Process;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -446,9 +447,11 @@ mod tests {
     }
 
     #[test]
-    fn fibo_recursive_decode() -> Result<()> {
-        let program_path = "../assembler/testdata/fib_recursive.bin";
-        test_ola_stark(program_path)
+    fn fibo_recursive_decode() {
+        // let program_path = "../assembler/testdata/fib_recursive.bin";
+        // test_ola_stark(program_path)
+
+        test_by_asm_json("fibo_recursive.json".to_string())
     }
 
     #[test]
@@ -511,21 +514,26 @@ mod tests {
 
     #[test]
     fn test_ola_prophet_hand_write() {
-        test_by_asm_json("../assembler/test_data/asm/hand_write_prophet.json".to_string());
+        test_by_asm_json("hand_write_prophet.json".to_string());
     }
 
     #[test]
     fn test_ola_prophet_sqrt() {
-        test_by_asm_json("../assembler/test_data/asm/prophet_sqrt.json".to_string());
+        test_by_asm_json("prophet_sqrt.json".to_string());
     }
 
     #[test]
     fn test_ola_sqrt() {
-        test_by_asm_json("../assembler/test_data/asm/sqrt.json".to_string());
+        test_by_asm_json("sqrt.json".to_string());
     }
 
-    pub fn test_by_asm_json(path: String) {
-        let program = encode_asm_from_json_file(path).unwrap();
+    pub fn test_by_asm_json(file_name: String) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
+        let program = encode_asm_from_json_file(program_path).unwrap();
         let instructions = program.bytecode.split("\n");
         let mut prophets = HashMap::new();
         for item in program.prophets {
