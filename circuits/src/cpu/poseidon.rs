@@ -12,10 +12,10 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     nv: &[P; NUM_CPU_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    yield_constr.constraint_transition(lv[COL_OP0] - nv[COL_REGS.start]);
-    yield_constr.constraint_transition(lv[COL_OP1] - nv[COL_REGS.start + 1]);
-    yield_constr.constraint_transition(lv[COL_AUX0] - nv[COL_REGS.start + 2]);
-    yield_constr.constraint_transition(lv[COL_AUX1] - nv[COL_REGS.start + 3]);
+    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_OP0] - nv[COL_REGS.start]));
+    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_OP1] - nv[COL_REGS.start + 1]));
+    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_AUX0] - nv[COL_REGS.start + 2]));
+    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_AUX1] - nv[COL_REGS.start + 3]));
 }
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
@@ -28,8 +28,14 @@ pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     let cs_limb_1 = builder.sub_extension(lv[COL_OP1], nv[COL_REGS.start + 1]);
     let cs_limb_2 = builder.sub_extension(lv[COL_AUX0], nv[COL_REGS.start + 2]);
     let cs_limb3 = builder.sub_extension(lv[COL_AUX1], nv[COL_REGS.start + 3]);
-    yield_constr.constraint_transition(builder, cs_limb_0);
-    yield_constr.constraint_transition(builder, cs_limb_1);
-    yield_constr.constraint_transition(builder, cs_limb_2);
-    yield_constr.constraint_transition(builder, cs_limb3);
+
+    let cs_with_s_0 = builder.mul_extension(lv[COL_S_PSDN], cs_limb_0);
+    let cs_with_s_1 = builder.mul_extension(lv[COL_S_PSDN], cs_limb_1);
+    let cs_with_s_2 = builder.mul_extension(lv[COL_S_PSDN], cs_limb_2);
+    let cs_with_s_3 = builder.mul_extension(lv[COL_S_PSDN], cs_limb3);
+
+    yield_constr.constraint_transition(builder, cs_with_s_0);
+    yield_constr.constraint_transition(builder, cs_with_s_1);
+    yield_constr.constraint_transition(builder, cs_with_s_2);
+    yield_constr.constraint_transition(builder, cs_with_s_3);
 }
