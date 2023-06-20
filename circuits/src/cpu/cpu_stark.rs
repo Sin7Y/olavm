@@ -262,15 +262,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         instruction += lv[COL_OPCODE];
         yield_constr.constraint(lv[COL_INST] - instruction);
 
-        // We constrain raw inst and inst.
-        // First constrain compress consistency
-        let beta = FE::from_basefield(self.get_compress_challenge().unwrap());
-        yield_constr.constraint(lv[COL_RAW_INST] * beta + lv[COL_RAW_PC] - lv[COL_ZIP_RAW]);
-        yield_constr.constraint(lv[COL_INST] * beta + lv[COL_PC] - lv[COL_ZIP_EXED]);
-
-        // Then check raw inst and inst's lookup logic.
-        eval_lookups(vars, yield_constr, COL_PER_ZIP_EXED, COL_PER_ZIP_RAW);
-
         // Only one register used for op0.
         let sum_s_op0: P = s_op0s.into_iter().sum();
         yield_constr.constraint(sum_s_op0 * (P::ONES - sum_s_op0));
@@ -498,28 +489,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let inst_cs = builder.sub_extension(lv[COL_INST], instruction);
         yield_constr.constraint(builder, inst_cs);
 
-        // We constrain raw inst and inst.
-        // First constrain compress consistency
-        let beta = builder.constant_extension(F::Extension::from_basefield(
-            self.get_compress_challenge().unwrap(),
-        ));
-        let raw_cs = builder.mul_add_extension(lv[COL_RAW_INST], beta, lv[COL_RAW_PC]);
-        let raw_cs = builder.sub_extension(raw_cs, lv[COL_ZIP_RAW]);
-        yield_constr.constraint(builder, raw_cs);
-
-        let inst_cs = builder.mul_add_extension(lv[COL_INST], beta, lv[COL_PC]);
-        let inst_cs = builder.sub_extension(inst_cs, lv[COL_ZIP_EXED]);
-        yield_constr.constraint(builder, inst_cs);
-
-        // Then check raw inst and inst's lookup logic.
-        eval_lookups_circuit(
-            builder,
-            vars,
-            yield_constr,
-            COL_PER_ZIP_EXED,
-            COL_PER_ZIP_RAW,
-        );
-
         // Only one register used for op0.
         let sum_s_op0 = s_op0s
             .iter()
@@ -709,10 +678,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
 #[cfg(test)]
 mod tests {
-    use crate::generation::cpu::generate_cpu_trace;
+    use crate::{generation::cpu::generate_cpu_trace, test_utils::test_stark_with_asm_path};
     use assembler::encoder::encode_asm_from_json_file;
-    use std::collections::HashMap;
+    use core::trace::trace::{Step, Trace};
     use std::io::BufRead;
+    use std::{collections::HashMap, path::PathBuf};
     use {
         super::*,
         core::program::Program,
@@ -725,9 +695,9 @@ mod tests {
     };
 
     #[test]
-    fn test_fibo_use_loop() {
-        let program_path = "../assembler/test_data/asm/fibo_loop.json";
-        test_cpu_with_asm_path(program_path.to_string());
+    fn test_cpu_fibo_loop() {
+        let file_name = "fibo_loop.json".to_string();
+        test_cpu_with_asm_file_name(file_name);
     }
 
     #[test]
@@ -774,10 +744,8 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program, &mut Some(prophets));
 
-        let (cpu_rows, beta) = generate_cpu_trace::<F>(&program.trace.exec);
+        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
 
-        let mut stark = S::default();
-        stark.set_compress_challenge(beta).unwrap();
         let len = cpu_rows[0].len();
         let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
         let subgroup =
@@ -820,5 +788,49 @@ mod tests {
                 assert_eq!(acc, GoldilocksField::ZERO);
             }
         }
+    }
+
+    fn test_cpu_with_asm_file_name(file_name: String) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = CpuStark<F, D>;
+        let stark = S::default();
+
+        let get_trace_rows = |trace: Trace| trace.exec;
+        let generate_trace = |rows: &[Step]| generate_cpu_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_CPU_COLS>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
+            };
+        let error_hook = |i: usize,
+                          vars: StarkEvaluationVars<
+            GoldilocksField,
+            GoldilocksField,
+            NUM_CPU_COLS,
+        >| {
+            println!("constraint error in line {}", i);
+            let m = get_cpu_col_name_map();
+            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+            for col in m.keys() {
+                let name = m.get(col).unwrap();
+                let lv = vars.local_values[*col].0;
+                let nv = vars.next_values[*col].0;
+                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+            }
+        };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+        );
     }
 }

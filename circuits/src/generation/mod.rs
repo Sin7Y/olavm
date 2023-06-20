@@ -32,7 +32,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     program: &Program,
     ola_stark: &mut OlaStark<F, D>,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
-let (cpu_rows, cpu_beta) = generate_cpu_trace::<F>(&program.trace.exec);
+    let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
     let cpu_trace = trace_to_poly_values(cpu_rows);
 
     let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
@@ -57,10 +57,6 @@ let (cpu_rows, cpu_beta) = generate_cpu_trace::<F>(&program.trace.exec);
     let storage_hash_rows = generate_storage_hash_trace(&program.trace.builtin_storage_hash);
     let storage_hash_trace = trace_to_poly_values(storage_hash_rows);
 
-    ola_stark
-        .cpu_stark
-        .set_compress_challenge(cpu_beta)
-        .unwrap();
     ola_stark
         .bitwise_stark
         .set_compress_challenge(bitwise_beta)
