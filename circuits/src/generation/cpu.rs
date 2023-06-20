@@ -10,7 +10,7 @@ use plonky2::{
     plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
 };
 
-pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> ([Vec<F>; cpu::NUM_CPU_COLS], F) {
+pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU_COLS] {
     let mut steps = steps.to_vec();
     let trace_len = steps.len();
 
@@ -119,40 +119,18 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> ([Vec<F>; cpu::NUM_CP
             }
             _ => panic!("unspported opcode!"),
         }
-
-        trace[cpu::COL_RAW_INST][i] = F::from_canonical_u64(s.instruction.0);
-        trace[cpu::COL_RAW_PC][i] = F::from_canonical_u64(s.pc);
     }
 
     // For expanded trace from `trace_len` to `trace_len's power of two`,
     // we use last row `END` to pad them, and except for zipped and permuated rows.
     if trace_len != ext_trace_len {
-        trace[cpu::COL_CLK..cpu::COL_ZIP_RAW]
+        trace[cpu::COL_CLK..cpu::NUM_CPU_COLS]
             .iter_mut()
             .for_each(|row| {
                 let last = row[trace_len - 1];
                 row[trace_len..].fill(last);
             });
     }
-
-    // We use our public (program) column to generate oracles.
-    let mut challenger =
-        Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
-    challenger.observe_elements(&trace[cpu::COL_RAW_INST]);
-    let beta = challenger.get_challenge();
-
-    // Compress raw_pc and raw_inst columns into one column: COL_ZIP_RAW.
-    // Compress pc + inst columns into one column: COL_ZIP_EXED.
-    for i in 0..trace[0].len() {
-        trace[cpu::COL_ZIP_RAW][i] = trace[cpu::COL_RAW_INST][i] * beta + trace[cpu::COL_RAW_PC][i];
-        trace[cpu::COL_ZIP_EXED][i] = trace[cpu::COL_INST][i] * beta + trace[cpu::COL_PC][i];
-    }
-
-    // Permuate zip_raw and zip_exed column.
-    let (permuted_inputs, permuted_table) =
-        permuted_cols(&trace[cpu::COL_ZIP_EXED], &trace[cpu::COL_ZIP_RAW]);
-    trace[cpu::COL_PER_ZIP_EXED] = permuted_inputs;
-    trace[cpu::COL_PER_ZIP_RAW] = permuted_table;
 
     let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
         panic!(
@@ -162,5 +140,5 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> ([Vec<F>; cpu::NUM_CP
         )
     });
 
-    (trace_row_vecs, beta)
+    trace_row_vecs
 }
