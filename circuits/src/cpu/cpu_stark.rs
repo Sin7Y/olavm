@@ -726,7 +726,7 @@ mod tests {
 
     #[test]
     fn test_fibo_use_loop() {
-        let program_path = "../assembler/test_data/asm/fib_loop.json";
+        let program_path = "../assembler/test_data/asm/fibo_loop.json";
         test_cpu_with_asm_path(program_path.to_string());
     }
 
@@ -774,8 +774,7 @@ mod tests {
         let mut process = Process::new();
         let _ = process.execute(&mut program, &mut Some(prophets));
 
-        let (cpu_rows, beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        let (cpu_rows, beta) = generate_cpu_trace::<F>(&program.trace.exec);
 
         let mut stark = S::default();
         stark.set_compress_challenge(beta).unwrap();

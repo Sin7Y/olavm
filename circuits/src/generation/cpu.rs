@@ -10,29 +10,9 @@ use plonky2::{
     plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
 };
 
-pub fn generate_cpu_trace<F: RichField>(
-    steps: &[Step],
-    raw_instructions: &[String],
-) -> ([Vec<F>; cpu::NUM_CPU_COLS], F) {
-    let mut raw_insts: Vec<(usize, F)> = raw_instructions
-        .iter()
-        .enumerate()
-        .map(|(i, ri)| {
-            (
-                i,
-                F::from_canonical_u64(u64::from_str_radix(&ri[2..], 16).unwrap()),
-            )
-        })
-        .collect();
-
-    // make raw and steps has same length.
+pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> ([Vec<F>; cpu::NUM_CPU_COLS], F) {
     let mut steps = steps.to_vec();
-    let trace_len = std::cmp::max(steps.len(), raw_instructions.len());
-    if raw_instructions.len() < steps.len() {
-        raw_insts.resize(trace_len, raw_insts.last().unwrap().to_owned());
-    } else if raw_instructions.len() > steps.len() {
-        steps.resize(trace_len, steps.last().unwrap().to_owned());
-    }
+    let trace_len = steps.len();
 
     let ext_trace_len = if !trace_len.is_power_of_two() {
         trace_len.next_power_of_two()
@@ -40,7 +20,7 @@ pub fn generate_cpu_trace<F: RichField>(
         trace_len
     };
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; ext_trace_len]; cpu::NUM_CPU_COLS];
-    for (i, (s, r)) in steps.iter().zip(raw_insts.iter()).enumerate() {
+    for (i, s) in steps.iter().enumerate() {
         // Context related columns.
         trace[cpu::COL_CLK][i] = F::from_canonical_u32(s.clk);
         trace[cpu::COL_PC][i] = F::from_canonical_u64(s.pc);
@@ -128,18 +108,20 @@ pub fn generate_cpu_trace<F: RichField>(
             o if (1_u64 << Opcode::GTE as u8) == o => {
                 trace[cpu::COL_S_GTE][i] = F::from_canonical_u64(1)
             }
-            // o if (1_u64 << Opcode::PSDN as u8) == o => {
-            //     trace[cpu::COL_S_PSDN][i] = F::from_canonical_u64(1)
-            // }
-            // o if (1_u64 << Opcode::ECDSA as u8) == o  => {
-            //     trace[cpu::COL_S_ECDSA][i] = F::from_canonical_u64(1)
-            // }
+            o if (1_u64 << Opcode::POSEIDON as u8) == o => {
+                trace[cpu::COL_S_PSDN][i] = F::from_canonical_u64(1)
+            }
+            o if (1_u64 << Opcode::SLOAD as u8) == o => {
+                trace[cpu::COL_S_SLOAD][i] = F::from_canonical_u64(1)
+            }
+            o if (1_u64 << Opcode::SSTORE as u8) == o => {
+                trace[cpu::COL_S_SSTORE][i] = F::from_canonical_u64(1)
+            }
             _ => panic!("unspported opcode!"),
         }
 
-        // Raw program
-        trace[cpu::COL_RAW_INST][i] = r.1;
-        trace[cpu::COL_RAW_PC][i] = F::from_canonical_usize(r.0);
+        trace[cpu::COL_RAW_INST][i] = F::from_canonical_u64(s.instruction.0);
+        trace[cpu::COL_RAW_PC][i] = F::from_canonical_u64(s.pc);
     }
 
     // For expanded trace from `trace_len` to `trace_len's power of two`,
