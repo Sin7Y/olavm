@@ -8,7 +8,7 @@ pub mod decoder;
 pub mod instruction;
 
 /// fixme: use 9 registers
-pub const REGISTER_NUM: usize = 9;
+pub const REGISTER_NUM: usize = 10;
 pub const CTX_REGISTER_NUM: usize = 4;
 
 pub const FIELD_ORDER: u64 = GoldilocksField::ORDER;
