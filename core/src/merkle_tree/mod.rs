@@ -1,4 +1,3 @@
-pub mod db;
 pub mod iter_ext;
 pub mod log;
 pub mod macros;

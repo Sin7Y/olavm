@@ -1,4 +1,3 @@
-use crate::merkle_tree::db::RocksDB;
 use crate::merkle_tree::log::{StorageLogKind, WitnessStorageLog};
 use crate::merkle_tree::patch::{TreePatch, Update, UpdatesBatch};
 use crate::merkle_tree::storage::Storage;
@@ -22,6 +21,7 @@ use std::iter::once;
 use std::sync::Arc;
 
 use web3::types::U256;
+use crate::storage::db::RocksDB;
 
 #[derive(Debug)]
 pub struct AccountTree {

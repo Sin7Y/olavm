@@ -5,7 +5,7 @@ use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
 use crate::storage::StorageTree;
 
-use core::merkle_tree::db::{Database, RocksDB};
+use core::storage::db::{Database, RocksDB};
 use core::merkle_tree::log::StorageLog;
 use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
@@ -16,7 +16,7 @@ use core::program::instruction::{ImmediateOrRegName, Opcode};
 use core::program::{Program, REGISTER_NUM};
 use core::trace::trace::{ComparisonOperation, MemoryTraceCell, RegisterSelector};
 use core::trace::trace::{
-    FilterLockForMain, MemoryOperation, MemoryType, StorageHashRow, StorageRow,
+    FilterLockForMain, MemoryOperation, MemoryType, StorageHashRow,
 };
 use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use core::types::merkle_tree::tree_key_default;
@@ -24,6 +24,7 @@ use core::types::merkle_tree::tree_key_to_leaf_index;
 use core::types::merkle_tree::{tree_key_to_u256, u8_arr_to_tree_key, TreeKeyU256, TREE_VALUE_LEN};
 use core::types::storage::StorageKey;
 use core::types::account::AccountTreeId;
+use core::contracts::contracts::Contracts;
 
 use core::crypto::poseidon_trace::{
     calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
@@ -32,14 +33,14 @@ use core::crypto::poseidon_trace::{
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
 use itertools::Itertools;
-use log::{debug, info, warn};
+use log::{debug, warn};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 use core::types::account::Address;
 
-use crate::vm::ola_vm::OlaMemorySegment::Poseidon;
+
 use std::time::Instant;
 use tempfile::TempDir;
 
@@ -56,7 +57,7 @@ mod vm;
 pub mod vm_trace_generator;
 
 // r15 use as fp for procedure
-const FP_REG_INDEX: usize = 8;
+const FP_REG_INDEX: usize = 9;
 const REGION_SPAN: u64 = 2 ^ 32 - 1;
 const MEM_SPAN_SIZE: u64 = u32::MAX as u64;
 const PSP_START_ADDR: u64 = GoldilocksField::ORDER - MEM_SPAN_SIZE;
@@ -79,6 +80,7 @@ pub struct Process {
     pub storage: StorageTree,
     pub storage_log: Vec<WitnessStorageLog>,
     pub account_tree: AccountTree,
+    pub contracts: Contracts
 }
 
 impl Process {
@@ -105,6 +107,7 @@ impl Process {
                 trace: HashMap::new(),
             },
             account_tree,
+            contracts: Contracts { contracts: HashMap::new() }
         }
     }
 
@@ -1076,7 +1079,7 @@ impl Process {
     pub fn gen_storage_table(
         &mut self,
         program: &mut Program,
-        mut hash_roots: Vec<[GoldilocksField; 4]>,
+        hash_roots: Vec<[GoldilocksField; 4]>,
     ) {
         if hash_roots.is_empty() {
             return;

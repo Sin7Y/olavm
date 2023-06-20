@@ -15,7 +15,7 @@ pub type TreeKey = [GoldilocksField; TREE_VALUE_LEN];
 pub type TreeValue = [GoldilocksField; TREE_VALUE_LEN];
 pub type TreeKeyU256 = U256;
 pub type ZkHash = [GoldilocksField; TREE_VALUE_LEN];
-const GOLDILOCKS_FIELD_U8_LEN: usize = 8;
+pub const GOLDILOCKS_FIELD_U8_LEN: usize = 8;
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize)]
 pub struct LevelIndex(pub (u16, U256));
@@ -104,7 +104,7 @@ pub fn tree_key_to_u256(value: &TreeKey) -> TreeKeyU256 {
     value
         .iter()
         .enumerate()
-        .fold(TreeKeyU256::zero(), |acc, (index, item)| {
+        .fold(TreeKeyU256::zero(), |acc, (_index, item)| {
             (acc << 64) + U256::from(item.0)
         })
 }

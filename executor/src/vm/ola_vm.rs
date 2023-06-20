@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::error::OlaMemoryError;
 
-pub(crate) const NUM_GENERAL_PURPOSE_REGISTER: usize = 9;
+pub(crate) const NUM_GENERAL_PURPOSE_REGISTER: usize = 10;
 pub const MEM_REGION_SPAN: u64 = u32::MAX as u64;
 pub const START_ADDRESS_PROPHET: u64 = GoldilocksField::ORDER - MEM_REGION_SPAN;
 pub const START_ADDRESS_POSEIDON: u64 = START_ADDRESS_PROPHET - MEM_REGION_SPAN;

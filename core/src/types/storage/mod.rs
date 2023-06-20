@@ -1,8 +1,9 @@
+use itertools::Itertools;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use crate::crypto::poseidon_trace::{calculate_poseidon_and_generate_intermediate_trace_row, POSEIDON_INPUT_VALUE_LEN, PoseidonType};
 use crate::types::account::{AccountTreeId, Address};
-use crate::types::merkle_tree::TreeKey;
+use crate::types::merkle_tree::{GOLDILOCKS_FIELD_U8_LEN, TreeKey};
 use serde::{Deserialize, Serialize};
 use crate::trace::trace::PoseidonRow;
 
@@ -40,4 +41,30 @@ impl StorageKey {
     pub fn hashed_key(&self) -> (TreeKey, PoseidonRow) {
         Self::raw_hashed_key(self.address(), self.key()).into()
     }
+}
+
+pub fn field_arr_to_u8_arr(value: &Vec<GoldilocksField>) -> Vec<u8> {
+    value.iter().fold(Vec::new(), |mut key_vec, item| {
+        key_vec.extend(item.0.to_le_bytes().to_vec());
+        key_vec
+    })
+}
+
+pub fn u8_arr_to_tree_key(value: &Vec<u8>) -> Vec<GoldilocksField> {
+    assert_eq!(
+        value.len() % GOLDILOCKS_FIELD_U8_LEN , 0,
+        "u8_array len is not align to field"
+    );
+    value
+        .iter()
+        .chunks(GOLDILOCKS_FIELD_U8_LEN)
+        .into_iter()
+        .enumerate()
+        .map(
+            |(_index, chunk)| {
+                GoldilocksField::from_canonical_u64(u64::from_le_bytes(
+                    chunk.map(|e| *e).collect::<Vec<_>>().try_into().unwrap(),
+                ))
+            },
+        ).collect()
 }
