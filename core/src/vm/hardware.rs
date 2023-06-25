@@ -13,11 +13,13 @@ pub enum OlaRegister {
     R6,
     R7,
     R8,
+    R9,
 }
 
 impl OlaRegister {
     pub fn index(&self) -> u8 {
         match self {
+            OlaRegister::R9 => 9,
             OlaRegister::R8 => 8,
             OlaRegister::R7 => 7,
             OlaRegister::R6 => 6,
@@ -32,43 +34,46 @@ impl OlaRegister {
 
     fn binary_bit_shift_as_op0(&self) -> u8 {
         match self {
-            OlaRegister::R8 => 61,
-            OlaRegister::R7 => 60,
-            OlaRegister::R6 => 59,
-            OlaRegister::R5 => 58,
-            OlaRegister::R4 => 57,
-            OlaRegister::R3 => 56,
-            OlaRegister::R2 => 55,
-            OlaRegister::R1 => 54,
-            OlaRegister::R0 => 53,
+            OlaRegister::R9 => 61,
+            OlaRegister::R8 => 60,
+            OlaRegister::R7 => 59,
+            OlaRegister::R6 => 58,
+            OlaRegister::R5 => 57,
+            OlaRegister::R4 => 56,
+            OlaRegister::R3 => 55,
+            OlaRegister::R2 => 54,
+            OlaRegister::R1 => 53,
+            OlaRegister::R0 => 52,
         }
     }
 
     fn binary_bit_shift_as_op1(&self) -> u8 {
         match self {
-            OlaRegister::R8 => 52,
-            OlaRegister::R7 => 51,
-            OlaRegister::R6 => 50,
-            OlaRegister::R5 => 49,
-            OlaRegister::R4 => 48,
-            OlaRegister::R3 => 47,
-            OlaRegister::R2 => 46,
-            OlaRegister::R1 => 45,
-            OlaRegister::R0 => 44,
+            OlaRegister::R9 => 51,
+            OlaRegister::R8 => 50,
+            OlaRegister::R7 => 49,
+            OlaRegister::R6 => 48,
+            OlaRegister::R5 => 47,
+            OlaRegister::R4 => 46,
+            OlaRegister::R3 => 45,
+            OlaRegister::R2 => 44,
+            OlaRegister::R1 => 43,
+            OlaRegister::R0 => 42,
         }
     }
 
     fn binary_bit_shift_as_dst(&self) -> u8 {
         match self {
-            OlaRegister::R8 => 43,
-            OlaRegister::R7 => 42,
-            OlaRegister::R6 => 41,
-            OlaRegister::R5 => 40,
-            OlaRegister::R4 => 39,
-            OlaRegister::R3 => 38,
-            OlaRegister::R2 => 37,
-            OlaRegister::R1 => 36,
-            OlaRegister::R0 => 35,
+            OlaRegister::R9 => 41,
+            OlaRegister::R8 => 40,
+            OlaRegister::R7 => 39,
+            OlaRegister::R6 => 38,
+            OlaRegister::R5 => 37,
+            OlaRegister::R4 => 36,
+            OlaRegister::R3 => 35,
+            OlaRegister::R2 => 34,
+            OlaRegister::R1 => 33,
+            OlaRegister::R0 => 32,
         }
     }
 
@@ -99,6 +104,7 @@ impl FromStr for OlaRegister {
             "r6" => Ok(OlaRegister::R6),
             "r7" => Ok(OlaRegister::R7),
             "r8" => Ok(OlaRegister::R8),
+            "r9" => Ok(OlaRegister::R9),
             _ => Err(format!("invalid reg identifier: {}", s)),
         }
     }
@@ -116,6 +122,7 @@ impl Display for OlaRegister {
             OlaRegister::R6 => "r6".to_string(),
             OlaRegister::R7 => "r7".to_string(),
             OlaRegister::R8 => "r8".to_string(),
+            OlaRegister::R9 => "r9".to_string(),
         };
         write!(f, "{}", token)
     }
