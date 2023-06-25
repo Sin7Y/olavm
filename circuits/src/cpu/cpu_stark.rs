@@ -750,10 +750,6 @@ mod tests {
 
         let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
 
-<<<<<<< HEAD
-        let mut stark = S::default();
-=======
->>>>>>> fc89bd7 (MOD: cpu generate and test.)
         let len = cpu_rows[0].len();
         let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
         let subgroup =
