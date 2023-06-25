@@ -1,12 +1,13 @@
-
 use crate::crypto::hash::Hasher;
-use crate::crypto::poseidon_trace::{calculate_poseidon_and_generate_intermediate_trace_row, POSEIDON_INPUT_VALUE_LEN, PoseidonType};
+use crate::crypto::poseidon_trace::{
+    calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
+};
 use crate::trace::trace::PoseidonRow;
 use crate::types::merkle_tree::{tree_key_default, TreeKey, TreeValue, TREE_VALUE_LEN};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
-use plonky2::hash::hashing::{hash_n_to_hash_no_pad};
-use plonky2::hash::poseidon::{PoseidonPermutation};
+use plonky2::hash::hashing::hash_n_to_hash_no_pad;
+use plonky2::hash::poseidon::PoseidonPermutation;
 
 #[derive(Default, Clone, Debug)]
 pub struct PoseidonHasher;
@@ -44,4 +45,3 @@ impl Hasher<TreeValue> for PoseidonHasher {
         calculate_poseidon_and_generate_intermediate_trace_row(input, PoseidonType::Variant)
     }
 }
-

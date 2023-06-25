@@ -1,8 +1,10 @@
 use crate::merkle_tree::TreeError;
+use crate::storage::db::{MerkleTreeColumnFamily, RocksDB, StateKeeperColumnFamily};
 use crate::types::merkle_tree::{
     tree_key_to_u8_arr, u8_arr_to_tree_key, InitialStorageWrite, LeafIndices, LevelIndex,
     RepeatedStorageWrite, TreeKey, TreeOperation, ZkHash,
 };
+use crate::types::storage::field_arr_to_u8_arr;
 use crate::utils::{deserialize_block_number, serialize_block_number, serialize_tree_leaf};
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
 use itertools::Itertools;
@@ -12,8 +14,6 @@ use plonky2::field::types::Field;
 use rocksdb::WriteBatch;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use crate::storage::db::{MerkleTreeColumnFamily, RocksDB, StateKeeperColumnFamily};
-use crate::types::storage::field_arr_to_u8_arr;
 
 const BLOCK_NUMBER_KEY: &[u8; 12] = b"block_number";
 const LEAF_INDEX_KEY: &[u8; 10] = b"leaf_index";
@@ -217,9 +217,15 @@ impl Storage {
         return (None, block_number);
     }
 
-    pub fn save_contract(&mut self, code_hash: TreeKey, code: &Vec<GoldilocksField>) -> Result<(), TreeError> {
+    pub fn save_contract(
+        &mut self,
+        code_hash: TreeKey,
+        code: &Vec<GoldilocksField>,
+    ) -> Result<(), TreeError> {
         let mut batch = WriteBatch::default();
-        let cf = self.db.cf_state_keeper_handle(StateKeeperColumnFamily::Contracts);
+        let cf = self
+            .db
+            .cf_state_keeper_handle(StateKeeperColumnFamily::Contracts);
         let code_key = tree_key_to_u8_arr(&code_hash);
         let code_arr = field_arr_to_u8_arr(code);
         batch.put_cf(cf, &code_key, code_arr);
