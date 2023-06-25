@@ -7,6 +7,7 @@ use circuits::stark::prover::prove;
 use circuits::stark::serialization::Buffer;
 use circuits::stark::verifier::verify_proof;
 use clap::{arg, Command};
+use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::Program;
 use core::trace::trace::Trace;
@@ -102,7 +103,11 @@ fn main() {
             let now = Instant::now();
             let mut process = Process::new();
             process
-                .execute(&mut program, &mut Some(prophets))
+                .execute(
+                    &mut program,
+                    &mut Some(prophets),
+                    &mut AccountTree::new_test(),
+                )
                 .expect("OlaVM execute fail");
             println!("exec time:{}", now.elapsed().as_millis());
 

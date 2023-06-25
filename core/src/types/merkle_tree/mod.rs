@@ -10,7 +10,6 @@ use std::collections::HashMap;
 use web3::types::U256;
 
 pub const TREE_VALUE_LEN: usize = 4;
-pub type ZkHasher = PoseidonHasher;
 pub type TreeKey = [GoldilocksField; TREE_VALUE_LEN];
 pub type TreeValue = [GoldilocksField; TREE_VALUE_LEN];
 pub type TreeKeyU256 = U256;

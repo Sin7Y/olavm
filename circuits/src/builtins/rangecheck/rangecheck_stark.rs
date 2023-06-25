@@ -148,6 +148,7 @@ mod tests {
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
+    use core::merkle_tree::tree::AccountTree;
     use core::program::Program;
     use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;
@@ -178,7 +179,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut None);
+        let _ = process.execute(&mut program, &mut None, &mut AccountTree::new_test());
 
         let rows = generate_rc_trace::<F>(&program.trace.builtin_rangecheck);
         let len = rows[0].len();

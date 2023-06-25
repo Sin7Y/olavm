@@ -38,7 +38,11 @@ pub fn test_by_asm_json(path: String) {
     let mut process = Process::new();
     let now = Instant::now();
 
-    let _ = process.execute(&mut program, &mut Some(prophets));
+    let _ = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
     info!("exec time:{}", now.elapsed().as_millis());
     let mut ola_stark = OlaStark::default();
     let now = Instant::now();

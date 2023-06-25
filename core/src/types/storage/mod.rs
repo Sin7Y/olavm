@@ -52,7 +52,7 @@ pub fn field_arr_to_u8_arr(value: &Vec<GoldilocksField>) -> Vec<u8> {
     })
 }
 
-pub fn u8_arr_to_tree_key(value: &Vec<u8>) -> Vec<GoldilocksField> {
+pub fn u8_arr_to_field_arr(value: &Vec<u8>) -> Vec<GoldilocksField> {
     assert_eq!(
         value.len() % GOLDILOCKS_FIELD_U8_LEN,
         0,

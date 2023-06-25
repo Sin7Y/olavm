@@ -74,7 +74,7 @@ pub(crate) fn bench_fibo_loop(inst_size: u64) {
     let mut process = Process::new();
 
     let start = Instant::now();
-    process.execute(&mut program, &mut None);
+    process.execute(&mut program, &mut None, &mut AccountTree::new_test());
 
     let exec_time = start.elapsed();
     info!(

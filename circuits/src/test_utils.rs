@@ -13,7 +13,7 @@ use plonky2_util::log2_strict;
 use crate::stark::{
     constraint_consumer::ConstraintConsumer, stark::Stark, vars::StarkEvaluationVars,
 };
-
+use core::merkle_tree::tree::AccountTree;
 pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     path: String,
     get_trace_rows: fn(Trace) -> Vec<Row>,
@@ -44,7 +44,11 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     }
 
     let mut process = Process::new();
-    let _ = process.execute(&mut program, &mut Some(prophets));
+    let _ = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
 
     let raw_trace_rows = get_trace_rows(program.trace);
     let rows = generate_trace(&raw_trace_rows);

@@ -216,21 +216,6 @@ impl Storage {
 
         return (None, block_number);
     }
-
-    pub fn save_contract(
-        &mut self,
-        code_hash: TreeKey,
-        code: &Vec<GoldilocksField>,
-    ) -> Result<(), TreeError> {
-        let mut batch = WriteBatch::default();
-        let cf = self
-            .db
-            .cf_state_keeper_handle(StateKeeperColumnFamily::Contracts);
-        let code_key = tree_key_to_u8_arr(&code_hash);
-        let code_arr = field_arr_to_u8_arr(code);
-        batch.put_cf(cf, &code_key, code_arr);
-        self.db.write(batch).map_err(TreeError::StorageIoError)
-    }
 }
 
 /// High level merkle tree metadata
