@@ -54,7 +54,9 @@ fn memory_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, &mut None).unwrap();
+    process
+        .execute(&mut program, &mut None, &mut AccountTree::new_test())
+        .unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -86,7 +88,9 @@ fn range_check_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, &mut None).unwrap();
+    process
+        .execute(&mut program, &mut None, &mut AccountTree::new_test())
+        .unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -123,7 +127,7 @@ fn bitwise_test() {
 
     let mut process = Process::new();
 
-    let res = process.execute(&mut program, &mut None);
+    let res = process.execute(&mut program, &mut None, &mut AccountTree::new_test());
     if res.is_err() {
         println!("res:{:?}", res);
     }
@@ -171,7 +175,9 @@ fn comparison_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, &mut None).unwrap();
+    process
+        .execute(&mut program, &mut None, &mut AccountTree::new_test())
+        .unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -228,7 +234,9 @@ fn call_test() {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, &mut None).unwrap();
+    process
+        .execute(&mut program, &mut None, &mut AccountTree::new_test())
+        .unwrap();
 
     println!("vm trace: {:?}", program.trace);
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
@@ -302,7 +310,9 @@ fn fibo_use_loop_decode() {
 
     let mut process = Process::new();
     let start = Instant::now();
-    process.execute(&mut program, &mut None).unwrap();
+    process
+        .execute(&mut program, &mut None, &mut AccountTree::new_test())
+        .unwrap();
     let exec_time = start.elapsed();
     println!(
         "exec_time: {}, exec steps: {}",
@@ -380,7 +390,7 @@ fn fibo_recursive() {
     }
 
     let mut process = Process::new();
-    let res = process.execute(&mut program, &mut None);
+    let res = process.execute(&mut program, &mut None, &mut AccountTree::new_test());
     if res.is_err() {
         panic!("execute err:{:?}", res);
     }
@@ -432,7 +442,11 @@ fn prophet_test() {
 
     let mut process = Process::new();
 
-    let res = process.execute(&mut program, &mut Some(prophets));
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
     if res.is_err() {
         panic!("execute err:{:?}", res);
     }
@@ -467,7 +481,11 @@ fn sqrt_newton_iteration_test() {
 
     let mut process = Process::new();
 
-    let res = process.execute(&mut program, &mut Some(prophets));
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
     if res.is_err() {
         panic!("execute err:{:?}", res);
     }
@@ -506,7 +524,11 @@ fn storage_test() {
 
     let mut process = Process::new();
 
-    let res = process.execute(&mut program, &mut Some(prophets));
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
     if res.is_err() {
         panic!("execute err:{:?}", res);
     }
@@ -543,7 +565,11 @@ fn storage_multi_keys_test() {
 
     let mut process = Process::new();
 
-    let res = process.execute(&mut program, &mut Some(prophets));
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
     if res.is_err() {
         panic!("execute err:{:?}", res);
     }
@@ -580,7 +606,11 @@ fn poseidon_test() {
 
     let mut process = Process::new();
 
-    let res = process.execute(&mut program, &mut Some(prophets));
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
     if res.is_err() {
         panic!("execute err:{:?}", res);
     }

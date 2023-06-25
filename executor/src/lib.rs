@@ -10,11 +10,11 @@ use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
 use core::storage::db::{Database, RocksDB};
 
-use core::contracts::contracts::Contracts;
 use core::program::binary_program::Prophet;
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
 use core::program::{Program, REGISTER_NUM};
+use core::state::contracts::Contracts;
 use core::trace::trace::{ComparisonOperation, MemoryTraceCell, RegisterSelector};
 use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType, StorageHashRow};
 use core::types::account::AccountTreeId;
@@ -76,15 +76,10 @@ pub struct Process {
     pub psp: GoldilocksField,
     pub storage: StorageTree,
     pub storage_log: Vec<WitnessStorageLog>,
-    pub account_tree: AccountTree,
-    pub contracts: Contracts,
 }
 
 impl Process {
     pub fn new() -> Self {
-        let temp_dir = TempDir::new().expect("failed get temporary directory for RocksDB");
-        let db = RocksDB::new(Database::MerkleTree, temp_dir.as_ref(), false);
-        let account_tree = AccountTree::new(db);
         Self {
             clk: 0,
             ctx_registers_stack: Vec::new(),
@@ -102,10 +97,6 @@ impl Process {
             storage_log: Vec::new(),
             storage: StorageTree {
                 trace: HashMap::new(),
-            },
-            account_tree,
-            contracts: Contracts {
-                contracts: HashMap::new(),
             },
         }
     }
@@ -199,6 +190,7 @@ impl Process {
         &mut self,
         program: &mut Program,
         prophets: &mut Option<HashMap<u64, Prophet>>,
+        account_tree: &mut AccountTree,
     ) -> Result<(), ProcessorError> {
         let instrs_len = program.instructions.len() as u64;
 
@@ -863,9 +855,9 @@ impl Process {
                     let mut slot_key = [GoldilocksField::ZERO; 4];
                     let mut store_value = [GoldilocksField::ZERO; 4];
 
-                    for i in 0..4 {
-                        slot_key[i] = self.registers[i + 4];
-                        store_value[i] = self.registers[i];
+                    for i in 0..TREE_VALUE_LEN {
+                        slot_key[i] = self.registers[i + 1];
+                        store_value[i] = self.registers[i + 5];
                     }
                     let storage_key = StorageKey::new(
                         AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()),
@@ -896,8 +888,8 @@ impl Process {
                 "sload" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u8);
                     let mut slot_key = [GoldilocksField::ZERO; 4];
-                    for i in 0..4 {
-                        slot_key[i] = self.registers[i + 4];
+                    for i in 0..TREE_VALUE_LEN {
+                        slot_key[i] = self.registers[i + 1];
                     }
 
                     let storage_key = StorageKey::new(
@@ -911,7 +903,7 @@ impl Process {
                     if let Some(data) = self.storage.trace.get(&tree_key) {
                         read_value = data.last().unwrap().value.clone();
                     } else {
-                        let read_db = self.account_tree.storage.hash(&path);
+                        let read_db = account_tree.storage.hash(&path);
                         if let Some(value) = read_db {
                             read_value = u8_arr_to_tree_key(&value);
                         } else {
@@ -920,8 +912,8 @@ impl Process {
                         }
                     }
 
-                    for i in 0..4 {
-                        self.registers[i] = read_value[i];
+                    for i in 0..TREE_VALUE_LEN {
+                        self.registers[i + 1] = read_value[i];
                     }
 
                     self.storage_log.push(WitnessStorageLog {
@@ -947,7 +939,7 @@ impl Process {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::POSEIDON as u8);
                     let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
                     for i in 0..POSEIDON_INPUT_VALUE_LEN {
-                        input[i] = self.registers[i];
+                        input[i] = self.registers[i + 1];
                     }
 
                     let row = calculate_poseidon_and_generate_intermediate_trace_row(
@@ -955,7 +947,7 @@ impl Process {
                         PoseidonType::Normal,
                     );
                     for i in 0..POSEIDON_OUTPUT_VALUE_LEN {
-                        self.registers[i] = row.0[i];
+                        self.registers[i + 1] = row.0[i];
                     }
                     self.register_selector.op0 = row.0[0];
                     self.register_selector.op1 = row.0[1];
@@ -994,7 +986,7 @@ impl Process {
             }
         }
 
-        let hash_roots = self.gen_storage_hash_table(program);
+        let hash_roots = self.gen_storage_hash_table(program, account_tree);
         self.gen_storage_table(program, hash_roots);
 
         self.gen_memory_table(program);
@@ -1005,10 +997,11 @@ impl Process {
     pub fn gen_storage_hash_table(
         &mut self,
         program: &mut Program,
+        account_tree: &mut AccountTree,
     ) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
         let trace = std::mem::replace(&mut self.storage_log, Vec::new());
-        let hash_traces = self.account_tree.process_block(trace.iter());
-        self.account_tree.save();
+        let hash_traces = account_tree.process_block(trace.iter());
+        account_tree.save();
 
         let mut root_hashes = Vec::new();
 

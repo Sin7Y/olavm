@@ -392,6 +392,7 @@ mod tests {
     use crate::stark::verifier::verify_proof;
     use anyhow::Result;
     use assembler::encoder::encode_asm_from_json_file;
+    use core::merkle_tree::tree::AccountTree;
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
     use executor::Process;
@@ -429,7 +430,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut None);
+        let _ = process.execute(&mut program, &mut None, &mut AccountTree::new_test());
 
         let mut ola_stark = OlaStark::default();
         let (traces, public_values) = generate_traces(&program, &mut ola_stark);
@@ -519,7 +520,11 @@ mod tests {
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut Some(prophets));
+        let _ = process.execute(
+            &mut program,
+            &mut Some(prophets),
+            &mut AccountTree::new_test(),
+        );
 
         let mut ola_stark = OlaStark::default();
         let (traces, public_values) = generate_traces(&program, &mut ola_stark);

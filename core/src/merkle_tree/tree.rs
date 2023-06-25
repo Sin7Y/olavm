@@ -8,7 +8,7 @@ use crate::trace::trace::PoseidonRow;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use crate::types::merkle_tree::{
     tree_key_default, tree_key_to_u256, u256_to_tree_key, u8_arr_to_tree_key, LeafIndices,
-    LevelIndex, NodeEntry, TreeKey, TreeMetadata, TreeOperation, TreeValue, ZkHash, ZkHasher,
+    LevelIndex, NodeEntry, TreeKey, TreeMetadata, TreeOperation, TreeValue, ZkHash,
 };
 use crate::types::proof::StorageLogMetadata;
 use itertools::Itertools;
@@ -19,8 +19,10 @@ use std::collections::{HashMap, HashSet};
 
 use std::iter::once;
 use std::sync::Arc;
+use tempfile::TempDir;
 
-use crate::storage::db::RocksDB;
+use crate::crypto::ZkHasher;
+use crate::storage::db::{Database, RocksDB};
 use web3::types::U256;
 
 #[derive(Debug)]
@@ -34,6 +36,21 @@ pub struct AccountTree {
 impl AccountTree {
     /// Creates new ZkSyncTree instance
     pub fn new(db: RocksDB) -> Self {
+        let storage = Storage::new(db);
+        let config = TreeConfig::new(ZkHasher::default());
+        let (root_hash, block_number) = storage.fetch_metadata();
+        let root_hash = root_hash.unwrap_or_else(|| config.default_root_hash());
+        Self {
+            storage,
+            config,
+            root_hash,
+            block_number,
+        }
+    }
+
+    pub fn new_test() -> Self {
+        let db_path = TempDir::new().expect("failed get temporary directory for RocksDB");
+        let db = RocksDB::new(Database::MerkleTree, db_path, true);
         let storage = Storage::new(db);
         let config = TreeConfig::new(ZkHasher::default());
         let (root_hash, block_number) = storage.fetch_metadata();

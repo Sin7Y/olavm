@@ -73,7 +73,7 @@ fn fibo_loop_prover_benchmark(c: &mut Criterion) {
     }
 
     let mut process = Process::new();
-    process.execute(&mut program, &mut None);
+    process.execute(&mut program, &mut None, &mut AccountTree::new_test());
 
     let mut group = c.benchmark_group("fibo_loop_prover");
 

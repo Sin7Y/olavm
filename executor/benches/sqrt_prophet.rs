@@ -28,7 +28,11 @@ pub(crate) fn bench_sqrt_iteration(_inst_size: u64) {
 
     let mut process = Process::new();
 
-    let res = process.execute(&mut program, &mut Some(prophets));
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
     if res.is_err() {
         panic!("execute err:{:?}", res);
     }

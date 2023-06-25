@@ -382,6 +382,7 @@ mod tests {
     use crate::stark::vars::StarkEvaluationVars;
     use crate::test_utils::test_stark_with_asm_path;
     use assembler::encoder::encode_asm_from_json_file;
+    use core::merkle_tree::tree::AccountTree;
     use core::{
         program::Program,
         trace::trace::{MemoryTraceCell, Trace},
