@@ -394,7 +394,6 @@ mod tests {
     use assembler::encoder::encode_asm_from_json_file;
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
-    use std::path::PathBuf;
     use executor::Process;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -403,6 +402,7 @@ mod tests {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     use std::mem;
+    use std::path::PathBuf;
     use std::time::{Duration, Instant};
 
     #[allow(dead_code)]
@@ -447,17 +447,18 @@ mod tests {
     }
 
     #[test]
-    fn fibo_recursive_decode() {
-        // let program_path = "../assembler/testdata/fib_recursive.bin";
-        // test_ola_stark(program_path)
+    fn fibo_loop_test() {
+        test_by_asm_json("fibo_loop.json".to_string())
+    }
 
+    #[test]
+    fn fibo_recursive_decode() {
         test_by_asm_json("fibo_recursive.json".to_string())
     }
 
     #[test]
-    fn memory_test() -> Result<()> {
-        let program_path = "../assembler/testdata/memory.bin";
-        test_ola_stark(program_path)
+    fn memory_test() {
+        test_by_asm_json("memory.json".to_string())
     }
 
     #[test]
