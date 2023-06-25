@@ -5,31 +5,30 @@ use crate::error::ProcessorError;
 use crate::memory::MemoryTree;
 use crate::storage::StorageTree;
 
-use core::storage::db::{Database, RocksDB};
 use core::merkle_tree::log::StorageLog;
 use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
+use core::storage::db::{Database, RocksDB};
 
+use core::contracts::contracts::Contracts;
 use core::program::binary_program::Prophet;
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
 use core::program::{Program, REGISTER_NUM};
 use core::trace::trace::{ComparisonOperation, MemoryTraceCell, RegisterSelector};
-use core::trace::trace::{
-    FilterLockForMain, MemoryOperation, MemoryType, StorageHashRow,
-};
+use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType, StorageHashRow};
+use core::types::account::AccountTreeId;
 use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::tree_key_to_leaf_index;
 use core::types::merkle_tree::{tree_key_to_u256, u8_arr_to_tree_key, TreeKeyU256, TREE_VALUE_LEN};
 use core::types::storage::StorageKey;
-use core::types::account::AccountTreeId;
-use core::contracts::contracts::Contracts;
 
 use core::crypto::poseidon_trace::{
     calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
     POSEIDON_OUTPUT_VALUE_LEN,
 };
+use core::types::account::Address;
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
 use itertools::Itertools;
@@ -38,8 +37,6 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
-use core::types::account::Address;
-
 
 use std::time::Instant;
 use tempfile::TempDir;
@@ -80,7 +77,7 @@ pub struct Process {
     pub storage: StorageTree,
     pub storage_log: Vec<WitnessStorageLog>,
     pub account_tree: AccountTree,
-    pub contracts: Contracts
+    pub contracts: Contracts,
 }
 
 impl Process {
@@ -107,7 +104,9 @@ impl Process {
                 trace: HashMap::new(),
             },
             account_tree,
-            contracts: Contracts { contracts: HashMap::new() }
+            contracts: Contracts {
+                contracts: HashMap::new(),
+            },
         }
     }
 
@@ -868,9 +867,11 @@ impl Process {
                         slot_key[i] = self.registers[i + 4];
                         store_value[i] = self.registers[i];
                     }
-                    let storage_key = StorageKey::new(AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()), slot_key);
+                    let storage_key = StorageKey::new(
+                        AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()),
+                        slot_key,
+                    );
                     let (tree_key, hash_row) = storage_key.hashed_key();
-
 
                     self.storage_log.push(WitnessStorageLog {
                         storage_log: StorageLog::new_write_log(tree_key, store_value),
@@ -899,7 +900,10 @@ impl Process {
                         slot_key[i] = self.registers[i + 4];
                     }
 
-                    let storage_key = StorageKey::new(AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()), slot_key);
+                    let storage_key = StorageKey::new(
+                        AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()),
+                        slot_key,
+                    );
                     let (tree_key, hash_row) = storage_key.hashed_key();
                     let path = tree_key_to_leaf_index(&tree_key);
 
@@ -919,7 +923,6 @@ impl Process {
                     for i in 0..4 {
                         self.registers[i] = read_value[i];
                     }
-
 
                     self.storage_log.push(WitnessStorageLog {
                         storage_log: StorageLog::new_read_log(tree_key, read_value),

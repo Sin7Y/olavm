@@ -20,8 +20,8 @@ use std::collections::{HashMap, HashSet};
 use std::iter::once;
 use std::sync::Arc;
 
-use web3::types::U256;
 use crate::storage::db::RocksDB;
+use web3::types::U256;
 
 #[derive(Debug)]
 pub struct AccountTree {

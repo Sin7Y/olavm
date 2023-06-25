@@ -1,7 +1,6 @@
 use crate::types::merkle_tree::{TreeKey, TreeValue};
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum StorageLogKind {
     Read,

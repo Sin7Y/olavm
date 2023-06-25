@@ -1,5 +1,5 @@
-use plonky2::field::goldilocks_field::GoldilocksField;
 use crate::trace::trace::PoseidonRow;
+use plonky2::field::goldilocks_field::GoldilocksField;
 
 pub trait Hasher<Hash> {
     /// Gets the hash of the byte sequence.

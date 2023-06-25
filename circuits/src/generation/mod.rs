@@ -33,6 +33,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     ola_stark: &mut OlaStark<F, D>,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+
     let cpu_trace = trace_to_poly_values(cpu_rows);
 
     let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
