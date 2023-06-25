@@ -112,7 +112,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         });
 
         // idx_storage constraints
-        yield_constr.constraint_first_row(P::ONES - lv_idx_storage);
+        yield_constr.constraint_first_row(lv_idx_storage * (P::ONES - lv_idx_storage));
         yield_constr.constraint_transition(
             nv_idx_storage
                 * (nv_idx_storage - lv_idx_storage)
@@ -120,7 +120,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         );
 
         // layer constraints
-        yield_constr.constraint_first_row(P::ONES - lv_layer);
+        yield_constr.constraint_first_row(lv_idx_storage * (P::ONES - lv_layer));
         yield_constr
             .constraint_last_row(lv_idx_storage * (lv_layer - P::Scalar::from_canonical_u64(256)));
         yield_constr.constraint_transition(
@@ -292,6 +292,12 @@ mod test {
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use std::path::PathBuf;
+
+    #[test]
+    fn test_storage_hash_no_storage_rows() {
+        let file_name = "fibo_loop.json".to_string();
+        test_storage_hash_with_asm_file_name(file_name);
+    }
 
     #[test]
     fn test_storage_hash() {
