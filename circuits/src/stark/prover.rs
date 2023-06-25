@@ -220,7 +220,7 @@ where
     ];
 
     let compress_challenges = [
-        ola_stark.cpu_stark.get_compress_challenge().unwrap(),
+        F::ZERO,
         F::ZERO,
         ola_stark.bitwise_stark.get_compress_challenge().unwrap(),
         F::ZERO,

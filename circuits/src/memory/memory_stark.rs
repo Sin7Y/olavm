@@ -1,3 +1,4 @@
+use core::vm::opcodes::OlaOpcode;
 use std::ops::Sub;
 
 use plonky2::field::types::Field;
@@ -110,10 +111,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let rc_value = lv[COL_MEM_RC_VALUE];
         let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
 
-        let op_mload = P::Scalar::from_canonical_u64(2_u64.pow(25));
-        let op_mstore = P::Scalar::from_canonical_u64(2_u64.pow(24));
-        let op_call = P::Scalar::from_canonical_u64(2_u64.pow(27));
-        let op_ret = P::Scalar::from_canonical_u64(2_u64.pow(26));
+        let op_mload = P::Scalar::from_canonical_u64(OlaOpcode::MLOAD.binary_bit_mask());
+        let op_mstore = P::Scalar::from_canonical_u64(OlaOpcode::MSTORE.binary_bit_mask());
+        let op_call = P::Scalar::from_canonical_u64(OlaOpcode::CALL.binary_bit_mask());
+        let op_ret = P::Scalar::from_canonical_u64(OlaOpcode::RET.binary_bit_mask());
         // op is one of mload, mstore, call, ret or prophet write 0.
         yield_constr
             .constraint(op * (op - op_mload) * (op - op_mstore) * (op - op_call) * (op - op_ret));
@@ -228,14 +229,19 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let rc_value = lv[COL_MEM_RC_VALUE];
         let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
 
-        let op_mload =
-            builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(25)));
-        let op_mstore =
-            builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(24)));
-        let op_call =
-            builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(27)));
-        let op_ret =
-            builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(26)));
+        let op_mload = builder.constant_extension(F::Extension::from_canonical_u64(
+            OlaOpcode::MLOAD.binary_bit_mask(),
+        ));
+        let op_mstore = builder.constant_extension(F::Extension::from_canonical_u64(
+            OlaOpcode::MSTORE.binary_bit_mask(),
+        ));
+        let op_call = builder.constant_extension(F::Extension::from_canonical_u64(
+            OlaOpcode::CALL.binary_bit_mask(),
+        ));
+        let op_ret = builder.constant_extension(F::Extension::from_canonical_u64(
+            OlaOpcode::RET.binary_bit_mask(),
+        ));
+
         // op is one of mload, mstore, call, ret or prophet write 0.
         let d_op_mload = builder.sub_extension(op, op_mload);
         let d_op_mstore = builder.sub_extension(op, op_mstore);
@@ -374,118 +380,80 @@ mod tests {
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
+    use crate::test_utils::test_stark_with_asm_path;
     use assembler::encoder::encode_asm_from_json_file;
-    use core::program::Program;
+    use core::{
+        program::Program,
+        trace::trace::{MemoryTraceCell, Trace},
+    };
     use executor::Process;
-    use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::field::types::Field;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::{
+        field::{goldilocks_field::GoldilocksField, types::Field},
+        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    };
     use plonky2_util::log2_strict;
     use std::collections::HashMap;
+    use std::path::PathBuf;
 
     #[test]
     fn test_memory_with_program() {
-        let program_path = "../assembler/test_data/asm/memory.json";
-        test_memory_stark_with_asm_path(program_path.to_string());
+        let program_path = "memory.json";
+        test_memory_with_asm_file_name(program_path.to_string());
     }
 
     #[test]
     fn test_memory_fib_loop() {
-        let program_path = "../assembler/test_data/asm/fibo_loop.json";
-        test_memory_stark_with_asm_path(program_path.to_string());
+        let program_path = "fibo_loop.json";
+        test_memory_with_asm_file_name(program_path.to_string());
     }
 
     #[test]
     fn test_memory_sqrt() {
-        let program_path = "../assembler/test_data/asm/sqrt.json";
-        test_memory_stark_with_asm_path(program_path.to_string());
+        let program_path = "sqrt.json";
+        test_memory_with_asm_file_name(program_path.to_string());
     }
 
-    fn test_memory_stark_with_asm_path(path: String) {
+    fn test_memory_with_asm_file_name(file_name: String) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = MemoryStark<F, D>;
         let stark = S::default();
 
-        let program = encode_asm_from_json_file(path).unwrap();
-        let instructions = program.bytecode.split("\n");
-        let mut prophets = HashMap::new();
-        for item in program.prophets {
-            prophets.insert(item.host as u64, item);
-        }
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-
-        for inst in instructions {
-            program.instructions.push(inst.to_string());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut Some(prophets));
-
-        let rows = generate_memory_trace(&program.trace.memory);
-        let len = rows[0].len();
-        println!(
-            "raw trace len:{}, extended len: {}",
-            program.trace.memory.len(),
-            len
-        );
-        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
-        let subgroup =
-            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
-
-        for i in 0..len - 1 {
-            let local_values: [F; NUM_MEM_COLS] = rows
-                .iter()
-                .map(|row| row[i % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let next_values: [F; NUM_MEM_COLS] = rows
-                .iter()
-                .map(|row| row[(i + 1) % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let vars = StarkEvaluationVars {
-                local_values: &local_values,
-                next_values: &next_values,
+        let get_trace_rows = |trace: Trace| trace.memory;
+        let generate_trace = |rows: &[MemoryTraceCell]| generate_memory_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_MEM_COLS>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
             };
-
-            let mut constraint_consumer = ConstraintConsumer::new(
-                vec![F::rand()],
-                subgroup[i] - last,
-                if i == 0 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-                if i == len - 1 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-            );
-            stark.eval_packed_generic(vars, &mut constraint_consumer);
-
-            for &acc in &constraint_consumer.constraint_accs {
-                if !acc.eq(&GoldilocksField::ZERO) {
-                    println!("constraint error in line {}", i);
-                    let m = get_memory_col_name_map();
-                    println!("{:>20}\t{:>20}\t{:>20}", "name", "lv", "nv");
-                    for col in m.keys() {
-                        let name = m.get(col).unwrap();
-                        let lv = vars.local_values[*col].0;
-                        let nv = vars.next_values[*col].0;
-                        println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
-                    }
-                }
-                assert_eq!(acc, GoldilocksField::ZERO);
+        let error_hook = |i: usize,
+                          vars: StarkEvaluationVars<
+            GoldilocksField,
+            GoldilocksField,
+            NUM_MEM_COLS,
+        >| {
+            println!("constraint error in line {}", i);
+            let m = get_memory_col_name_map();
+            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+            for col in m.keys() {
+                let name = m.get(col).unwrap();
+                let lv = vars.local_values[*col].0;
+                let nv = vars.next_values[*col].0;
+                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
             }
-        }
+        };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+        );
     }
 }
