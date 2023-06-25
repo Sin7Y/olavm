@@ -462,55 +462,23 @@ mod tests {
     }
 
     #[test]
-    fn call_test() -> Result<()> {
-        let program_path = "../assembler/testdata/call.bin";
-        test_ola_stark(program_path)
+    fn call_test() {
+        test_by_asm_json("call.json".to_string())
     }
 
     #[test]
-    fn range_check_test() -> Result<()> {
-        let program_path = "../assembler/testdata/range_check.bin";
-        test_ola_stark(program_path)
+    fn range_check_test() {
+        test_by_asm_json("range_check.json".to_string())
     }
 
     #[test]
-    fn bitwise_test() -> Result<()> {
-        let program_path = "../assembler/testdata/bitwise.bin";
-        test_ola_stark(program_path)
+    fn bitwise_test() {
+        test_by_asm_json("bitwise.json".to_string())
     }
 
     #[test]
-    fn comparison_test() -> Result<()> {
-        // main:
-        // .LBL0_0:
-        //   add r8 r8 4
-        //   mstore [r8,-2] r8
-        //   mov r1 1
-        //   call le
-        //   add r8 r8 -4
-        //   end
-        // le:
-        // .LBL1_0:
-        //   mov r0 r1
-        //   mov r7 1
-        //   gte r0 r7 r0
-        //   cjmp r0 .LBL1_1
-        //   jmp .LBL1_2
-        // .LBL1_1:
-        //   mov r0 2
-        //   ret
-        // .LBL1_2:
-        //   mov r0 3
-        //   ret
-
-        let program_path = "../assembler/testdata/comparison.bin";
-        test_ola_stark(program_path)
-    }
-
-    #[test]
-    fn fibo_use_loop_memory_decode() -> Result<()> {
-        let program_path = "../assembler/testdata/fib_loop.bin";
-        test_ola_stark(program_path)
+    fn comparison_test() {
+        test_by_asm_json("comparison.json".to_string())
     }
 
     #[test]
