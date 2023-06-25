@@ -142,11 +142,11 @@ pub struct CpuStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> CpuStark<F, D> {
-    pub const OPCODE_SHIFTS: Range<u32> = 13..35;
+    pub const OPCODE_SHIFTS: Range<u32> = 10..32;
     pub const OP1_IMM_SHIFT: u32 = 62;
     pub const OP0_SHIFT_START: u32 = 61;
-    pub const OP1_SHIFT_START: u32 = 52;
-    pub const DST_SHIFT_START: u32 = 43;
+    pub const OP1_SHIFT_START: u32 = 51;
+    pub const DST_SHIFT_START: u32 = 41;
 
     pub fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
         assert!(self.compress_challenge.is_none(), "already set?");
@@ -679,8 +679,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 #[cfg(test)]
 mod tests {
     use crate::{generation::cpu::generate_cpu_trace, test_utils::test_stark_with_asm_path};
+    use assembler::encoder::encode_asm_from_json_file;
     use core::trace::trace::{Step, Trace};
-    use std::path::PathBuf;
+    use std::io::BufRead;
+    use std::{collections::HashMap, path::PathBuf};
     use {
         super::*,
         core::program::Program,
@@ -726,74 +728,37 @@ mod tests {
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = CpuStark<F, D>;
+        let stark = S::default();
 
-        let mut stark = S::default();
-
-        let program = encode_asm_from_json_file(path).unwrap();
-        let instructions = program.bytecode.split("\n");
-        let mut prophets = HashMap::new();
-        for item in program.prophets {
-            prophets.insert(item.host as u64, item);
-        }
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
+        let get_trace_rows = |trace: Trace| trace.exec;
+        let generate_trace = |rows: &[Step]| generate_cpu_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_CPU_COLS>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
+            };
+        let error_hook = |i: usize,
+                          vars: StarkEvaluationVars<
+            GoldilocksField,
+            GoldilocksField,
+            NUM_CPU_COLS,
+        >| {
+            println!("constraint error in line {}", i);
+            let m = get_cpu_col_name_map();
+            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+            for col in m.keys() {
+                let name = m.get(col).unwrap();
+                let lv = vars.local_values[*col].0;
+                let nv = vars.next_values[*col].0;
+                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+            }
         };
-
-        for inst in instructions {
-            program.instructions.push(inst.to_string());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut Some(prophets));
-
-        let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-
-        let len = cpu_rows[0].len();
-        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
-        let subgroup =
-            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
-        for i in 0..len {
-            let local_values = cpu_rows
-                .iter()
-                .map(|row| row[i % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let next_values = cpu_rows
-                .iter()
-                .map(|row| row[(i + 1) % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let vars = StarkEvaluationVars {
-                local_values: &local_values,
-                next_values: &next_values,
-            };
-            let error_hook = |i: usize,
-                              vars: StarkEvaluationVars<
-                GoldilocksField,
-                GoldilocksField,
-                NUM_CPU_COLS,
-            >| {
-                println!("constraint error in line {}", i);
-                let m = get_cpu_col_name_map();
-                println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
-                for col in m.keys() {
-                    let name = m.get(col).unwrap();
-                    let lv = vars.local_values[*col].0;
-                    let nv = vars.next_values[*col].0;
-                    println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
-                }
-            };
-            test_stark_with_asm_path(
-                program_path.to_string(),
-                get_trace_rows,
-                generate_trace,
-                eval_packed_generic,
-                Some(error_hook),
-            );
-        }
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+        );
     }
 }
