@@ -62,7 +62,7 @@ impl FromStr for OlaAsmOperand {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let regex_reg_offset =
-            Regex::new(r"^\[(?P<reg>r[0-8]),(?P<offset>-?[[:digit:]]+)\]$").unwrap();
+            Regex::new(r"^\[(?P<reg>r[0-9]),(?P<offset>-?[[:digit:]]+)\]$").unwrap();
         let capture_reg_offset = regex_reg_offset.captures(s);
         if capture_reg_offset.is_some() {
             let caps = capture_reg_offset.unwrap();
@@ -73,7 +73,7 @@ impl FromStr for OlaAsmOperand {
             return Ok(OlaAsmOperand::RegisterWithOffset { register, offset });
         }
 
-        let regex_reg = Regex::new(r"^(?P<reg>r[0-8])$").unwrap();
+        let regex_reg = Regex::new(r"^(?P<reg>r[0-9])$").unwrap();
         let capture_reg = regex_reg.captures(s);
         if capture_reg.is_some() {
             let caps = capture_reg.unwrap();

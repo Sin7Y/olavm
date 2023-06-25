@@ -811,6 +811,7 @@ impl OlaRunner {
             OlaRegister::R6 => self.context.registers[6].clone(),
             OlaRegister::R7 => self.context.registers[7].clone(),
             OlaRegister::R8 => self.context.registers[8].clone(),
+            OlaRegister::R9 => self.context.registers[9].clone(),
         }
     }
 
@@ -840,6 +841,7 @@ impl OlaRunner {
                 OlaRegister::R6 => self.context.registers[6] = result,
                 OlaRegister::R7 => self.context.registers[7] = result,
                 OlaRegister::R8 => self.context.registers[8] = result,
+                OlaRegister::R9 => self.context.registers[9] = result,
             },
             OlaOperand::RegisterWithOffset { register, offset } => {
                 bail!(
