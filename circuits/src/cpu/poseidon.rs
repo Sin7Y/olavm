@@ -12,10 +12,10 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     nv: &[P; NUM_CPU_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_OP0] - nv[COL_REGS.start]));
-    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_OP1] - nv[COL_REGS.start + 1]));
-    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_AUX0] - nv[COL_REGS.start + 2]));
-    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_AUX1] - nv[COL_REGS.start + 3]));
+    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_OP0] - nv[COL_REGS.start + 1]));
+    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_OP1] - nv[COL_REGS.start + 2]));
+    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_AUX0] - nv[COL_REGS.start + 3]));
+    yield_constr.constraint_transition(lv[COL_S_PSDN] * (lv[COL_AUX1] - nv[COL_REGS.start + 4]));
 }
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
