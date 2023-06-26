@@ -10,3 +10,4 @@ mod mstore;
 mod mul;
 mod poseidon;
 mod ret;
+mod sload;
