@@ -264,6 +264,7 @@ impl Process {
         loop {
             self.register_selector = RegisterSelector::default();
             let registers_status = self.registers;
+            let ctx_regs_status = self.ctx_registers_stack.last().unwrap().clone();
             let pc_status = self.pc;
 
             let instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
@@ -845,6 +846,7 @@ impl Process {
                         self.immediate_data,
                         self.op1_imm,
                         self.opcode,
+                        ctx_regs_status,
                         registers_status,
                         self.register_selector.clone(),
                     );
@@ -863,7 +865,7 @@ impl Process {
                         AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()),
                         slot_key,
                     );
-                    let (tree_key, hash_row) = storage_key.hashed_key();
+                    let (tree_key, mut hash_row) = storage_key.hashed_key();
 
                     self.storage_log.push(WitnessStorageLog {
                         storage_log: StorageLog::new_write_log(tree_key, store_value),
@@ -881,6 +883,8 @@ impl Process {
                     self.register_selector.op1 = tree_key[1];
                     self.register_selector.dst = tree_key[2];
                     self.register_selector.aux0 = tree_key[3];
+                    hash_row.clk = self.clk;
+                    hash_row.opcode = 1 << Opcode::SSTORE as u64;
                     program.trace.builtin_posiedon.push(hash_row);
 
                     self.pc += step;
@@ -896,7 +900,7 @@ impl Process {
                         AccountTreeId::new(self.ctx_registers_stack.last().unwrap().clone()),
                         slot_key,
                     );
-                    let (tree_key, hash_row) = storage_key.hashed_key();
+                    let (tree_key, mut hash_row) = storage_key.hashed_key();
                     let path = tree_key_to_leaf_index(&tree_key);
 
                     let read_value;
@@ -928,21 +932,23 @@ impl Process {
                         tree_key_default(),
                     );
 
-                    self.register_selector.op0 = tree_key[0];
-                    self.register_selector.op1 = tree_key[1];
-                    self.register_selector.dst = tree_key[2];
-                    self.register_selector.aux0 = tree_key[3];
+                    self.register_selector.op0 = read_value[0];
+                    self.register_selector.op1 = read_value[1];
+                    self.register_selector.dst = read_value[2];
+                    self.register_selector.aux0 = read_value[3];
+                    hash_row.clk = self.clk;
+                    hash_row.opcode = 1 << Opcode::SLOAD as u64;
                     program.trace.builtin_posiedon.push(hash_row);
                     self.pc += step;
                 }
                 "poseidon" => {
-                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::POSEIDON as u8);
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::POSEIDON as u64);
                     let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
                     for i in 0..POSEIDON_INPUT_VALUE_LEN {
                         input[i] = self.registers[i + 1];
                     }
 
-                    let row = calculate_poseidon_and_generate_intermediate_trace_row(
+                    let mut row = calculate_poseidon_and_generate_intermediate_trace_row(
                         input,
                         PoseidonType::Normal,
                     );
@@ -953,6 +959,8 @@ impl Process {
                     self.register_selector.op1 = row.0[1];
                     self.register_selector.dst = row.0[2];
                     self.register_selector.aux0 = row.0[3];
+                    row.1.clk = self.clk;
+                    row.1.opcode = 1 << Opcode::POSEIDON as u64;
                     program.trace.builtin_posiedon.push(row.1);
                     self.pc += step;
                 }
@@ -970,6 +978,7 @@ impl Process {
                 self.immediate_data,
                 self.op1_imm,
                 self.opcode,
+                ctx_regs_status,
                 registers_status,
                 self.register_selector.clone(),
             );

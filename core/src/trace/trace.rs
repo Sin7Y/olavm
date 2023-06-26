@@ -1,4 +1,4 @@
-use crate::program::REGISTER_NUM;
+use crate::program::{CTX_REGISTER_NUM, REGISTER_NUM};
 use crate::utils::split_limbs_from_field;
 use crate::utils::split_u16_limbs_from_field;
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -126,6 +126,7 @@ pub struct Step {
     pub immediate_data: GoldilocksField,
     pub opcode: GoldilocksField,
     pub op1_imm: GoldilocksField,
+    pub ctx_regs: [GoldilocksField; CTX_REGISTER_NUM],
     pub regs: [GoldilocksField; REGISTER_NUM],
     pub register_selector: RegisterSelector,
 }
@@ -181,6 +182,8 @@ pub struct CmpRow {
 
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
 pub struct PoseidonRow {
+    pub clk: u32,
+    pub opcode: u32,
     pub input: [GoldilocksField; 12],
     pub full_0_1: [GoldilocksField; 12],
     pub full_0_2: [GoldilocksField; 12],
@@ -381,6 +384,7 @@ impl Trace {
         immediate_data: GoldilocksField,
         op1_imm: GoldilocksField,
         opcode: GoldilocksField,
+        ctx_regs: [GoldilocksField; CTX_REGISTER_NUM],
         regs: [GoldilocksField; REGISTER_NUM],
         register_selector: RegisterSelector,
     ) {
@@ -392,6 +396,7 @@ impl Trace {
             immediate_data,
             op1_imm,
             opcode,
+            ctx_regs,
             register_selector,
         };
         self.exec.push(step);

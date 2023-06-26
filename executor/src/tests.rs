@@ -1,11 +1,10 @@
 use crate::runner::OlaRunner;
 use crate::Process;
-use core::merkle_tree::db::Database;
-use core::merkle_tree::db::RocksDB;
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
 use core::program::Program;
+use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use log::{debug, LevelFilter};
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -523,7 +522,7 @@ fn storage_test() {
     }
 
     let mut process = Process::new();
-
+    process.ctx_registers_stack.push(Address::default());
     let res = process.execute(
         &mut program,
         &mut Some(prophets),
