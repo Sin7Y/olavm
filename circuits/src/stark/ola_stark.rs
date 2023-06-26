@@ -399,6 +399,7 @@ mod tests {
     use core::merkle_tree::tree::AccountTree;
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
+    use core::types::account::Address;
     use executor::Process;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -501,6 +502,16 @@ mod tests {
         test_by_asm_json("sqrt.json".to_string());
     }
 
+    #[test]
+    fn test_ola_poseidon() {
+        test_by_asm_json("poseidon.json".to_string());
+    }
+
+    #[test]
+    fn test_ola_storage() {
+        test_by_asm_json("storage.json".to_string());
+    }
+
     pub fn test_by_asm_json(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
@@ -524,6 +535,7 @@ mod tests {
         }
 
         let mut process = Process::new();
+        process.ctx_registers_stack.push(Address::default());
         let _ = process.execute(
             &mut program,
             &mut Some(prophets),
