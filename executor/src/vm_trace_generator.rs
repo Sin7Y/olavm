@@ -272,11 +272,12 @@ fn generate_vm_trace_cpu(intermediate_rows: &Vec<IntermediateRowCpu>) -> Result<
         };
         let step = Step {
             clk: inter_row.clk as u32,
-            pc: inter_row.pc as u64,
+            pc: inter_row.pc,
             instruction,
             immediate_data,
             opcode,
             op1_imm,
+            ctx_regs: [GoldilocksField::ZERO; 4],
             regs: inter_row.registers,
             register_selector,
         };

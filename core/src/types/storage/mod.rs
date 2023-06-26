@@ -35,7 +35,7 @@ impl StorageKey {
 
     pub fn raw_hashed_key(address: &Address, key: &TreeKey) -> (TreeKey, PoseidonRow) {
         let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
-        input.clone_from_slice(address);
+        input[0..4].clone_from_slice(address);
         input[4..].clone_from_slice(key);
         calculate_poseidon_and_generate_intermediate_trace_row(input, PoseidonType::Normal)
     }

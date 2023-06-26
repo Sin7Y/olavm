@@ -5,36 +5,38 @@ from enum import Enum
 import xlsxwriter
 import argparse
 
-
+REG_NUM = 10
+CTX_REG_NUM = 4
 class OpcodeValue(Enum):
-    SEL_ADD = 2 ** 34
-    SEL_MUL = 2 ** 33
-    SEL_EQ = 2 ** 32
-    SEL_ASSERT = 2 ** 31
-    SEL_MOV = 2 ** 30
-    SEL_JMP = 2 ** 29
-    SEL_CJMP = 2 ** 28
-    SEL_CALL = 2 ** 27
-    SEL_RET = 2 ** 26
-    SEL_MLOAD = 2 ** 25
-    SEL_MSTORE = 2 ** 24
-    SEL_END = 2 ** 23
+    SEL_ADD = 2 ** 31
+    SEL_MUL = 2 ** 30
+    SEL_EQ = 2 ** 29
+    SEL_ASSERT = 2 ** 28
+    SEL_MOV = 2 ** 27
+    SEL_JMP = 2 ** 26
+    SEL_CJMP = 2 ** 25
+    SEL_CALL = 2 ** 24
+    SEL_RET = 2 ** 23
+    SEL_MLOAD = 2 ** 22
+    SEL_MSTORE = 2 ** 21
+    SEL_END = 2 ** 20
 
-    SEL_RANGE_CHECK = 2 ** 22
-    SEL_AND = 2 ** 21
-    SEL_OR = 2 ** 20
-    SEL_XOR = 2 ** 19
-    SEL_NOT = 2 ** 18
-    SEL_NEQ = 2 ** 17
-    SEL_GTE = 2 ** 16
-    SEL_POSEIDON = 2 ** 15
-    SEL_SLOAD = 2 ** 14
-    SEL_SSTORE = 2 ** 13
+    SEL_RANGE_CHECK = 2 ** 19
+    SEL_AND = 2 ** 18
+    SEL_OR = 2 ** 17
+    SEL_XOR = 2 ** 16
+    SEL_NOT = 2 ** 15
+    SEL_NEQ = 2 ** 14
+    SEL_GTE = 2 ** 13
+    SEL_POSEIDON = 2 ** 12
+    SEL_SLOAD = 2 ** 11
+    SEL_SSTORE = 2 ** 10
 
 
 class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
+    CTX_REGS = "ctx_regs"
     REGS = 'regs'
     INST = 'instruction'
     OP1_IMM = 'op1_imm'
@@ -70,6 +72,12 @@ class JsonMainTraceColumnType(Enum):
 class MainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
+
+    CTX0 = "ctx0"
+    CTX1 = "ctx1"
+    CTX2 = "ctx2"
+    CTX3 = "ctx3"
+
     R0 = 'r0'
     R1 = 'r1'
     R2 = 'r2'
@@ -79,6 +87,9 @@ class MainTraceColumnType(Enum):
     R6 = 'r6'
     R7 = 'r7'
     R8 = 'r8'
+    R9 = 'r9'
+
+
 
     INST = 'inst'
     OP1_IMM = 'op1_imm'
@@ -101,6 +112,7 @@ class MainTraceColumnType(Enum):
     SEL_OP0_R6 = 'sel_op0_r6'
     SEL_OP0_R7 = 'sel_op0_r7'
     SEL_OP0_R8 = 'sel_op0_r8'
+    SEL_OP0_R9 = 'sel_op0_r9'
 
     SEL_OP1_R0 = 'sel_op1_r0'
     SEL_OP1_R1 = 'sel_op1_r1'
@@ -111,6 +123,7 @@ class MainTraceColumnType(Enum):
     SEL_OP1_R6 = 'sel_op1_r6'
     SEL_OP1_R7 = 'sel_op1_r7'
     SEL_OP1_R8 = 'sel_op1_r8'
+    SEL_OP1_R9 = 'sel_op1_r9'
 
     SEL_DST_R0 = 'sel_dst_r0'
     SEL_DST_R1 = 'sel_dst_r1'
@@ -121,6 +134,7 @@ class MainTraceColumnType(Enum):
     SEL_DST_R6 = 'sel_dst_r6'
     SEL_DST_R7 = 'sel_dst_r7'
     SEL_DST_R8 = 'sel_dst_r8'
+    SEL_DST_R9 = 'sel_dst_r9'
 
     SEL_ADD = 'sel_add'
     SEL_MUL = 'sel_mul'
@@ -237,6 +251,8 @@ class StorageHashTraceColumnType(Enum):
     OUTPUT = 'output'
 
 class PoseidonHashTraceColumnType(Enum):
+    CLK = "clk"
+    OPCODE = "opcode"
     INPUT = "input"
     FULL_0_1 = 'full_0_1'
     FULL_0_2 = 'full_0_2'
@@ -286,7 +302,15 @@ def main():
         col = 0
         for data in JsonMainTraceColumnType:
             if data.value == "regs":
-                for i in range(0, 9):
+                for i in range(0, REG_NUM):
+                    if args.format == 'hex':
+                        worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                            row[data.value][i] // (2 ** 32), row[data.value][i] % (2 ** 32)))
+                    else:
+                        worksheet.write(row_index, col, row[data.value][i])
+                    col += 1
+            elif data.value == "ctx_regs":
+                for i in range(0, CTX_REG_NUM):
                     if args.format == 'hex':
                         worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
                             row[data.value][i] // (2 ** 32), row[data.value][i] % (2 ** 32)))
@@ -501,6 +525,12 @@ def main():
                     data.value == "full_1_0" or data.value == "full_1_1" or  data.value == "full_1_2" or \
                     data.value == "full_1_3" or  data.value == "output":
                 worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "opcode":
+                worksheet.write(row_index, col,
+                                    '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                        row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
             col += 1
         row_index += 1
     workbook.close()

@@ -65,4 +65,3 @@ impl OlaNode {
             .execute(program, prophets, &mut self.account_tree)
     }
 }
-

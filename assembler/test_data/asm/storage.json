@@ -1,4 +1,4 @@
 {
-  "program": "main:\n.LBL0_0:\nmov r0 10\nmov r1 0\nmov r2 0\nmov r3 0\nmov r4 5\nmov r5 10\nmov r6 11\nmov r7 14\nsstore\nsload\nend",
+  "program": "inc_simple:\n.LBL10_0:\n  mov r1 0\n  mov r2 0\n  mov r3 0\n  mov r4 0\n  mov r5 100\n  mov r6 200\n  mov r7 300\n  mov r8 400\n  sstore \n  ret\nget:\n.LBL11_0:\n  mov r1 0\n  mov r2 0\n  mov r3 0\n  mov r4 0\n  sload \n  mov r1 r2\n  mov r1 r3\n  mov r2 r4\n  add r0 r1 r2\n  ret\nmain:\n.LBL12_0:\n  add r9 r9 5\n  mstore [r9,-2] r9\n  call inc_simple\n  call get\n  mstore [r9,-3] r0\n  add r9 r9 -5\n  end",
   "prophets": []
 }
