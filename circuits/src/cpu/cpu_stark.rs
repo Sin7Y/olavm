@@ -106,12 +106,27 @@ pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
     Column::single(COL_S_PSDN)
 }
 
-// get the data source for storage in Cput table
-pub fn ctl_data_with_storage<F: Field>() -> Vec<Column<F>> {
+// get the data source for storage in Cpu table
+pub fn ctl_data_cpu_sload<F: Field>() -> Vec<Column<F>> {
     Column::singles([
         COL_CLK,
         COL_OPCODE,
-        COL_START_REG,
+        COL_START_REG + 1,
+        COL_START_REG + 2,
+        COL_START_REG + 3,
+        COL_START_REG + 4,
+        COL_OP0,
+        COL_OP1,
+        COL_AUX0,
+        COL_AUX1,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_data_cpu_sstore<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_CLK,
+        COL_OPCODE,
         COL_START_REG + 1,
         COL_START_REG + 2,
         COL_START_REG + 3,
@@ -119,11 +134,17 @@ pub fn ctl_data_with_storage<F: Field>() -> Vec<Column<F>> {
         COL_START_REG + 5,
         COL_START_REG + 6,
         COL_START_REG + 7,
+        COL_START_REG + 8,
     ])
     .collect_vec()
 }
-pub fn ctl_filter_with_storage<F: Field>() -> Column<F> {
-    Column::sum([COL_S_SLOAD, COL_S_SSTORE])
+
+pub fn ctl_filter_with_sload<F: Field>() -> Column<F> {
+    Column::single(COL_S_SLOAD)
+}
+
+pub fn ctl_filter_with_sstore<F: Field>() -> Column<F> {
+    Column::single(COL_S_SSTORE)
 }
 
 // get the data source for Rangecheck in Cpu table
@@ -358,6 +379,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         mload::eval_packed_generic(lv, nv, yield_constr);
         mstore::eval_packed_generic(lv, nv, yield_constr);
         poseidon::eval_packed_generic(lv, nv, yield_constr);
+        sload::eval_packed_generic(lv, nv, yield_constr);
 
         // Last row must be `END`
         yield_constr.constraint_last_row(lv[COL_S_END] - P::ONES);
@@ -660,6 +682,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         mload::eval_ext_circuit(builder, lv, nv, yield_constr);
         mstore::eval_ext_circuit(builder, lv, nv, yield_constr);
         poseidon::eval_ext_circuit(builder, lv, nv, yield_constr);
+        sload::eval_ext_circuit(builder, lv, nv, yield_constr);
 
         // Last row must be `END`
         let last_end_cs = builder.sub_extension(lv[COL_S_END], one);

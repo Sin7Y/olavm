@@ -268,19 +268,23 @@ fn ctl_cpu_poseidon<F: Field>() -> CrossTableLookup<F> {
 }
 
 fn ctl_cpu_storage<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::Cpu,
-            cpu_stark::ctl_data_with_storage(),
-            Some(cpu_stark::ctl_filter_with_storage()),
-        )],
-        TableWithColumns::new(
-            Table::Storage,
-            storage_stark::ctl_data_with_cpu(),
-            Some(storage_stark::ctl_filter_with_cpu()),
-        ),
-        None,
-    )
+    let cpu_storage_sstore = TableWithColumns::new(
+        Table::Cpu,
+        cpu_stark::ctl_data_cpu_sstore(),
+        Some(cpu_stark::ctl_filter_with_sstore()),
+    );
+    let cpu_storage_sload = TableWithColumns::new(
+        Table::Cpu,
+        cpu_stark::ctl_data_cpu_sload(),
+        Some(cpu_stark::ctl_filter_with_sload()),
+    );
+    let all_cpu_lookers = vec![cpu_storage_sstore, cpu_storage_sload];
+    let storage_looked = TableWithColumns::new(
+        Table::Storage,
+        storage_stark::ctl_data_with_cpu(),
+        Some(storage_stark::ctl_filter_with_cpu()),
+    );
+    CrossTableLookup::new(all_cpu_lookers, storage_looked, None)
 }
 
 fn ctl_storage_hash<F: Field>() -> CrossTableLookup<F> {
