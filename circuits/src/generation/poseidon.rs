@@ -1,5 +1,6 @@
 use crate::builtins::poseidon::columns::*;
-use core::{trace::trace::PoseidonRow, util::poseidon_utils::*};
+use core::{trace::trace::PoseidonRow, util::poseidon_utils::*, vm::opcodes::OlaOpcode};
+use num::ToPrimitive;
 use plonky2::{field::types::PrimeField64, hash::hash_types::RichField};
 
 pub fn generate_poseidon_trace<F: RichField>(cells: &[PoseidonRow]) -> [Vec<F>; NUM_POSEIDON_COLS] {
@@ -16,6 +17,24 @@ pub fn generate_poseidon_trace<F: RichField>(cells: &[PoseidonRow]) -> [Vec<F>; 
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_POSEIDON_COLS];
     for (i, c) in cells.iter().enumerate() {
+        trace[COL_POSEIDON_CLK][i] = F::from_canonical_u32(c.clk);
+        trace[COL_POSEIDON_OPCODE][i] = F::from_canonical_u32(c.opcode);
+
+        trace[COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON][i] =
+            if c.opcode == OlaOpcode::POSEIDON.binary_bit_mask().to_u32().unwrap() {
+                F::ONE
+            } else {
+                F::ZERO
+            };
+        trace[COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY][i] = if c.opcode
+            == OlaOpcode::SSTORE.binary_bit_mask().to_u32().unwrap()
+            || c.opcode == OlaOpcode::SLOAD.binary_bit_mask().to_u32().unwrap()
+        {
+            F::ONE
+        } else {
+            F::ZERO
+        };
+
         for j in 0..12 {
             trace[COL_POSEIDON_INPUT_RANGE.start + j][i] =
                 F::from_canonical_u64(c.input[j].to_canonical_u64());
@@ -56,12 +75,15 @@ pub fn generate_poseidon_trace<F: RichField>(cells: &[PoseidonRow]) -> [Vec<F>; 
             trace[COL_POSEIDON_FULL_ROUND_1_3_STATE_RANGE.start + j][i] =
                 F::from_canonical_u64(c.full_1_3[j].to_canonical_u64());
         }
-        trace[COL_POSEIDON_FILTER_LOOKED_FOR_MAIN][i] = F::from_canonical_u64(1);
     }
 
     // Pad trace to power of two.
     if num_padded_rows != num_filled_row_len {
         for i in num_filled_row_len..num_padded_rows {
+            trace[COL_POSEIDON_CLK][i] = F::ZERO;
+            trace[COL_POSEIDON_OPCODE][i] = F::ZERO;
+            trace[COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON][i] = F::ZERO;
+            trace[COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY][i] = F::ZERO;
             for j in 0..12 {
                 trace[COL_POSEIDON_INPUT_RANGE.start + j][i] =
                     F::from_canonical_u64(POSEIDON_ZERO_HASH_INPUT[j]);
@@ -102,7 +124,6 @@ pub fn generate_poseidon_trace<F: RichField>(cells: &[PoseidonRow]) -> [Vec<F>; 
                 trace[COL_POSEIDON_FULL_ROUND_1_3_STATE_RANGE.start + j][i] =
                     F::from_canonical_u64(POSEIDON_ZERO_HASH_FULL_1_3[j]);
             }
-            trace[COL_POSEIDON_FILTER_LOOKED_FOR_MAIN][i] = F::from_canonical_u64(0);
         }
     }
 

@@ -22,7 +22,8 @@ use std::{collections::BTreeMap, ops::Range};
 // ┴───────┴───────┴───────┴───────┴───────┘
 pub(crate) const COL_CLK: usize = 0;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
-pub(crate) const COL_START_REG: usize = COL_PC + 1;
+pub(crate) const COL_CTX_REG_RANGE: Range<usize> = COL_PC + 1..COL_PC + 4;
+pub(crate) const COL_START_REG: usize = COL_CTX_REG_RANGE.end;
 pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTER_NUM;
 
 // Instruction related columns(5):
@@ -116,6 +117,10 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     m.insert(COL_CLK, "clk".to_string());
     m.insert(COL_PC, "pc".to_string());
+    for (index, col) in COL_CTX_REG_RANGE.into_iter().enumerate() {
+        let name = format!("ctx_reg_{}", index);
+        m.insert(col, name);
+    }
     for (index, col) in COL_REGS.into_iter().enumerate() {
         let name = format!("r{}", index);
         m.insert(col, name);

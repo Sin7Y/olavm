@@ -2,6 +2,7 @@ use core::util::poseidon_utils::{
     constant_layer_field, mds_layer_field, mds_partial_layer_fast_field, mds_partial_layer_init,
     partial_first_constant_layer, sbox_layer_field, sbox_monomial, POSEIDON_STATE_WIDTH,
 };
+use core::vm::opcodes::OlaOpcode;
 use std::marker::PhantomData;
 
 use crate::builtins::poseidon::columns::*;
@@ -67,6 +68,18 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
     {
+        let filter_for_poseidon = vars.local_values[COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON];
+        let filter_for_tree_key = vars.local_values[COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY];
+        let opcode = vars.local_values[COL_POSEIDON_OPCODE];
+        yield_constr.constraint(
+            filter_for_poseidon
+                * (opcode - P::Scalar::from_canonical_u64(OlaOpcode::POSEIDON.binary_bit_mask())),
+        );
+        yield_constr.constraint(
+            filter_for_tree_key
+                * (opcode - P::Scalar::from_canonical_u64(OlaOpcode::SLOAD.binary_bit_mask()))
+                * (opcode - P::Scalar::from_canonical_u64(OlaOpcode::SSTORE.binary_bit_mask())),
+        );
         let mut state: [P; POSEIDON_STATE_WIDTH] = vars.local_values[COL_POSEIDON_INPUT_RANGE]
             .try_into()
             .unwrap();
@@ -156,7 +169,43 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::single(COL_POSEIDON_FILTER_LOOKED_FOR_MAIN)
+    Column::single(COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON)
+}
+
+pub fn ctl_data_with_cpu_tree_key<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_POSEIDON_CLK,
+        COL_POSEIDON_OPCODE,
+        COL_POSEIDON_INPUT_RANGE.start + 4,
+        COL_POSEIDON_INPUT_RANGE.start + 5,
+        COL_POSEIDON_INPUT_RANGE.start + 6,
+        COL_POSEIDON_INPUT_RANGE.start + 7,
+        COL_POSEIDON_INPUT_RANGE.start + 8,
+        COL_POSEIDON_INPUT_RANGE.start + 9,
+        COL_POSEIDON_INPUT_RANGE.start + 10,
+        COL_POSEIDON_INPUT_RANGE.start + 11,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_cpu_tree_key<F: Field>() -> Column<F> {
+    Column::single(COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY)
+}
+
+pub fn ctl_data_with_storage_tree_key<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_POSEIDON_CLK,
+        COL_POSEIDON_OPCODE,
+        COL_POSEIDON_OUTPUT_RANGE.start,
+        COL_POSEIDON_OUTPUT_RANGE.start + 1,
+        COL_POSEIDON_OUTPUT_RANGE.start + 2,
+        COL_POSEIDON_OUTPUT_RANGE.start + 3,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_storage_tree_key<F: Field>() -> Column<F> {
+    Column::single(COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY)
 }
 
 mod test {

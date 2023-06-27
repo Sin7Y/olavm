@@ -87,6 +87,8 @@ pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
 // get the data source for poseidon in Cpu table
 pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
     Column::singles([
+        COL_CLK,
+        COL_OPCODE,
         COL_START_REG + 1,
         COL_START_REG + 2,
         COL_START_REG + 3,
@@ -104,6 +106,25 @@ pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
 }
 pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
     Column::single(COL_S_PSDN)
+}
+
+pub fn ctl_data_with_poseidon_tree_key<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_CLK,
+        COL_OPCODE,
+        COL_CTX_REG_RANGE.start,
+        COL_CTX_REG_RANGE.start + 1,
+        COL_CTX_REG_RANGE.start + 2,
+        COL_CTX_REG_RANGE.start + 3,
+        COL_START_REG + 1,
+        COL_START_REG + 2,
+        COL_START_REG + 3,
+        COL_START_REG + 4,
+    ])
+    .collect_vec()
+}
+pub fn ctl_filter_with_poseidon_tree_key<F: Field>() -> Column<F> {
+    Column::sum([COL_S_SLOAD, COL_S_SSTORE])
 }
 
 // get the data source for storage in Cpu table
