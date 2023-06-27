@@ -1,5 +1,5 @@
 use core::{
-    program::{instruction::Opcode, REGISTER_NUM},
+    program::{instruction::Opcode, CTX_REGISTER_NUM, REGISTER_NUM},
     trace::trace::Step,
 };
 
@@ -24,6 +24,9 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
         // Context related columns.
         trace[cpu::COL_CLK][i] = F::from_canonical_u32(s.clk);
         trace[cpu::COL_PC][i] = F::from_canonical_u64(s.pc);
+        for j in 0..CTX_REGISTER_NUM {
+            trace[cpu::COL_CTX_REG_RANGE.start + j][i] = F::from_canonical_u64(s.regs[j].0);
+        }
         for j in 0..REGISTER_NUM {
             trace[cpu::COL_START_REG + j][i] = F::from_canonical_u64(s.regs[j].0);
         }

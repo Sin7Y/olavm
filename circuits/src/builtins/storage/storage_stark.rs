@@ -92,6 +92,18 @@ pub fn ctl_data_with_hash<F: Field>() -> Vec<Column<F>> {
     .collect_vec()
 }
 
+pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_STORAGE_CLK,
+        COL_STORAGE_OPCODE,
+        COL_STORAGE_ADDR_RANGE.start,
+        COL_STORAGE_ADDR_RANGE.start + 1,
+        COL_STORAGE_ADDR_RANGE.start + 2,
+        COL_STORAGE_ADDR_RANGE.start + 3,
+    ])
+    .collect_vec()
+}
+
 pub fn ctl_filter_with_hash<F: Field>() -> Column<F> {
     Column::single(COL_STORAGE_FILTER_LOOKED_FOR_MAIN)
 }
