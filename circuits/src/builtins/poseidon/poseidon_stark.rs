@@ -235,6 +235,12 @@ mod test {
         test_poseidon_with_asm_file_name(file_name);
     }
 
+    #[test]
+    fn test_storage() {
+        let file_name = "storage.json".to_string();
+        test_poseidon_with_asm_file_name(file_name);
+    }
+
     fn test_poseidon_with_asm_file_name(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
