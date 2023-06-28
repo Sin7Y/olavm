@@ -103,7 +103,8 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
         ctl_rangecheck_cpu(),
         ctl_cpu_poseidon(),
         ctl_cpu_poseidon_tree_key(),
-        ctl_cpu_storage(),
+        ctl_cpu_storage_sstore(),
+        ctl_cpu_storage_sload(),
         ctl_storage_poseidon_tree_key(),
         ctl_storage_hash(),
     ]
@@ -285,24 +286,36 @@ fn ctl_cpu_poseidon_tree_key<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-fn ctl_cpu_storage<F: Field>() -> CrossTableLookup<F> {
-    let cpu_storage_sstore = TableWithColumns::new(
-        Table::Cpu,
-        cpu_stark::ctl_data_cpu_sstore(),
-        Some(cpu_stark::ctl_filter_with_sstore()),
-    );
-    let cpu_storage_sload = TableWithColumns::new(
-        Table::Cpu,
-        cpu_stark::ctl_data_cpu_sload(),
-        Some(cpu_stark::ctl_filter_with_sload()),
-    );
-    let all_cpu_lookers = vec![cpu_storage_sstore, cpu_storage_sload];
-    let storage_looked = TableWithColumns::new(
-        Table::Storage,
-        storage_stark::ctl_data_with_cpu(),
-        Some(storage_stark::ctl_filter_with_cpu()),
-    );
-    CrossTableLookup::new(all_cpu_lookers, storage_looked, None)
+fn ctl_cpu_storage_sstore<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_sstore(),
+            Some(cpu_stark::ctl_filter_with_sstore()),
+        )],
+        TableWithColumns::new(
+            Table::Storage,
+            storage_stark::ctl_data_with_cpu(),
+            Some(storage_stark::ctl_filter_with_cpu_sstore()),
+        ),
+        None,
+    )
+}
+
+fn ctl_cpu_storage_sload<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_sload(),
+            Some(cpu_stark::ctl_filter_with_sload()),
+        )],
+        TableWithColumns::new(
+            Table::Storage,
+            storage_stark::ctl_data_with_cpu(),
+            Some(storage_stark::ctl_filter_with_cpu_sload()),
+        ),
+        None,
+    )
 }
 
 fn ctl_storage_poseidon_tree_key<F: Field>() -> CrossTableLookup<F> {

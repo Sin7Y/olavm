@@ -1,6 +1,7 @@
 use core::trace::trace::StorageHashRow;
 use core::trace::trace::StorageRow;
 use core::util::poseidon_utils::*;
+use core::vm::opcodes::OlaOpcode;
 use plonky2::{field::types::PrimeField64, hash::hash_types::RichField};
 
 use crate::builtins::storage::columns::*;
@@ -34,7 +35,18 @@ pub fn generate_storage_trace<F: RichField>(cells: &[StorageRow]) -> [Vec<F>; CO
             trace[COL_STORAGE_VALUE_RANGE.start + j][i] =
                 F::from_canonical_u64(c.value[j].to_canonical_u64());
         }
-        trace[COL_STORAGE_FILTER_LOOKED_FOR_MAIN][i] = F::ONE;
+        trace[COL_STORAGE_FILTER_LOOKED_FOR_SSTORE][i] =
+            if c.opcode.to_canonical_u64() == OlaOpcode::SSTORE.binary_bit_mask() {
+                F::ONE
+            } else {
+                F::ZERO
+            };
+        trace[COL_STORAGE_FILTER_LOOKED_FOR_SLOAD][i] =
+            if c.opcode.to_canonical_u64() == OlaOpcode::SLOAD.binary_bit_mask() {
+                F::ONE
+            } else {
+                F::ZERO
+            };
         trace[COL_STORAGE_LOOKING_RC][i] = match i {
             0 => F::ZERO,
             _ => F::ONE,
@@ -145,7 +157,7 @@ pub fn generate_storage_hash_trace<F: RichField>(
                 F::from_canonical_u64(c.full_1_3[j].to_canonical_u64());
         }
 
-        trace[FILTER_LOOKED_FOR_STORAGE][i] = match c.layer - 1 {
+        trace[FILTER_LOOKED_FOR_STORAGE][i] = match 256 - c.layer {
             0 => F::ONE,
             _ => F::ZERO,
         }

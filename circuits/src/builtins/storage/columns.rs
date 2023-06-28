@@ -10,8 +10,10 @@ pub(crate) const COL_STORAGE_ADDR_RANGE: Range<usize> =
     COL_STORAGE_ROOT_RANGE.end..COL_STORAGE_ROOT_RANGE.end + 4;
 pub(crate) const COL_STORAGE_VALUE_RANGE: Range<usize> =
     COL_STORAGE_ADDR_RANGE.end..COL_STORAGE_ADDR_RANGE.end + 4;
-pub(crate) const COL_STORAGE_FILTER_LOOKED_FOR_MAIN: usize = COL_STORAGE_VALUE_RANGE.end;
-pub(crate) const COL_STORAGE_LOOKING_RC: usize = COL_STORAGE_FILTER_LOOKED_FOR_MAIN + 1;
+pub(crate) const COL_STORAGE_FILTER_LOOKED_FOR_SSTORE: usize = COL_STORAGE_VALUE_RANGE.end;
+pub(crate) const COL_STORAGE_FILTER_LOOKED_FOR_SLOAD: usize =
+    COL_STORAGE_FILTER_LOOKED_FOR_SSTORE + 1;
+pub(crate) const COL_STORAGE_LOOKING_RC: usize = COL_STORAGE_FILTER_LOOKED_FOR_SLOAD + 1;
 pub(crate) const COL_STORAGE_NUM: usize = COL_STORAGE_LOOKING_RC + 1;
 
 pub(crate) const COL_STORAGE_HASH_IDX_STORAGE: usize = 0;
@@ -81,8 +83,12 @@ pub(crate) fn get_storage_col_name_map() -> BTreeMap<usize, String> {
         m.insert(col, name);
     }
     m.insert(
-        COL_STORAGE_FILTER_LOOKED_FOR_MAIN,
-        String::from("COL_STORAGE_FILTER_LOOKED_FOR_MAIN"),
+        COL_STORAGE_FILTER_LOOKED_FOR_SSTORE,
+        String::from("COL_STORAGE_FILTER_LOOKED_FOR_SSTORE"),
+    );
+    m.insert(
+        COL_STORAGE_FILTER_LOOKED_FOR_SLOAD,
+        String::from("COL_STORAGE_FILTER_LOOKED_FOR_SLOAD"),
     );
     m.insert(
         COL_STORAGE_LOOKING_RC,

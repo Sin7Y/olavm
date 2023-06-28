@@ -1,3 +1,4 @@
+use core::vm::opcodes::OlaOpcode;
 use itertools::Itertools;
 use plonky2::{
     field::{extension::Extendable, types::Field},
@@ -9,8 +10,9 @@ use crate::stark::{cross_table_lookup::Column, stark::Stark};
 
 use super::columns::{
     COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_DIFF_CLK,
-    COL_STORAGE_FILTER_LOOKED_FOR_MAIN, COL_STORAGE_LOOKING_RC, COL_STORAGE_NUM,
-    COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE, COL_STORAGE_VALUE_RANGE,
+    COL_STORAGE_FILTER_LOOKED_FOR_SLOAD, COL_STORAGE_FILTER_LOOKED_FOR_SSTORE,
+    COL_STORAGE_LOOKING_RC, COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE,
+    COL_STORAGE_VALUE_RANGE,
 };
 #[derive(Copy, Clone, Default)]
 pub struct StorageStark<F, const D: usize> {
@@ -33,6 +35,18 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
         let lv_diff_clk = vars.local_values[COL_STORAGE_DIFF_CLK];
         let nv_diff_clk = vars.next_values[COL_STORAGE_DIFF_CLK];
         let filter_looking_rc = vars.local_values[COL_STORAGE_LOOKING_RC];
+        let filter_looked_sstore = vars.local_values[COL_STORAGE_FILTER_LOOKED_FOR_SSTORE];
+        let filter_looked_sload = vars.local_values[COL_STORAGE_FILTER_LOOKED_FOR_SLOAD];
+        let opcode = vars.local_values[COL_STORAGE_OPCODE];
+        yield_constr.constraint_transition(
+            (opcode - P::Scalar::from_canonical_u64(OlaOpcode::SSTORE.binary_bit_mask()))
+                * filter_looked_sstore,
+        );
+        yield_constr.constraint_transition(
+            (opcode - P::Scalar::from_canonical_u64(OlaOpcode::SLOAD.binary_bit_mask()))
+                * filter_looked_sload,
+        );
+
         // clk diff constraint
         yield_constr.constraint_transition(nv_clk * (nv_clk - lv_clk - nv_diff_clk));
         // rc filter constraint
@@ -65,8 +79,12 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
     .collect_vec()
 }
 
-pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::single(COL_STORAGE_FILTER_LOOKED_FOR_MAIN)
+pub fn ctl_filter_with_cpu_sstore<F: Field>() -> Column<F> {
+    Column::single(COL_STORAGE_FILTER_LOOKED_FOR_SSTORE)
+}
+
+pub fn ctl_filter_with_cpu_sload<F: Field>() -> Column<F> {
+    Column::single(COL_STORAGE_FILTER_LOOKED_FOR_SLOAD)
 }
 
 pub fn ctl_data_with_hash<F: Field>() -> Vec<Column<F>> {
@@ -100,7 +118,10 @@ pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_hash<F: Field>() -> Column<F> {
-    Column::single(COL_STORAGE_FILTER_LOOKED_FOR_MAIN)
+    Column::sum([
+        COL_STORAGE_FILTER_LOOKED_FOR_SSTORE,
+        COL_STORAGE_FILTER_LOOKED_FOR_SLOAD,
+    ])
 }
 mod tests {
     use crate::builtins::storage::columns::get_storage_col_name_map;
