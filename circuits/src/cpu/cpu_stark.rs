@@ -129,7 +129,7 @@ pub fn ctl_filter_with_poseidon_tree_key<F: Field>() -> Column<F> {
 
 // get the data source for storage in Cpu table
 pub fn ctl_data_cpu_sload<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP0, COL_OP1, COL_AUX0, COL_AUX1]).collect_vec()
+    Column::singles([COL_CLK, COL_OPCODE, COL_OP0, COL_OP1, COL_DST, COL_AUX0]).collect_vec()
 }
 
 pub fn ctl_data_cpu_sstore<F: Field>() -> Vec<Column<F>> {

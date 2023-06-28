@@ -165,7 +165,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
 
         // ctl filter
         yield_constr.constraint(lv_filter * (P::ONES - lv_filter));
-        yield_constr.constraint(lv_filter * (lv_layer - lv_filter));
+        yield_constr.constraint(lv_filter * (lv_layer - P::Scalar::from_canonical_u64(256)));
 
         // path continuity constraints
         for i in 0..4 {

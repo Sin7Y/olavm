@@ -25,6 +25,7 @@ use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::storage::storage_hash::StorageHashStark;
+use crate::builtins::storage::storage_stark::StorageStark;
 //use crate::columns::NUM_CPU_COLS;
 use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;
@@ -58,6 +59,7 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
 {
     let (traces, public_values) = generate_traces(program, ola_stark);
@@ -82,6 +84,7 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
 {
     let rate_bits = config.fri_config.rate_bits;

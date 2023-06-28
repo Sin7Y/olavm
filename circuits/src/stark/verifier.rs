@@ -22,6 +22,7 @@ use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::storage::storage_hash::StorageHashStark;
+use crate::builtins::storage::storage_stark::StorageStark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::MemoryStark;
 
@@ -37,6 +38,7 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
     [(); C::Hasher::HASH_SIZE]:,
 {
