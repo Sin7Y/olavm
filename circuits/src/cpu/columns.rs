@@ -1,4 +1,4 @@
-use core::program::REGISTER_NUM;
+use core::program::{CTX_REGISTER_NUM, REGISTER_NUM};
 use std::{collections::BTreeMap, ops::Range};
 
 // The Olavm trace for AIR:
@@ -22,7 +22,7 @@ use std::{collections::BTreeMap, ops::Range};
 // ┴───────┴───────┴───────┴───────┴───────┘
 pub(crate) const COL_CLK: usize = 0;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
-pub(crate) const COL_CTX_REG_RANGE: Range<usize> = COL_PC + 1..COL_PC + 4;
+pub(crate) const COL_CTX_REG_RANGE: Range<usize> = COL_PC + 1..COL_PC + 1 + CTX_REGISTER_NUM;
 pub(crate) const COL_START_REG: usize = COL_CTX_REG_RANGE.end;
 pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTER_NUM;
 

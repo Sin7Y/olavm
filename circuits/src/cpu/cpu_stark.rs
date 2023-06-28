@@ -129,15 +129,7 @@ pub fn ctl_filter_with_poseidon_tree_key<F: Field>() -> Column<F> {
 
 // get the data source for storage in Cpu table
 pub fn ctl_data_cpu_sload<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        COL_CLK,
-        COL_OPCODE,
-        COL_OP0,
-        COL_OP1,
-        COL_AUX0,
-        COL_AUX1,
-    ])
-    .collect_vec()
+    Column::singles([COL_CLK, COL_OPCODE, COL_OP0, COL_OP1, COL_AUX0, COL_AUX1]).collect_vec()
 }
 
 pub fn ctl_data_cpu_sstore<F: Field>() -> Vec<Column<F>> {
@@ -751,6 +743,18 @@ mod tests {
     #[test]
     fn test_sqrt() {
         let program_path = "sqrt.json";
+        test_cpu_with_asm_file_name(program_path.to_string());
+    }
+
+    #[test]
+    fn test_poseidon() {
+        let program_path = "poseidon.json";
+        test_cpu_with_asm_file_name(program_path.to_string());
+    }
+
+    #[test]
+    fn test_storage() {
+        let program_path = "storage.json";
         test_cpu_with_asm_file_name(program_path.to_string());
     }
 
