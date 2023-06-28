@@ -132,10 +132,6 @@ pub fn ctl_data_cpu_sload<F: Field>() -> Vec<Column<F>> {
     Column::singles([
         COL_CLK,
         COL_OPCODE,
-        COL_START_REG + 1,
-        COL_START_REG + 2,
-        COL_START_REG + 3,
-        COL_START_REG + 4,
         COL_OP0,
         COL_OP1,
         COL_AUX0,
@@ -148,10 +144,6 @@ pub fn ctl_data_cpu_sstore<F: Field>() -> Vec<Column<F>> {
     Column::singles([
         COL_CLK,
         COL_OPCODE,
-        COL_START_REG + 1,
-        COL_START_REG + 2,
-        COL_START_REG + 3,
-        COL_START_REG + 4,
         COL_START_REG + 5,
         COL_START_REG + 6,
         COL_START_REG + 7,

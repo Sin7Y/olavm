@@ -62,10 +62,6 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
         COL_STORAGE_VALUE_RANGE.start + 1,
         COL_STORAGE_VALUE_RANGE.start + 2,
         COL_STORAGE_VALUE_RANGE.start + 3,
-        COL_STORAGE_ADDR_RANGE.start,
-        COL_STORAGE_ADDR_RANGE.start + 1,
-        COL_STORAGE_ADDR_RANGE.start + 2,
-        COL_STORAGE_ADDR_RANGE.start + 3,
     ])
     .collect_vec()
 }
