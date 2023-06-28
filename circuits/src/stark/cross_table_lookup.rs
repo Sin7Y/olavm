@@ -249,7 +249,7 @@ pub fn cross_table_lookup_data<F: RichField, C: GenericConfig<D, F = F>, const D
         default,
     } in cross_table_lookups
     {
-        for &challenge in &challenges.challenges {
+        for &challenge in&challenges.challenges {
             let zs_looking = looking_tables.iter().map(|table| {
                 partial_products(
                     &trace_poly_values[table.table as usize],

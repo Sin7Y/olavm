@@ -104,6 +104,15 @@ pub fn generate_storage_hash_trace<F: RichField>(
             trace[COL_STORAGE_HASH_ADDR_RANGE.start + j][i] =
                 F::from_canonical_u64(c.addr[j].to_canonical_u64());
         }
+
+        for j in 0..4 {
+            trace[COL_STORAGE_HASH_ROOT_RANGE.start + j][i] = if c.layer == 1 {
+                F::from_canonical_u64(c.output[j].to_canonical_u64())
+            } else {
+                trace[COL_STORAGE_HASH_ROOT_RANGE.start + j][i - 1]
+            }
+        }
+
         for j in 0..4 {
             trace[COL_STORAGE_HASH_CAPACITY_RANGE.start + j][i] =
                 F::from_canonical_u64(c.caps[j].to_canonical_u64());
@@ -166,6 +175,11 @@ pub fn generate_storage_hash_trace<F: RichField>(
     // Pad trace to power of two.
     if num_padded_rows != num_filled_row_len {
         for i in num_filled_row_len..num_padded_rows {
+            for j in 0..4 {
+                trace[COL_STORAGE_HASH_ROOT_RANGE.start + j][i] =
+                    trace[COL_STORAGE_HASH_ROOT_RANGE.start + j][num_filled_row_len - 1];
+            }
+
             trace[COL_STORAGE_HASH_CAPACITY_RANGE.start][i] = F::ONE;
             for j in 0..12 {
                 trace[COL_STORAGE_HASH_OUTPUT_RANGE.start + j][i] =
@@ -209,7 +223,7 @@ pub fn generate_storage_hash_trace<F: RichField>(
     trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
         panic!(
             "Expected a Vec of length {} but it was {}",
-            COL_STORAGE_NUM,
+            STORAGE_HASH_NUM,
             v.len()
         )
     })

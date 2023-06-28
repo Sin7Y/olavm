@@ -96,11 +96,33 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         let lv_deltas: [P; 4] = vars.local_values[COL_STORAGE_HASH_DELTA_RANGE]
             .try_into()
             .unwrap();
-        let output: [P; 12] = vars.next_values[COL_STORAGE_HASH_OUTPUT_RANGE]
+        let lv_output: [P; 12] = vars.local_values[COL_STORAGE_HASH_OUTPUT_RANGE]
             .try_into()
             .unwrap();
-        let nv_hash: [P; 4] = [output[0], output[1], output[2], output[3]];
+        let nv_output: [P; 12] = vars.next_values[COL_STORAGE_HASH_OUTPUT_RANGE]
+            .try_into()
+            .unwrap();
+        let nv_hash: [P; 4] = [nv_output[0], nv_output[1], nv_output[2], nv_output[3]];
         let lv_filter = vars.local_values[FILTER_LOOKED_FOR_STORAGE];
+        let lv_root: [P; 4] = vars.local_values[COL_STORAGE_HASH_ROOT_RANGE]
+            .try_into()
+            .unwrap();
+        let nv_root: [P; 4] = vars.next_values[COL_STORAGE_HASH_ROOT_RANGE]
+            .try_into()
+            .unwrap();
+
+        // root
+        // let lv_is_layer1 = if lv_layer.is_one() {
+        //     P::ONES
+        // } else {
+        //     P::ZEROS
+        // };
+        // for i in 0..4 {
+        //     yield_constr.constraint_transition(lv_is_layer1 * (lv_root[i] - lv_output[i]));
+        // }
+        for i in 0..4 {
+            yield_constr.constraint_transition(lv_is_layer256 * (lv_root[i] - nv_root[i]));
+        }
 
         // cap should be 1,0,0,0
         lv_cap.iter().enumerate().for_each(|(i, cap_ele)| {
@@ -260,14 +282,14 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
 
 pub fn ctl_data_with_storage<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_STORAGE_HASH_OUTPUT_RANGE.start,
-        COL_STORAGE_HASH_OUTPUT_RANGE.start + 1,
-        COL_STORAGE_HASH_OUTPUT_RANGE.start + 2,
-        COL_STORAGE_HASH_OUTPUT_RANGE.start + 3,
-        COL_STORAGE_ADDR_RANGE.start,
-        COL_STORAGE_ADDR_RANGE.start + 1,
-        COL_STORAGE_ADDR_RANGE.start + 2,
-        COL_STORAGE_ADDR_RANGE.start + 3,
+        COL_STORAGE_HASH_ROOT_RANGE.start,
+        COL_STORAGE_HASH_ROOT_RANGE.start + 1,
+        COL_STORAGE_HASH_ROOT_RANGE.start + 2,
+        COL_STORAGE_HASH_ROOT_RANGE.start + 3,
+        COL_STORAGE_HASH_ADDR_RANGE.start,
+        COL_STORAGE_HASH_ADDR_RANGE.start + 1,
+        COL_STORAGE_HASH_ADDR_RANGE.start + 2,
+        COL_STORAGE_HASH_ADDR_RANGE.start + 3,
         COL_STORAGE_HASH_PATH_RANGE.start,
         COL_STORAGE_HASH_PATH_RANGE.start + 1,
         COL_STORAGE_HASH_PATH_RANGE.start + 2,

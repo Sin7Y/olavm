@@ -26,8 +26,10 @@ pub(crate) const COL_STORAGE_HASH_IS_LAYER192: usize = COL_STORAGE_HASH_IS_LAYER
 pub(crate) const COL_STORAGE_HASH_IS_LAYER256: usize = COL_STORAGE_HASH_IS_LAYER192 + 1;
 pub(crate) const COL_STORAGE_HASH_ADDR_RANGE: Range<usize> =
     COL_STORAGE_HASH_IS_LAYER256 + 1..COL_STORAGE_HASH_IS_LAYER256 + 1 + 4;
-pub(crate) const COL_STORAGE_HASH_CAPACITY_RANGE: Range<usize> =
+pub(crate) const COL_STORAGE_HASH_ROOT_RANGE: Range<usize> =
     COL_STORAGE_HASH_ADDR_RANGE.end..COL_STORAGE_HASH_ADDR_RANGE.end + 4;
+pub(crate) const COL_STORAGE_HASH_CAPACITY_RANGE: Range<usize> =
+    COL_STORAGE_HASH_ROOT_RANGE.end..COL_STORAGE_HASH_ROOT_RANGE.end + 4;
 pub(crate) const COL_STORAGE_HASH_PATH_RANGE: Range<usize> =
     COL_STORAGE_HASH_CAPACITY_RANGE.end..COL_STORAGE_HASH_CAPACITY_RANGE.end + 4;
 pub(crate) const COL_STORAGE_HASH_SIB_RANGE: Range<usize> =
@@ -109,6 +111,10 @@ pub(crate) fn get_storage_hash_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_STORAGE_HASH_IS_LAYER256, String::from("IS_LAYER256"));
     for (index, col) in COL_STORAGE_HASH_ADDR_RANGE.into_iter().enumerate() {
         let name = format!("ADDR_LIMB_{}", index);
+        m.insert(col, name);
+    }
+    for (index, col) in COL_STORAGE_HASH_ROOT_RANGE.into_iter().enumerate() {
+        let name = format!("ROOT_LIMB_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_CAPACITY_RANGE.into_iter().enumerate() {
