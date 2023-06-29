@@ -1,4 +1,4 @@
 {
-  "program": "mov r0 8\nmov r1 2\nmov r2 3\nadd r3 r0 r1\nmul r4 r3 r2\nand r5 r4 r3\nor r6 r1 r4\nxor r7 r5 r2\nor r3 r2 r3\nand r4 r4 r3\nend",
+  "program": "main:\nmov r0 8\nmov r1 2\nmov r2 3\nadd r3 r0 r1\nmul r4 r3 r2\nand r5 r4 r3\nor r6 r1 r4\nxor r7 r5 r2\nor r3 r2 r3\nand r4 r4 r3\nend",
   "prophets": []
 }
