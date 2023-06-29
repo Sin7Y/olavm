@@ -24,6 +24,7 @@ pub fn idx_to_merkle_path(idx: U256) -> impl DoubleEndedIterator<Item = LevelInd
     level_index.into_iter()
 }
 
+#[allow(unused)]
 pub(crate) fn children_idxs(level_idx: &LevelIndex) -> (LevelIndex, LevelIndex) {
     (
         (level_idx.0 .0 + 1, level_idx.0 .1 << 1).into(),

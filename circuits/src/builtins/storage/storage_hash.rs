@@ -269,9 +269,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-        vars: crate::stark::vars::StarkEvaluationTargets<D, { Self::COLUMNS }>,
-        yield_constr: &mut crate::stark::constraint_consumer::RecursiveConstraintConsumer<F, D>,
+        _builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
+        _vars: crate::stark::vars::StarkEvaluationTargets<D, { Self::COLUMNS }>,
+        _yield_constr: &mut crate::stark::constraint_consumer::RecursiveConstraintConsumer<F, D>,
     ) {
     }
 
@@ -305,7 +305,7 @@ pub fn ctl_filter_with_storage<F: Field>() -> Column<F> {
 mod test {
     use crate::builtins::storage::columns::{get_storage_hash_col_name_map, STORAGE_HASH_NUM};
     use crate::{
-        builtins::storage::{storage_hash::StorageHashStark, storage_stark::StorageStark},
+        builtins::storage::storage_hash::StorageHashStark,
         generation::storage::generate_storage_hash_trace,
         stark::{constraint_consumer::ConstraintConsumer, stark::Stark, vars::StarkEvaluationVars},
         test_utils::test_stark_with_asm_path,

@@ -138,9 +138,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, { Self::COLUMNS }>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, { Self::COLUMNS }>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
         // todo
     }

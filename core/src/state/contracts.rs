@@ -1,4 +1,3 @@
-use crate::storage::db::RocksDB;
 use crate::types::merkle_tree::TreeKey;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use std::collections::HashMap;

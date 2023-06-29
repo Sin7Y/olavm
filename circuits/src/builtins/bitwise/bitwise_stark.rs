@@ -427,8 +427,6 @@ mod tests {
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
     use std::collections::HashMap;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
     use std::path::PathBuf;
 
     #[allow(unused)]

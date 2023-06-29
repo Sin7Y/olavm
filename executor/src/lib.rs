@@ -8,13 +8,11 @@ use crate::storage::StorageTree;
 use core::merkle_tree::log::StorageLog;
 use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
-use core::storage::db::{Database, RocksDB};
 
 use core::program::binary_program::Prophet;
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
 use core::program::{Program, REGISTER_NUM};
-use core::state::contracts::Contracts;
 use core::trace::trace::{ComparisonOperation, MemoryTraceCell, RegisterSelector};
 use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType, StorageHashRow};
 use core::types::account::AccountTreeId;
@@ -31,7 +29,6 @@ use core::crypto::poseidon_trace::{
 use core::types::account::Address;
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
-use itertools::Itertools;
 use log::{debug, warn};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64, PrimeField64};
@@ -39,7 +36,6 @@ use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
 use std::time::Instant;
-use tempfile::TempDir;
 
 mod coprocessor;
 mod decode;
@@ -1010,7 +1006,7 @@ impl Process {
     ) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
         let trace = std::mem::replace(&mut self.storage_log, Vec::new());
         let hash_traces = account_tree.process_block(trace.iter());
-        account_tree.save();
+        let _ = account_tree.save();
 
         let mut root_hashes = Vec::new();
 

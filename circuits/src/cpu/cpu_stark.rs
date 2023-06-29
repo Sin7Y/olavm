@@ -4,7 +4,6 @@ use {
     super::{columns::*, *},
     crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
     crate::stark::cross_table_lookup::Column,
-    crate::stark::lookup::{eval_lookups, eval_lookups_circuit},
     crate::stark::stark::Stark,
     crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars},
     anyhow::Result,

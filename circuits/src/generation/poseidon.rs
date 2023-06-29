@@ -1,6 +1,5 @@
 use crate::builtins::poseidon::columns::*;
 use core::{trace::trace::PoseidonRow, util::poseidon_utils::*, vm::opcodes::OlaOpcode};
-use num::ToPrimitive;
 use plonky2::{field::types::PrimeField64, hash::hash_types::RichField};
 
 pub fn generate_poseidon_trace<F: RichField>(cells: &[PoseidonRow]) -> [Vec<F>; NUM_POSEIDON_COLS] {

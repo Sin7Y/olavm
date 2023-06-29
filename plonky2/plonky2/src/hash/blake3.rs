@@ -2,10 +2,9 @@ use itertools::Itertools;
 use std::iter;
 use std::mem::size_of;
 
-use crate::hash::hash_types::{HashOut, RichField};
-use crate::hash::hashing::{compress, hash_n_to_hash_no_pad, PlonkyPermutation, SPONGE_WIDTH};
-use crate::plonk::config::{GenericHashOut, Hasher};
-use crate::util::serialization::Buffer;
+use crate::hash::hash_types::RichField;
+use crate::hash::hashing::{PlonkyPermutation, SPONGE_WIDTH};
+use crate::plonk::config::Hasher;
 use core::slice;
 
 use blake3;

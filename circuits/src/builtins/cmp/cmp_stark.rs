@@ -105,16 +105,9 @@ mod tests {
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
     use crate::test_utils::test_stark_with_asm_path;
-    use core::merkle_tree::tree::AccountTree;
-    use core::program::Program;
     use core::trace::trace::{CmpRow, Trace};
-    use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use plonky2_util::log2_strict;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
     use std::path::PathBuf;
 
     #[test]

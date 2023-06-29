@@ -1,10 +1,9 @@
 use crate::merkle_tree::TreeError;
-use crate::storage::db::{MerkleTreeColumnFamily, RocksDB, StateKeeperColumnFamily};
+use crate::storage::db::{MerkleTreeColumnFamily, RocksDB};
 use crate::types::merkle_tree::{
     tree_key_to_u8_arr, u8_arr_to_tree_key, InitialStorageWrite, LeafIndices, LevelIndex,
     RepeatedStorageWrite, TreeKey, TreeOperation, ZkHash,
 };
-use crate::types::storage::field_arr_to_u8_arr;
 use crate::utils::{deserialize_block_number, serialize_block_number, serialize_tree_leaf};
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
 use itertools::Itertools;
@@ -222,6 +221,7 @@ impl Storage {
 /// Includes root hash and current block number
 pub(crate) type StoredTreeMetadata = (Option<ZkHash>, u32);
 
+#[allow(unused)]
 pub(crate) fn serialize_leaf_index_to_key(leaf_index: u64) -> TreeKey {
     let key = [
         GoldilocksField::from_canonical_u64(leaf_index),

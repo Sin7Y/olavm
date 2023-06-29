@@ -3,15 +3,11 @@ use core::{
     trace::trace::Step,
 };
 
-use crate::{cpu::columns as cpu, stark::lookup::permuted_cols};
-use plonky2::{
-    hash::hash_types::RichField,
-    iop::challenger::Challenger,
-    plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
-};
+use crate::cpu::columns as cpu;
+use plonky2::hash::hash_types::RichField;
 
 pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU_COLS] {
-    let mut steps = steps.to_vec();
+    let steps = steps.to_vec();
     let trace_len = steps.len();
 
     let ext_trace_len = if !trace_len.is_power_of_two() {
