@@ -99,8 +99,8 @@ pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
         COL_START_REG + 8,
         COL_OP0,
         COL_OP1,
+        COL_DST,
         COL_AUX0,
-        COL_AUX1,
     ])
     .collect_vec()
 }
