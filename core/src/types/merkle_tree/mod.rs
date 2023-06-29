@@ -1,5 +1,4 @@
 pub mod constant;
-use crate::crypto::poseidon::PoseidonHasher;
 use crate::impl_from_wrapper;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use itertools::Itertools;

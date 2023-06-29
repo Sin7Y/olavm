@@ -1,5 +1,5 @@
 use plonky2::field::extension::FieldExtension;
-use plonky2::field::types::{Field, PrimeField64};
+use plonky2::field::types::PrimeField64;
 use plonky2::hash::hashing::SPONGE_WIDTH;
 
 // The number of full rounds and partial rounds is given by the

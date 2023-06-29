@@ -467,38 +467,6 @@ mod tests {
     #[allow(dead_code)]
     type S = dyn Stark<F, D>;
 
-    #[allow(unused)]
-    fn test_ola_stark(program_path: &str) -> Result<()> {
-        let file = File::open(program_path).unwrap();
-        let instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-
-        for inst in instructions {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program, &mut None, &mut AccountTree::new_test());
-
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
-        let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        )?;
-
-        let ola_stark = OlaStark::default();
-        verify_proof(ola_stark, proof, &config)
-    }
-
     #[test]
     fn fibo_loop_test() {
         test_by_asm_json("fibo_loop.json".to_string())
@@ -559,6 +527,7 @@ mod tests {
         test_by_asm_json("storage.json".to_string());
     }
 
+    #[allow(unused)]
     pub fn test_by_asm_json(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");

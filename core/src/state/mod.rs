@@ -4,7 +4,6 @@ use crate::state::error::StateError;
 use crate::state::state_storage::StateStorage;
 use crate::types::merkle_tree::{TreeKey, TreeValue};
 use plonky2::field::goldilocks_field::GoldilocksField;
-use rocksdb::WriteBatch;
 
 pub mod contracts;
 pub mod error;
@@ -12,6 +11,7 @@ pub mod state_storage;
 
 #[derive(Debug)]
 pub struct NodeState<H> {
+    #[allow(unused)]
     contracts: Contracts,
     state_storage: StateStorage,
     pub hasher: H,

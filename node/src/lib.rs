@@ -1,4 +1,3 @@
-use core::crypto::hash::Hasher;
 use core::crypto::ZkHasher;
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::Prophet;

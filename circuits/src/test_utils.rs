@@ -3,16 +3,10 @@ use std::collections::HashMap;
 
 use assembler::encoder::encode_asm_from_json_file;
 use executor::Process;
-use plonky2::{
-    field::{extension::Extendable, goldilocks_field::GoldilocksField, types::Field},
-    hash::hash_types::RichField,
-    plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
-};
+use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 use plonky2_util::log2_strict;
 
-use crate::stark::{
-    constraint_consumer::ConstraintConsumer, stark::Stark, vars::StarkEvaluationVars,
-};
+use crate::stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars};
 use core::merkle_tree::tree::AccountTree;
 pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     path: String,

@@ -381,19 +381,11 @@ mod tests {
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
     use crate::test_utils::test_stark_with_asm_path;
-    use assembler::encoder::encode_asm_from_json_file;
-    use core::merkle_tree::tree::AccountTree;
-    use core::{
-        program::Program,
-        trace::trace::{MemoryTraceCell, Trace},
-    };
-    use executor::Process;
+    use core::trace::trace::{MemoryTraceCell, Trace};
     use plonky2::{
-        field::{goldilocks_field::GoldilocksField, types::Field},
+        field::goldilocks_field::GoldilocksField,
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
-    use plonky2_util::log2_strict;
-    use std::collections::HashMap;
     use std::path::PathBuf;
 
     #[test]
