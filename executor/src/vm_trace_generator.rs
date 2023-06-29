@@ -469,7 +469,7 @@ fn generate_vm_trace_bitwise(
         let res_limbs = split_limbs_from_field(&res);
 
         let row = BitwiseCombinedRow {
-            opcode: inter_row.opcode.0 as u32,
+            opcode: inter_row.opcode.0,
             op0,
             op1,
             res,

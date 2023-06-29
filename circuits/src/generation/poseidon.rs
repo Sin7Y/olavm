@@ -18,17 +18,17 @@ pub fn generate_poseidon_trace<F: RichField>(cells: &[PoseidonRow]) -> [Vec<F>; 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_POSEIDON_COLS];
     for (i, c) in cells.iter().enumerate() {
         trace[COL_POSEIDON_CLK][i] = F::from_canonical_u32(c.clk);
-        trace[COL_POSEIDON_OPCODE][i] = F::from_canonical_u32(c.opcode);
+        trace[COL_POSEIDON_OPCODE][i] = F::from_canonical_u64(c.opcode);
 
         trace[COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON][i] =
-            if c.opcode == OlaOpcode::POSEIDON.binary_bit_mask().to_u32().unwrap() {
+            if c.opcode == OlaOpcode::POSEIDON.binary_bit_mask() {
                 F::ONE
             } else {
                 F::ZERO
             };
         trace[COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY][i] = if c.opcode
-            == OlaOpcode::SSTORE.binary_bit_mask().to_u32().unwrap()
-            || c.opcode == OlaOpcode::SLOAD.binary_bit_mask().to_u32().unwrap()
+            == OlaOpcode::SSTORE.binary_bit_mask()
+            || c.opcode == OlaOpcode::SLOAD.binary_bit_mask()
         {
             F::ONE
         } else {
