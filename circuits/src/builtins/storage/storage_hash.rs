@@ -118,8 +118,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         //     P::ZEROS
         // };
         // for i in 0..4 {
-        //     yield_constr.constraint_transition(lv_is_layer1 * (lv_root[i] - lv_output[i]));
-        // }
+        //     yield_constr.constraint_transition(lv_is_layer1 * (lv_root[i] -
+        // lv_output[i])); }
         for i in 0..4 {
             yield_constr.constraint_transition(lv_is_layer256 * (lv_root[i] - nv_root[i]));
         }
