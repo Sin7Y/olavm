@@ -176,8 +176,11 @@ pub fn generate_storage_hash_trace<F: RichField>(
     if num_padded_rows != num_filled_row_len {
         for i in num_filled_row_len..num_padded_rows {
             for j in 0..4 {
-                trace[COL_STORAGE_HASH_ROOT_RANGE.start + j][i] =
-                    trace[COL_STORAGE_HASH_ROOT_RANGE.start + j][num_filled_row_len - 1];
+                trace[COL_STORAGE_HASH_ROOT_RANGE.start + j][i] = if num_filled_row_len == 0 {
+                    F::ZERO
+                } else {
+                    trace[COL_STORAGE_HASH_ROOT_RANGE.start + j][num_filled_row_len - 1]
+                };
             }
 
             trace[COL_STORAGE_HASH_CAPACITY_RANGE.start][i] = F::ONE;
