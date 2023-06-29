@@ -54,7 +54,7 @@ pub fn generate_bitwise_trace<F: RichField>(
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; ext_trace_len]; bitwise::COL_NUM_BITWISE];
     for (i, c) in cells.iter().enumerate() {
         trace[bitwise::FILTER][i] = F::from_canonical_usize(1);
-        trace[bitwise::TAG][i] = F::from_canonical_u32(c.opcode);
+        trace[bitwise::TAG][i] = F::from_canonical_u64(c.opcode);
         trace[bitwise::OP0][i] = F::from_canonical_u64(c.op0.to_canonical_u64());
         trace[bitwise::OP1][i] = F::from_canonical_u64(c.op1.to_canonical_u64());
         trace[bitwise::RES][i] = F::from_canonical_u64(c.res.to_canonical_u64());

@@ -145,7 +145,7 @@ pub struct RangeCheckRow {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitwiseCombinedRow {
-    pub opcode: u32,
+    pub opcode: u64,
 
     // Lookup with main Trace
     pub op0: GoldilocksField,
@@ -183,7 +183,7 @@ pub struct CmpRow {
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
 pub struct PoseidonRow {
     pub clk: u32,
-    pub opcode: u32,
+    pub opcode: u64,
     pub input: [GoldilocksField; 12],
     pub full_0_1: [GoldilocksField; 12],
     pub full_0_2: [GoldilocksField; 12],
@@ -322,7 +322,7 @@ impl Trace {
 
     pub fn insert_bitwise_combined(
         &mut self,
-        opcode: u32,
+        opcode: u64,
         op0: GoldilocksField,
         op1: GoldilocksField,
         res: GoldilocksField,
