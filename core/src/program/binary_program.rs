@@ -14,14 +14,14 @@ use crate::vm::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BinaryProgram {
     pub bytecode: String,
-    pub prophets: Vec<Prophet>,
+    pub prophets: Vec<OlaProphet>,
 }
 
 impl BinaryProgram {
     pub fn from_instructions(
         instructions: Vec<BinaryInstruction>,
     ) -> Result<BinaryProgram, String> {
-        let mut prophets: Vec<Prophet> = vec![];
+        let mut prophets: Vec<OlaProphet> = vec![];
         let mut binary_instructions: Vec<String> = vec![];
 
         let mut iter = instructions.iter();
@@ -47,7 +47,7 @@ pub struct BinaryInstruction {
     pub op0: Option<OlaOperand>,
     pub op1: Option<OlaOperand>,
     pub dst: Option<OlaOperand>,
-    pub prophet: Option<Prophet>,
+    pub prophet: Option<OlaProphet>,
 }
 
 impl BinaryInstruction {
@@ -146,7 +146,7 @@ impl BinaryInstruction {
         Ok(codes)
     }
 
-    pub fn decode(binary_code: Vec<String>, prophet: Option<Prophet>) -> Result<Self, String> {
+    pub fn decode(binary_code: Vec<String>, prophet: Option<OlaProphet>) -> Result<Self, String> {
         if binary_code.is_empty() {
             return Err(format!(
                 "decode binary instruction error, empty binary code."
@@ -361,7 +361,7 @@ impl Display for BinaryInstruction {
         )
     }
 }
-
+#[deprecated]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Prophet {
     pub host: usize,
@@ -369,11 +369,35 @@ pub struct Prophet {
     pub inputs: Vec<ProphetInput>,
     pub outputs: Vec<String>,
 }
-
+#[deprecated]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProphetInput {
     pub name: String,      // identifier
     pub stored_in: String, // reg or memory
     pub anchor: String,    // when reg mode, targe reg; when memory mode, r8
     pub offset: usize,     // when reg mode, 0; when memory mode, -3, -4, -5...(count from -3)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OlaProphet {
+    pub host: usize,
+    pub code: String,
+    pub inputs: Vec<OlaProphetInput>,
+    pub outputs: Vec<OlaProphetOutput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OlaProphetInput {
+    pub name: String,
+    pub length: usize,
+    pub is_ref: bool,
+    pub is_input_output: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OlaProphetOutput {
+    pub name: String,
+    pub length: usize,
+    pub is_ref: bool,
+    pub is_input_output: bool,
 }

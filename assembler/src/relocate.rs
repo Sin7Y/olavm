@@ -1,4 +1,5 @@
 use crate::asm::{AsmRow, OlaAsmInstruction};
+use core::program::binary_program::{OlaProphetInput, OlaProphetOutput};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -7,7 +8,7 @@ use std::str::FromStr;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct AsmBundle {
     program: String,
-    prophets: Vec<AsmProphet>,
+    prophets: Vec<OlaAsmProphet>,
 }
 
 #[derive(Debug, Clone)]
@@ -91,11 +92,18 @@ pub(crate) struct AsmProphet {
     pub(crate) inputs: Vec<String>,
     pub(crate) outputs: Vec<String>,
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct OlaAsmProphet {
+    pub(crate) label: String,
+    pub(crate) code: String,
+    pub(crate) inputs: Vec<OlaProphetInput>,
+    pub(crate) outputs: Vec<OlaProphetOutput>,
+}
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelocatedAsmBundle {
     pub(crate) instructions: Vec<OlaAsmInstruction>,
-    pub(crate) prophets: HashMap<usize, AsmProphet>,
+    pub(crate) prophets: HashMap<usize, OlaAsmProphet>,
     pub(crate) mapper_label_call: HashMap<String, usize>,
     pub(crate) mapper_label_jmp: HashMap<String, usize>,
 }
@@ -196,7 +204,7 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
         }
     }
 
-    let mut prophets: HashMap<usize, AsmProphet> = HashMap::new();
+    let mut prophets: HashMap<usize, OlaAsmProphet> = HashMap::new();
     let asm_prophets = bundle.prophets.clone();
     let mut prophets_iter = asm_prophets.iter();
     while let Some(prophet) = prophets_iter.next() {
@@ -231,7 +239,6 @@ fn line_pre_process(line: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use crate::relocate::{asm_relocate, AsmBundle};
-    use std::str::FromStr;
 
     #[test]
     fn test_parse_compilation_result() {

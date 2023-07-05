@@ -6,6 +6,11 @@ mod tests {
     use core::program::decoder::decode_binary_program_to_instructions;
 
     #[test]
+    fn test_decode_malloc() {
+        test_decode("malloc.json".to_string());
+    }
+
+    #[test]
     fn test_decode_prophet_sqrt() {
         test_decode("prophet_sqrt.json".to_string());
     }
