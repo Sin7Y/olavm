@@ -1,6 +1,6 @@
 use crate::operands::OlaAsmOperand;
 use crate::relocate::{asm_relocate, AsmBundle, RelocatedAsmBundle};
-use core::program::binary_program::{BinaryInstruction, BinaryProgram, Prophet, ProphetInput};
+use core::program::binary_program::{BinaryInstruction, BinaryProgram, OlaProphet};
 use core::vm::operands::{ImmediateValue, OlaOperand};
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -53,57 +53,17 @@ pub(crate) fn encode_to_binary(bundle: RelocatedAsmBundle) -> Result<BinaryProgr
         }
         let dst = dst_result.unwrap();
 
-        let prophet: Option<Prophet> = if let Some(asm_prophet) = asm_prophets.get(&binary_counter)
-        {
-            let input_names = asm_prophet.inputs.clone();
-            let outputs = asm_prophet.outputs.clone();
-
-            let inputs = input_names
-                .into_iter()
-                .enumerate()
-                .map(|(index, name)| {
-                    if index == 0 {
-                        ProphetInput {
-                            name: name.clone(),
-                            stored_in: String::from("reg"),
-                            anchor: String::from("r1"),
-                            offset: 0,
-                        }
-                    } else if index == 1 {
-                        ProphetInput {
-                            name: name.clone(),
-                            stored_in: String::from("reg"),
-                            anchor: String::from("r2"),
-                            offset: 0,
-                        }
-                    } else if index == 2 {
-                        ProphetInput {
-                            name: name.clone(),
-                            stored_in: String::from("reg"),
-                            anchor: String::from("r3"),
-                            offset: 0,
-                        }
-                    } else {
-                        let offset = 0 - index;
-                        ProphetInput {
-                            name: name.clone(),
-                            stored_in: String::from("memory"),
-                            anchor: String::from("r8"),
-                            offset,
-                        }
-                    }
+        let prophet: Option<OlaProphet> =
+            if let Some(asm_prophet) = asm_prophets.get(&binary_counter) {
+                Some(OlaProphet {
+                    host: binary_counter.clone(),
+                    code: asm_prophet.code.clone(),
+                    inputs: asm_prophet.inputs.clone(),
+                    outputs: asm_prophet.outputs.clone(),
                 })
-                .collect();
-
-            Some(Prophet {
-                host: binary_counter.clone(),
-                code: asm_prophet.code.clone(),
-                inputs,
-                outputs,
-            })
-        } else {
-            None
-        };
+            } else {
+                None
+            };
 
         let instruction = BinaryInstruction {
             opcode: asm.opcode,

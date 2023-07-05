@@ -1,4 +1,4 @@
-use super::binary_program::{BinaryInstruction, BinaryProgram, Prophet};
+use super::binary_program::{BinaryInstruction, BinaryProgram, OlaProphet, Prophet};
 use crate::vm::opcodes::OlaOpcode;
 use std::collections::HashMap;
 
@@ -20,7 +20,7 @@ pub fn decode_binary_program_from_file(path: String) -> Result<Vec<BinaryInstruc
 pub fn decode_binary_program_to_instructions(
     program: BinaryProgram,
 ) -> Result<Vec<BinaryInstruction>, String> {
-    let mut prophets: HashMap<usize, Prophet> = HashMap::new();
+    let mut prophets: HashMap<usize, OlaProphet> = HashMap::new();
     for prophet in program.prophets {
         prophets.insert(prophet.host, prophet);
     }

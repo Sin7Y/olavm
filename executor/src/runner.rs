@@ -635,36 +635,36 @@ impl OlaRunner {
             }
         };
 
-        match &instruction.prophet {
-            Some(prophet) => {
-                let rows_memory_prophet = self.on_prophet(prophet)?;
-                match appender.memory {
-                    Some(memory) => {
-                        let mut appended = memory.clone();
-                        rows_memory_prophet.iter().for_each(|row| {
-                            appended.push(row.clone());
-                        });
-                        appender = IntermediateTraceStepAppender {
-                            cpu: appender.cpu.clone(),
-                            memory: Some(appended),
-                            range_check: appender.range_check.clone(),
-                            bitwise: appender.bitwise.clone(),
-                            comparison: appender.comparison.clone(),
-                        }
-                    }
-                    None => {
-                        appender = IntermediateTraceStepAppender {
-                            cpu: appender.cpu.clone(),
-                            memory: Some(rows_memory_prophet),
-                            range_check: appender.range_check.clone(),
-                            bitwise: appender.bitwise.clone(),
-                            comparison: appender.comparison.clone(),
-                        }
-                    }
-                }
-            }
-            None => {}
-        }
+        // match &instruction.prophet {
+        //     Some(prophet) => {
+        //         let rows_memory_prophet = self.on_prophet(prophet)?;
+        //         match appender.memory {
+        //             Some(memory) => {
+        //                 let mut appended = memory.clone();
+        //                 rows_memory_prophet.iter().for_each(|row| {
+        //                     appended.push(row.clone());
+        //                 });
+        //                 appender = IntermediateTraceStepAppender {
+        //                     cpu: appender.cpu.clone(),
+        //                     memory: Some(appended),
+        //                     range_check: appender.range_check.clone(),
+        //                     bitwise: appender.bitwise.clone(),
+        //                     comparison: appender.comparison.clone(),
+        //                 }
+        //             }
+        //             None => {
+        //                 appender = IntermediateTraceStepAppender {
+        //                     cpu: appender.cpu.clone(),
+        //                     memory: Some(rows_memory_prophet),
+        //                     range_check: appender.range_check.clone(),
+        //                     bitwise: appender.bitwise.clone(),
+        //                     comparison: appender.comparison.clone(),
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     None => {}
+        // }
 
         Ok(appender)
     }
