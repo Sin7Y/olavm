@@ -9,7 +9,6 @@ use core::merkle_tree::log::StorageLog;
 use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
 
-use core::program::binary_program::Prophet;
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
 use core::program::{Program, REGISTER_NUM};
@@ -26,7 +25,10 @@ use core::crypto::poseidon_trace::{
     calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
     POSEIDON_OUTPUT_VALUE_LEN,
 };
+use core::program::binary_program::OlaProphet;
+use core::program::binary_program::OlaProphetInput;
 use core::types::account::Address;
+use core::vm::heap::HEAP_PTR;
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
 use log::{debug, warn};
@@ -37,17 +39,13 @@ use std::collections::{BTreeMap, HashMap};
 
 use std::time::Instant;
 
-mod coprocessor;
 mod decode;
 pub mod error;
 mod memory;
 
-pub mod runner;
 pub mod storage;
 #[cfg(test)]
 mod tests;
-mod vm;
-pub mod vm_trace_generator;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 9;
@@ -56,6 +54,12 @@ const MEM_SPAN_SIZE: u64 = u32::MAX as u64;
 const PSP_START_ADDR: u64 = GoldilocksField::ORDER - MEM_SPAN_SIZE;
 const POSEIDON_START_ADDR: u64 = GoldilocksField::ORDER - 2 * MEM_SPAN_SIZE;
 const ECDSA_START_ADDR: u64 = GoldilocksField::ORDER - 3 * MEM_SPAN_SIZE;
+const HP_START_ADDR: u64 = GoldilocksField::ORDER - 3 * MEM_SPAN_SIZE;
+const PROPHET_INPUT_REG_LEN: usize = 3;
+const PROPHET_INPUT_REG_START_INDEX: usize = 1;
+const PROPHET_INPUT_REG_END_INDEX: usize = PROPHET_INPUT_REG_START_INDEX + PROPHET_INPUT_REG_LEN;
+// start from fp-3
+const PROPHET_INPUT_FP_START_OFFSET: u64 = 3;
 
 #[derive(Debug)]
 pub struct Process {
@@ -70,6 +74,7 @@ pub struct Process {
     pub op1_imm: GoldilocksField,
     pub memory: MemoryTree,
     pub psp: GoldilocksField,
+    pub hp: GoldilocksField,
     pub storage: StorageTree,
     pub storage_log: Vec<WitnessStorageLog>,
 }
@@ -90,6 +95,7 @@ impl Process {
                 trace: BTreeMap::new(),
             },
             psp: GoldilocksField(PSP_START_ADDR),
+            hp: GoldilocksField(HP_START_ADDR),
             storage_log: Vec::new(),
             storage: StorageTree {
                 trace: HashMap::new(),
@@ -130,12 +136,54 @@ impl Process {
         }
     }
 
-    pub fn prophet(
+    pub fn read_prophet_input(
         &mut self,
-        prophets: &HashMap<u64, Prophet>,
-        pc: u64,
-    ) -> Result<(), ProcessorError> {
-        let prophet = prophets.get(&pc).unwrap();
+        input: &OlaProphetInput,
+        reg_cnt: usize,
+        reg_index: &mut usize,
+        fp: &mut u64,
+    ) -> u64 {
+        let mut value = Default::default();
+        if reg_cnt != *reg_index {
+            value = self.registers[*reg_index].0;
+            *reg_index += 1;
+        } else {
+            value = self
+                .memory
+                .read(
+                    self.registers[FP_REG_INDEX].0 - *fp,
+                    self.clk,
+                    GoldilocksField::from_canonical_u64(0 as u64),
+                    GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                    GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
+                    GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                )
+                .to_canonical_u64();
+            *fp += 1;
+        }
+        if input.is_ref {
+            value = self
+                .memory
+                .read(
+                    value,
+                    self.clk,
+                    GoldilocksField::from_canonical_u64(0 as u64),
+                    GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                    GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
+                    GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                )
+                .to_canonical_u64();
+        }
+        value
+    }
+
+    pub fn prophet(&mut self, prophet: &mut OlaProphet) -> Result<(), ProcessorError> {
         debug!("prophet code:{}", prophet.code);
 
         let re = Regex::new(r"^%\{([\s\S]*)%}$").unwrap();
@@ -145,21 +193,33 @@ impl Process {
         let mut interpreter = Interpreter::new(code);
 
         let mut values = Vec::new();
+
+        let reg_cnt = PROPHET_INPUT_REG_END_INDEX;
+        let mut reg_index = PROPHET_INPUT_REG_START_INDEX;
+        let mut fp = PROPHET_INPUT_FP_START_OFFSET;
         for input in prophet.inputs.iter() {
-            if input.stored_in.eq("reg") {
-                let re = Regex::new(r"^r(\d)$").unwrap();
-                let cap = re.captures(&input.anchor).unwrap();
-                let reg_index = cap.get(1).unwrap().as_str().parse::<usize>().unwrap();
-                values.push(self.registers[reg_index].0);
+            if input.length == 1 {
+                let value = self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut fp);
+                values.push(value);
+            } else {
+                let mut index = 0;
+                while index < input.length {
+                    let value = self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut fp);
+                    values.push(value);
+                    index += 1;
+                }
             }
         }
+
+        prophet.ctx.push((HEAP_PTR.to_string(), self.hp.0));
         let res = interpreter.run(prophet, values);
         debug!("interpreter:{:?}", res);
 
         if let Ok(out) = res {
             match out {
                 Single(_) => return Err(ProcessorError::ParseIntError),
-                Multiple(values) => {
+                Multiple(mut values) => {
+                    self.hp = GoldilocksField(values.pop().unwrap().get_number() as u64);
                     debug!("prophet addr:{}", self.psp.0);
                     for value in values {
                         self.memory.write(
@@ -185,7 +245,7 @@ impl Process {
     pub fn execute(
         &mut self,
         program: &mut Program,
-        prophets: &mut Option<HashMap<u64, Prophet>>,
+        prophets: &mut Option<HashMap<u64, OlaProphet>>,
         account_tree: &mut AccountTree,
     ) -> Result<(), ProcessorError> {
         let instrs_len = program.instructions.len() as u64;
@@ -964,7 +1024,7 @@ impl Process {
             }
 
             if prophets_insert.get(&pc_status).is_some() {
-                self.prophet(&prophets_insert, pc_status)?
+                self.prophet(&mut prophets_insert[&pc_status].clone())?
             }
 
             program.trace.insert_step(
@@ -1179,7 +1239,7 @@ impl Process {
                     new_addr_flag = false;
                 } else if new_addr_flag {
                     debug!(
-                        "canonical_addr:{}, canonical_addr:{}",
+                        "canonical_addr:{}, origin_addr:{}",
                         canonical_addr, origin_addr
                     );
 

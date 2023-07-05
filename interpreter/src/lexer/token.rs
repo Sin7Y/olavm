@@ -47,6 +47,7 @@ pub enum Token {
     LBracket,
     RBracket,
     EOF,
+    Malloc,
 }
 
 impl PartialEq for Token {
@@ -106,6 +107,7 @@ impl<'a> fmt::Display for Token {
             Token::LBracket => "[",
             Token::RBracket => "]",
             Token::EOF => "EOF",
+            Token::Malloc => "malloc",
         };
         write!(f, "{}", output)
     }

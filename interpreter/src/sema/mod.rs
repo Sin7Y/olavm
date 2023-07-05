@@ -4,8 +4,8 @@ use crate::lexer::token::Token::{Array, ArrayId, Cid, Felt, Id};
 use crate::parser::node::{
     ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode,
     CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode,
-    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MultiAssignNode,
-    ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
+    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode,
+    MultiAssignNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
 };
 use crate::parser::traversal::Traversal;
 use crate::sema::symbol::Symbol::{BuiltInSymbol, FuncSymbol, IdentSymbol};
@@ -13,7 +13,7 @@ use crate::sema::symbol::{BuiltIn, SymbolTable};
 use crate::utils::number::Number::Nil;
 use crate::utils::number::NumberRet::{Multiple, Single};
 use crate::utils::number::{number_from_token, Number, NumberResult};
-use core::program::binary_program::Prophet;
+use core::program::binary_program::OlaProphet;
 use log::debug;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -32,13 +32,30 @@ macro_rules! array_id {
     };
 }
 
+#[macro_export]
+macro_rules! inf_var_insert {
+    ($input: tt, $current_scope: tt) => {
+        if $input.length == 1 {
+            let variable = IdentSymbol($input.name.to_string(), BuiltIn(Felt), None);
+            $current_scope.insert(variable);
+        } else {
+            let variable = IdentSymbol(
+                $input.name.to_string(),
+                BuiltIn(Array(Box::new(Felt), $input.length)),
+                None,
+            );
+            $current_scope.insert(variable);
+        }
+    };
+}
+
 #[derive(Clone)]
 pub struct SymTableGen {
     current_scope: Arc<RwLock<SymbolTable>>,
 }
 
 impl SymTableGen {
-    pub fn new(prophet: &Prophet) -> Self {
+    pub fn new(prophet: &OlaProphet) -> Self {
         let gen = SymTableGen {
             current_scope: Arc::new(RwLock::new(SymbolTable::new(
                 "Global Scope".to_string(),
@@ -49,13 +66,16 @@ impl SymTableGen {
 
         let mut current_scope = gen.current_scope.write().unwrap();
         for input in prophet.inputs.iter() {
-            let variable = IdentSymbol(input.name.to_string(), BuiltIn(Felt), None);
+            inf_var_insert!(input, current_scope);
+        }
+
+        for ctx in &prophet.ctx {
+            let variable = IdentSymbol(ctx.0.to_string(), BuiltIn(Felt), None);
             current_scope.insert(variable);
         }
 
         for output in prophet.outputs.iter() {
-            let variable = IdentSymbol(output.to_string(), BuiltIn(Felt), None);
-            current_scope.insert(variable);
+            inf_var_insert!(output, current_scope);
         }
         drop(current_scope);
         return gen;
@@ -405,5 +425,9 @@ impl Traversal for SymTableGen {
         }
         self.travel(&node.call)?;
         Ok(Single(Nil))
+    }
+
+    fn travel_malloc(&mut self, node: &MallocNode) -> NumberResult {
+        self.travel(&node.num_bytes)
     }
 }

@@ -2,15 +2,15 @@ use crate::lexer::token::Token;
 use crate::lexer::token::Token::{
     And, Array, Assign, Begin, Cid, Comma, Else, End, Entry, Equal, Felt, FeltConst, Function,
     GreaterEqual, GreaterThan, I32Const, Id, If, IndexId, IntegerDivision, LBracket, LParen,
-    LessEqual, LessThan, Minus, Mod, Multiply, NotEqual, Or, Plus, RBracket, RParen, Return,
-    ReturnDel, Semi, Sqrt, While, EOF, I32,
+    LessEqual, LessThan, Malloc, Minus, Mod, Multiply, NotEqual, Or, Plus, RBracket, RParen,
+    Return, ReturnDel, Semi, Sqrt, While, EOF, I32,
 };
 use crate::lexer::Lexer;
 use crate::parser::node::{
     ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode, CondStatNode,
     ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode, IdentDeclarationNode,
-    IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MultiAssignNode, Node, ReturnNode,
-    SqrtNode, TypeNode, UnaryOpNode,
+    IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode, MultiAssignNode, Node,
+    ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
 };
 use crate::utils::number::Number;
 use log::debug;
@@ -512,6 +512,13 @@ impl Parser {
                 let sqrt_value = self.or_expr();
                 self.consume(&RParen);
                 Arc::new(RwLock::new(SqrtNode::new(sqrt_value)))
+            }
+            Malloc => {
+                self.consume(&current_token);
+                self.consume(&LParen);
+                let num_bytes = self.or_expr();
+                self.consume(&RParen);
+                Arc::new(RwLock::new(MallocNode::new(num_bytes)))
             }
             LParen => {
                 self.consume(&current_token);

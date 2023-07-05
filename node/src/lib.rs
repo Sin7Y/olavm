@@ -1,6 +1,6 @@
 use core::crypto::ZkHasher;
 use core::merkle_tree::tree::AccountTree;
-use core::program::binary_program::Prophet;
+use core::program::binary_program::OlaProphet;
 use core::program::Program;
 use core::state::contracts::Contracts;
 use core::state::error::StateError;
@@ -58,7 +58,7 @@ impl OlaNode {
     pub fn run_contracts(
         &mut self,
         program: &mut Program,
-        prophets: &mut Option<HashMap<u64, Prophet>>,
+        prophets: &mut Option<HashMap<u64, OlaProphet>>,
     ) -> Result<(), ProcessorError> {
         self.process
             .execute(program, prophets, &mut self.account_tree)

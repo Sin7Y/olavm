@@ -5,7 +5,7 @@ use crate::parser::node::Node;
 use crate::parser::Parser;
 use crate::sema::SymTableGen;
 use crate::utils::number::NumberResult;
-use core::program::binary_program::Prophet;
+use core::program::binary_program::OlaProphet;
 use log::debug;
 use std::sync::{Arc, RwLock};
 
@@ -20,7 +20,7 @@ impl Interpreter {
         Interpreter { root_node }
     }
 
-    pub fn run(&mut self, prophet: &Prophet, values: Vec<u64>) -> NumberResult {
+    pub fn run(&mut self, prophet: &OlaProphet, values: Vec<u64>) -> NumberResult {
         debug!("sema");
         self.root_node
             .write()

@@ -58,6 +58,7 @@ pub(crate) fn encode_to_binary(bundle: RelocatedAsmBundle) -> Result<BinaryProgr
                 Some(OlaProphet {
                     host: binary_counter.clone(),
                     code: asm_prophet.code.clone(),
+                    ctx: Vec::new(),
                     inputs: asm_prophet.inputs.clone(),
                     outputs: asm_prophet.outputs.clone(),
                 })

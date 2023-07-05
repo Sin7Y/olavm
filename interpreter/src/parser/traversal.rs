@@ -1,8 +1,8 @@
 use crate::parser::node::{
     ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode,
     CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode,
-    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MultiAssignNode,
-    Node, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
+    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode,
+    MultiAssignNode, Node, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
 };
 use crate::utils::number::NumberResult;
 use std::sync::{Arc, RwLock};
@@ -68,6 +68,8 @@ pub trait Traversal {
             dispatch_travel!(self, node, ReturnNode, travel_return)
         } else if dispatch_travel!(node, MultiAssignNode) {
             dispatch_travel!(self, node, MultiAssignNode, travel_multi_assign)
+        } else if dispatch_travel!(node, MallocNode) {
+            dispatch_travel!(self, node, MallocNode, travel_malloc)
         } else {
             Err("Unknown node found".to_string())
         }
@@ -95,4 +97,5 @@ pub trait Traversal {
     fn travel_sqrt(&mut self, node: &SqrtNode) -> NumberResult;
     fn travel_return(&mut self, node: &ReturnNode) -> NumberResult;
     fn travel_multi_assign(&mut self, node: &MultiAssignNode) -> NumberResult;
+    fn travel_malloc(&mut self, node: &MallocNode) -> NumberResult;
 }

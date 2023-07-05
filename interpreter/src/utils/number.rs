@@ -60,7 +60,7 @@ pub enum Number {
     Bool(bool),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NumberRet {
     Single(Number),
     Multiple(Vec<Number>),

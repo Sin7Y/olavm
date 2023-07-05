@@ -12,5 +12,5 @@ pip install xlsxwriter
 * How to use it
 
 ```shell=
-python infrastructure/trace_analyzer/generate_table.py --input executor/call_trace.txt --format hex --output test.xlsx
+python3 infrastructure/trace_analyzer/generate_table.py --input executor/call_trace.txt --format hex --output test.xlsx
 ```

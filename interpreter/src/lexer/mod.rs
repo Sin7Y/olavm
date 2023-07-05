@@ -4,8 +4,8 @@ use self::token::Token;
 use crate::lexer::token::Token::{
     And, Assign, Begin, Colon, Comma, Dot, Else, End, Entry, Equal, Felt, FeltConst, Function,
     GreaterEqual, GreaterThan, I32Const, Id, If, IntegerDivision, LBracket, LParen, LessEqual,
-    LessThan, Minus, Mod, Multiply, NotEqual, Or, Plus, RBracket, RParen, Return, ReturnDel, Semi,
-    Sqrt, While, EOF, I32,
+    LessThan, Malloc, Minus, Mod, Multiply, NotEqual, Or, Plus, RBracket, RParen, Return,
+    ReturnDel, Semi, Sqrt, While, EOF, I32,
 };
 
 #[derive(Clone)]
@@ -36,6 +36,7 @@ impl Lexer {
             "FUNCTION" => (true, Function),
             "RETURN" => (true, Return),
             "SQRT" => (true, Sqrt),
+            "MALLOC" => (true, Malloc),
             _ => (false, EOF),
         }
     }
