@@ -1,3 +1,4 @@
+use crate::types::GoldilocksField;
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -366,6 +367,7 @@ impl Display for BinaryInstruction {
 pub struct Prophet {
     pub host: usize,
     pub code: String,
+    pub ctx: Vec<(String, u64)>,
     pub inputs: Vec<ProphetInput>,
     pub outputs: Vec<String>,
 }
@@ -382,6 +384,8 @@ pub struct ProphetInput {
 pub struct OlaProphet {
     pub host: usize,
     pub code: String,
+    #[serde(default)]
+    pub ctx: Vec<(String, u64)>,
     pub inputs: Vec<OlaProphetInput>,
     pub outputs: Vec<OlaProphetOutput>,
 }

@@ -1,4 +1,4 @@
-use core::program::binary_program::Prophet;
+use core::program::binary_program::OlaProphet;
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -8,8 +8,8 @@ use crate::lexer::token::Token::{Array, ArrayId, Cid, Id, IndexId};
 use crate::parser::node::{
     ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode,
     CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode,
-    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MultiAssignNode,
-    ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
+    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode,
+    MultiAssignNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
 };
 use crate::parser::traversal::Traversal;
 use crate::sema::symbol::Symbol::FuncSymbol;
@@ -32,7 +32,7 @@ macro_rules! ident_lookup {
         }
     };
     ($func:tt, $idents: tt,  $ret: ty, $index: ident, $single : tt) => {
-        pub fn index_lookup(&mut self, name: &str, $index: usize) -> NumberResult {
+        pub fn $func(&mut self, name: &str, $index: usize) -> NumberResult {
             if let Some(value) = self.call_stack.records[self.stack_depth].$idents.get(name) {
                 ident_lookup_ret!(value, $index, $single)
             } else if let Some(value) = self.call_stack.records[GLOBAL_LEVEL].$idents.get(name) {
@@ -57,6 +57,7 @@ macro_rules! ident_lookup_ret {
 }
 
 const GLOBAL_LEVEL: usize = 0;
+const HP_ADDR_INDEX: usize = 0;
 
 pub enum RecordType {
     Global,
@@ -98,14 +99,16 @@ impl CallStack {
 pub struct Executor {
     call_stack: CallStack,
     context: Vec<String>,
+    outputs: Vec<String>,
     stack_depth: usize,
 }
 
 impl Executor {
-    pub fn new(prophet: &Prophet, values: Vec<u64>) -> Self {
+    pub fn new(prophet: &OlaProphet, values: Vec<u64>) -> Self {
         let mut executor = Executor {
             call_stack: CallStack::new(),
             context: Vec::new(),
+            outputs: Vec::new(),
             stack_depth: GLOBAL_LEVEL,
         };
         executor.call_stack.records.push(RuntimeRecord::new(
@@ -113,22 +116,46 @@ impl Executor {
             RecordType::Global,
             GLOBAL_LEVEL,
         ));
-        for (index, input) in prophet.inputs.iter().enumerate() {
+
+        let mut index = 0;
+        for input in prophet.inputs.iter() {
+            if input.length == 1 {
+                executor.call_stack.records[executor.stack_depth]
+                    .idents
+                    .insert(
+                        input.name.to_string(),
+                        Some(Number::from(*values.get(index).unwrap())),
+                    );
+            } else {
+                let values: Vec<_> = values[index..index + input.length]
+                    .iter()
+                    .map(|e| Number::from(*e))
+                    .collect();
+                executor.call_stack.records[executor.stack_depth]
+                    .array_idents
+                    .insert(input.name.to_string(), Some(values));
+            }
+            index += input.length;
+        }
+        for (name, value) in prophet.ctx.iter() {
             executor.call_stack.records[executor.stack_depth]
                 .idents
-                .insert(
-                    input.name.to_string(),
-                    Some(Number::from(*values.get(index).unwrap())),
-                );
+                .insert(name.clone(), Some(Number::from((*value) as u64)));
+            executor.context.push(name.clone());
         }
-
         for output in prophet.outputs.iter() {
-            executor.call_stack.records[executor.stack_depth]
-                .idents
-                .insert(output.to_string(), None);
+            if output.length == 1 {
+                executor.call_stack.records[executor.stack_depth]
+                    .idents
+                    .insert(output.name.clone(), None);
+            } else {
+                executor.call_stack.records[executor.stack_depth]
+                    .array_idents
+                    .insert(output.name.clone(), None);
+            }
+            executor.outputs.push(output.name.clone());
         }
 
-        executor.context.extend(prophet.outputs.clone());
         executor
     }
 
@@ -267,7 +294,7 @@ impl Traversal for Executor {
         self.travel(&node.entry_block)?;
 
         let mut out_values = Vec::new();
-        for output in &self.context {
+        for output in &self.outputs {
             if let Some(value) = self.call_stack.records[GLOBAL_LEVEL].idents.get(output) {
                 if let Some(value) = value {
                     out_values.push(value.clone());
@@ -281,7 +308,20 @@ impl Traversal for Executor {
                 }
             }
         }
-        Ok(NumberRet::Multiple(out_values))
+
+        for ctx in &self.context {
+            if let Some(value) = self.call_stack.records[GLOBAL_LEVEL].idents.get(ctx) {
+                if let Some(value) = value {
+                    out_values.push(value.clone());
+                }
+            } else if let Some(value) = self.call_stack.records[GLOBAL_LEVEL].array_idents.get(ctx)
+            {
+                if let Some(value) = value {
+                    out_values.extend(value.clone());
+                }
+            }
+        }
+        Ok(Multiple(out_values))
     }
 
     fn travel_call(&mut self, node: &CallNode) -> NumberResult {
@@ -607,5 +647,22 @@ impl Traversal for Executor {
             self.assign_value(&ident, Single(res.get(index).unwrap().clone()))?;
         }
         Ok(Single(Nil))
+    }
+
+    fn travel_malloc(&mut self, node: &MallocNode) -> NumberResult {
+        let value_res = self.travel(&node.num_bytes);
+        let hp_name = self.context.get(HP_ADDR_INDEX).unwrap().clone();
+        let hp = self.lookup(&hp_name);
+        if let Ok(Single(value)) = value_res {
+            let res = match value {
+                Number::Felt(number) => Single(hp.unwrap().get_single() - Number::Felt(number)),
+                Number::I32(number) => Single(hp.unwrap().get_single() - Number::I32(number)),
+                _ => panic!("wrong sqrt value type"),
+            };
+            self.assign_value(&Id(hp_name), res.clone());
+            Ok(res)
+        } else {
+            panic!("can not get sqrt value")
+        }
     }
 }

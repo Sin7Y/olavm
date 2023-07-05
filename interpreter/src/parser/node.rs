@@ -407,3 +407,14 @@ impl ReturnNode {
         ReturnNode { returns }
     }
 }
+
+#[derive(Node)]
+pub struct MallocNode {
+    pub num_bytes: Arc<RwLock<dyn Node>>,
+}
+
+impl MallocNode {
+    pub fn new(num_bytes: Arc<RwLock<dyn Node>>) -> Self {
+        MallocNode { num_bytes }
+    }
+}

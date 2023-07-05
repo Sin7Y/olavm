@@ -1,4 +1,3 @@
-use crate::runner::OlaRunner;
 use crate::Process;
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
@@ -620,6 +619,47 @@ fn poseidon_test() {
 }
 
 #[test]
+fn malloc_test() {
+    let _ = env_logger::builder()
+        .filter_level(LevelFilter::Info)
+        .default_format()
+        .try_init();
+    let file = File::open("../assembler/test_data/bin/malloc.json").unwrap();
+    let reader = BufReader::new(file);
+
+    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
+    let instructions = program.bytecode.split("\n");
+    let mut prophets = HashMap::new();
+    for item in program.prophets {
+        prophets.insert(item.host as u64, item);
+    }
+
+    let mut program: Program = Program {
+        instructions: Vec::new(),
+        trace: Default::default(),
+    };
+
+    for inst in instructions {
+        program.instructions.push(inst.to_string());
+    }
+
+    let mut process = Process::new();
+    process.ctx_registers_stack.push(Address::default());
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
+    if res.is_err() {
+        panic!("execute err:{:?}", res);
+    }
+    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+
+    let mut file = File::create("malloc.txt").unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
 fn gen_storage_table() {
     let mut program: Program = Program {
         instructions: Vec::new(),
@@ -709,43 +749,3 @@ fn gen_storage_table() {
     process.gen_storage_table(&mut program, hash);
 }
 
-#[test]
-fn test_vm_run() {
-    println!("==== begin ====");
-    let mut runner =
-        OlaRunner::new_from_program_file(String::from("../assembler/test_data/bin/fibo_loop.json"))
-            .unwrap();
-    println!("runner init success");
-    println!("==== bytecode ====");
-    println!("{}", runner.program.bytecode);
-    println!("================");
-    let trace = runner.run_to_end().unwrap();
-    println!("runner run end");
-    let output_path = String::from("wtf_fibo_loop.txt");
-    let pretty = serde_json::to_string_pretty(&trace).unwrap();
-    fs::write(output_path, pretty).unwrap();
-}
-
-#[test]
-fn statistic_exec() {
-    println!("==== begin ====");
-    let mut runner =
-        OlaRunner::new_from_program_file(String::from("../assembler/test_data/bin/sqrt.json"))
-            .unwrap();
-    let _ = runner.run_to_end().unwrap();
-    let mut total_cnt = 0;
-    let mut op_to_cnt: HashMap<String, u64> = HashMap::new();
-    for row in runner.trace_collector.cpu {
-        let key = row.instruction.opcode.to_string();
-        let cnt = match op_to_cnt.get(&key) {
-            Some(cnt_pre) => cnt_pre + 1,
-            None => 1,
-        };
-        op_to_cnt.insert(key, cnt);
-        total_cnt += 1;
-    }
-    println!("total line: {}", total_cnt);
-    for (key, cnt) in op_to_cnt {
-        println!("opcode: {}, cnt: {}", key, cnt);
-    }
-}

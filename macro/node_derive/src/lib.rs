@@ -33,6 +33,7 @@ pub fn node_derive(input: TokenStream) -> TokenStream {
         "SqrtNode" => quote!(travel.travel_sqrt(self)),
         "ReturnNode" => quote!(travel.travel_return(self)),
         "MultiAssignNode" => quote!(travel.travel_multi_assign(self)),
+        "MallocNode" => quote!(travel.travel_malloc(self)),
         _ => panic!(""),
     };
 
