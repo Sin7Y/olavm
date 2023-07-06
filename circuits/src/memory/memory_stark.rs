@@ -406,6 +406,12 @@ mod tests {
         test_memory_with_asm_file_name(program_path.to_string());
     }
 
+    #[test]
+    fn test_memory_malloc() {
+        let program_path = "malloc.json";
+        test_memory_with_asm_file_name(program_path.to_string());
+    }
+
     fn test_memory_with_asm_file_name(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");

@@ -136,7 +136,7 @@ impl Process {
         }
     }
 
-    pub fn update_hash_key(&mut self, key: &[GoldilocksField ; 4]) {
+    pub fn update_hash_key(&mut self, key: &[GoldilocksField; 4]) {
         self.register_selector.op0 = key[0];
         self.register_selector.op1 = key[1];
         self.register_selector.dst = key[2];

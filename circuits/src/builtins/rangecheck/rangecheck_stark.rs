@@ -254,4 +254,10 @@ mod tests {
         let program_path = "range_check.json";
         test_rc_stark(program_path.to_string());
     }
+
+    #[test]
+    fn test_rangecheck_malloc() {
+        let program_path = "malloc.json";
+        test_rc_stark(program_path.to_string());
+    }
 }
