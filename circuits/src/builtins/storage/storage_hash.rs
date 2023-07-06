@@ -84,6 +84,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         let lv_addr_acc = vars.local_values[COL_STORAGE_HASH_ADDR_ACC];
         let nv_addr_acc = vars.next_values[COL_STORAGE_HASH_ADDR_ACC];
         let lv_layer_bit = vars.local_values[COL_STORAGE_HASH_LAYER_BIT];
+        let nv_layer_bit = vars.next_values[COL_STORAGE_HASH_LAYER_BIT];
         let lv_addrs: [P; 4] = vars.local_values[COL_STORAGE_HASH_ADDR_RANGE]
             .try_into()
             .unwrap();
@@ -112,14 +113,16 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
             .unwrap();
 
         // root
-        // let lv_is_layer1 = if lv_layer.is_one() {
-        //     P::ONES
-        // } else {
-        //     P::ZEROS
-        // };
-        // for i in 0..4 {
-        //     yield_constr.constraint_transition(lv_is_layer1 * (lv_root[i] -
-        // lv_output[i])); }
+        let lv_layer_slice = lv_layer.as_slice();
+        let lv_is_layer1 = if P::ONES.as_slice() == lv_layer_slice {
+            P::ONES
+        } else {
+            P::ZEROS
+        };
+        for i in 0..4 {
+            yield_constr.constraint_transition(lv_is_layer1 * (lv_root[i] - lv_output[i]));
+        }
+
         for i in 0..4 {
             yield_constr.constraint_transition(lv_is_layer256 * (lv_root[i] - nv_root[i]));
         }
@@ -173,12 +176,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         yield_constr.constraint(
             lv_idx_storage * lv_is_layer256 * (lv_layer - P::Scalar::from_canonical_u64(256)),
         );
+        yield_constr.constraint_transition(lv_is_layer1 * (lv_addr_acc - lv_layer_bit));
         yield_constr.constraint_transition(
-            lv_is_layer64
-                * lv_is_layer128
-                * lv_is_layer192
-                * lv_is_layer256
-                * (nv_addr_acc - lv_addr_acc * P::Scalar::from_canonical_u64(2) - lv_layer_bit),
+            (P::ONES - lv_is_layer64)
+                * (P::ONES - lv_is_layer128)
+                * (P::ONES - lv_is_layer192)
+                * (P::ONES - lv_is_layer256)
+                * (nv_addr_acc - lv_addr_acc * P::Scalar::from_canonical_u64(2) - nv_layer_bit),
         );
         yield_constr.constraint(lv_is_layer64 * (lv_addr_acc - lv_addrs[0]));
         yield_constr.constraint(lv_is_layer128 * (lv_addr_acc - lv_addrs[1]));
