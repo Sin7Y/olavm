@@ -136,6 +136,13 @@ impl Process {
         }
     }
 
+    pub fn update_hash_key(&mut self, key: &[GoldilocksField ; 4]) {
+        self.register_selector.op0 = key[0];
+        self.register_selector.op1 = key[1];
+        self.register_selector.dst = key[2];
+        self.register_selector.aux0 = key[3];
+    }
+
     pub fn read_prophet_input(
         &mut self,
         input: &OlaProphetInput,
@@ -935,10 +942,7 @@ impl Process {
                         store_value,
                         tree_key_default(),
                     );
-                    self.register_selector.op0 = tree_key[0];
-                    self.register_selector.op1 = tree_key[1];
-                    self.register_selector.dst = tree_key[2];
-                    self.register_selector.aux0 = tree_key[3];
+                    self.update_hash_key(&tree_key);
                     hash_row.clk = self.clk;
                     hash_row.opcode = 1 << Opcode::SSTORE as u64;
                     program.trace.builtin_posiedon.push(hash_row);
@@ -987,11 +991,7 @@ impl Process {
                         tree_key,
                         tree_key_default(),
                     );
-
-                    self.register_selector.op0 = read_value[0];
-                    self.register_selector.op1 = read_value[1];
-                    self.register_selector.dst = read_value[2];
-                    self.register_selector.aux0 = read_value[3];
+                    self.update_hash_key(&read_value);
                     hash_row.clk = self.clk;
                     hash_row.opcode = 1 << Opcode::SLOAD as u64;
                     program.trace.builtin_posiedon.push(hash_row);
@@ -1011,10 +1011,7 @@ impl Process {
                     for i in 0..POSEIDON_OUTPUT_VALUE_LEN {
                         self.registers[i + 1] = row.0[i];
                     }
-                    self.register_selector.op0 = row.0[0];
-                    self.register_selector.op1 = row.0[1];
-                    self.register_selector.dst = row.0[2];
-                    self.register_selector.aux0 = row.0[3];
+                    self.update_hash_key(&row.0);
                     row.1.clk = self.clk;
                     row.1.opcode = 1 << Opcode::POSEIDON as u64;
                     program.trace.builtin_posiedon.push(row.1);
