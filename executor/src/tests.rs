@@ -602,4 +602,3 @@ fn gen_storage_table() {
 
     process.gen_storage_table(&mut program, hash);
 }
-
