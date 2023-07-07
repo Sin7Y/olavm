@@ -354,7 +354,7 @@ impl Trace {
     pub fn insert_rangecheck(
         &mut self,
         input: GoldilocksField,
-        //tuple.0 for memory, tuple.1 for cpu, tuple.2 for cmp,
+        //tuple.0 for memory, tuple.1 for cpu, tuple.2 for cmp, tuple.3 for storage
         filter_looked_for_memory_cpu_cmp: (
             GoldilocksField,
             GoldilocksField,

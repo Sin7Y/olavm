@@ -49,7 +49,6 @@ mod tests;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 9;
-const REGION_SPAN: u64 = 2 ^ 32 - 1;
 const MEM_SPAN_SIZE: u64 = u32::MAX as u64;
 const PSP_START_ADDR: u64 = GoldilocksField::ORDER - MEM_SPAN_SIZE;
 const HP_START_ADDR: u64 = GoldilocksField::ORDER - 2 * MEM_SPAN_SIZE;
@@ -659,9 +658,9 @@ impl Process {
                     let mut region_heap_flag = GoldilocksField::ZERO;
                     let write_addr = op1_value.0 + GoldilocksField::from_canonical_u64(offset_addr);
 
-                    if write_addr.0 >= PSP_START_ADDR {
+                    if write_addr.to_canonical_u64() >= PSP_START_ADDR {
                         return Err(ProcessorError::MemVistInv(write_addr.to_string()));
-                    } else if write_addr.0 >= HP_START_ADDR {
+                    } else if write_addr.to_canonical_u64() >= HP_START_ADDR {
                         region_heap_flag = GoldilocksField::ONE;
                     }
 
@@ -753,7 +752,7 @@ impl Process {
                         format!("{} params len is 1", opcode.as_str())
                     );
                     let op1_index = self.get_reg_index(ops[1]);
-                    if self.registers[op1_index].0 > u32::MAX as u64 {
+                    if self.registers[op1_index].to_canonical_u64() > u32::MAX as u64 {
                         return Err(ProcessorError::U32RangeCheckFail);
                     }
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
@@ -854,7 +853,9 @@ impl Process {
                     match opcode.as_str() {
                         "gte" => {
                             self.registers[dst_index] = GoldilocksField::from_canonical_u8(
-                                (self.registers[op0_index].0 >= value.0 .0) as u8,
+                                (self.registers[op0_index].to_canonical_u64()
+                                    >= value.0.to_canonical_u64())
+                                    as u8,
                             );
                             self.opcode =
                                 GoldilocksField::from_canonical_u64(1 << Opcode::GTE as u8);
@@ -874,7 +875,7 @@ impl Process {
                         abs_diff = self.register_selector.op1 - self.register_selector.op0;
                     }
 
-                    if abs_diff.0 > u32::MAX as u64 {
+                    if abs_diff.to_canonical_u64() > u32::MAX as u64 {
                         return Err(ProcessorError::U32RangeCheckFail);
                     }
                     program.trace.insert_rangecheck(
@@ -1179,13 +1180,16 @@ impl Process {
         let mut diff_clk;
         let mut diff_addr_cond;
         let mut first_row_flag = true;
+        let mut first_heap_row_flag = true;
 
         for (field_addr, cells) in self.memory.trace.iter() {
             let mut new_addr_flag = true;
-            let mut spec_region_flag = false;
+
             let canonical_addr =
                 GoldilocksField::from_noncanonical_u64(*field_addr).to_canonical_u64();
+            let mut rc_insert = Vec::new();
             for cell in cells {
+                let mut write_once_region_flag = false;
                 debug!(
                     "canonical_addr:{}, addr:{}, cell:{:?}",
                     canonical_addr, field_addr, cell
@@ -1195,12 +1199,11 @@ impl Process {
                     diff_addr_cond = GoldilocksField::from_canonical_u64(
                         GoldilocksField::ORDER - canonical_addr,
                     );
-                    spec_region_flag = true;
+                    write_once_region_flag = true;
                 } else if cell.region_heap.is_one() {
                     diff_addr_cond = GoldilocksField::from_canonical_u64(
-                        GoldilocksField::ORDER - REGION_SPAN - canonical_addr,
+                        GoldilocksField::ORDER - MEM_SPAN_SIZE - canonical_addr,
                     );
-                    spec_region_flag = true;
                 } else {
                     diff_addr_cond = GoldilocksField::ZERO;
                 }
@@ -1226,21 +1229,36 @@ impl Process {
                     program.trace.memory.push(trace_cell);
                     first_row_flag = false;
                     new_addr_flag = false;
+                    if cell.region_heap == GoldilocksField::ONE {
+                        first_heap_row_flag = false;
+                    }
                 } else if new_addr_flag {
                     debug!(
-                        "canonical_addr:{}, origin_addr:{}",
-                        canonical_addr, origin_addr
+                        "canonical_addr:{}, origin_addr:{}, spec_region_flag:{}, diff_addr_cond:{}, first_heap_row_flag:{}",
+                        canonical_addr, origin_addr, write_once_region_flag, diff_addr_cond, first_heap_row_flag
                     );
 
                     diff_addr = GoldilocksField::from_canonical_u64(canonical_addr - origin_addr);
                     let rc_value;
 
-                    if spec_region_flag {
+
+                    if write_once_region_flag {
                         diff_addr_inv = GoldilocksField::ZERO;
                         rc_value = diff_addr_cond;
+                        rc_insert.push(diff_addr_cond);
+                    } else if cell.region_heap == GoldilocksField::ONE && first_heap_row_flag {
+                        diff_addr = GoldilocksField::ZERO;
+                        diff_addr_inv = GoldilocksField::ZERO;
+                        rc_value = GoldilocksField::ZERO;
+                        rc_insert.push(diff_addr_cond);
+                        first_heap_row_flag = false;
                     } else {
                         diff_addr_inv = diff_addr.inverse();
                         rc_value = diff_addr;
+                        rc_insert.push(rc_value);
+                        if cell.region_heap == GoldilocksField::ONE {
+                            rc_insert.push(diff_addr_cond);
+                        }
                     }
                     diff_clk = GoldilocksField::ZERO;
                     let trace_cell = MemoryTraceCell {
@@ -1294,18 +1312,26 @@ impl Process {
                     program.trace.memory.push(trace_cell);
                 }
 
-                if program.trace.memory.last().unwrap().rc_value.0 > u32::MAX as u64 {
+                if program
+                    .trace
+                    .memory
+                    .last()
+                    .unwrap()
+                    .rc_value
+                    .to_canonical_u64()
+                    > u32::MAX as u64
+                {
                     return Err(ProcessorError::U32RangeCheckFail);
                 }
-                program.trace.insert_rangecheck(
-                    program.trace.memory.last().unwrap().rc_value,
+                rc_insert.iter_mut().for_each(|e| program.trace.insert_rangecheck(
+                    *e,
                     (
                         GoldilocksField::ONE,
                         GoldilocksField::ZERO,
                         GoldilocksField::ZERO,
                         GoldilocksField::ZERO,
                     ),
-                );
+                ));
 
                 origin_clk = cell.clk as u64;
             }

@@ -175,10 +175,8 @@ class MemoryTraceColumnType(Enum):
     FILTER_LOOKED_FOR_MAIN = 'filter_looked_for_main'
     RW_ADDR_UNCHANGED = 'rw_addr_unchanged'
     REGION_PROPHET = 'region_prophet'
-    REGION_POSEIDON = 'region_poseidon'
-    REGION_ECDSA = 'region_ecdsa'
+    REGION_HEAP = 'region_heap'
     RC_VALUE = 'rc_value'
-    FILTER_LOOKING_RC = 'filter_looking_rc'
 
 
 class RangeCheckTraceColumnType(Enum):

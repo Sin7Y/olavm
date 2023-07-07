@@ -475,7 +475,7 @@ fn poseidon_test() {
 #[test]
 fn malloc_test() {
     let _ = env_logger::builder()
-        .filter_level(LevelFilter::Info)
+        .filter_level(LevelFilter::Debug)
         .default_format()
         .try_init();
     let file = File::open("../assembler/test_data/bin/malloc.json").unwrap();
