@@ -32,7 +32,7 @@ impl StateStorage {
         self.db.write(batch).map_err(StateError::StorageIoError)
     }
 
-    pub fn get_contract(
+    pub fn get_contracts(
         &self,
         code_hashes: &Vec<TreeKey>,
     ) -> Result<Vec<Vec<GoldilocksField>>, StateError> {
