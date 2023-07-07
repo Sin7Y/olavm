@@ -655,8 +655,8 @@ impl Traversal for Executor {
         let hp = self.lookup(&hp_name);
         if let Ok(Single(value)) = value_res {
             let res = match value {
-                Number::Felt(number) => Single(hp.unwrap().get_single() - Number::Felt(number)),
-                Number::I32(number) => Single(hp.unwrap().get_single() - Number::I32(number)),
+                Number::Felt(number) => Single(hp.unwrap().get_single() + Number::Felt(number)),
+                Number::I32(number) => Single(hp.unwrap().get_single() + Number::I32(number)),
                 _ => panic!("wrong sqrt value type"),
             };
             self.assign_value(&Id(hp_name), res.clone());
