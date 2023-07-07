@@ -42,8 +42,8 @@ where
 
     pub fn get_contracts(
         &self,
-        code_hash: &Vec<TreeKey>,
+        code_hashes: &Vec<TreeKey>,
     ) -> Result<Vec<Vec<GoldilocksField>>, StateError> {
-        self.state_storage.get_contract(code_hash)
+        self.state_storage.get_contracts(code_hashes)
     }
 }
