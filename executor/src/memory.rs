@@ -12,9 +12,8 @@ pub struct MemoryCell {
     pub op: GoldilocksField,
     pub is_write: GoldilocksField,
     pub filter_looked_for_main: GoldilocksField,
+    pub region_heap: GoldilocksField,
     pub region_prophet: GoldilocksField,
-    pub region_poseidon: GoldilocksField,
-    pub region_ecdsa: GoldilocksField,
     pub value: GoldilocksField,
 }
 
@@ -35,8 +34,7 @@ impl MemoryTree {
         is_write: GoldilocksField,
         filter_looked_for_main: GoldilocksField,
         region_prophet: GoldilocksField,
-        region_poseidon: GoldilocksField,
-        region_ecdsa: GoldilocksField,
+        region_heap: GoldilocksField,
     ) -> GoldilocksField {
         // look up the previous value in the appropriate address trace and add (clk,
         // prev_value) to it; if this is the first time we access this address,
@@ -53,8 +51,7 @@ impl MemoryTree {
                     is_write,
                     filter_looked_for_main,
                     region_prophet,
-                    region_poseidon,
-                    region_ecdsa,
+                    region_heap,
                     value: last_value,
                 };
                 addr_trace.push(new_value);
@@ -67,8 +64,7 @@ impl MemoryTree {
                     is_write,
                     filter_looked_for_main,
                     region_prophet,
-                    region_poseidon,
-                    region_ecdsa,
+                    region_heap,
                     value: GoldilocksField::from_canonical_u64(INIT_MEMORY_DATA),
                 };
                 vec![new_value]
@@ -87,8 +83,7 @@ impl MemoryTree {
         is_write: GoldilocksField,
         filter_looked_for_main: GoldilocksField,
         region_prophet: GoldilocksField,
-        region_poseidon: GoldilocksField,
-        region_ecdsa: GoldilocksField,
+        region_heap: GoldilocksField,
         value: GoldilocksField,
     ) {
         // add a memory access to the appropriate address trace; if this is the first
@@ -100,8 +95,7 @@ impl MemoryTree {
             is_write,
             filter_looked_for_main,
             region_prophet,
-            region_poseidon,
-            region_ecdsa,
+            region_heap,
             value,
         };
         self.trace

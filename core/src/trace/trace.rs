@@ -89,10 +89,8 @@ pub struct MemoryTraceCell {
     pub filter_looked_for_main: GoldilocksField,
     pub rw_addr_unchanged: GoldilocksField,
     pub region_prophet: GoldilocksField,
-    pub region_poseidon: GoldilocksField,
-    pub region_ecdsa: GoldilocksField,
+    pub region_heap: GoldilocksField,
     pub value: GoldilocksField,
-    pub filter_looking_rc: GoldilocksField,
     pub rc_value: GoldilocksField,
 }
 

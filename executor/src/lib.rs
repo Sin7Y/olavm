@@ -52,9 +52,7 @@ const FP_REG_INDEX: usize = 9;
 const REGION_SPAN: u64 = 2 ^ 32 - 1;
 const MEM_SPAN_SIZE: u64 = u32::MAX as u64;
 const PSP_START_ADDR: u64 = GoldilocksField::ORDER - MEM_SPAN_SIZE;
-const POSEIDON_START_ADDR: u64 = GoldilocksField::ORDER - 2 * MEM_SPAN_SIZE;
-const ECDSA_START_ADDR: u64 = GoldilocksField::ORDER - 3 * MEM_SPAN_SIZE;
-const HP_START_ADDR: u64 = GoldilocksField::ORDER - 3 * MEM_SPAN_SIZE;
+const HP_START_ADDR: u64 = GoldilocksField::ORDER - 2 * MEM_SPAN_SIZE;
 const PROPHET_INPUT_REG_LEN: usize = 3;
 const PROPHET_INPUT_REG_START_INDEX: usize = 1;
 const PROPHET_INPUT_REG_END_INDEX: usize = PROPHET_INPUT_REG_START_INDEX + PROPHET_INPUT_REG_LEN;
@@ -166,7 +164,6 @@ impl Process {
                     GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
                     GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
-                    GoldilocksField::ZERO,
                 )
                 .to_canonical_u64();
             *fp += 1;
@@ -181,7 +178,6 @@ impl Process {
                     GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
                     GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
                     GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
-                    GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
                 )
@@ -237,7 +233,6 @@ impl Process {
                             GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
                             GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
                             GoldilocksField::from_canonical_u64(1_u64),
-                            GoldilocksField::from_canonical_u64(0_u64),
                             GoldilocksField::from_canonical_u64(0_u64),
                             GoldilocksField(value.get_number() as u64),
                         );
@@ -571,7 +566,6 @@ impl Process {
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                         GoldilocksField::from_canonical_u64(0_u64),
                         GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
                         GoldilocksField::from_canonical_u64(self.pc + step),
                     );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::CALL as u8);
@@ -590,7 +584,6 @@ impl Process {
                         GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
                         GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
                         GoldilocksField::from_canonical_u64(0_u64),
                         GoldilocksField::from_canonical_u64(0_u64),
                     );
@@ -614,7 +607,6 @@ impl Process {
                             GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                             GoldilocksField::from_canonical_u64(0_u64),
                             GoldilocksField::from_canonical_u64(0_u64),
-                            GoldilocksField::from_canonical_u64(0_u64),
                         )
                         .0;
                     self.registers[FP_REG_INDEX] = self.memory.read(
@@ -624,7 +616,6 @@ impl Process {
                         GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
                         GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
                         GoldilocksField::from_canonical_u64(0_u64),
                         GoldilocksField::from_canonical_u64(0_u64),
                     );
@@ -665,17 +656,24 @@ impl Process {
                             .to_canonical_u64(),
                     );
 
+                    let mut region_heap_flag = GoldilocksField::ZERO;
+                    let write_addr = op1_value.0 + GoldilocksField::from_canonical_u64(offset_addr);
+
+                    if write_addr.0 >= PSP_START_ADDR {
+                        return Err(ProcessorError::MemVistInv(write_addr.to_string()));
+                    } else if write_addr.0 >= HP_START_ADDR {
+                        region_heap_flag = GoldilocksField::ONE;
+                    }
+
                     self.memory.write(
-                        (op1_value.0 + GoldilocksField::from_canonical_u64(offset_addr))
-                            .to_canonical_u64(),
+                        write_addr.to_canonical_u64(),
                         self.clk,
                         GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u64),
                         GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
                         GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
+                        GoldilocksField::ZERO,
+                        region_heap_flag,
                         self.registers[op0_index],
                     );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u8);
@@ -717,18 +715,14 @@ impl Process {
 
                     let is_rw;
                     let mut region_prophet = GoldilocksField::ZERO;
-                    let mut region_poseidon = GoldilocksField::ZERO;
-                    let mut region_ecdsa = GoldilocksField::ZERO;
+                    let mut region_heap = GoldilocksField::ZERO;
 
                     if read_addr >= PSP_START_ADDR {
                         region_prophet = GoldilocksField::ONE;
                         is_rw = MemoryType::WriteOnce;
-                    } else if read_addr >= POSEIDON_START_ADDR {
-                        region_poseidon = GoldilocksField::ONE;
-                        is_rw = MemoryType::WriteOnce;
-                    } else if read_addr >= ECDSA_START_ADDR {
-                        region_ecdsa = GoldilocksField::ONE;
-                        is_rw = MemoryType::WriteOnce;
+                    } else if read_addr >= HP_START_ADDR {
+                        region_heap = GoldilocksField::ONE;
+                        is_rw = MemoryType::ReadWrite;
                     } else {
                         is_rw = MemoryType::ReadWrite;
                     }
@@ -741,8 +735,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                         region_prophet,
-                        region_poseidon,
-                        region_ecdsa,
+                        region_heap,
                     );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u8);
 
@@ -881,6 +874,9 @@ impl Process {
                         abs_diff = self.register_selector.op1 - self.register_selector.op0;
                     }
 
+                    if abs_diff.0 > u32::MAX as u64 {
+                        return Err(ProcessorError::U32RangeCheckFail);
+                    }
                     program.trace.insert_rangecheck(
                         abs_diff,
                         (
@@ -1049,9 +1045,9 @@ impl Process {
         }
 
         let hash_roots = self.gen_storage_hash_table(program, account_tree);
-        self.gen_storage_table(program, hash_roots);
+        self.gen_storage_table(program, hash_roots)?;
 
-        self.gen_memory_table(program);
+        self.gen_memory_table(program)?;
 
         Ok(())
     }
@@ -1138,9 +1134,9 @@ impl Process {
         &mut self,
         program: &mut Program,
         hash_roots: Vec<[GoldilocksField; 4]>,
-    ) {
+    ) -> Result<(), ProcessorError> {
         if hash_roots.is_empty() {
-            return;
+            return Ok(());
         }
         let trace = std::mem::replace(&mut self.storage.trace, HashMap::new());
         let mut traces: Vec<_> = trace.into_iter().flat_map(|e| e.1).collect();
@@ -1159,6 +1155,7 @@ impl Process {
                 item.1.addr,
                 item.1.value,
             );
+
             program.trace.insert_rangecheck(
                 GoldilocksField::from_canonical_u64(diff_clk as u64),
                 (
@@ -1170,9 +1167,11 @@ impl Process {
             );
             pre_clk = item.1.clk;
         }
+
+        Ok(())
     }
 
-    pub fn gen_memory_table(&mut self, program: &mut Program) {
+    pub fn gen_memory_table(&mut self, program: &mut Program) -> Result<(), ProcessorError> {
         let mut origin_addr = 0;
         let mut origin_clk = 0;
         let mut diff_addr;
@@ -1183,7 +1182,7 @@ impl Process {
 
         for (field_addr, cells) in self.memory.trace.iter() {
             let mut new_addr_flag = true;
-            let mut write_one_flag = false;
+            let mut spec_region_flag = false;
             let canonical_addr =
                 GoldilocksField::from_noncanonical_u64(*field_addr).to_canonical_u64();
             for cell in cells {
@@ -1196,17 +1195,12 @@ impl Process {
                     diff_addr_cond = GoldilocksField::from_canonical_u64(
                         GoldilocksField::ORDER - canonical_addr,
                     );
-                    write_one_flag = true;
-                } else if cell.region_poseidon.is_one() {
+                    spec_region_flag = true;
+                } else if cell.region_heap.is_one() {
                     diff_addr_cond = GoldilocksField::from_canonical_u64(
                         GoldilocksField::ORDER - REGION_SPAN - canonical_addr,
                     );
-                    write_one_flag = true;
-                } else if cell.region_ecdsa.is_one() {
-                    diff_addr_cond = GoldilocksField::from_canonical_u64(
-                        GoldilocksField::ORDER - 2 * REGION_SPAN - canonical_addr,
-                    );
-                    write_one_flag = true;
+                    spec_region_flag = true;
                 } else {
                     diff_addr_cond = GoldilocksField::ZERO;
                 }
@@ -1225,10 +1219,8 @@ impl Process {
                         filter_looked_for_main: cell.filter_looked_for_main,
                         rw_addr_unchanged: GoldilocksField::from_canonical_u64(0_u64),
                         region_prophet: cell.region_prophet,
-                        region_poseidon: cell.region_poseidon,
-                        region_ecdsa: cell.region_ecdsa,
+                        region_heap: cell.region_heap,
                         value: cell.value,
-                        filter_looking_rc: GoldilocksField::ONE,
                         rc_value,
                     };
                     program.trace.memory.push(trace_cell);
@@ -1243,7 +1235,7 @@ impl Process {
                     diff_addr = GoldilocksField::from_canonical_u64(canonical_addr - origin_addr);
                     let rc_value;
 
-                    if write_one_flag {
+                    if spec_region_flag {
                         diff_addr_inv = GoldilocksField::ZERO;
                         rc_value = diff_addr_cond;
                     } else {
@@ -1264,10 +1256,8 @@ impl Process {
                         filter_looked_for_main: cell.filter_looked_for_main,
                         rw_addr_unchanged: GoldilocksField::from_canonical_u64(0_u64),
                         region_prophet: cell.region_prophet,
-                        region_poseidon: cell.region_poseidon,
-                        region_ecdsa: cell.region_ecdsa,
+                        region_heap: cell.region_heap,
                         value: cell.value,
-                        filter_looking_rc: GoldilocksField::ONE,
                         rc_value,
                     };
                     program.trace.memory.push(trace_cell);
@@ -1297,13 +1287,15 @@ impl Process {
                         filter_looked_for_main: cell.filter_looked_for_main,
                         rw_addr_unchanged,
                         region_prophet: cell.region_prophet,
-                        region_poseidon: cell.region_poseidon,
-                        region_ecdsa: cell.region_ecdsa,
+                        region_heap: cell.region_heap,
                         value: cell.value,
-                        filter_looking_rc: GoldilocksField::ONE,
                         rc_value,
                     };
                     program.trace.memory.push(trace_cell);
+                }
+
+                if program.trace.memory.last().unwrap().rc_value.0 > u32::MAX as u64 {
+                    return Err(ProcessorError::U32RangeCheckFail);
                 }
                 program.trace.insert_rangecheck(
                     program.trace.memory.last().unwrap().rc_value,
@@ -1319,5 +1311,6 @@ impl Process {
             }
             origin_addr = canonical_addr;
         }
+        Ok(())
     }
 }

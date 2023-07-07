@@ -12,6 +12,8 @@ pub enum ProcessorError {
     U32RangeCheckFail,
     /// Assert fail
     AssertFail(String),
+    /// Memory  visit invalid
+    MemVistInv(String),
 }
 
 #[derive(Error, Debug)]
