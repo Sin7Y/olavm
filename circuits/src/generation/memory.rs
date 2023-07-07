@@ -39,13 +39,10 @@ pub fn generate_memory_trace<F: RichField>(
             F::from_canonical_u64(c.rw_addr_unchanged.to_canonical_u64());
         trace[memory::COL_MEM_REGION_PROPHET][i] =
             F::from_canonical_u64(c.region_prophet.to_canonical_u64());
-        trace[memory::COL_MEM_REGION_POSEIDON][i] =
-            F::from_canonical_u64(0);
-        trace[memory::COL_MEM_REGION_ECDSA][i] =
-            F::from_canonical_u64(0);
+        trace[memory::COL_MEM_REGION_POSEIDON][i] = F::from_canonical_u64(0);
+        trace[memory::COL_MEM_REGION_ECDSA][i] = F::from_canonical_u64(0);
         trace[memory::COL_MEM_RC_VALUE][i] = F::from_canonical_u64(c.rc_value.to_canonical_u64());
-        trace[memory::COL_MEM_FILTER_LOOKING_RC][i] =
-            F::from_canonical_u64(1);
+        trace[memory::COL_MEM_FILTER_LOOKING_RC][i] = F::from_canonical_u64(1);
     }
 
     if num_filled_row_len == 0 {
