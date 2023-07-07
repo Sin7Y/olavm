@@ -2,6 +2,7 @@ use maybe_rayon::*;
 
 use crate::{types::Field, goldilocks_field::GoldilocksField};
 
+#[allow(improper_ctypes)]
 extern "C" {
     fn evaluate_poly(vec: *mut u64, N: u64);
     fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64);

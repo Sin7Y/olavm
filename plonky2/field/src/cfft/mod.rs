@@ -91,7 +91,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
-    if p[0].as_any().is::<GoldilocksField>() {
+    if p[0].as_any().is::<GoldilocksField>() && false {
         result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
@@ -133,7 +133,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
-    if evaluations[0].as_any().is::<GoldilocksField>() {
+    if evaluations[0].as_any().is::<GoldilocksField>() && false {
         let p2 = run_interpolate_poly(evaluations);
         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
             *item1 = item2;
@@ -174,7 +174,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
-    if evaluations[0].as_any().is::<GoldilocksField>() {
+    if evaluations[0].as_any().is::<GoldilocksField>() && false {
         let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
             *item1 = item2;
