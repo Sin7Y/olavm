@@ -42,14 +42,13 @@ pub fn generate_memory_trace<F: RichField>(
         trace[memory::COL_MEM_REGION_HEAP][i] =
             F::from_canonical_u64(c.region_heap.to_canonical_u64());
         trace[memory::COL_MEM_RC_VALUE][i] = F::from_canonical_u64(c.rc_value.to_canonical_u64());
-        let curr_is_stack =
-            c.region_prophet.to_canonical_u64() == 0 && c.region_heap.to_canonical_u64() == 0;
-        let next_is_heap = i + 1 < cells.len() && cells[i + 1].region_heap.to_canonical_u64() == 1;
+        let curr_is_heap = c.region_heap.to_canonical_u64() == 1;
+        let last_is_not_heap = i > 0 && cells[i - 1].region_heap.to_canonical_u64() == 0;
         trace[memory::COL_MEM_FILTER_LOOKING_RC][i] = if i == 0 {
             F::from_canonical_u64(0)
         } else if c.region_prophet.to_canonical_u64() == 1 {
             F::from_canonical_u64(0)
-        } else if curr_is_stack && next_is_heap {
+        } else if curr_is_heap && last_is_not_heap {
             F::from_canonical_u64(0)
         } else {
             F::from_canonical_u64(1)
