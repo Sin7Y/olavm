@@ -22,11 +22,9 @@ pub(crate) const COL_MEM_DIFF_ADDR_COND: usize = COL_MEM_DIFF_CLK + 1;
 pub(crate) const COL_MEM_FILTER_LOOKED_FOR_MAIN: usize = COL_MEM_DIFF_ADDR_COND + 1;
 pub(crate) const COL_MEM_RW_ADDR_UNCHANGED: usize = COL_MEM_FILTER_LOOKED_FOR_MAIN + 1;
 pub(crate) const COL_MEM_REGION_PROPHET: usize = COL_MEM_RW_ADDR_UNCHANGED + 1;
-pub(crate) const COL_MEM_REGION_POSEIDON: usize = COL_MEM_REGION_PROPHET + 1;
-pub(crate) const COL_MEM_REGION_ECDSA: usize = COL_MEM_REGION_POSEIDON + 1;
-pub(crate) const COL_MEM_RC_VALUE: usize = COL_MEM_REGION_ECDSA + 1;
+pub(crate) const COL_MEM_REGION_HEAP: usize = COL_MEM_REGION_PROPHET + 1;
+pub(crate) const COL_MEM_RC_VALUE: usize = COL_MEM_REGION_HEAP + 1;
 pub(crate) const COL_MEM_FILTER_LOOKING_RC: usize = COL_MEM_RC_VALUE + 1;
-
 pub(crate) const NUM_MEM_COLS: usize = COL_MEM_FILTER_LOOKING_RC + 1;
 
 pub(crate) fn get_memory_col_name_map() -> BTreeMap<usize, String> {
@@ -47,8 +45,7 @@ pub(crate) fn get_memory_col_name_map() -> BTreeMap<usize, String> {
     );
     m.insert(COL_MEM_RW_ADDR_UNCHANGED, String::from("RW_ADDR_UNCHANGED"));
     m.insert(COL_MEM_REGION_PROPHET, String::from("REGION_PROPHET"));
-    m.insert(COL_MEM_REGION_POSEIDON, String::from("REGION_POSEIDON"));
-    m.insert(COL_MEM_REGION_ECDSA, String::from("REGION_ECDSA"));
+    m.insert(COL_MEM_REGION_HEAP, String::from("REGION_HEAP"));
     m.insert(COL_MEM_RC_VALUE, String::from("RC_VALUE"));
     m.insert(COL_MEM_FILTER_LOOKING_RC, String::from("FILTER_LOOKING_RC"));
     m
