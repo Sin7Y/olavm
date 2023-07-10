@@ -167,7 +167,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
     }
 
     fn constraint_degree(&self) -> usize {
-        5
+        6
     }
 }
 
