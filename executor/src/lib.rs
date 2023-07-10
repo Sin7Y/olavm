@@ -126,9 +126,11 @@ impl Process {
             let src_index = self.get_reg_index(op_str);
             if src_index == (REG_NOT_USED as usize) {
                 return (self.psp, ImmediateOrRegName::RegName(src_index));
-            } else {
+            } else if src_index < REGISTER_NUM {
                 value = self.registers[src_index];
                 return (value, ImmediateOrRegName::RegName(src_index));
+            } else {
+                panic!("reg index: {} out of bounds", src_index);
             }
         }
     }
