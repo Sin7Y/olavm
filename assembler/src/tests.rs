@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use core::program::binary_program::BinaryProgram;
+    use std::path::PathBuf;
 
     use crate::encoder::encode_asm_from_json_file;
     use core::program::decoder::decode_binary_program_to_instructions;
@@ -56,7 +57,11 @@ mod tests {
     }
 
     fn test_decode(file_name: String) {
-        let input_path = format!("test_data/asm/{}", file_name);
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("test_data/asm/");
+        path.push(file_name);
+        let input_path = path.display().to_string();
+
         let encoded_program = encode_asm_from_json_file(input_path).unwrap();
 
         let program_json = serde_json::to_string_pretty(&encoded_program).unwrap();
