@@ -18,6 +18,10 @@ pub enum OlaOperand {
         register: OlaRegister,
         offset: ImmediateValue,
     },
+    RegisterWithFactor {
+        register: OlaRegister,
+        factor: ImmediateValue,
+    },
     SpecialReg {
         special_reg: OlaSpecialRegister,
     },
@@ -35,6 +39,9 @@ impl OlaOperand {
             }
             OlaOperand::SpecialReg { special_reg } => {
                 format!("{}", special_reg)
+            }
+            OlaOperand::RegisterWithFactor { register, factor } => {
+                format!("{}*{}", factor.hex, register)
             }
         }
     }
@@ -104,6 +111,14 @@ impl Display for OlaOperand {
             }
             OlaOperand::SpecialReg { special_reg } => {
                 write!(f, "SpecialReg({})", special_reg)
+            }
+            OlaOperand::RegisterWithFactor { register, factor } => {
+                write!(
+                    f,
+                    "RegisterWithFactor({}*{})",
+                    factor.to_u64().unwrap_or(0),
+                    register
+                )
             }
         }
     }

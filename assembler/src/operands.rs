@@ -16,6 +16,11 @@ pub(crate) enum OlaAsmOperand {
         register: OlaRegister,
         offset: ImmediateValue,
     },
+    RegisterWithFactoredRegOffset {
+        register: OlaRegister,
+        offset_register: OlaRegister,
+        factor: ImmediateValue,
+    },
     SpecialReg {
         special_reg: OlaSpecialRegister,
     },
@@ -44,6 +49,17 @@ impl Display for OlaAsmOperand {
                     offset.to_u64().unwrap_or(0)
                 )
             }
+            OlaAsmOperand::RegisterWithFactoredRegOffset {
+                register,
+                offset_register,
+                factor,
+            } => {
+                write!(
+                    f,
+                    "RegisterWithFactoredRegOffset([{},{},{}])",
+                    register, offset_register, factor
+                )
+            }
             OlaAsmOperand::SpecialReg { special_reg } => {
                 write!(f, "SpecialReg({})", special_reg)
             }
@@ -61,6 +77,52 @@ impl FromStr for OlaAsmOperand {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let regex_reg_with_reg_factored_offset = Regex::new(
+            r"^\[(?P<reg>r[0-9]),(?P<offset_reg>r[0-9]),(?P<factor>[\+-]?[[:digit:]]+)\]$",
+        )
+        .unwrap();
+        let capture_reg_with_reg_factored_offset = regex_reg_with_reg_factored_offset.captures(s);
+        if capture_reg_with_reg_factored_offset.is_some() {
+            let caps = capture_reg_with_reg_factored_offset.unwrap();
+            let str_reg = caps.name("reg").unwrap().as_str();
+            let str_offset_reg = caps.name("offset_reg").unwrap().as_str();
+            let str_factor = caps.name("factor").unwrap().as_str();
+            let register = OlaRegister::from_str(str_reg)?;
+            let offset_register = OlaRegister::from_str(str_offset_reg)?;
+            let factor = ImmediateValue::from_str(str_factor)?;
+            return Ok(OlaAsmOperand::RegisterWithFactoredRegOffset {
+                register,
+                offset_register,
+                factor,
+            });
+        }
+
+        let regex_reg_with_reg_offset =
+            Regex::new(r"^\[(?P<reg>r[0-9]),(?P<offset_reg>r[0-9])\]$").unwrap();
+        let capture_reg_with_reg_offset = regex_reg_with_reg_offset.captures(s);
+        if capture_reg_with_reg_offset.is_some() {
+            let caps = capture_reg_with_reg_offset.unwrap();
+            let str_reg = caps.name("reg").unwrap().as_str();
+            let str_offset_reg = caps.name("offset_reg").unwrap().as_str();
+            let register = OlaRegister::from_str(str_reg)?;
+            let offset_register = OlaRegister::from_str(str_offset_reg)?;
+            return Ok(OlaAsmOperand::RegisterWithFactoredRegOffset {
+                register,
+                offset_register,
+                factor: ImmediateValue::from_str("1")?,
+            });
+        }
+
+        let regex_reg_with_default_offset = Regex::new(r"^\[(?P<reg>r[0-9])\]$").unwrap();
+        let capture_reg_with_default_offset = regex_reg_with_default_offset.captures(s);
+        if capture_reg_with_default_offset.is_some() {
+            let caps = capture_reg_with_default_offset.unwrap();
+            let str_reg = caps.name("reg").unwrap().as_str();
+            let register = OlaRegister::from_str(str_reg)?;
+            let offset = ImmediateValue::from_str("0")?;
+            return Ok(OlaAsmOperand::RegisterWithOffset { register, offset });
+        }
+
         let regex_reg_offset =
             Regex::new(r"^\[(?P<reg>r[0-9]),(?P<offset>[\+-]?[[:digit:]]+)\]$").unwrap();
         let capture_reg_offset = regex_reg_offset.captures(s);
@@ -127,6 +189,18 @@ mod tests {
     use std::str::FromStr;
 
     use crate::operands::OlaAsmOperand;
+
+    #[test]
+    fn test_asm_offset_parse() {
+        let case_0 = "[r9,r1,-8]";
+        let op_0 = OlaAsmOperand::from_str(case_0).unwrap();
+        let expected_0 = OlaAsmOperand::RegisterWithFactoredRegOffset {
+            register: OlaRegister::R9,
+            offset_register: OlaRegister::R1,
+            factor: ImmediateValue::from_str("-8").unwrap(),
+        };
+        assert_eq!(op_0, expected_0);
+    }
 
     #[test]
     fn test_asm_operand_parse() {

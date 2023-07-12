@@ -163,10 +163,6 @@ fn split_ola_asm_pieces(
                 let dst = ops.get(0).unwrap();
                 let op1 = ops.get(1).unwrap();
                 Ok((opcode, None, Some(op1.clone()), Some(dst.clone())))
-            } else if opcode == OlaOpcode::MSTORE {
-                let op0 = ops.get(1).unwrap();
-                let op1 = ops.get(0).unwrap();
-                Ok((opcode, Some(op0.clone()), Some(op1.clone()), None))
             } else {
                 let op0 = ops.get(0).unwrap();
                 let op1 = ops.get(1).unwrap();

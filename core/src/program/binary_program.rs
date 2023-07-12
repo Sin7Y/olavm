@@ -91,6 +91,12 @@ impl BinaryInstruction {
             Some(OlaOperand::SpecialReg { .. }) => {
                 return Err(format!("encode err, op0 cannot be special reg: {}", self))
             }
+            Some(OlaOperand::RegisterWithFactor { .. }) => {
+                return Err(format!(
+                    "encode err, op0 cannot be reg with factor: {}",
+                    self
+                ))
+            }
             None => {}
         }
         match &self.op1 {
@@ -113,6 +119,10 @@ impl BinaryInstruction {
                     ));
                 }
             }
+            Some(OlaOperand::RegisterWithFactor { register, factor }) => {
+                instruction_u64 |= register.binary_bit_mask_as_op1();
+                imm = Some(factor.clone());
+            }
             None => {}
         }
         match &self.dst {
@@ -131,6 +141,12 @@ impl BinaryInstruction {
             }
             Some(OlaOperand::SpecialReg { .. }) => {
                 return Err(format!("encode err, dst cannot be SpecialReg: {}", self));
+            }
+            Some(OlaOperand::RegisterWithFactor { .. }) => {
+                return Err(format!(
+                    "encode err, dst cannot be reg with factor: {}",
+                    self
+                ))
             }
             None => {}
         }
@@ -234,9 +250,9 @@ impl BinaryInstruction {
                 if matched_op1_reg.is_none() {
                     return Err(format!(""));
                 }
-                Some(OlaOperand::RegisterWithOffset {
+                Some(OlaOperand::RegisterWithFactor {
                     register: matched_op1_reg.unwrap(),
-                    offset: immediate_value.unwrap(),
+                    factor: immediate_value.unwrap(),
                 })
             } else {
                 if matched_op1_reg.is_some() {
