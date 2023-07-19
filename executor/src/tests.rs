@@ -15,12 +15,12 @@ use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 use tempfile::TempDir;
 
-#[test]
-fn memory_test() {
+fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace: bool) {
     let _ = env_logger::builder()
         .filter_level(LevelFilter::Debug)
         .try_init();
-    let file = File::open("../assembler/test_data/bin/memory.json").unwrap();
+    let file = File::open(bin_file_path).unwrap();
+
     let reader = BufReader::new(file);
 
     let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
@@ -45,472 +45,138 @@ fn memory_test() {
         .execute(&mut program, &mut None, &mut AccountTree::new_test())
         .unwrap();
 
-    println!("vm trace: {:?}", program.trace);
+    if print_trace {
+        println!("vm trace: {:?}", program.trace);
+    }
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    let mut file = File::create("memory_trace.txt").unwrap();
+    let mut file = File::create(trace_name).unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
+}
+#[test]
+fn memory_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/memory.json",
+        "memory_trace.txt",
+        true,
+    );
 }
 
 #[test]
 fn range_check_test() {
-    let file = File::open("../assembler/test_data/bin/range_check.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    process
-        .execute(&mut program, &mut None, &mut AccountTree::new_test())
-        .unwrap();
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("range_check_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/range_check.json",
+        "range_check_trace.txt",
+        true,
+    );
 }
 
 #[test]
 fn bitwise_test() {
-    let file = File::open("../assembler/test_data/bin/bitwise.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    let res = process.execute(&mut program, &mut None, &mut AccountTree::new_test());
-    if res.is_err() {
-        println!("res:{:?}", res);
-    }
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("bitwise_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/bitwise.json",
+        "bitwise_trace.txt",
+        true,
+    );
 }
 
 #[test]
 fn comparison_test() {
-    let file = File::open("../assembler/test_data/bin/comparison.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    process
-        .execute(&mut program, &mut None, &mut AccountTree::new_test())
-        .unwrap();
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("comparison_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/comparison.json",
+        "comparison_trace.txt",
+        true,
+    );
 }
 
 #[test]
 fn call_test() {
-    let file = File::open("../assembler/test_data/bin/call.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    process
-        .execute(&mut program, &mut None, &mut AccountTree::new_test())
-        .unwrap();
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("call_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/call.json",
+        "call_trace.txt",
+        true,
+    );
 }
 
 #[test]
 fn fibo_use_loop_decode() {
-    let file = File::open("../assembler/test_data/bin/fibo_loop.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    let start = Instant::now();
-    process
-        .execute(&mut program, &mut None, &mut AccountTree::new_test())
-        .unwrap();
-    let exec_time = start.elapsed();
-    println!(
-        "exec_time: {}, exec steps: {}",
-        exec_time.as_secs(),
-        program.trace.exec.len()
+    executor_run_test_program(
+        "../assembler/test_data/bin/fibo_loop.json",
+        "fib_loop_trace.txt",
+        true,
     );
-    let file = File::create("fib_loop.txt").unwrap();
-
-    serde_json::to_writer(file, &program.trace).unwrap();
 }
 
 #[test]
 fn fibo_recursive() {
-    let file = File::open("../assembler/test_data/bin/fibo_recursive.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    let res = process.execute(&mut program, &mut None, &mut AccountTree::new_test());
-    if res.is_err() {
-        panic!("execute err:{:?}", res);
-    }
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("fibo_recursive.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/fibo_recursive.json",
+        "fibo_recursive_trace.txt",
+        true,
+    );
 }
 
 #[test]
-fn prophet_test() {
-    let file = File::open("../assembler/test_data/bin/prophet_sqrt.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    let res = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
+fn prophet_sqrt_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/prophet_sqrt.json",
+        "prophet_sqrt_trace.txt",
+        true,
     );
-    if res.is_err() {
-        panic!("execute err:{:?}", res);
-    }
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("prophet.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
 #[test]
 fn sqrt_newton_iteration_test() {
-    let file = File::open("../assembler/test_data/bin/sqrt.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    let res = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
+    executor_run_test_program(
+        "../assembler/test_data/bin/sqrt.json",
+        "sqrt_trace.txt",
+        true,
     );
-    if res.is_err() {
-        panic!("execute err:{:?}", res);
-    }
-
-    // println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("sqrt.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
 #[test]
 fn storage_test() {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Info)
-        .default_format()
-        .try_init();
-    let file = File::open("../assembler/test_data/bin/storage.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-    let res = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
+    executor_run_test_program(
+        "../assembler/test_data/bin/storage.json",
+        "storage_trace.txt",
+        false,
     );
-    if res.is_err() {
-        panic!("execute err:{:?}", res);
-    }
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("storage.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
 #[test]
 fn storage_multi_keys_test() {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Info)
-        .default_format()
-        .try_init();
-    let file = File::open("../assembler/test_data/bin/storage_multi_keys.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    let res = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
+    executor_run_test_program(
+        "../assembler/test_data/bin/storage_multi_keys.json",
+        "storage_multi_keys_trace.txt",
+        false,
     );
-    if res.is_err() {
-        panic!("execute err:{:?}", res);
-    }
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("storage_multi_keys.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
 #[test]
 fn poseidon_test() {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Info)
-        .default_format()
-        .try_init();
-    let file = File::open("../assembler/test_data/bin/poseidon.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-
-    let res = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
+    executor_run_test_program(
+        "../assembler/test_data/bin/poseidon.json",
+        "poseidon_trace.txt",
+        false,
     );
-    if res.is_err() {
-        panic!("execute err:{:?}", res);
-    }
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("poseidon.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
 }
 
 #[test]
 fn malloc_test() {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
-        .default_format()
-        .try_init();
-    let file = File::open("../assembler/test_data/bin/malloc.json").unwrap();
-    let reader = BufReader::new(file);
-
-    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
-    let instructions = program.bytecode.split("\n");
-    let mut prophets = HashMap::new();
-    for item in program.prophets {
-        prophets.insert(item.host as u64, item);
-    }
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    for inst in instructions {
-        program.instructions.push(inst.to_string());
-    }
-
-    let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
-    let res = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
+    executor_run_test_program(
+        "../assembler/test_data/bin/malloc.json",
+        "malloc_trace.txt",
+        false,
     );
-    if res.is_err() {
-        panic!("execute err:{:?}", res);
-    }
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+}
 
-    let mut file = File::create("malloc.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+#[test]
+fn vote_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/vote.json",
+        "vote_trace.txt",
+        false,
+    );
 }
 
 #[test]
