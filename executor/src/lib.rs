@@ -1226,8 +1226,8 @@ impl Process {
 
             let canonical_addr =
                 GoldilocksField::from_noncanonical_u64(*field_addr).to_canonical_u64();
-            let mut rc_insert = Vec::new();
             for cell in cells {
+                let mut rc_insert = Vec::new();
                 let mut write_once_region_flag = false;
                 debug!(
                     "canonical_addr:{}, addr:{}, cell:{:?}",
@@ -1330,6 +1330,8 @@ impl Process {
                     } else {
                         rc_value = diff_clk;
                     }
+                    rc_insert.push(rc_value);
+
                     let trace_cell = MemoryTraceCell {
                         addr: GoldilocksField::from_canonical_u64(canonical_addr),
                         clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
