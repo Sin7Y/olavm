@@ -37,6 +37,7 @@ use plonky2::field::types::{Field, Field64, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
+use rocksdb::LogLevel::Error;
 use std::time::Instant;
 
 mod decode;
@@ -326,8 +327,13 @@ impl Process {
             let ctx_regs_status = self.ctx_registers_stack.last().unwrap().clone();
             let pc_status = self.pc;
 
-            let instruction = program.trace.instructions.get(&self.pc).unwrap().clone();
-            debug!("execute instruction: {:?}", instruction);
+            let mut instruction;
+            if let Some(inst) = program.trace.instructions.get(&self.pc) {
+                instruction = inst.clone();
+                debug!("execute instruction: {:?}", instruction);
+            } else {
+                return Err(ProcessorError::PcVistInv(format!("Invalid pc:{}", self.pc)));
+            }
             let ops: Vec<&str> = instruction.0.split_whitespace().collect();
             let opcode = ops.first().unwrap().to_lowercase();
             self.op1_imm = GoldilocksField::from_canonical_u64(instruction.1 as u64);
@@ -626,48 +632,65 @@ impl Process {
                 }
                 "mstore" => {
                     assert!(
-                        ops.len() == 4 || ops.len() == 3,
+                        ops.len() == 4 || ops.len() == 5,
                         "{}",
-                        format!("{} params len is 3", opcode.as_str())
+                        format!("{} params len is not match", opcode.as_str())
                     );
                     let mut offset_addr = 0;
-                    let op1_value = self.get_index_value(ops[1]);
-                    let op0_index = self.get_reg_index(ops[2]);
-                    self.register_selector.op0 = self.registers[op0_index];
-                    self.register_selector.op0_reg_sel[op0_index] =
-                        GoldilocksField::from_canonical_u64(1);
+                    let op0_value = self.get_index_value(ops[1]);
 
-                    self.register_selector.op1 = op1_value.0;
-                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
+                    self.register_selector.op0 = op0_value.0;
+                    if let ImmediateOrRegName::RegName(op0_index) = op0_value.1 {
+                        self.register_selector.op0_reg_sel[op0_index] =
                             GoldilocksField::from_canonical_u64(1);
+                    } else {
+                        panic!("mstore op0 should be a reg");
                     }
-
+                    let mut dst_index = 0;
                     if ops.len() == 4 {
-                        let offset_res = u64::from_str_radix(ops[3], 10);
+                        let offset_res = u64::from_str_radix(ops[2], 10);
                         if let Ok(offset) = offset_res {
                             offset_addr = offset;
+                            self.op1_imm = GoldilocksField::ONE;
+                        }
+                        self.register_selector.op1 =
+                            GoldilocksField::from_canonical_u64(offset_addr);
+                        //fixme.
+                        self.register_selector.aux0 = GoldilocksField::ZERO;
+                        dst_index = self.get_reg_index(ops[3]);
+                    } else {
+                        let op1_index = self.get_reg_index(ops[2]);
+                        self.register_selector.op1 = self.registers[op1_index];
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                        let offset_res = u64::from_str_radix(ops[3], 10);
+                        if let Ok(offset) = offset_res {
+                            self.register_selector.aux0 =
+                                GoldilocksField::from_canonical_u64(offset);
+                            offset_addr = offset * self.register_selector.op1.to_canonical_u64();
                             self.op1_imm = GoldilocksField::ZERO;
                         }
+                        dst_index = self.get_reg_index(ops[4]);
                     }
 
-                    self.register_selector.aux0 = GoldilocksField::from_canonical_u64(offset_addr);
-                    self.register_selector.aux1 = GoldilocksField::from_canonical_u64(
-                        (self.register_selector.aux0 + self.register_selector.op1)
-                            .to_canonical_u64(),
-                    );
+                    self.register_selector.dst = self.registers[dst_index];
+                    self.register_selector.dst_reg_sel[dst_index] =
+                        GoldilocksField::from_canonical_u64(1);
+
+                    let write_addr = (op0_value.0
+                        + GoldilocksField::from_canonical_u64(offset_addr))
+                    .to_canonical_u64();
+                    self.register_selector.aux1 = GoldilocksField::from_canonical_u64(write_addr);
 
                     let mut region_heap_flag = GoldilocksField::ZERO;
-                    let write_addr = op1_value.0 + GoldilocksField::from_canonical_u64(offset_addr);
-
-                    if write_addr.to_canonical_u64() >= PSP_START_ADDR {
+                    if write_addr >= PSP_START_ADDR {
                         return Err(ProcessorError::MemVistInv(write_addr.to_string()));
-                    } else if write_addr.to_canonical_u64() >= HP_START_ADDR {
+                    } else if write_addr >= HP_START_ADDR {
                         region_heap_flag = GoldilocksField::ONE;
                     }
 
                     self.memory.write(
-                        write_addr.to_canonical_u64(),
+                        write_addr,
                         self.clk,
                         GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u64),
                         GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
@@ -675,7 +698,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                         GoldilocksField::ZERO,
                         region_heap_flag,
-                        self.registers[op0_index],
+                        self.registers[dst_index],
                     );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u8);
 
@@ -683,37 +706,52 @@ impl Process {
                 }
                 "mload" => {
                     assert!(
-                        ops.len() == 4 || ops.len() == 3,
+                        ops.len() == 4 || ops.len() == 5,
                         "{}",
-                        format!("{} params len is 3", opcode.as_str())
+                        format!("{} params len is not match", opcode.as_str())
                     );
                     let dst_index = self.get_reg_index(ops[1]);
-                    let op1_value = self.get_index_value(ops[2]);
+                    let op0_value = self.get_index_value(ops[2]);
+
+                    if let ImmediateOrRegName::RegName(op0_index) = op0_value.1 {
+                        self.register_selector.op0_reg_sel[op0_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    } else {
+                        panic!("mstore op0 should be a reg");
+                    }
+
+                    self.register_selector.op0 = op0_value.0;
+
                     let mut offset_addr = 0;
 
                     if ops.len() == 4 {
                         let offset_res = u64::from_str_radix(ops[3], 10);
                         if let Ok(offset) = offset_res {
                             offset_addr = offset;
+                            self.op1_imm = GoldilocksField::ONE;
+                        }
+                        self.register_selector.op1 =
+                            GoldilocksField::from_canonical_u64(offset_addr);
+                        //fixme.
+                        self.register_selector.aux0 = GoldilocksField::ZERO;
+                    } else {
+                        let op1_index = self.get_reg_index(ops[3]);
+                        self.register_selector.op1 = self.registers[op1_index];
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                        let offset_res = u64::from_str_radix(ops[4], 10);
+                        if let Ok(offset) = offset_res {
+                            self.register_selector.aux0 =
+                                GoldilocksField::from_canonical_u64(offset);
+                            offset_addr = offset * self.register_selector.op1.to_canonical_u64();
                             self.op1_imm = GoldilocksField::ZERO;
                         }
                     }
 
-                    self.register_selector.op1 = op1_value.0;
-                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-                    }
-                    self.register_selector.aux0 = GoldilocksField::from_canonical_u64(offset_addr);
-                    self.register_selector.aux1 = GoldilocksField::from_canonical_u64(
-                        (self.register_selector.aux0 + self.register_selector.op1)
-                            .to_canonical_u64(),
-                    );
-
-                    let read_addr = (op1_value.0
+                    let read_addr = (op0_value.0
                         + GoldilocksField::from_canonical_u64(offset_addr))
                     .to_canonical_u64();
-
+                    self.register_selector.aux1 = GoldilocksField::from_canonical_u64(read_addr);
                     let is_rw;
                     let mut region_prophet = GoldilocksField::ZERO;
                     let mut region_heap = GoldilocksField::ZERO;
@@ -728,8 +766,7 @@ impl Process {
                         is_rw = MemoryType::ReadWrite;
                     }
                     self.registers[dst_index] = self.memory.read(
-                        (op1_value.0 + GoldilocksField::from_canonical_u64(offset_addr))
-                            .to_canonical_u64(),
+                        read_addr,
                         self.clk,
                         GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u64),
                         GoldilocksField::from_canonical_u64(is_rw as u64),
@@ -1243,7 +1280,6 @@ impl Process {
                     diff_addr = GoldilocksField::from_canonical_u64(canonical_addr - origin_addr);
                     let rc_value;
 
-
                     if write_once_region_flag {
                         diff_addr_inv = GoldilocksField::ZERO;
                         rc_value = diff_addr_cond;
@@ -1325,15 +1361,17 @@ impl Process {
                 {
                     return Err(ProcessorError::U32RangeCheckFail);
                 }
-                rc_insert.iter_mut().for_each(|e| program.trace.insert_rangecheck(
-                    *e,
-                    (
-                        GoldilocksField::ONE,
-                        GoldilocksField::ZERO,
-                        GoldilocksField::ZERO,
-                        GoldilocksField::ZERO,
-                    ),
-                ));
+                rc_insert.iter_mut().for_each(|e| {
+                    program.trace.insert_rangecheck(
+                        *e,
+                        (
+                            GoldilocksField::ONE,
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
+                        ),
+                    )
+                });
 
                 origin_clk = cell.clk as u64;
             }

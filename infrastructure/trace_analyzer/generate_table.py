@@ -363,7 +363,7 @@ def main():
                 worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
                 col += 1
             else:
-                if (data.value == "instruction" or data.value == "opcode"):
+                if data.value == "instruction" or data.value == "opcode" or data.value == "aux0":
                     # print("{0}:{1}:{2}".format(data.value, row[data.value],
                     #                            '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                     #                                row[data.value] // (2 ** 32), row[data.value] % (2 ** 32))))

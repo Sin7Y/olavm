@@ -107,51 +107,73 @@ pub fn decode_raw_instruction(
                 instruction += &op_code.to_string();
                 instruction += " ";
 
-                if reg2 != REG_NOT_USED {
-                    let reg2_name = format!("r{}", reg2);
-                    instruction += &reg2_name;
-                } else if imm_flag == 1 {
-                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
-                    instruction += &imm.to_string();
-                    step = IMM_INSTRUCTION_LEN;
+                if reg1 != REG_NOT_USED {
+                    let reg1_name = format!("r{}", reg1);
+                    instruction += &reg1_name;
                 } else {
-                    panic!("must be a reg or imm");
+                    panic!("MSTORE op0 must be a reg");
                 }
 
                 instruction += " ";
-                let reg1_name = format!("r{}", reg1);
-                instruction += &reg1_name;
+                if imm_flag == 1 {
+                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
+                    instruction += &imm.to_string();
+                    instruction += " ";
+                } else if reg2 != REG_NOT_USED {
+                    let reg2_name = format!("r{}", reg2);
+                    instruction += &reg2_name;
+                    instruction += " ";
+                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
+                    instruction += &imm.to_string();
+                    instruction += " ";
+                } else {
+                    panic!("MSTORE op1 must be a reg or immediate");
+                }
 
                 instruction += " ";
 
                 // todo：need distinct op1_imm or offset_imm?
                 // if reg2 != REG_NOT_USED && imm_flag == 1 {
-                if reg2 != REG_NOT_USED {
-                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
-                    instruction += &imm.to_string();
-                    step = IMM_INSTRUCTION_LEN;
+                if reg0 != REG_NOT_USED {
+                    let reg0_name = format!("r{}", reg0);
+                    instruction += &reg0_name;
+                } else {
+                    panic!("MSTORE dst must be a reg");
                 }
+                step = IMM_INSTRUCTION_LEN;
             }
             Opcode::MLOAD => {
                 instruction += &op_code.to_string();
                 instruction += " ";
-                let reg0_name = format!("r{}", reg0);
-                instruction += &reg0_name;
+                if reg0 != REG_NOT_USED {
+                    let reg0_name = format!("r{}", reg0);
+                    instruction += &reg0_name;
+                } else {
+                    panic!("MLOAD dst must be a reg");
+                }
                 instruction += " ";
-                if reg2 != REG_NOT_USED {
+                if reg1 != REG_NOT_USED {
+                    let reg1_name = format!("r{}", reg1);
+                    instruction += &reg1_name;
+                } else {
+                    panic!("MLOAD op0 must be a reg");
+                }
+                instruction += " ";
+
+                if reg2 == REG_NOT_USED && imm_flag == 1 {
+                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
+                    instruction += &imm.to_string();
+                } else if reg2 != REG_NOT_USED {
                     let reg2_name = format!("r{}", reg2);
                     instruction += &reg2_name;
+                    instruction += " ";
+                    let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
+                    instruction += &imm.to_string();
+                    instruction += " ";
+                } else {
+                    panic!("MLOAD op1 must be a reg or immediate");
                 }
-                instruction += " ";
-                // todo：need distinct op1_imm or offset_imm?
-                // if imm_flag == 1 {
-                let imm = parse_hex_str(imm_str.trim_start_matches("0x"))?;
-                instruction += &imm.to_string();
                 step = IMM_INSTRUCTION_LEN;
-                // }
-                if reg2 == REG_NOT_USED && imm_flag == 0 {
-                    panic!("must be a reg or imm");
-                }
             }
             Opcode::JMP | Opcode::CALL | Opcode::RC => {
                 instruction += &op_code.to_string();
