@@ -156,7 +156,7 @@ impl FromStr for ImmediateValue {
                 return Err(format!("Immediate is not a valid number: {}", s));
             }
             let value = hex_parsed_res.unwrap();
-            if value > ImmediateValue::ORDER {
+            if value >= ImmediateValue::ORDER {
                 return Err(format!("Immediate overflow: {}", s));
             }
             return Ok(ImmediateValue {
@@ -170,7 +170,7 @@ impl FromStr for ImmediateValue {
         }
         let value = parsed_result.unwrap();
         let signed_order = ImmediateValue::ORDER as i128;
-        if value > signed_order || value * -1 >= signed_order {
+        if value >= signed_order || value * -1 >= signed_order {
             return Err(format!("Immediate overflow: {}", s));
         }
         let actual_value = if value < 0 {
