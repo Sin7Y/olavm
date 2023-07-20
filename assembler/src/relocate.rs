@@ -229,7 +229,7 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
 
 // remove comments and trim
 fn line_pre_process(line: &str) -> &str {
-    let comment_start = line.find("*");
+    let comment_start = line.find(";");
     let without_comment: &str = if comment_start.is_some() {
         &line[..comment_start.unwrap()]
     } else {
