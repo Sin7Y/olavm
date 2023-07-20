@@ -4,7 +4,7 @@ use crate::relocate::{asm_relocate, AsmBundle, RelocatedAsmBundle};
 use core::program::binary_program::{BinaryInstruction, BinaryProgram, OlaProphet};
 use core::vm::opcodes::OlaOpcode;
 use core::vm::operands::{ImmediateValue, OlaOperand};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
 
 pub fn encode_asm_from_json_file(path: String) -> Result<BinaryProgram, String> {
@@ -24,6 +24,8 @@ pub(crate) fn encode_to_binary(bundle: RelocatedAsmBundle) -> Result<BinaryProgr
     let mut binary_instructions: Vec<BinaryInstruction> = vec![];
     let mut iter = asm_instructions.iter();
     let mut binary_counter: usize = 0;
+    let mut origin_asm = BTreeMap::new();
+
     while let Some(asm) = iter.next() {
         let ops_result: Result<
             (Option<OlaOperand>, Option<OlaOperand>, Option<OlaOperand>),
@@ -99,11 +101,11 @@ pub(crate) fn encode_to_binary(bundle: RelocatedAsmBundle) -> Result<BinaryProgr
             dst,
             prophet,
         };
-
+        origin_asm.insert(binary_counter, asm.asm.clone());
         binary_instructions.push(instruction);
         binary_counter += asm.binary_length() as usize;
     }
-    BinaryProgram::from_instructions(binary_instructions)
+    BinaryProgram::from_instructions(binary_instructions, origin_asm)
 }
 
 fn is_adjusted_operand(asm: &OlaAsmInstruction) -> bool {
