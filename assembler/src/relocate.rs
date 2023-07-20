@@ -126,6 +126,7 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
     let mut mapper_label_prophet: HashMap<String, usize> = HashMap::new();
 
     let mut counter: usize = 0;
+    let mut ori_counter: usize = 0;
     let mut label_stack: Vec<AsmRow> = vec![];
 
     let mut lines = resorted_program.lines();
@@ -148,12 +149,13 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
                             mapper_label_jmp.insert(label.clone(), counter);
                         }
                         AsmRow::LabelProphet(label) => {
-                            mapper_label_prophet.insert(label.clone(), counter);
+                            mapper_label_prophet.insert(label.clone(), ori_counter);
                         }
                         _ => {}
                     });
                     label_stack.clear();
                     instructions.push(instruction.clone());
+                    ori_counter = counter;
                     counter += instruction.binary_length() as usize;
                 }
                 AsmRow::LabelCall(_) => {

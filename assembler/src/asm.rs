@@ -21,7 +21,8 @@ impl OlaAsmInstruction {
             | Some(OlaAsmOperand::RegisterWithOffset { .. })
             | Some(OlaAsmOperand::RegisterWithFactoredRegOffset { .. })
             | Some(OlaAsmOperand::Identifier { .. })
-            | Some(OlaAsmOperand::Label { .. }) => 1,
+            | Some(OlaAsmOperand::Label { .. })
+            | Some(OlaAsmOperand::RegisterWithFactoredRegOffset { .. }) => 1,
             _ => 0,
         };
         len += match self.op1 {
@@ -29,7 +30,8 @@ impl OlaAsmInstruction {
             | Some(OlaAsmOperand::RegisterWithOffset { .. })
             | Some(OlaAsmOperand::RegisterWithFactoredRegOffset { .. })
             | Some(OlaAsmOperand::Identifier { .. })
-            | Some(OlaAsmOperand::Label { .. }) => 1,
+            | Some(OlaAsmOperand::Label { .. })
+            | Some(OlaAsmOperand::RegisterWithFactoredRegOffset { .. }) => 1,
             _ => 0,
         };
         len
