@@ -57,17 +57,19 @@ impl MemoryTree {
                 addr_trace.push(new_value);
             })
             .or_insert_with(|| {
-                let new_value = MemoryCell {
-                    is_rw,
-                    clk,
-                    op,
-                    is_write,
-                    filter_looked_for_main,
-                    region_prophet,
-                    region_heap,
-                    value: GoldilocksField::from_canonical_u64(INIT_MEMORY_DATA),
-                };
-                vec![new_value]
+                panic!("read not init memory:{}", addr)
+                // let new_value = MemoryCell {
+                //     is_rw,
+                //     clk,
+                //     op,
+                //     is_write,
+                //     filter_looked_for_main,
+                //     region_prophet,
+                //     region_heap,
+                //     value:
+                // GoldilocksField::from_canonical_u64(INIT_MEMORY_DATA),
+                // };
+                // vec![new_value]
             })
             .last()
             .expect("empty address trace")
