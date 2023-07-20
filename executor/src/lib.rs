@@ -72,6 +72,7 @@ pub struct Process {
     pub op1_imm: GoldilocksField,
     pub memory: MemoryTree,
     pub psp: GoldilocksField,
+    pub psp_start: GoldilocksField,
     pub hp: GoldilocksField,
     pub storage: StorageTree,
     pub storage_log: Vec<WitnessStorageLog>,
@@ -93,6 +94,7 @@ impl Process {
                 trace: BTreeMap::new(),
             },
             psp: GoldilocksField(PSP_START_ADDR),
+            psp_start: GoldilocksField(PSP_START_ADDR),
             hp: GoldilocksField(HP_START_ADDR),
             storage_log: Vec::new(),
             storage: StorageTree {
@@ -126,7 +128,7 @@ impl Process {
         } else {
             let src_index = self.get_reg_index(op_str);
             if src_index == (REG_NOT_USED as usize) {
-                return (self.psp, ImmediateOrRegName::RegName(src_index));
+                return (self.psp_start, ImmediateOrRegName::RegName(src_index));
             } else if src_index < REGISTER_NUM {
                 value = self.registers[src_index];
                 return (value, ImmediateOrRegName::RegName(src_index));
@@ -224,6 +226,7 @@ impl Process {
             match out {
                 Single(_) => return Err(ProcessorError::ParseIntError),
                 Multiple(mut values) => {
+                    self.psp_start = self.psp;
                     self.hp = GoldilocksField(values.pop().unwrap().get_number() as u64);
                     debug!("prophet addr:{}", self.psp.0);
                     for value in values {
@@ -330,7 +333,12 @@ impl Process {
             let mut instruction;
             if let Some(inst) = program.trace.instructions.get(&self.pc) {
                 instruction = inst.clone();
-                debug!("execute instruction: {:?}", instruction);
+                debug!(
+                    "pc:{}, execute instruction: {:?}, asm:{:?}",
+                    self.pc,
+                    instruction,
+                    program.debug_info.get(&(self.pc as usize))
+                );
             } else {
                 return Err(ProcessorError::PcVistInv(format!("Invalid pc:{}", self.pc)));
             }
@@ -358,7 +366,7 @@ impl Process {
                             self.register_selector.op1_reg_sel[op1_index] =
                                 GoldilocksField::from_canonical_u64(1);
                         } else {
-                            debug!("prophet addr:{}", value.0);
+                            debug!("get prophet addr:{}", value.0);
                         }
                     }
 

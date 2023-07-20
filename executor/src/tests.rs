@@ -5,6 +5,7 @@ use core::program::instruction::{ImmediateOrRegName, Opcode};
 use core::program::Program;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
+use log::Level::Debug;
 use log::{debug, LevelFilter};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
@@ -33,6 +34,7 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
+        debug_info: program.debug_info,
     };
 
     for inst in instructions {
@@ -42,7 +44,11 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
     process.ctx_registers_stack.push(Address::default());
 
     process
-        .execute(&mut program, &mut None, &mut AccountTree::new_test())
+        .execute(
+            &mut program,
+            &mut Some(prophets),
+            &mut AccountTree::new_test(),
+        )
         .unwrap();
 
     if print_trace {
@@ -180,10 +186,20 @@ fn vote_test() {
 }
 
 #[test]
+fn mem_gep_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/mem_gep.json",
+        "mem_gep_trace.txt",
+        false,
+    );
+}
+
+#[test]
 fn gen_storage_table() {
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
+        debug_info: Default::default(),
     };
     let mut hash = Vec::new();
     let mut process = Process::new();

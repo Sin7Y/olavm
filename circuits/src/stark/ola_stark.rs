@@ -528,6 +528,11 @@ mod tests {
         test_by_asm_json("vote.json".to_string());
     }
 
+    #[test]
+    fn test_ola_mem_gep() {
+        test_by_asm_json("mem_gep.json".to_string());
+    }
+
     #[allow(unused)]
     pub fn test_by_asm_json(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -545,6 +550,7 @@ mod tests {
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
+            debug_info: Default::default(),
         };
 
         for inst in instructions {

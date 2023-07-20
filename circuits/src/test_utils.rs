@@ -31,6 +31,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
+        debug_info: Default::default(),
     };
 
     for inst in instructions {

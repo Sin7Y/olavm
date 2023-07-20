@@ -1,6 +1,7 @@
 use crate::types::GoldilocksField;
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -16,11 +17,13 @@ use crate::vm::{
 pub struct BinaryProgram {
     pub bytecode: String,
     pub prophets: Vec<OlaProphet>,
+    pub debug_info: BTreeMap<usize, String>,
 }
 
 impl BinaryProgram {
     pub fn from_instructions(
         instructions: Vec<BinaryInstruction>,
+        debug_info: BTreeMap<usize, String>,
     ) -> Result<BinaryProgram, String> {
         let mut prophets: Vec<OlaProphet> = vec![];
         let mut binary_instructions: Vec<String> = vec![];
@@ -38,7 +41,11 @@ impl BinaryProgram {
         }
 
         let bytecode = binary_instructions.join("\n");
-        Ok(BinaryProgram { bytecode, prophets })
+        Ok(BinaryProgram {
+            bytecode,
+            prophets,
+            debug_info,
+        })
     }
 }
 
