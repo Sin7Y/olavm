@@ -5,10 +5,21 @@
       "label": ".PROPHET5_0",
       "code": "%{\n    entry() {\n        cid.y = sqrt(cid.x);\n    }\n%}",
       "inputs": [
-        "cid.x"
+      {
+        "name": "cid.x",
+        "length": 1,
+        "is_ref": false,
+        "is_input_output": false
+      }
       ],
+
       "outputs": [
-        "cid.y"
+        {
+        "name": "cid.y",
+        "length": 1,
+        "is_ref": false,
+        "is_input_output": false
+        }
       ]
     }
   ]

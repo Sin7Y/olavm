@@ -94,6 +94,11 @@ mod tests {
         generate_from_file("vote.json".to_string(), "vote.json".to_string());
     }
 
+    #[test]
+    fn generate_mem_gep() {
+        generate_from_file("mem_gep.json".to_string(), "mem_gep.json".to_string());
+    }
+
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin");
         let input_path = format!("test_data/asm/{}", input_file_name);
