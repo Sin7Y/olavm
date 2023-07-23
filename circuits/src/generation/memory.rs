@@ -77,7 +77,7 @@ pub fn generate_memory_trace<F: RichField>(
 
     // Pad trace to power of two.
     if num_padded_rows != num_filled_row_len {
-        let p = F::ZERO;
+        let p = F::from_noncanonical_u64(F::ORDER);
         let mut addr: F = if trace[memory::COL_MEM_IS_RW][num_filled_row_len - 1] == F::ONE {
             let span = F::from_canonical_u64(2_u64.pow(32).sub(1));
             p - span
