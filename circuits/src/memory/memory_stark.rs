@@ -21,7 +21,7 @@ pub fn ctl_data_mem_rc_diff_cond<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_mem_rc_diff_cond<F: Field>() -> Column<F> {
-    Column::sum([COL_MEM_REGION_PROPHET, COL_MEM_REGION_HEAP])
+    Column::single(COL_MEM_FILTER_LOOKING_RC_COND)
 }
 
 pub fn ctl_data_mem_rc<F: Field>() -> Vec<Column<F>> {
@@ -86,6 +86,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let diff_clk = lv[COL_MEM_DIFF_CLK];
         let rc_value = lv[COL_MEM_RC_VALUE];
         let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
+        let lv_filter_looking_rc_cond = lv[COL_MEM_FILTER_LOOKING_RC_COND];
+        let nv_filter_looking_rc_cond = nv[COL_MEM_FILTER_LOOKING_RC_COND];
 
         let op_mload = P::Scalar::from_canonical_u64(OlaOpcode::MLOAD.binary_bit_mask());
         let op_mstore = P::Scalar::from_canonical_u64(OlaOpcode::MSTORE.binary_bit_mask());
@@ -155,6 +157,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
                 * rc_value
                 * (nv_region_heap - region_heap - P::ONES)
                 * (P::ONES - filter_looking_rc),
+        );
+
+        // heap and prophet read, diff_cond must rc
+        yield_constr.constraint((P::ONES - lv_filter_looking_rc_cond) * region_heap);
+        yield_constr.constraint(
+            (P::ONES - lv_filter_looking_rc_cond) * region_prophet * (P::ONES - is_write),
         );
     }
 
