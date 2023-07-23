@@ -52,7 +52,13 @@ pub fn generate_memory_trace<F: RichField>(
             F::from_canonical_u64(0)
         } else {
             F::from_canonical_u64(1)
-        }
+        };
+        trace[memory::COL_MEM_FILTER_LOOKING_RC_COND][i] =
+            if c.region_heap.to_canonical_u64() == 1 || c.region_prophet.to_canonical_u64() == 1 {
+                F::from_canonical_u64(1)
+            } else {
+                F::from_canonical_u64(0)
+            };
     }
 
     if num_filled_row_len == 0 {

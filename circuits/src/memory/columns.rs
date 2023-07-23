@@ -25,7 +25,8 @@ pub(crate) const COL_MEM_REGION_PROPHET: usize = COL_MEM_RW_ADDR_UNCHANGED + 1;
 pub(crate) const COL_MEM_REGION_HEAP: usize = COL_MEM_REGION_PROPHET + 1;
 pub(crate) const COL_MEM_RC_VALUE: usize = COL_MEM_REGION_HEAP + 1;
 pub(crate) const COL_MEM_FILTER_LOOKING_RC: usize = COL_MEM_RC_VALUE + 1;
-pub(crate) const NUM_MEM_COLS: usize = COL_MEM_FILTER_LOOKING_RC + 1;
+pub(crate) const COL_MEM_FILTER_LOOKING_RC_COND: usize = COL_MEM_FILTER_LOOKING_RC + 1;
+pub(crate) const NUM_MEM_COLS: usize = COL_MEM_FILTER_LOOKING_RC_COND + 1;
 
 pub(crate) fn get_memory_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
@@ -48,6 +49,10 @@ pub(crate) fn get_memory_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_MEM_REGION_HEAP, String::from("REGION_HEAP"));
     m.insert(COL_MEM_RC_VALUE, String::from("RC_VALUE"));
     m.insert(COL_MEM_FILTER_LOOKING_RC, String::from("FILTER_LOOKING_RC"));
+    m.insert(
+        COL_MEM_FILTER_LOOKING_RC_COND,
+        String::from("FILTER_LOOKING_RC_COND"),
+    );
     m
 }
 
