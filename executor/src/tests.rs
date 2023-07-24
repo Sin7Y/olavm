@@ -18,7 +18,7 @@ use tempfile::TempDir;
 
 fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace: bool) {
     let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
+        .filter_level(LevelFilter::Info)
         .try_init();
     let file = File::open(bin_file_path).unwrap();
 
@@ -190,6 +190,15 @@ fn mem_gep_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/mem_gep.json",
         "mem_gep_trace.txt",
+        false,
+    );
+}
+
+#[test]
+fn mem_gep_vecotr_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/mem_gep_vector.json",
+        "mem_gep_vector_trace.txt",
         false,
     );
 }
