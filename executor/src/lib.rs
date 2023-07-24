@@ -1359,17 +1359,11 @@ impl Process {
                     };
                     program.trace.memory.push(trace_cell);
                 }
-
-                if program
-                    .trace
-                    .memory
-                    .last()
-                    .unwrap()
-                    .rc_value
-                    .to_canonical_u64()
-                    > u32::MAX as u64
-                {
-                    return Err(ProcessorError::U32RangeCheckFail);
+                for item in &rc_insert {
+                    if item.to_canonical_u64() > u32::MAX as u64
+                    {
+                        return Err(ProcessorError::U32RangeCheckFail);
+                    }
                 }
                 rc_insert.iter_mut().for_each(|e| {
                     program.trace.insert_rangecheck(

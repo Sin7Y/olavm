@@ -533,6 +533,11 @@ mod tests {
         test_by_asm_json("mem_gep.json".to_string());
     }
 
+    #[test]
+    fn test_ola_mem_gep_vector() {
+        test_by_asm_json("mem_gep_vector.json".to_string());
+    }
+
     #[allow(unused)]
     pub fn test_by_asm_json(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
