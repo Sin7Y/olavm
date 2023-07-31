@@ -59,6 +59,11 @@ const PROPHET_INPUT_REG_END_INDEX: usize = PROPHET_INPUT_REG_START_INDEX + PROPH
 // start from fp-3
 const PROPHET_INPUT_FP_START_OFFSET: u64 = 3;
 
+#[derive(Debug, Clone)]
+enum MEM_RANGE_TYPE {
+    MEM_SORT,
+    MEM_REGION,
+}
 #[derive(Debug)]
 pub struct Process {
     pub clk: u32,
@@ -814,6 +819,7 @@ impl Process {
                             GoldilocksField::ONE,
                             GoldilocksField::ZERO,
                             GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
                         ),
                     );
 
@@ -931,6 +937,7 @@ impl Process {
                             GoldilocksField::ZERO,
                             GoldilocksField::ZERO,
                             GoldilocksField::ONE,
+                            GoldilocksField::ZERO,
                             GoldilocksField::ZERO,
                         ),
                     );
@@ -1211,6 +1218,7 @@ impl Process {
                     GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
                     GoldilocksField::ONE,
+                    GoldilocksField::ZERO,
                 ),
             );
             pre_clk = item.1.clk;
@@ -1291,19 +1299,19 @@ impl Process {
                     if write_once_region_flag {
                         diff_addr_inv = GoldilocksField::ZERO;
                         rc_value = diff_addr_cond;
-                        rc_insert.push(diff_addr_cond);
+                        rc_insert.push((diff_addr_cond, MEM_RANGE_TYPE::MEM_REGION));
                     } else if cell.region_heap == GoldilocksField::ONE && first_heap_row_flag {
                         diff_addr = GoldilocksField::ZERO;
                         diff_addr_inv = GoldilocksField::ZERO;
                         rc_value = GoldilocksField::ZERO;
-                        rc_insert.push(diff_addr_cond);
+                        rc_insert.push((diff_addr_cond, MEM_RANGE_TYPE::MEM_REGION));
                         first_heap_row_flag = false;
                     } else {
                         diff_addr_inv = diff_addr.inverse();
                         rc_value = diff_addr;
-                        rc_insert.push(rc_value);
+                        rc_insert.push((rc_value, MEM_RANGE_TYPE::MEM_SORT));
                         if cell.region_heap == GoldilocksField::ONE {
-                            rc_insert.push(diff_addr_cond);
+                            rc_insert.push((diff_addr_cond, MEM_RANGE_TYPE::MEM_REGION));
                         }
                     }
                     diff_clk = GoldilocksField::ZERO;
@@ -1332,13 +1340,16 @@ impl Process {
                     diff_clk = GoldilocksField::from_canonical_u64(cell.clk as u64 - origin_clk);
                     let mut rw_addr_unchanged = GoldilocksField::ONE;
                     let rc_value;
+                    let mem_filter_type;
                     if cell.is_rw == GoldilocksField::ZERO {
                         rw_addr_unchanged = GoldilocksField::ZERO;
                         rc_value = diff_addr_cond;
+                        mem_filter_type = MEM_RANGE_TYPE::MEM_REGION;
                     } else {
                         rc_value = diff_clk;
+                        mem_filter_type = MEM_RANGE_TYPE::MEM_SORT;
                     }
-                    rc_insert.push(rc_value);
+                    rc_insert.push((rc_value, mem_filter_type));
 
                     let trace_cell = MemoryTraceCell {
                         addr: GoldilocksField::from_canonical_u64(canonical_addr),
@@ -1360,19 +1371,21 @@ impl Process {
                     program.trace.memory.push(trace_cell);
                 }
                 for item in &rc_insert {
-                    if item.to_canonical_u64() > u32::MAX as u64
-                    {
+                    if item.0.to_canonical_u64() > u32::MAX as u64 {
                         return Err(ProcessorError::U32RangeCheckFail);
                     }
                 }
                 rc_insert.iter_mut().for_each(|e| {
                     program.trace.insert_rangecheck(
-                        *e,
+                        e.0,
                         (
-                            GoldilocksField::ONE,
+                            GoldilocksField::ONE
+                                * GoldilocksField::from_canonical_u8(1 - e.1.clone() as u8),
                             GoldilocksField::ZERO,
                             GoldilocksField::ZERO,
                             GoldilocksField::ZERO,
+                            GoldilocksField::ONE
+                                * GoldilocksField::from_canonical_u8(e.1.clone() as u8),
                         ),
                     )
                 });

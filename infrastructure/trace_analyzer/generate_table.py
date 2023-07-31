@@ -183,10 +183,11 @@ class RangeCheckTraceColumnType(Enum):
     VAL = 'val'
     LIMB_LO = 'limb_lo'
     LIMB_HI = 'limb_hi'
-    FILTER_LOOKED_FOR_MEMORY = 'filter_looked_for_memory'
+    FILTER_LOOKED_FOR_MEM_SORT = 'filter_looked_for_mem_sort'
     FILTER_LOOKED_FOR_CPU = 'filter_looked_for_cpu'
     FILTER_LOOKED_FOR_CMP = 'filter_looked_for_comparison'
     FILTER_LOOKED_FOR_STORE = 'filter_looked_for_storage'
+    FILTER_LOOKED_FOR_MEM_REGION = 'filter_looked_for_mem_region'
 
 
 class BitwiseTraceColumnType(Enum):
