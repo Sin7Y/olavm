@@ -101,7 +101,10 @@ mod tests {
 
     #[test]
     fn generate_mem_gep_vector() {
-        generate_from_file("mem_gep_vector.json".to_string(), "mem_gep_vector.json".to_string());
+        generate_from_file(
+            "mem_gep_vector.json".to_string(),
+            "mem_gep_vector.json".to_string(),
+        );
     }
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {

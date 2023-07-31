@@ -135,7 +135,8 @@ pub struct RangeCheckRow {
     pub val: GoldilocksField,
     pub limb_lo: GoldilocksField,
     pub limb_hi: GoldilocksField,
-    pub filter_looked_for_memory: GoldilocksField,
+    pub filter_looked_for_mem_sort: GoldilocksField,
+    pub filter_looked_for_mem_region: GoldilocksField,
     pub filter_looked_for_cpu: GoldilocksField,
     pub filter_looked_for_comparison: GoldilocksField,
     pub filter_looked_for_storage: GoldilocksField,
@@ -354,8 +355,10 @@ impl Trace {
     pub fn insert_rangecheck(
         &mut self,
         input: GoldilocksField,
-        //tuple.0 for memory, tuple.1 for cpu, tuple.2 for cmp, tuple.3 for storage
+        //tuple.0 for memory_sort, tuple.1 for cpu, tuple.2 for cmp, tuple.3 for storage, tuple.4
+        // for memory_region
         filter_looked_for_memory_cpu_cmp: (
+            GoldilocksField,
             GoldilocksField,
             GoldilocksField,
             GoldilocksField,
@@ -367,10 +370,11 @@ impl Trace {
             val: input,
             limb_lo: GoldilocksField(split_limbs.0),
             limb_hi: GoldilocksField(split_limbs.1),
-            filter_looked_for_memory: filter_looked_for_memory_cpu_cmp.0,
+            filter_looked_for_mem_sort: filter_looked_for_memory_cpu_cmp.0,
             filter_looked_for_cpu: filter_looked_for_memory_cpu_cmp.1,
             filter_looked_for_comparison: filter_looked_for_memory_cpu_cmp.2,
             filter_looked_for_storage: filter_looked_for_memory_cpu_cmp.3,
+            filter_looked_for_mem_region: filter_looked_for_memory_cpu_cmp.4,
         });
     }
 
