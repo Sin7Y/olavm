@@ -10,8 +10,8 @@ use crate::builtins::storage::storage_stark::{self, StorageStark};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::{
-    ctl_data as mem_ctl_data, ctl_data_mem_rc, ctl_data_mem_rc_diff_cond,
-    ctl_filter as mem_ctl_filter, ctl_filter_mem_rc, ctl_filter_mem_rc_diff_cond, MemoryStark,
+    ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_cond, ctl_data_mem_sort_rc,
+    ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_cond, ctl_filter_mem_sort_rc, MemoryStark,
 };
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
@@ -96,7 +96,8 @@ pub(crate) const NUM_TABLES: usize = 8;
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     vec![
         ctl_cpu_memory(),
-        ctl_memory_rc(),
+        ctl_memory_rc_sort(),
+        ctl_memory_rc_region(),
         ctl_bitwise_cpu(),
         ctl_cmp_cpu(),
         ctl_cmp_rangecheck(),
@@ -132,21 +133,36 @@ fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(all_cpu_lookers, memory_looked, None)
 }
 
-fn ctl_memory_rc<F: Field>() -> CrossTableLookup<F> {
-    let mem_rc_value =
-        TableWithColumns::new(Table::Memory, ctl_data_mem_rc(), Some(ctl_filter_mem_rc()));
-    let mem_diff_cond = TableWithColumns::new(
-        Table::Memory,
-        ctl_data_mem_rc_diff_cond(),
-        Some(ctl_filter_mem_rc_diff_cond()),
-    );
-    let all_mem_lookers = vec![mem_rc_value, mem_diff_cond];
-    let rc_looked = TableWithColumns::new(
-        Table::RangeCheck,
-        rangecheck_stark::ctl_data_memory(),
-        Some(rangecheck_stark::ctl_filter_memory()),
-    );
-    CrossTableLookup::new(all_mem_lookers, rc_looked, None)
+fn ctl_memory_rc_sort<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Memory,
+            ctl_data_mem_sort_rc(),
+            Some(ctl_filter_mem_sort_rc()),
+        )],
+        TableWithColumns::new(
+            Table::RangeCheck,
+            rangecheck_stark::ctl_data_memory(),
+            Some(rangecheck_stark::ctl_filter_memory_sort()),
+        ),
+        None,
+    )
+}
+
+fn ctl_memory_rc_region<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Memory,
+            ctl_data_mem_rc_diff_cond(),
+            Some(ctl_filter_mem_rc_diff_cond()),
+        )],
+        TableWithColumns::new(
+            Table::RangeCheck,
+            rangecheck_stark::ctl_data_memory(),
+            Some(rangecheck_stark::ctl_filter_memory_region()),
+        ),
+        None,
+    )
 }
 
 // add bitwise rangecheck instance

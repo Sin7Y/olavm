@@ -265,8 +265,10 @@ pub fn generate_rc_trace<F: RichField>(
     for (i, c) in cells.iter().enumerate() {
         trace[rangecheck::CPU_FILTER][i] =
             F::from_canonical_u64(c.filter_looked_for_cpu.to_canonical_u64());
-        trace[rangecheck::MEMORY_FILTER][i] =
-            F::from_canonical_u64(c.filter_looked_for_memory.to_canonical_u64());
+        trace[rangecheck::MEMORY_SORT_FILTER][i] =
+            F::from_canonical_u64(c.filter_looked_for_mem_sort.to_canonical_u64());
+        trace[rangecheck::MEMORY_REGION_FILTER][i] =
+            F::from_canonical_u64(c.filter_looked_for_mem_region.to_canonical_u64());
         trace[rangecheck::CMP_FILTER][i] =
             F::from_canonical_u64(c.filter_looked_for_comparison.to_canonical_u64());
         trace[rangecheck::VAL][i] = F::from_canonical_u64(c.val.to_canonical_u64());

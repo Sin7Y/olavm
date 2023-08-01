@@ -111,8 +111,12 @@ pub fn ctl_data_memory<F: Field>() -> Vec<Column<F>> {
     Column::singles([VAL]).collect_vec()
 }
 
-pub fn ctl_filter_memory<F: Field>() -> Column<F> {
-    Column::single(MEMORY_FILTER)
+pub fn ctl_filter_memory_sort<F: Field>() -> Column<F> {
+    Column::single(MEMORY_SORT_FILTER)
+}
+
+pub fn ctl_filter_memory_region<F: Field>() -> Column<F> {
+    Column::single(MEMORY_REGION_FILTER)
 }
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
