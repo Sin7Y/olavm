@@ -14,7 +14,7 @@ use core::trace::trace::Trace;
 use executor::Process;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs::{self, metadata, File};
 use std::io::{BufReader, Read, Write};
 use std::time::Instant;
@@ -95,6 +95,7 @@ fn main() {
             let mut program: Program = Program {
                 instructions: Vec::new(),
                 trace: Default::default(),
+                debug_info: BTreeMap::new(),
             };
 
             for inst in instructions {
@@ -132,6 +133,7 @@ fn main() {
             let program: Program = Program {
                 instructions: trace.raw_binary_instructions.clone(),
                 trace,
+                debug_info: BTreeMap::new(),
             };
 
             let mut ola_stark = OlaStark::<F, D>::default();

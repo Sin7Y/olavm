@@ -120,6 +120,7 @@ pub struct BuiltinSelector {
 pub struct Step {
     pub clk: u32,
     pub pc: u64,
+    pub tp: GoldilocksField,
     pub instruction: GoldilocksField,
     pub immediate_data: GoldilocksField,
     pub opcode: GoldilocksField,
@@ -277,6 +278,15 @@ pub struct StorageHashRow {
     pub output: [GoldilocksField; 12],
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct TapeRow {
+    pub is_init: bool,
+    pub opcode: GoldilocksField,
+    pub addr: GoldilocksField,
+    pub value: GoldilocksField,
+    pub filter_looked: GoldilocksField,
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
     //(inst_asm_str, imm_flag, step, inst_encode, imm_val)
@@ -293,6 +303,7 @@ pub struct Trace {
     pub builtin_posiedon: Vec<PoseidonRow>,
     pub builtin_storage: Vec<StorageRow>,
     pub builtin_storage_hash: Vec<StorageHashRow>,
+    pub tape: Vec<TapeRow>,
 }
 
 impl Trace {
@@ -382,6 +393,7 @@ impl Trace {
         &mut self,
         clk: u32,
         pc: u64,
+        tp: GoldilocksField,
         instruction: GoldilocksField,
         immediate_data: GoldilocksField,
         op1_imm: GoldilocksField,
@@ -393,6 +405,7 @@ impl Trace {
         let step = Step {
             clk,
             pc,
+            tp,
             instruction,
             regs,
             immediate_data,

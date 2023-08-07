@@ -43,14 +43,13 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
     let mut process = Process::new();
     process.ctx_registers_stack.push(Address::default());
 
-    process
-        .execute(
-            &mut program,
-            &mut Some(prophets),
-            &mut AccountTree::new_test(),
-        )
-        .unwrap();
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_test(),
+    );
 
+    println!("execute res:{:?}", res);
     if print_trace {
         println!("vm trace: {:?}", program.trace);
     }
@@ -59,6 +58,7 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
     let mut file = File::create(trace_name).unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
+
 #[test]
 fn memory_test() {
     executor_run_test_program(

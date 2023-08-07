@@ -45,6 +45,7 @@ pub mod error;
 mod memory;
 
 pub mod storage;
+mod tape;
 #[cfg(test)]
 mod tests;
 
@@ -58,6 +59,7 @@ const PROPHET_INPUT_REG_START_INDEX: usize = 1;
 const PROPHET_INPUT_REG_END_INDEX: usize = PROPHET_INPUT_REG_START_INDEX + PROPHET_INPUT_REG_LEN;
 // start from fp-3
 const PROPHET_INPUT_FP_START_OFFSET: u64 = 3;
+const TP_START_ADDR: GoldilocksField = GoldilocksField::ZERO;
 
 #[derive(Debug, Clone)]
 enum MEM_RANGE_TYPE {
@@ -81,6 +83,7 @@ pub struct Process {
     pub hp: GoldilocksField,
     pub storage: StorageTree,
     pub storage_log: Vec<WitnessStorageLog>,
+    pub tp: GoldilocksField,
 }
 
 impl Process {
@@ -105,6 +108,7 @@ impl Process {
             storage: StorageTree {
                 trace: HashMap::new(),
             },
+            tp: TP_START_ADDR,
         }
     }
 
@@ -156,7 +160,7 @@ impl Process {
         reg_cnt: usize,
         reg_index: &mut usize,
         fp: &mut u64,
-    ) -> u64 {
+    ) -> Result<u64, ProcessorError> {
         let mut value = Default::default();
         if reg_cnt != *reg_index {
             value = self.registers[*reg_index].0;
@@ -173,7 +177,7 @@ impl Process {
                     GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
                     GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
-                )
+                )?
                 .to_canonical_u64();
             *fp += 1;
         }
@@ -189,10 +193,10 @@ impl Process {
                     GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
                     GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
-                )
+                )?
                 .to_canonical_u64();
         }
-        value
+        Ok(value)
     }
 
     pub fn prophet(&mut self, prophet: &mut OlaProphet) -> Result<(), ProcessorError> {
@@ -211,12 +215,13 @@ impl Process {
         let mut fp = PROPHET_INPUT_FP_START_OFFSET;
         for input in prophet.inputs.iter() {
             if input.length == 1 {
-                let value = self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut fp);
+                let value = self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut fp)?;
                 values.push(value);
             } else {
                 let mut index = 0;
                 while index < input.length {
-                    let value = self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut fp);
+                    let value =
+                        self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut fp)?;
                     values.push(value);
                     index += 1;
                 }
@@ -310,7 +315,10 @@ impl Process {
                     immediate_data,
                 ),
             );
-            program.trace.raw_instructions.insert(pc, txt_instruction);
+            program
+                .trace
+                .raw_instructions
+                .insert(pc, program.debug_info.get(&(pc as usize)).unwrap().clone());
             pc += step;
         }
 
@@ -606,7 +614,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                         GoldilocksField::from_canonical_u64(0_u64),
                         GoldilocksField::from_canonical_u64(0_u64),
-                    );
+                    )?;
                     self.pc = call_addr.0 .0;
                 }
                 "ret" => {
@@ -627,7 +635,7 @@ impl Process {
                             GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                             GoldilocksField::from_canonical_u64(0_u64),
                             GoldilocksField::from_canonical_u64(0_u64),
-                        )
+                        )?
                         .0;
                     self.registers[FP_REG_INDEX] = self.memory.read(
                         self.registers[FP_REG_INDEX].0 - 2,
@@ -638,7 +646,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                         GoldilocksField::from_canonical_u64(0_u64),
                         GoldilocksField::from_canonical_u64(0_u64),
-                    );
+                    )?;
 
                     self.register_selector.dst = GoldilocksField::from_canonical_u64(self.pc);
                     self.register_selector.aux1 = self.registers[FP_REG_INDEX];
@@ -750,6 +758,7 @@ impl Process {
                     } else {
                         let op1_index = self.get_reg_index(ops[3]);
                         self.register_selector.op1 = self.registers[op1_index];
+                        debug!("op1:{}", self.register_selector.op1);
                         self.register_selector.op1_reg_sel[op1_index] =
                             GoldilocksField::from_canonical_u64(1);
                         let offset_res = u64::from_str_radix(ops[4], 10);
@@ -787,7 +796,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                         region_prophet,
                         region_heap,
-                    );
+                    )?;
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u8);
 
                     self.register_selector.dst = self.registers[dst_index];
@@ -956,6 +965,7 @@ impl Process {
                     program.trace.insert_step(
                         self.clk,
                         pc_status,
+                        self.tp,
                         self.instruction,
                         self.immediate_data,
                         self.op1_imm,
@@ -1068,6 +1078,25 @@ impl Process {
                     program.trace.builtin_posiedon.push(row.1);
                     self.pc += step;
                 }
+                "tload" => {
+                    assert_eq!(
+                        ops.len(),
+                        4,
+                        "{}",
+                        format!("{} params len is not match", opcode.as_str())
+                    );
+                    let src_index = self.get_reg_index(ops[1]);
+
+                    self.pc += step;
+                }
+                "tstore" => {
+                    assert_eq!(
+                        ops.len(),
+                        2,
+                        "{}",
+                        format!("{} params len is not match", opcode.as_str())
+                    );
+                }
                 _ => panic!("not match opcode:{}", opcode),
             }
 
@@ -1078,6 +1107,7 @@ impl Process {
             program.trace.insert_step(
                 self.clk,
                 pc_status,
+                self.tp,
                 self.instruction,
                 self.immediate_data,
                 self.op1_imm,
@@ -1350,6 +1380,9 @@ impl Process {
                         mem_filter_type = MEM_RANGE_TYPE::MEM_SORT;
                     }
                     rc_insert.push((rc_value, mem_filter_type));
+                    if cell.region_heap == GoldilocksField::ONE {
+                        rc_insert.push((diff_addr_cond, MEM_RANGE_TYPE::MEM_REGION));
+                    }
 
                     let trace_cell = MemoryTraceCell {
                         addr: GoldilocksField::from_canonical_u64(canonical_addr),

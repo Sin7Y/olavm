@@ -475,7 +475,8 @@ def main():
     for row in trace_json["builtin_storage"]:
         col = 0
         for data in StorageTraceColumnType:
-            if data.value == "root" or data.value == "addr" or  data.value == "value":
+            if data.value == "root" or data.value == "addr" or  data.value == "value" \
+                    or data.value == "clk" or data.value == "diff_clk":
                 worksheet.write(row_index, col, '{0}'.format(row[data.value]))
             elif args.format == 'hex':
                 worksheet.write(row_index, col,

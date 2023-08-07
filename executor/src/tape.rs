@@ -1,62 +1,52 @@
 use crate::error::ProcessorError;
-use crate::GoldilocksField;
-use plonky2::field::types::Field;
+use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct MemoryCell {
+pub struct TapeCell {
     pub clk: u32,
-    pub is_rw: GoldilocksField,
+    pub is_init: GoldilocksField,
     pub op: GoldilocksField,
-    pub is_write: GoldilocksField,
-    pub filter_looked_for_main: GoldilocksField,
-    pub region_heap: GoldilocksField,
-    pub region_prophet: GoldilocksField,
+    pub filter_looked: GoldilocksField,
     pub value: GoldilocksField,
 }
 
 #[derive(Debug, Default)]
-pub struct MemoryTree {
+pub struct TapeTree {
     // visit by memory address, MemoryCell vector store memory trace value， the last one is the
     // current status
-    pub trace: BTreeMap<u64, Vec<MemoryCell>>,
+    pub trace: BTreeMap<u64, Vec<TapeCell>>,
 }
 
-impl MemoryTree {
+impl TapeTree {
     pub fn read(
         &mut self,
         addr: u64,
         clk: u32,
         op: GoldilocksField,
-        is_rw: GoldilocksField,
-        is_write: GoldilocksField,
-        filter_looked_for_main: GoldilocksField,
-        region_prophet: GoldilocksField,
-        region_heap: GoldilocksField,
+        is_init: GoldilocksField,
+        filter_looked: GoldilocksField,
     ) -> Result<GoldilocksField, ProcessorError> {
         // look up the previous value in the appropriate address trace and add (clk,
         // prev_value) to it; if this is the first time we access this address,
         // return MemVistInv error because memory must be inited first.
         // Return the last value in the address trace.
-        let mut read_mem_res = self.trace.get_mut(&addr);
-        if let Some(mut mem_data) = read_mem_res {
-            let last_value = mem_data.last().expect("empty address trace").value;
-            let new_value = MemoryCell {
-                is_rw,
+        let mut read_res = self.trace.get_mut(&addr);
+        if let Some(mut tape_data) = read_res {
+            let last_value = tape_data.last().expect("empty address trace").value;
+            let new_value = TapeCell {
                 clk,
                 op,
-                is_write,
-                filter_looked_for_main,
-                region_prophet,
-                region_heap,
+                is_init,
+                filter_looked,
                 value: last_value,
             };
-            mem_data.push(new_value);
+            tape_data.push(new_value);
             Ok(last_value)
         } else {
             Err(ProcessorError::MemVistInv(format!(
-                "read not init memory:{}",
+                "read not init tape:{}",
                 addr
             )))
         }
@@ -67,23 +57,17 @@ impl MemoryTree {
         addr: u64,
         clk: u32,
         op: GoldilocksField,
-        is_rw: GoldilocksField,
-        is_write: GoldilocksField,
-        filter_looked_for_main: GoldilocksField,
-        region_prophet: GoldilocksField,
-        region_heap: GoldilocksField,
+        is_init: GoldilocksField,
+        filter_looked: GoldilocksField,
         value: GoldilocksField,
     ) {
         // add a memory access to the appropriate address trace; if this is the first
         // time we access this address, initialize address trace.
-        let new_cell = MemoryCell {
-            is_rw,
+        let new_cell = TapeCell {
             clk,
             op,
-            is_write,
-            filter_looked_for_main,
-            region_prophet,
-            region_heap,
+            is_init,
+            filter_looked,
             value,
         };
         self.trace
