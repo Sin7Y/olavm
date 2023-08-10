@@ -36,6 +36,192 @@ mod tests {
     };
 
     #[test]
+    fn print_storage_hash_ctl_info() {
+        let program_file_name = "vote.json".to_string();
+        let trace = get_exec_trace(program_file_name);
+
+        let looking_rows = get_storage_rows_from_trace(&trace);
+        let looking_filter = |row: [GoldilocksField; storage::columns::COL_STORAGE_NUM]| {
+            (row[COL_STORAGE_FILTER_LOOKED_FOR_SSTORE] + row[COL_STORAGE_FILTER_LOOKED_FOR_SLOAD])
+                .is_one()
+        };
+        let looking_data_cols = [
+            COL_STORAGE_ROOT_RANGE.start,
+            COL_STORAGE_ROOT_RANGE.start + 1,
+            COL_STORAGE_ROOT_RANGE.start + 2,
+            COL_STORAGE_ROOT_RANGE.start + 3,
+            COL_STORAGE_ADDR_RANGE.start,
+            COL_STORAGE_ADDR_RANGE.start + 1,
+            COL_STORAGE_ADDR_RANGE.start + 2,
+            COL_STORAGE_ADDR_RANGE.start + 3,
+            COL_STORAGE_VALUE_RANGE.start,
+            COL_STORAGE_VALUE_RANGE.start + 1,
+            COL_STORAGE_VALUE_RANGE.start + 2,
+            COL_STORAGE_VALUE_RANGE.start + 3,
+        ];
+
+        let looked_rows = get_storage_hash_rows_from_trace(&trace);
+        let looked_filter = |row: [GoldilocksField; storage::columns::STORAGE_HASH_NUM]| {
+            row[FILTER_LOOKED_FOR_STORAGE].is_one()
+        };
+        let looked_data_cols = [
+            COL_STORAGE_HASH_ROOT_RANGE.start,
+            COL_STORAGE_HASH_ROOT_RANGE.start + 1,
+            COL_STORAGE_HASH_ROOT_RANGE.start + 2,
+            COL_STORAGE_HASH_ROOT_RANGE.start + 3,
+            COL_STORAGE_HASH_ADDR_RANGE.start,
+            COL_STORAGE_HASH_ADDR_RANGE.start + 1,
+            COL_STORAGE_HASH_ADDR_RANGE.start + 2,
+            COL_STORAGE_HASH_ADDR_RANGE.start + 3,
+            COL_STORAGE_HASH_PATH_RANGE.start,
+            COL_STORAGE_HASH_PATH_RANGE.start + 1,
+            COL_STORAGE_HASH_PATH_RANGE.start + 2,
+            COL_STORAGE_HASH_PATH_RANGE.start + 3,
+        ];
+
+        let (looking_title, looking_data, looked_title, looked_data) = get_looking_looked_info(
+            looking_rows,
+            looking_filter,
+            looking_data_cols,
+            get_storage_col_name_map(),
+            looked_rows,
+            looked_filter,
+            looked_data_cols,
+            get_storage_hash_col_name_map(),
+        );
+        println!("==== looking table: storage =====");
+        println!(
+            "{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}",
+            looking_title[0],
+            looking_title[1],
+            looking_title[2],
+            looking_title[3],
+            looking_title[4],
+            looking_title[5],looking_title[6], looking_title[7], looking_title[8], looking_title[9], looking_title[10], looking_title[11],
+        );
+        for looking_row in looking_data {
+            println!(
+                "{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}",
+                looking_row[0].0,
+                looking_row[1].0,
+                looking_row[2].0,
+                looking_row[3].0,
+                looking_row[4].0,
+                looking_row[5].0, looking_row[6].0, looking_row[7].0, looking_row[8].0, looking_row[9].0, looking_row[10].0, looking_row[11].0,
+            )
+        }
+
+        println!("==== looking table: storage hash =====");
+        println!(
+            "{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}\t{:>8}",
+            looked_title[0],
+            looked_title[1],
+            looked_title[2],
+            looked_title[3],
+            looked_title[4],
+            looked_title[5],looked_title[6], looked_title[7], looked_title[8], looked_title[9], looked_title[10], looked_title[11],
+        );
+        for looked_row in looked_data {
+            println!(
+                "{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}\t{:>8x}",
+                looked_row[0].0,
+                looked_row[1].0,
+                looked_row[2].0,
+                looked_row[3].0,
+                looked_row[4].0,
+                looked_row[5].0, looked_row[6].0, looked_row[7].0, looked_row[8].0, looked_row[9].0, looked_row[10].0, looked_row[11].0,
+            )
+        }
+    }
+
+    #[test]
+    fn print_storage_poseidon_tree_key_ctl_info() {
+        let program_file_name = "vote.json".to_string();
+        let trace = get_exec_trace(program_file_name);
+
+        let looking_rows = get_storage_rows_from_trace(&trace);
+        let looking_filter = |row: [GoldilocksField; storage::columns::COL_STORAGE_NUM]| {
+            (row[COL_STORAGE_FILTER_LOOKED_FOR_SSTORE] + row[COL_STORAGE_FILTER_LOOKED_FOR_SLOAD])
+                .is_one()
+        };
+        let looking_data_cols = [
+            COL_STORAGE_CLK,
+            COL_STORAGE_OPCODE,
+            COL_STORAGE_ADDR_RANGE.start,
+            COL_STORAGE_ADDR_RANGE.start + 1,
+            COL_STORAGE_ADDR_RANGE.start + 2,
+            COL_STORAGE_ADDR_RANGE.start + 3,
+        ];
+
+        let looked_rows = get_poseidon_rows_from_trace(&trace);
+        let looked_filter = |row: [GoldilocksField; poseidon::columns::NUM_POSEIDON_COLS]| {
+            row[COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY].is_one()
+        };
+        let looked_data_cols = [
+            COL_POSEIDON_CLK,
+            COL_POSEIDON_OPCODE,
+            COL_POSEIDON_OUTPUT_RANGE.start,
+            COL_POSEIDON_OUTPUT_RANGE.start + 1,
+            COL_POSEIDON_OUTPUT_RANGE.start + 2,
+            COL_POSEIDON_OUTPUT_RANGE.start + 3,
+        ];
+
+        let (looking_title, looking_data, looked_title, looked_data) = get_looking_looked_info(
+            looking_rows,
+            looking_filter,
+            looking_data_cols,
+            get_storage_col_name_map(),
+            looked_rows,
+            looked_filter,
+            looked_data_cols,
+            get_poseidon_col_name_map(),
+        );
+        println!("==== looking table: storage =====");
+        println!(
+            "{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
+            looking_title[0],
+            looking_title[1],
+            looking_title[2],
+            looking_title[3],
+            looking_title[4],
+            looking_title[5]
+        );
+        for looking_row in looking_data {
+            println!(
+                "{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
+                looking_row[0].0,
+                looking_row[1].0,
+                looking_row[2].0,
+                looking_row[3].0,
+                looking_row[4].0,
+                looking_row[5].0,
+            )
+        }
+
+        println!("==== looked table: poseidon =====");
+        println!(
+            "{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
+            looked_title[0],
+            looked_title[1],
+            looked_title[2],
+            looked_title[3],
+            looked_title[4],
+            looked_title[5]
+        );
+        for looked_row in looked_data {
+            println!(
+                "{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
+                looked_row[0].0,
+                looked_row[1].0,
+                looked_row[2].0,
+                looked_row[3].0,
+                looked_row[4].0,
+                looked_row[5].0,
+            )
+        }
+    }
+
+    #[test]
     fn print_cpu_storage_sload_ctl_info() {
         let program_file_name = "vote.json".to_string();
         let trace = get_exec_trace(program_file_name);
