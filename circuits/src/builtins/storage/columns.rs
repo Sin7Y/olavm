@@ -69,32 +69,32 @@ pub(crate) const STORAGE_HASH_NUM: usize = FILTER_LOOKED_FOR_STORAGE + 1;
 
 pub(crate) fn get_storage_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
-    m.insert(COL_STORAGE_CLK, String::from("COL_STORAGE_CLK"));
-    m.insert(COL_STORAGE_DIFF_CLK, String::from("COL_STORAGE_DIFF_CLK"));
-    m.insert(COL_STORAGE_OPCODE, String::from("COL_STORAGE_OPCODE"));
+    m.insert(COL_STORAGE_CLK, String::from("CLK"));
+    m.insert(COL_STORAGE_DIFF_CLK, String::from("DIFF_CLK"));
+    m.insert(COL_STORAGE_OPCODE, String::from("OPCODE"));
     for (index, col) in COL_STORAGE_ROOT_RANGE.into_iter().enumerate() {
-        let name = format!("COL_STORAGE_ROOT_LIMB_{}", index);
+        let name = format!("R_LIMB_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_ADDR_RANGE.into_iter().enumerate() {
-        let name = format!("COL_STORAGE_ADDR_LIMB_{}", index);
+        let name = format!("A_LIMB_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_VALUE_RANGE.into_iter().enumerate() {
-        let name = format!("COL_STORAGE_VALUE_LIMB_{}", index);
+        let name = format!("V_LIMB_{}", index);
         m.insert(col, name);
     }
     m.insert(
         COL_STORAGE_FILTER_LOOKED_FOR_SSTORE,
-        String::from("COL_STORAGE_FILTER_LOOKED_FOR_SSTORE"),
+        String::from("LOOKED_FOR_SSTORE"),
     );
     m.insert(
         COL_STORAGE_FILTER_LOOKED_FOR_SLOAD,
-        String::from("COL_STORAGE_FILTER_LOOKED_FOR_SLOAD"),
+        String::from("LOOKED_FOR_SLOAD"),
     );
     m.insert(
         COL_STORAGE_LOOKING_RC,
-        String::from("COL_STORAGE_LOOKING_RC"),
+        String::from("LOOKING_RC"),
     );
     m
 }
@@ -110,15 +110,15 @@ pub(crate) fn get_storage_hash_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_STORAGE_HASH_IS_LAYER192, String::from("IS_LAYER192"));
     m.insert(COL_STORAGE_HASH_IS_LAYER256, String::from("IS_LAYER256"));
     for (index, col) in COL_STORAGE_HASH_ADDR_RANGE.into_iter().enumerate() {
-        let name = format!("ADDR_LIMB_{}", index);
+        let name = format!("A_LIMB_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_ROOT_RANGE.into_iter().enumerate() {
-        let name = format!("ROOT_LIMB_{}", index);
+        let name = format!("R_LIMB_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_CAPACITY_RANGE.into_iter().enumerate() {
-        let name = format!("CAPACITY_LIMB_{}", index);
+        let name = format!("CAP_LIMB_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_PATH_RANGE.into_iter().enumerate() {
@@ -130,72 +130,72 @@ pub(crate) fn get_storage_hash_col_name_map() -> BTreeMap<usize, String> {
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_DELTA_RANGE.into_iter().enumerate() {
-        let name = format!("DELTA_LIMB_{}", index);
+        let name = format!("DTA_LIMB_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_OUTPUT_RANGE.into_iter().enumerate() {
-        let name = format!("OUTPUT_LIMB_{}", index);
+        let name = format!("O_LIMB_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_FULL_ROUND_0_1_STATE_RANGE
         .into_iter()
         .enumerate()
     {
-        let name = format!("FULL_ROUND_0_1_STATE_{}", index);
+        let name = format!("FULL_0_1_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_FULL_ROUND_0_2_STATE_RANGE
         .into_iter()
         .enumerate()
     {
-        let name = format!("FULL_ROUND_0_2_STATE_{}", index);
+        let name = format!("FULL_0_2_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_FULL_ROUND_0_3_STATE_RANGE
         .into_iter()
         .enumerate()
     {
-        let name = format!("FULL_ROUND_0_3_STATE_{}", index);
+        let name = format!("FULL_0_3_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_PARTIAL_ROUND_ELEMENT_RANGE
         .into_iter()
         .enumerate()
     {
-        let name = format!("PARTIAL_ROUND_ELEMENT_{}", index);
+        let name = format!("PAR_ROUND_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_FULL_ROUND_1_0_STATE_RANGE
         .into_iter()
         .enumerate()
     {
-        let name = format!("FULL_ROUND_1_0_STATE_{}", index);
+        let name = format!("FULL_1_0_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_FULL_ROUND_1_1_STATE_RANGE
         .into_iter()
         .enumerate()
     {
-        let name = format!("FULL_ROUND_1_1_STATE_{}", index);
+        let name = format!("FULL_1_1_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_FULL_ROUND_1_2_STATE_RANGE
         .into_iter()
         .enumerate()
     {
-        let name = format!("FULL_ROUND_1_2_STATE_{}", index);
+        let name = format!("FULL_1_2_{}", index);
         m.insert(col, name);
     }
     for (index, col) in COL_STORAGE_HASH_FULL_ROUND_1_3_STATE_RANGE
         .into_iter()
         .enumerate()
     {
-        let name = format!("FULL_ROUND_1_3_STATE_{}", index);
+        let name = format!("FULL_1_3_{}", index);
         m.insert(col, name);
     }
     m.insert(
         FILTER_LOOKED_FOR_STORAGE,
-        String::from("FILTER_LOOKED_FOR_STORAGE"),
+        String::from("LOOKED_FOR_STORAGE"),
     );
     m
 }
