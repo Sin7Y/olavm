@@ -19,7 +19,8 @@ mod tests {
         builtins::{
             bitwise, cmp,
             poseidon::{self, columns::*},
-            rangecheck, storage,
+            rangecheck,
+            storage::{self, columns::*},
         },
         cpu::{self, columns::*},
         generation::{
@@ -35,7 +36,122 @@ mod tests {
     };
 
     #[test]
-    fn get_cpu_poseidon_tree_key_ctl_info() {
+    fn print_cpu_storage_sload_ctl_info() {
+        let program_file_name = "vote.json".to_string();
+        let trace = get_exec_trace(program_file_name);
+
+        let looking_rows = get_cpu_rows_from_trace(&trace);
+        let looking_filter =
+            |row: [GoldilocksField; cpu::columns::NUM_CPU_COLS]| row[COL_S_SLOAD].is_one();
+        let looking_data_cols = [COL_CLK, COL_OPCODE, COL_OP0, COL_OP1, COL_DST, COL_AUX0];
+
+        let looked_rows = get_storage_rows_from_trace(&trace);
+        let looked_filter = |row: [GoldilocksField; storage::columns::COL_STORAGE_NUM]| {
+            row[COL_STORAGE_FILTER_LOOKED_FOR_SLOAD].is_one()
+        };
+        let looked_data_cols = [
+            COL_STORAGE_CLK,
+            COL_STORAGE_OPCODE,
+            COL_STORAGE_VALUE_RANGE.start,
+            COL_STORAGE_VALUE_RANGE.start + 1,
+            COL_STORAGE_VALUE_RANGE.start + 2,
+            COL_STORAGE_VALUE_RANGE.start + 3,
+        ];
+
+        let (looking_title, looking_data, looked_title, looked_data) = get_looking_looked_info(
+            looking_rows,
+            looking_filter,
+            looking_data_cols,
+            get_cpu_col_name_map(),
+            looked_rows,
+            looked_filter,
+            looked_data_cols,
+            get_storage_col_name_map(),
+        );
+
+        println!("==== looking table: cpu =====");
+        println!(
+            "{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
+            looking_title[0],
+            looking_title[1],
+            looking_title[2],
+            looking_title[3],
+            looking_title[4],
+            looking_title[5]
+        );
+        for looking_row in looking_data {
+            println!(
+                "{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
+                looking_row[0].0,
+                looking_row[1].0,
+                looking_row[2].0,
+                looking_row[3].0,
+                looking_row[4].0,
+                looking_row[5].0,
+            )
+        }
+
+        println!("==== looked table: storage =====");
+        println!(
+            "{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
+            looked_title[0],
+            looked_title[1],
+            looked_title[2],
+            looked_title[3],
+            looked_title[4],
+            looked_title[5]
+        );
+        for looked_row in looked_data {
+            println!(
+                "{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
+                looked_row[0].0,
+                looked_row[1].0,
+                looked_row[2].0,
+                looked_row[3].0,
+                looked_row[4].0,
+                looked_row[5].0,
+            )
+        }
+    }
+
+    #[allow(unused)]
+    fn get_looking_looked_info<
+        const LOOKING_COL_NUM: usize,
+        const LOOKED_COL_NUM: usize,
+        const DATA_SIZE: usize,
+    >(
+        looking_rows: Vec<[GoldilocksField; LOOKING_COL_NUM]>,
+        looking_filter: fn([GoldilocksField; LOOKING_COL_NUM]) -> bool,
+        looking_data_cols: [usize; DATA_SIZE],
+        looking_col_to_name: BTreeMap<usize, String>,
+        looked_rows: Vec<[GoldilocksField; LOOKED_COL_NUM]>,
+        looked_filter: fn([GoldilocksField; LOOKED_COL_NUM]) -> bool,
+        looked_data_cols: [usize; DATA_SIZE],
+        looked_col_to_name: BTreeMap<usize, String>,
+    ) -> (
+        [String; DATA_SIZE],
+        Vec<[GoldilocksField; DATA_SIZE]>,
+        [String; DATA_SIZE],
+        Vec<[GoldilocksField; DATA_SIZE]>,
+    ) {
+        let (looking_data, looking_title) = get_related_data_with_title(
+            looking_rows,
+            looking_filter,
+            looking_col_to_name,
+            looking_data_cols,
+        );
+
+        let (looked_data, looked_title) = get_related_data_with_title(
+            looked_rows,
+            looked_filter,
+            looked_col_to_name,
+            looked_data_cols,
+        );
+        (looking_title, looking_data, looked_title, looked_data)
+    }
+
+    #[test]
+    fn print_cpu_poseidon_tree_key_ctl_info() {
         let file_name = "vote.json".to_string();
         let trace = get_exec_trace(file_name);
 
