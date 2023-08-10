@@ -1,0 +1,4 @@
+{
+  "program": "main:\n.LBL0_0:\nmov r0 10\ntstore r0\ntstore 11\ntstore 12\nmov r1 1\ntload r3 r1 -1\nmov r1 0\nmov r5 1\ntload r4 r1 r5\nend",
+  "prophets": []
+}

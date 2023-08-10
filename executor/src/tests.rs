@@ -1,3 +1,4 @@
+use crate::trace::gen_storage_table;
 use crate::Process;
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
@@ -204,7 +205,25 @@ fn mem_gep_vecotr_test() {
 }
 
 #[test]
-fn gen_storage_table() {
+fn string_assert_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/string_assert.json",
+        "string_assert_trace.txt",
+        false,
+    );
+}
+
+#[test]
+fn tape_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/tape.json",
+        "tape_trace.txt",
+        false,
+    );
+}
+
+#[test]
+fn gen_storage_table_test() {
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
@@ -250,6 +269,7 @@ fn gen_storage_table() {
         GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
         store_addr,
         tree_key_default(),
+        tree_key_default(),
     );
     hash.push(tree_key_default());
 
@@ -257,6 +277,7 @@ fn gen_storage_table() {
         6,
         GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
         store_addr,
+        tree_key_default(),
         tree_key_default(),
     );
     hash.push(tree_key_default());
@@ -275,8 +296,8 @@ fn gen_storage_table() {
 
     store_val[3] = GoldilocksField::from_canonical_u64(9);
     process.storage.write(
-        9,
-        GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
+        2,
+        GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u64),
         store_addr,
         store_val,
         tree_key_default(),
@@ -284,12 +305,13 @@ fn gen_storage_table() {
     hash.push(tree_key_default());
 
     process.storage.read(
-        2,
+        9,
         GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
         store_addr,
+        tree_key_default(),
         tree_key_default(),
     );
     hash.push(tree_key_default());
 
-    process.gen_storage_table(&mut program, hash);
+    gen_storage_table(&mut process, &mut program, hash);
 }

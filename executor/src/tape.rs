@@ -32,8 +32,8 @@ impl TapeTree {
         // prev_value) to it; if this is the first time we access this address,
         // return MemVistInv error because memory must be inited first.
         // Return the last value in the address trace.
-        let mut read_res = self.trace.get_mut(&addr);
-        if let Some(mut tape_data) = read_res {
+        let read_res = self.trace.get_mut(&addr);
+        if let Some(tape_data) = read_res {
             let last_value = tape_data.last().expect("empty address trace").value;
             let new_value = TapeCell {
                 clk,
@@ -45,10 +45,7 @@ impl TapeTree {
             tape_data.push(new_value);
             Ok(last_value)
         } else {
-            Err(ProcessorError::MemVistInv(format!(
-                "read not init tape:{}",
-                addr
-            )))
+            Err(ProcessorError::MemVistInv(addr))
         }
     }
 

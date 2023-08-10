@@ -12,13 +12,13 @@ use core::merkle_tree::tree::AccountTree;
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
 use core::program::{Program, REGISTER_NUM};
-use core::trace::trace::{ComparisonOperation, MemoryTraceCell, RegisterSelector};
-use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType, StorageHashRow};
+use core::trace::trace::{ComparisonOperation, RegisterSelector};
+use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType};
 use core::types::account::AccountTreeId;
-use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
+
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::tree_key_to_leaf_index;
-use core::types::merkle_tree::{tree_key_to_u256, u8_arr_to_tree_key, TreeKeyU256, TREE_VALUE_LEN};
+use core::types::merkle_tree::{u8_arr_to_tree_key, TREE_VALUE_LEN};
 use core::types::storage::StorageKey;
 
 use core::crypto::poseidon_trace::{
@@ -31,13 +31,15 @@ use core::types::account::Address;
 use core::vm::heap::HEAP_PTR;
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
-use log::{debug, warn};
+use log::{debug};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, Field64, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
-use rocksdb::LogLevel::Error;
+use crate::tape::TapeTree;
+use crate::trace::{gen_memory_table, gen_storage_hash_table, gen_storage_table};
+
 use std::time::Instant;
 
 mod decode;
@@ -48,6 +50,7 @@ pub mod storage;
 mod tape;
 #[cfg(test)]
 mod tests;
+mod trace;
 
 // r15 use as fp for procedure
 const FP_REG_INDEX: usize = 9;
@@ -62,9 +65,9 @@ const PROPHET_INPUT_FP_START_OFFSET: u64 = 3;
 const TP_START_ADDR: GoldilocksField = GoldilocksField::ZERO;
 
 #[derive(Debug, Clone)]
-enum MEM_RANGE_TYPE {
-    MEM_SORT,
-    MEM_REGION,
+enum MemRangeType {
+    MemSort,
+    MemRegion,
 }
 #[derive(Debug)]
 pub struct Process {
@@ -84,6 +87,7 @@ pub struct Process {
     pub storage: StorageTree,
     pub storage_log: Vec<WitnessStorageLog>,
     pub tp: GoldilocksField,
+    pub tape: TapeTree,
 }
 
 impl Process {
@@ -109,6 +113,9 @@ impl Process {
                 trace: HashMap::new(),
             },
             tp: TP_START_ADDR,
+            tape: TapeTree {
+                trace: BTreeMap::new(),
+            },
         }
     }
 
@@ -161,7 +168,7 @@ impl Process {
         reg_index: &mut usize,
         fp: &mut u64,
     ) -> Result<u64, ProcessorError> {
-        let mut value = Default::default();
+        let mut value ;
         if reg_cnt != *reg_index {
             value = self.registers[*reg_index].0;
             *reg_index += 1;
@@ -342,8 +349,9 @@ impl Process {
             let registers_status = self.registers;
             let ctx_regs_status = self.ctx_registers_stack.last().unwrap().clone();
             let pc_status = self.pc;
+            let tp_status = self.tp;
 
-            let mut instruction;
+            let instruction;
             if let Some(inst) = program.trace.instructions.get(&self.pc) {
                 instruction = inst.clone();
                 debug!(
@@ -353,7 +361,7 @@ impl Process {
                     program.debug_info.get(&(self.pc as usize))
                 );
             } else {
-                return Err(ProcessorError::PcVistInv(format!("Invalid pc:{}", self.pc)));
+                return Err(ProcessorError::PcVistInv( self.pc));
             }
             let ops: Vec<&str> = instruction.0.split_whitespace().collect();
             let opcode = ops.first().unwrap().to_lowercase();
@@ -412,7 +420,6 @@ impl Process {
                     );
                     let dst_index = self.get_reg_index(ops[1]);
                     let op0_index = self.get_reg_index(ops[2]);
-                    // let src_index = self.get_reg_index(&ops[2]);
                     let value = self.get_index_value(ops[3]);
 
                     self.register_selector.op0 = self.registers[op0_index];
@@ -479,10 +486,10 @@ impl Process {
                     let op_type = match opcode.as_str() {
                         "assert" => {
                             if self.registers[op0_index] != value.0 {
-                                return Err(ProcessorError::AssertFail(format!(
-                                    "assert fail: left: {}, right: {}",
-                                    self.registers[op0_index], value.0
-                                )));
+                                return Err(ProcessorError::AssertFail(
+                                    self.registers[op0_index].to_canonical_u64(),
+                                    value.0.to_canonical_u64()
+                                ));
                             }
                             Opcode::ASSERT
                         }
@@ -667,7 +674,7 @@ impl Process {
                     } else {
                         panic!("mstore op0 should be a reg");
                     }
-                    let mut dst_index = 0;
+                    let dst_index;
                     if ops.len() == 4 {
                         let offset_res = u64::from_str_radix(ops[2], 10);
                         if let Ok(offset) = offset_res {
@@ -705,7 +712,7 @@ impl Process {
 
                     let mut region_heap_flag = GoldilocksField::ZERO;
                     if write_addr >= PSP_START_ADDR {
-                        return Err(ProcessorError::MemVistInv(write_addr.to_string()));
+                        return Err(ProcessorError::MemVistInv(write_addr));
                     } else if write_addr >= HP_START_ADDR {
                         region_heap_flag = GoldilocksField::ONE;
                     }
@@ -1032,7 +1039,7 @@ impl Process {
                         if let Some(value) = read_db {
                             read_value = u8_arr_to_tree_key(&value);
                         } else {
-                            warn!("sload can not read data from addr:{:?}", tree_key);
+                            debug!("sload can not read data from addr:{:?}", tree_key);
                             read_value = tree_key_default();
                         }
                     }
@@ -1051,6 +1058,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
                         tree_key,
                         tree_key_default(),
+                        read_value,
                     );
                     self.update_hash_key(&read_value);
                     hash_row.clk = self.clk;
@@ -1085,8 +1093,39 @@ impl Process {
                         "{}",
                         format!("{} params len is not match", opcode.as_str())
                     );
-                    let src_index = self.get_reg_index(ops[1]);
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::TLOAD as u8);
+                    let dst_index = self.get_reg_index(ops[1]);
+                    let op0_index = self.get_reg_index(ops[2]);
+                    let op1_value = self.get_index_value(ops[3]);
 
+                    self.register_selector.aux1 = self.registers[op0_index];
+                    self.register_selector.op1 = op1_value.0;
+
+                    self.register_selector.op0_reg_sel[op0_index] =
+                        GoldilocksField::from_canonical_u64(1);
+                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
+
+                    let addr;
+                    if self.register_selector.aux1.is_one() {
+                        addr = self.tp + op1_value.0;
+                    } else if self.register_selector.aux1.is_zero() {
+                        addr = op1_value.0;
+                    } else {
+                        return Err(ProcessorError::SloadFlagInvalid(self.register_selector.aux1.to_canonical_u64()));
+                    }
+                    self.registers[dst_index] = self.tape.read(
+                        addr.to_canonical_u64(),
+                        self.clk,
+                        GoldilocksField::from_canonical_u64(1 << Opcode::TLOAD as u64),
+                        GoldilocksField::ZERO,
+                        GoldilocksField::ONE,
+                    )?;
+                    self.register_selector.dst = self.registers[dst_index];
+                    self.register_selector.dst_reg_sel[dst_index] =
+                        GoldilocksField::from_canonical_u64(1);
                     self.pc += step;
                 }
                 "tstore" => {
@@ -1096,6 +1135,25 @@ impl Process {
                         "{}",
                         format!("{} params len is not match", opcode.as_str())
                     );
+                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::TSTORE as u8);
+                    let op1_value = self.get_index_value(ops[1]);
+
+                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
+
+                    self.tape.write(
+                        self.tp.to_canonical_u64(),
+                        self.clk,
+                        GoldilocksField::from_canonical_u64(1 << Opcode::TSTORE as u64),
+                        GoldilocksField::ZERO,
+                        GoldilocksField::ONE,
+                        op1_value.0,
+                    );
+
+                    self.tp += GoldilocksField::ONE;
+                    self.pc += step;
                 }
                 _ => panic!("not match opcode:{}", opcode),
             }
@@ -1107,7 +1165,7 @@ impl Process {
             program.trace.insert_step(
                 self.clk,
                 pc_status,
-                self.tp,
+                tp_status,
                 self.instruction,
                 self.immediate_data,
                 self.op1_imm,
@@ -1129,304 +1187,10 @@ impl Process {
             }
         }
 
-        let hash_roots = self.gen_storage_hash_table(program, account_tree);
-        self.gen_storage_table(program, hash_roots)?;
+        let hash_roots = gen_storage_hash_table(self, program, account_tree);
+        gen_storage_table(self, program, hash_roots)?;
+        gen_memory_table(self, program)?;
 
-        self.gen_memory_table(program)?;
-
-        Ok(())
-    }
-
-    pub fn gen_storage_hash_table(
-        &mut self,
-        program: &mut Program,
-        account_tree: &mut AccountTree,
-    ) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
-        let trace = std::mem::replace(&mut self.storage_log, Vec::new());
-        let hash_traces = account_tree.process_block(trace.iter());
-        let _ = account_tree.save();
-
-        let mut root_hashes = Vec::new();
-
-        for (chunk, log) in hash_traces.chunks(ROOT_TREE_DEPTH).enumerate().zip(trace) {
-            let mut root_hash = [GoldilocksField::ZERO; TREE_VALUE_LEN];
-            root_hash.clone_from_slice(&chunk.1.last().unwrap().0.output[0..4]);
-            root_hashes.push(root_hash);
-            let mut acc = GoldilocksField::ZERO;
-            let key = tree_key_to_u256(&log.storage_log.key);
-
-            let rows: Vec<_> = chunk
-                .1
-                .iter()
-                .rev()
-                .enumerate()
-                .map(|item| {
-                    let layer_bit = ((key >> (255 - item.0)) & TreeKeyU256::one()).as_u64();
-                    let layer = (item.0 + 1) as u64;
-
-                    acc = acc * GoldilocksField::from_canonical_u64(2)
-                        + GoldilocksField::from_canonical_u64(layer_bit);
-                    let mut deltas = [GoldilocksField::ZERO; TREE_VALUE_LEN];
-                    if layer_bit == 1 {
-                        for i in 0..TREE_VALUE_LEN {
-                            deltas[i] = item.1 .2[i] - item.1 .1[i]
-                        }
-                    } else if layer_bit == 0 {
-                    } else {
-                        panic!("layer_bit is 0 or 1");
-                    }
-                    let row = StorageHashRow {
-                        idx_storage: (chunk.0 + 1) as u64,
-                        layer,
-                        layer_bit,
-                        addr_acc: acc,
-                        is_layer64: (layer == 64),
-                        is_layer128: (layer == 128),
-                        is_layer192: (layer == 192),
-                        is_layer256: (layer == 256),
-                        addr: log.storage_log.key,
-                        caps: [
-                            GoldilocksField::ONE,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                        ],
-                        paths: item.1 .1,
-                        siblings: item.1 .2,
-                        deltas,
-                        full_0_1: item.1 .0.full_0_1,
-                        full_0_2: item.1 .0.full_0_2,
-                        full_0_3: item.1 .0.full_0_3,
-                        partial: item.1 .0.partial,
-                        full_1_0: item.1 .0.full_1_0,
-                        full_1_1: item.1 .0.full_1_1,
-                        full_1_2: item.1 .0.full_1_2,
-                        full_1_3: item.1 .0.full_1_3,
-                        output: item.1 .0.output,
-                    };
-                    if layer % 64 == 0 {
-                        acc = GoldilocksField::ZERO;
-                    }
-                    row
-                })
-                .collect();
-            program.trace.builtin_storage_hash.extend(rows);
-        }
-        root_hashes
-    }
-
-    pub fn gen_storage_table(
-        &mut self,
-        program: &mut Program,
-        hash_roots: Vec<[GoldilocksField; 4]>,
-    ) -> Result<(), ProcessorError> {
-        if hash_roots.is_empty() {
-            return Ok(());
-        }
-        let trace = std::mem::replace(&mut self.storage.trace, HashMap::new());
-        let mut traces: Vec<_> = trace.into_iter().flat_map(|e| e.1).collect();
-        traces.sort_by(|a, b| a.cmp(b));
-        let mut pre_clk = 0;
-        for (item, root) in traces.iter().enumerate().zip(hash_roots) {
-            let mut diff_clk = 0;
-            if item.0 != 0 {
-                diff_clk = item.1.clk - pre_clk;
-            }
-            program.trace.insert_storage(
-                item.1.clk,
-                diff_clk,
-                item.1.op,
-                root,
-                item.1.addr,
-                item.1.value,
-            );
-
-            program.trace.insert_rangecheck(
-                GoldilocksField::from_canonical_u64(diff_clk as u64),
-                (
-                    GoldilocksField::ZERO,
-                    GoldilocksField::ZERO,
-                    GoldilocksField::ZERO,
-                    GoldilocksField::ONE,
-                    GoldilocksField::ZERO,
-                ),
-            );
-            pre_clk = item.1.clk;
-        }
-
-        Ok(())
-    }
-
-    pub fn gen_memory_table(&mut self, program: &mut Program) -> Result<(), ProcessorError> {
-        let mut origin_addr = 0;
-        let mut origin_clk = 0;
-        let mut diff_addr;
-        let mut diff_addr_inv;
-        let mut diff_clk;
-        let mut diff_addr_cond;
-        let mut first_row_flag = true;
-        let mut first_heap_row_flag = true;
-
-        for (field_addr, cells) in self.memory.trace.iter() {
-            let mut new_addr_flag = true;
-
-            let canonical_addr =
-                GoldilocksField::from_noncanonical_u64(*field_addr).to_canonical_u64();
-            for cell in cells {
-                let mut rc_insert = Vec::new();
-                let mut write_once_region_flag = false;
-                debug!(
-                    "canonical_addr:{}, addr:{}, cell:{:?}",
-                    canonical_addr, field_addr, cell
-                );
-
-                if cell.region_prophet.is_one() {
-                    diff_addr_cond = GoldilocksField::from_canonical_u64(
-                        GoldilocksField::ORDER - canonical_addr,
-                    );
-                    write_once_region_flag = true;
-                } else if cell.region_heap.is_one() {
-                    diff_addr_cond = GoldilocksField::from_canonical_u64(
-                        GoldilocksField::ORDER - MEM_SPAN_SIZE - canonical_addr,
-                    );
-                } else {
-                    diff_addr_cond = GoldilocksField::ZERO;
-                }
-                if first_row_flag {
-                    let rc_value = GoldilocksField::ZERO;
-                    let trace_cell = MemoryTraceCell {
-                        addr: GoldilocksField::from_canonical_u64(canonical_addr),
-                        clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
-                        is_rw: cell.is_rw,
-                        op: cell.op,
-                        is_write: cell.is_write,
-                        diff_addr: GoldilocksField::from_canonical_u64(0_u64),
-                        diff_addr_inv: GoldilocksField::from_canonical_u64(0_u64),
-                        diff_clk: GoldilocksField::from_canonical_u64(0_u64),
-                        diff_addr_cond,
-                        filter_looked_for_main: cell.filter_looked_for_main,
-                        rw_addr_unchanged: GoldilocksField::from_canonical_u64(0_u64),
-                        region_prophet: cell.region_prophet,
-                        region_heap: cell.region_heap,
-                        value: cell.value,
-                        rc_value,
-                    };
-                    program.trace.memory.push(trace_cell);
-                    first_row_flag = false;
-                    new_addr_flag = false;
-                    if cell.region_heap == GoldilocksField::ONE {
-                        first_heap_row_flag = false;
-                    }
-                } else if new_addr_flag {
-                    debug!(
-                        "canonical_addr:{}, origin_addr:{}, spec_region_flag:{}, diff_addr_cond:{}, first_heap_row_flag:{}",
-                        canonical_addr, origin_addr, write_once_region_flag, diff_addr_cond, first_heap_row_flag
-                    );
-
-                    diff_addr = GoldilocksField::from_canonical_u64(canonical_addr - origin_addr);
-                    let rc_value;
-
-                    if write_once_region_flag {
-                        diff_addr_inv = GoldilocksField::ZERO;
-                        rc_value = diff_addr_cond;
-                        rc_insert.push((diff_addr_cond, MEM_RANGE_TYPE::MEM_REGION));
-                    } else if cell.region_heap == GoldilocksField::ONE && first_heap_row_flag {
-                        diff_addr = GoldilocksField::ZERO;
-                        diff_addr_inv = GoldilocksField::ZERO;
-                        rc_value = GoldilocksField::ZERO;
-                        rc_insert.push((diff_addr_cond, MEM_RANGE_TYPE::MEM_REGION));
-                        first_heap_row_flag = false;
-                    } else {
-                        diff_addr_inv = diff_addr.inverse();
-                        rc_value = diff_addr;
-                        rc_insert.push((rc_value, MEM_RANGE_TYPE::MEM_SORT));
-                        if cell.region_heap == GoldilocksField::ONE {
-                            rc_insert.push((diff_addr_cond, MEM_RANGE_TYPE::MEM_REGION));
-                        }
-                    }
-                    diff_clk = GoldilocksField::ZERO;
-                    let trace_cell = MemoryTraceCell {
-                        addr: GoldilocksField::from_canonical_u64(canonical_addr),
-                        clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
-                        is_rw: cell.is_rw,
-                        op: cell.op,
-                        is_write: cell.is_write,
-                        diff_addr,
-                        diff_addr_inv,
-                        diff_clk,
-                        diff_addr_cond,
-                        filter_looked_for_main: cell.filter_looked_for_main,
-                        rw_addr_unchanged: GoldilocksField::from_canonical_u64(0_u64),
-                        region_prophet: cell.region_prophet,
-                        region_heap: cell.region_heap,
-                        value: cell.value,
-                        rc_value,
-                    };
-                    program.trace.memory.push(trace_cell);
-                    new_addr_flag = false;
-                } else {
-                    diff_addr = GoldilocksField::ZERO;
-                    diff_addr_inv = GoldilocksField::ZERO;
-                    diff_clk = GoldilocksField::from_canonical_u64(cell.clk as u64 - origin_clk);
-                    let mut rw_addr_unchanged = GoldilocksField::ONE;
-                    let rc_value;
-                    let mem_filter_type;
-                    if cell.is_rw == GoldilocksField::ZERO {
-                        rw_addr_unchanged = GoldilocksField::ZERO;
-                        rc_value = diff_addr_cond;
-                        mem_filter_type = MEM_RANGE_TYPE::MEM_REGION;
-                    } else {
-                        rc_value = diff_clk;
-                        mem_filter_type = MEM_RANGE_TYPE::MEM_SORT;
-                    }
-                    rc_insert.push((rc_value, mem_filter_type));
-                    if cell.region_heap == GoldilocksField::ONE {
-                        rc_insert.push((diff_addr_cond, MEM_RANGE_TYPE::MEM_REGION));
-                    }
-
-                    let trace_cell = MemoryTraceCell {
-                        addr: GoldilocksField::from_canonical_u64(canonical_addr),
-                        clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
-                        is_rw: cell.is_rw,
-                        op: cell.op,
-                        is_write: cell.is_write,
-                        diff_addr,
-                        diff_addr_inv,
-                        diff_clk,
-                        diff_addr_cond,
-                        filter_looked_for_main: cell.filter_looked_for_main,
-                        rw_addr_unchanged,
-                        region_prophet: cell.region_prophet,
-                        region_heap: cell.region_heap,
-                        value: cell.value,
-                        rc_value,
-                    };
-                    program.trace.memory.push(trace_cell);
-                }
-                for item in &rc_insert {
-                    if item.0.to_canonical_u64() > u32::MAX as u64 {
-                        return Err(ProcessorError::U32RangeCheckFail);
-                    }
-                }
-                rc_insert.iter_mut().for_each(|e| {
-                    program.trace.insert_rangecheck(
-                        e.0,
-                        (
-                            GoldilocksField::ONE
-                                * GoldilocksField::from_canonical_u8(1 - e.1.clone() as u8),
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ONE
-                                * GoldilocksField::from_canonical_u8(e.1.clone() as u8),
-                        ),
-                    )
-                });
-
-                origin_clk = cell.clk as u64;
-            }
-            origin_addr = canonical_addr;
-        }
         Ok(())
     }
 }

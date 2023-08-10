@@ -659,7 +659,7 @@ impl Traversal for Executor {
                 Number::I32(number) => Single(hp.unwrap().get_single() + Number::I32(number)),
                 _ => panic!("wrong sqrt value type"),
             };
-            self.assign_value(&Id(hp_name), res.clone());
+            self.assign_value(&Id(hp_name), res.clone())?;
             Ok(res)
         } else {
             panic!("can not get sqrt value")
