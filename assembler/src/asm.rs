@@ -137,7 +137,8 @@ fn split_ola_asm_pieces(
         | OlaOpcode::XOR
         | OlaOpcode::EQ
         | OlaOpcode::NEQ
-        | OlaOpcode::GTE => {
+        | OlaOpcode::GTE
+        | OlaOpcode::TLOAD => {
             if ops.len() != 3 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }
@@ -172,7 +173,7 @@ fn split_ola_asm_pieces(
             }
         }
 
-        OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC => {
+        OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC | OlaOpcode::TSTORE => {
             if ops.len() != 1 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }

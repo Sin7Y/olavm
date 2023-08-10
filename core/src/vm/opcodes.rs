@@ -27,6 +27,8 @@ pub enum OlaOpcode {
     POSEIDON,
     SLOAD,
     SSTORE,
+    TLOAD,
+    TSTORE,
 }
 
 impl Display for OlaOpcode {
@@ -62,6 +64,8 @@ impl OlaOpcode {
             OlaOpcode::POSEIDON => "poseidon".to_string(),
             OlaOpcode::SLOAD => "sload".to_string(),
             OlaOpcode::SSTORE => "sstore".to_string(),
+            OlaOpcode::TLOAD => "tload".to_string(),
+            OlaOpcode::TSTORE => "tstore".to_string(),
         }
     }
 
@@ -89,6 +93,8 @@ impl OlaOpcode {
             OlaOpcode::POSEIDON => 12,
             OlaOpcode::SLOAD => 11,
             OlaOpcode::SSTORE => 10,
+            OlaOpcode::TLOAD => 9,
+            OlaOpcode::TSTORE => 8,
         }
     }
 
