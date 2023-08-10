@@ -576,7 +576,7 @@ mod tests {
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
-            debug_info: Default::default(),
+            debug_info: program.debug_info,
         };
 
         for inst in instructions {
