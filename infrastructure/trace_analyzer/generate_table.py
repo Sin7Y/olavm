@@ -36,6 +36,7 @@ class OpcodeValue(Enum):
 class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
+    TP = 'tp'
     CTX_REGS = "ctx_regs"
     REGS = 'regs'
     INST = 'instruction'
@@ -72,6 +73,7 @@ class JsonMainTraceColumnType(Enum):
 class MainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
+    TP = 'tp'
 
     CTX0 = "ctx0"
     CTX1 = "ctx1"

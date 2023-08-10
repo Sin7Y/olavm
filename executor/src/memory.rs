@@ -1,6 +1,6 @@
 use crate::error::ProcessorError;
-use crate::GoldilocksField;
-use plonky2::field::types::Field;
+
+use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -39,8 +39,8 @@ impl MemoryTree {
         // prev_value) to it; if this is the first time we access this address,
         // return MemVistInv error because memory must be inited first.
         // Return the last value in the address trace.
-        let mut read_mem_res = self.trace.get_mut(&addr);
-        if let Some(mut mem_data) = read_mem_res {
+        let read_mem_res = self.trace.get_mut(&addr);
+        if let Some(mem_data) = read_mem_res {
             let last_value = mem_data.last().expect("empty address trace").value;
             let new_value = MemoryCell {
                 is_rw,
@@ -55,10 +55,7 @@ impl MemoryTree {
             mem_data.push(new_value);
             Ok(last_value)
         } else {
-            Err(ProcessorError::MemVistInv(format!(
-                "read not init memory:{}",
-                addr
-            )))
+            Err(ProcessorError::MemVistInv(addr))
         }
     }
 

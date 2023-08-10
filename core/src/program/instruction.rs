@@ -50,6 +50,8 @@ pub enum Opcode {
     POSEIDON = 12,
     SLOAD = 11,
     SSTORE = 10,
+    TLOAD = 9,
+    TSTORE = 8,
 }
 
 impl fmt::Display for Opcode {
@@ -77,6 +79,8 @@ impl fmt::Display for Opcode {
             Opcode::SLOAD => write!(f, "sload"),
             Opcode::SSTORE => write!(f, "sstore"),
             Opcode::POSEIDON => write!(f, "poseidon"),
+            Opcode::TLOAD => write!(f, "tload"),
+            Opcode::TSTORE => write!(f, "tstore"),
         }
     }
 }

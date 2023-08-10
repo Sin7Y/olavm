@@ -55,7 +55,8 @@ pub fn decode_raw_instruction(
             | Opcode::XOR
             | Opcode::NEQ
             | Opcode::GTE
-            | Opcode::EQ => {
+            | Opcode::EQ
+            | Opcode::TLOAD => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
@@ -175,7 +176,7 @@ pub fn decode_raw_instruction(
                 }
                 step = IMM_INSTRUCTION_LEN;
             }
-            Opcode::JMP | Opcode::CALL | Opcode::RC => {
+            Opcode::JMP | Opcode::CALL | Opcode::RC | Opcode::TSTORE => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 if imm_flag == 1 {
