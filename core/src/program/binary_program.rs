@@ -306,7 +306,8 @@ impl BinaryInstruction {
             | OlaOpcode::XOR
             | OlaOpcode::EQ
             | OlaOpcode::NEQ
-            | OlaOpcode::GTE => {
+            | OlaOpcode::GTE
+            | OlaOpcode::TLOAD => {
                 format!(
                     "{} {} {} {}",
                     self.opcode.token(),
@@ -343,7 +344,7 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC => {
+            OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC | OlaOpcode::TSTORE => {
                 format!(
                     "{} {}",
                     self.opcode.token(),
