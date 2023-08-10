@@ -53,7 +53,7 @@ mod tests {
             COL_START_REG + 4,
         ];
         let looking_filter = |row: [GoldilocksField; cpu::columns::NUM_CPU_COLS]| {
-            row[COL_S_SLOAD] + row[COL_S_SLOAD] == GoldilocksField::ONE
+            (row[COL_S_SLOAD] + row[COL_S_SSTORE]).is_one()
         };
 
         let (looking_data, looking_title) = get_related_data_with_title(
@@ -88,7 +88,7 @@ mod tests {
 
         println!("==== looking table: cpu =====");
         println!(
-            "{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}",
+            "{:>5}\t{:>7}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
             looking_title[0],
             looking_title[1],
             looking_title[2],
@@ -102,7 +102,7 @@ mod tests {
         );
         for looking_row in looking_data {
             println!(
-                "{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}",
+                "{:>5x}\t{:>7x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}",
                 looking_row[0].0,
                 looking_row[1].0,
                 looking_row[2].0,
@@ -118,7 +118,7 @@ mod tests {
 
         println!("==== looking table: poseidon =====");
         println!(
-            "{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}",
+            "{:>5}\t{:>7}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}\t{:>16}",
             looked_title[0],
             looked_title[1],
             looked_title[2],
@@ -132,7 +132,7 @@ mod tests {
         );
         for looked_row in looked_data {
             println!(
-                "{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}\t{:>15}",
+                "{:>5x}\t{:>7x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}\t{:>16x}",
                 looked_row[0].0,
                 looked_row[1].0,
                 looked_row[2].0,
