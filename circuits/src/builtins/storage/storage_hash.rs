@@ -124,7 +124,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageHashSt
         }
 
         for i in 0..4 {
-            yield_constr.constraint_transition(lv_is_layer256 * (lv_root[i] - nv_root[i]));
+            yield_constr
+                .constraint_transition((P::ONES - lv_is_layer256) * (lv_root[i] - nv_root[i]));
         }
 
         // cap should be 1,0,0,0
@@ -334,6 +335,12 @@ mod test {
     #[test]
     fn test_storage_hash_multi_keys() {
         let file_name = "storage_multi_keys.json".to_string();
+        test_storage_hash_with_asm_file_name(file_name);
+    }
+
+    #[test]
+    fn test_storage_hash_vote() {
+        let file_name = "vote.json".to_string();
         test_storage_hash_with_asm_file_name(file_name);
     }
 
