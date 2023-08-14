@@ -97,7 +97,13 @@ mod tests {
             looking_title[2],
             looking_title[3],
             looking_title[4],
-            looking_title[5],looking_title[6], looking_title[7], looking_title[8], looking_title[9], looking_title[10], looking_title[11],
+            looking_title[5],
+            looking_title[6],
+            looking_title[7],
+            looking_title[8],
+            looking_title[9],
+            looking_title[10],
+            looking_title[11],
         );
         for looking_row in looking_data {
             println!(
@@ -119,7 +125,13 @@ mod tests {
             looked_title[2],
             looked_title[3],
             looked_title[4],
-            looked_title[5],looked_title[6], looked_title[7], looked_title[8], looked_title[9], looked_title[10], looked_title[11],
+            looked_title[5],
+            looked_title[6],
+            looked_title[7],
+            looked_title[8],
+            looked_title[9],
+            looked_title[10],
+            looked_title[11],
         );
         for looked_row in looked_data {
             println!(
