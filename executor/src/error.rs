@@ -14,7 +14,7 @@ pub enum ProcessorError {
     #[error("U32 range check fail, value out range")]
     U32RangeCheckFail,
 
-    #[error("assert fail: left: {0}, right: {1}")]
+    #[error("assert fail: reg: {0}, value: {1}")]
     AssertFail(u64, u64),
 
     #[error("Memory visit invalid, bound addr: {0}")]

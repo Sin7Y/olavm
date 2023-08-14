@@ -1,5 +1,5 @@
 use crate::error::ProcessorError;
-use crate::{GoldilocksField, Process, MemRangeType, MEM_SPAN_SIZE};
+use crate::{GoldilocksField, MemRangeType, Process, MEM_SPAN_SIZE};
 use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
 use core::trace::trace::{MemoryTraceCell, StorageHashRow};

@@ -92,10 +92,7 @@ pub(crate) fn get_storage_col_name_map() -> BTreeMap<usize, String> {
         COL_STORAGE_FILTER_LOOKED_FOR_SLOAD,
         String::from("LOOKED_FOR_SLOAD"),
     );
-    m.insert(
-        COL_STORAGE_LOOKING_RC,
-        String::from("LOOKING_RC"),
-    );
+    m.insert(COL_STORAGE_LOOKING_RC, String::from("LOOKING_RC"));
     m
 }
 
