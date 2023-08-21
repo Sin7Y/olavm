@@ -18,7 +18,7 @@ use std::path::Path;
 pub struct OlaNode {
     pub ola_state: NodeState<ZkHasher>,
     pub account_tree: AccountTree,
-    pub process: Process,
+    pub process: Vec<Process>,
 }
 
 impl OlaNode {
@@ -37,7 +37,7 @@ impl OlaNode {
         OlaNode {
             ola_state,
             account_tree,
-            process: Process::new(),
+            process: vec![Process::new()],
         }
     }
 
@@ -61,6 +61,8 @@ impl OlaNode {
         prophets: &mut Option<HashMap<u64, OlaProphet>>,
     ) -> Result<(), ProcessorError> {
         self.process
+            .pop()
+            .unwrap()
             .execute(program, prophets, &mut self.account_tree)
     }
 }

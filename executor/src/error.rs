@@ -20,9 +20,12 @@ pub enum ProcessorError {
     #[error("Memory visit invalid, bound addr: {0}")]
     MemVistInv(u64),
 
+    #[error("Tape visit invalid, bound addr: {0}")]
+    TapeVistInv(u64),
+
     #[error("pc visit invalid, over bound addr: {0}")]
     PcVistInv(u64),
 
-    #[error("sload flag is invalid: {0}")]
-    SloadFlagInvalid(u64),
+    #[error("Tload flag is invalid: {0}")]
+    TloadFlagInvalid(u64),
 }

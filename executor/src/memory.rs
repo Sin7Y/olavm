@@ -1,8 +1,13 @@
 use crate::error::ProcessorError;
 
 use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::Field64;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+
+pub const MEM_SPAN_SIZE: u64 = u32::MAX as u64;
+pub const PSP_START_ADDR: u64 = GoldilocksField::ORDER - MEM_SPAN_SIZE;
+pub const HP_START_ADDR: u64 = GoldilocksField::ORDER - 2 * MEM_SPAN_SIZE;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct MemoryCell {
@@ -88,4 +93,17 @@ impl MemoryTree {
             .and_modify(|addr_trace| addr_trace.push(new_cell))
             .or_insert_with(|| vec![new_cell]);
     }
+}
+
+#[macro_export]
+macro_rules! memory_zone_process {
+    ($addr: tt, $psp_proc: expr, $heap_proc: expr, $stack_proc: expr) => {
+        if $addr >= PSP_START_ADDR {
+            $psp_proc;
+        } else if $addr >= HP_START_ADDR {
+            $heap_proc;
+        } else {
+            $stack_proc;
+        }
+    };
 }

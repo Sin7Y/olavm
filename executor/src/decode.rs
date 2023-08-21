@@ -74,7 +74,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::CJMP => {
+            Opcode::CJMP | Opcode::TSTORE => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg1_name = format!("r{}", reg1);
@@ -176,7 +176,7 @@ pub fn decode_raw_instruction(
                 }
                 step = IMM_INSTRUCTION_LEN;
             }
-            Opcode::ASSERT | Opcode::JMP | Opcode::CALL | Opcode::RC | Opcode::TSTORE => {
+            Opcode::ASSERT | Opcode::JMP | Opcode::CALL | Opcode::RC => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 if imm_flag == 1 {

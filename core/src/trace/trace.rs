@@ -128,6 +128,9 @@ pub struct Step {
     pub ctx_regs: [GoldilocksField; CTX_REGISTER_NUM],
     pub regs: [GoldilocksField; REGISTER_NUM],
     pub register_selector: RegisterSelector,
+    pub is_ext_line: GoldilocksField,
+    pub ext_cnt: GoldilocksField,
+    pub filter_tape_looking: GoldilocksField,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -401,6 +404,9 @@ impl Trace {
         ctx_regs: [GoldilocksField; CTX_REGISTER_NUM],
         regs: [GoldilocksField; REGISTER_NUM],
         register_selector: RegisterSelector,
+        is_ext_line: GoldilocksField,
+        ext_cnt: GoldilocksField,
+        filter_tape_looking: GoldilocksField,
     ) {
         let step = Step {
             clk,
@@ -413,6 +419,9 @@ impl Trace {
             opcode,
             ctx_regs,
             register_selector,
+            is_ext_line,
+            ext_cnt,
+            filter_tape_looking,
         };
         self.exec.push(step);
     }

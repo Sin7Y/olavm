@@ -1,4 +1,4 @@
-use super::binary_program::{BinaryInstruction, BinaryProgram, OlaProphet, Prophet};
+use super::binary_program::{BinaryInstruction, BinaryProgram, OlaProphet};
 use crate::vm::opcodes::OlaOpcode;
 use std::collections::HashMap;
 

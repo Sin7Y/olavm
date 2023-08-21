@@ -265,6 +265,13 @@ class PoseidonHashTraceColumnType(Enum):
     FULL_1_3 = 'full_1_3'
     OUTPUT = 'output'
 
+class TapeTraceColumnType(Enum):
+    IS_INIT = "is_init"
+    OPCODE = "opcode"
+    ADDR = "addr"
+    VALUE = 'value'
+    FILTER_LOOKED = 'filter_looked'
+
 def generate_columns_of_title(worksheet, trace_column_title):
     col = 0
     title_row = 0
@@ -513,10 +520,28 @@ def main():
             col += 1
         row_index += 1
 
+    # Tape Trace
+    worksheet = workbook.add_worksheet("TapeTrace")
+    generate_columns_of_title(worksheet, TapeTraceColumnType)
+
+    row_index = 1
+    for row in trace_json["tape"]:
+        col = 0
+        for data in TapeTraceColumnType:
+            if data.value == "is_init" or  data.value == "value" or data.value == "filter_looked":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "opcode" or data.value == "addr":
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
     # Poseidon Hash Trace
     worksheet = workbook.add_worksheet("PoseidonTrace")
-    generate_columns_of_title(worksheet, PoseidonHashTraceColumnType)
-
+    generate_columns_of_title(worksheet, TapeTraceColumnType)
     # generate poseidon hash trace table
     row_index = 1
     for row in trace_json["builtin_posiedon"]:
