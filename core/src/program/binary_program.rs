@@ -317,7 +317,7 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::MOV | OlaOpcode::NOT | OlaOpcode::MLOAD => {
+            OlaOpcode::MOV | OlaOpcode::NOT | OlaOpcode::MLOAD | OlaOpcode::TSTORE => {
                 format!(
                     "{} {} {}",
                     self.opcode.token(),
@@ -344,7 +344,7 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC | OlaOpcode::TSTORE => {
+            OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC => {
                 format!(
                     "{} {}",
                     self.opcode.token(),
