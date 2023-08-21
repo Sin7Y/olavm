@@ -386,23 +386,6 @@ impl Display for BinaryInstruction {
         )
     }
 }
-#[deprecated]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Prophet {
-    pub host: usize,
-    pub code: String,
-    pub ctx: Vec<(String, u64)>,
-    pub inputs: Vec<ProphetInput>,
-    pub outputs: Vec<String>,
-}
-#[deprecated]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProphetInput {
-    pub name: String,      // identifier
-    pub stored_in: String, // reg or memory
-    pub anchor: String,    // when reg mode, targe reg; when memory mode, r8
-    pub offset: usize,     // when reg mode, 0; when memory mode, -3, -4, -5...(count from -3)
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OlaProphet {
@@ -410,7 +393,7 @@ pub struct OlaProphet {
     pub code: String,
     #[serde(default)]
     pub ctx: Vec<(String, u64)>,
-    pub inputs: Vec<OlaProphetInput>,
+    pub inputs: Vec<OlaProphetInput>, //reg 1,2,3 then memory mode, -3, -4, -5...(count from -3)
     pub outputs: Vec<OlaProphetOutput>,
 }
 

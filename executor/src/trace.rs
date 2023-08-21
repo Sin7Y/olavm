@@ -1,13 +1,15 @@
 use crate::error::ProcessorError;
-use crate::{GoldilocksField, MemRangeType, Process, MEM_SPAN_SIZE};
+use crate::memory::MEM_SPAN_SIZE;
+use crate::{GoldilocksField, MemRangeType, Process};
 use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
-use core::trace::trace::{MemoryTraceCell, StorageHashRow};
+use core::trace::trace::{MemoryTraceCell, StorageHashRow, TapeRow};
 use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use core::types::merkle_tree::{tree_key_to_u256, TreeKeyU256, TREE_VALUE_LEN};
 use log::debug;
 use plonky2::field::types::{Field, Field64, PrimeField64};
 use std::collections::HashMap;
+
 pub fn gen_memory_table(
     process: &mut Process,
     program: &mut Program,
@@ -301,5 +303,21 @@ pub fn gen_storage_table(
         );
         pre_clk = item.1.clk;
     }
+    Ok(())
+}
+
+pub fn gen_tape_table(process: &mut Process, program: &mut Program) -> Result<(), ProcessorError> {
+    for (addr, cells) in process.tape.trace.iter() {
+        for tape_row in cells {
+            program.trace.tape.push(TapeRow {
+                is_init: tape_row.is_init.is_one(),
+                opcode: tape_row.op,
+                addr: GoldilocksField::from_canonical_u64(*addr),
+                value: tape_row.value,
+                filter_looked: tape_row.filter_looked,
+            });
+        }
+    }
+
     Ok(())
 }

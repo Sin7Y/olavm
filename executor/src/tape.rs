@@ -45,7 +45,7 @@ impl TapeTree {
             tape_data.push(new_value);
             Ok(last_value)
         } else {
-            Err(ProcessorError::MemVistInv(addr))
+            Err(ProcessorError::TapeVistInv(addr))
         }
     }
 
