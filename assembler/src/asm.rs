@@ -157,7 +157,8 @@ fn split_ola_asm_pieces(
         | OlaOpcode::NOT
         | OlaOpcode::MLOAD
         | OlaOpcode::MSTORE
-        | OlaOpcode::CJMP => {
+        | OlaOpcode::CJMP
+        | OlaOpcode::TSTORE => {
             if ops.len() != 2 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }
@@ -172,11 +173,7 @@ fn split_ola_asm_pieces(
             }
         }
 
-        OlaOpcode::JMP
-        | OlaOpcode::CALL
-        | OlaOpcode::RC
-        | OlaOpcode::TSTORE
-        | OlaOpcode::ASSERT => {
+        OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC | OlaOpcode::ASSERT => {
             if ops.len() != 1 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }
