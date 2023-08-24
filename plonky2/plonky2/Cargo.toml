@@ -57,6 +57,14 @@ name = "field_arithmetic"
 harness = false
 
 [[bench]]
+name = "poseidon_prove"
+harness = false
+
+[[bench]]
+name = "poseidon2_prove"
+harness = false
+
+[[bench]]
 name = "ffts"
 harness = false
 
