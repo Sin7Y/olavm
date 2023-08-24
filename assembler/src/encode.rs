@@ -1,5 +1,4 @@
 use crate::error::AssemblerError;
-use crate::error::AssemblerError::ParseIntError;
 use core::program::instruction::Opcode;
 use core::program::instruction::{
     IMM_FLAG_FIELD_BIT_POSITION, IMM_INSTRUCTION_LEN, NO_IMM_INSTRUCTION_LEN,
@@ -7,7 +6,6 @@ use core::program::instruction::{
 };
 use core::program::FIELD_ORDER;
 use log::debug;
-use log::Level::Debug;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
