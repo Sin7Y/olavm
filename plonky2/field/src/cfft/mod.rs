@@ -1,11 +1,14 @@
 use plonky2_util::log2_strict;
 
-use crate::{types::Field, goldilocks_field::GoldilocksField, cfft::ntt::*};
+use crate::{types::Field, goldilocks_field::GoldilocksField};
+
+use crate::cfft::ntt::*;
 
 #[cfg(feature = "parallel")]
 mod concurrent;
 
 mod serial;
+
 mod ntt;
 
 #[cfg(test)]
@@ -38,7 +41,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
-    if p[0].as_any().is::<GoldilocksField>() && false {
+    if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         let p2 = run_evaluate_poly(p);
         for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
             *item1 = item2;
@@ -91,7 +94,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
-    if p[0].as_any().is::<GoldilocksField>() && false {
+    if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
@@ -133,7 +136,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
-    if evaluations[0].as_any().is::<GoldilocksField>() && false {
+    if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let p2 = run_interpolate_poly(evaluations);
         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
             *item1 = item2;
@@ -174,7 +177,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
-    if evaluations[0].as_any().is::<GoldilocksField>() && false {
+    if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
             *item1 = item2;

@@ -1,14 +1,15 @@
-use cmake::Config;
-use std::env;
+#[cfg(not(feature = "cuda"))]
+fn main() {}
+
+#[cfg(feature = "cuda")]
 fn main() {
-    
-    let profile = env::var("PROFILE").unwrap();
+    let profile = std::env::var("PROFILE").unwrap();
     let profile = match profile.as_str() {
         "debug" => "Debug",
         "release" => "Release",
         _ => "Release"
     };
-    let mut dst = Config::new("cuda")
+    let mut dst = cmake::Config::new("cuda")
         .define("CMAKE_BUILD_TYPE", profile)
         .build();
     dst.push("lib");
