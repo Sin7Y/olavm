@@ -1,5 +1,5 @@
-//Edit by Piaobo
-//data:2023.2.10
+//Edit by Malone and Longson
+//creat data:2023.2.1
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -50,7 +50,7 @@ public:
 				z.high = (low >> (64 - shift)) | z.high;
 				z.low = low << shift;
 			}
-			else 
+			else
 			{
 				z.high = low; z.low = 0;
 			}
@@ -317,22 +317,16 @@ __host__ __device__ __forceinline__ uint128_t operator%(uint128_t x, const uint6
 	while (shift != 0)
 	{
 		shift--;
-		//z = z << 1;
 		while (d <= x)
 		{
 			x = x - d;
-		//	z = z + 1;
 		}
 		d = d >> 1;
 	}
-
-	//z = z << 1;
 	while (d <= x)
 	{
 		x = x - d;
-		//z = z + 1;
 	}
-	//d = d >> 1;
 
 	return x;
 }
@@ -346,7 +340,6 @@ __host__ inline static uint128_t host64x2(const uint64_t& x, const uint64_t& y)
 
 	int shift = 0;
 
-	// hello elementary school
 	while (uy.low != 0)
 	{
 		if (uy.low & 1)
@@ -368,20 +361,11 @@ __host__ inline static uint128_t host64x2(const uint64_t& x, const uint64_t& y)
 
 __device__ __forceinline__ void sub128(uint128_t& a, const uint128_t& b)
 {
-	//asm("{\n\t"
-	//	"sub.cc.u64      %1, %3, %5;    \n\t"
-	//	"subc.u64        %0, %2, %4;    \n\t"
-	//	"}"
-	//	: "=l"(a.high), "=l"(a.low)
-	//	: "l"(a.high), "l"(a.low), "l"(b.high), "l"(b.low));
-	
 	uint128_t z;
 
 	z.low = a.low - b.low;
 	z.high = a.high - b.high - (a.low < b.low);
 	a = z;
-	//return z;
-
 
 }
 
@@ -395,7 +379,6 @@ __host__ __device__ __forceinline__ void mul64mod(const unsigned long long& a, c
 	uint128_t ux2_3 = uint128_t(x2) + x3;
 	ux2_3 = ux2_3 << 32;
 	uint128_t c(x1);
-	//c.low = x1;
 	c.high = x4;
 	c = ux2_3 + c;
 
@@ -407,11 +390,6 @@ __host__ __device__ __forceinline__ void mul64mod(const unsigned long long& a, c
 	uint128_t ux2_4 = (c.high >> 32) + (uint64_t)((uint32_t)c.high);
 	ux2_3 = ux2_6 + p - ux2_4;
 
-	//uint128_t ux2_5 = p + c.low + (exp2(32) - 1) * (uint32_t)(c.high) - (c.high >> 32);
-	//while (ux2_5 >= p)
-	//{
-	//	ux2_5 = ux2_5 - p;
-	//}
 
 	while (ux2_3 >= p)
 	{
@@ -430,7 +408,6 @@ __host__ __device__ __forceinline__ void mul64modSub(const unsigned long long& a
 	uint128_t ux2_3 = uint128_t(x2) + x3;
 	ux2_3 = ux2_3 << 32;
 	uint128_t c(x1);
-	//c.low = x1;
 	c.high = x4;
 	c = ux2_3 + c;
 
@@ -438,11 +415,6 @@ __host__ __device__ __forceinline__ void mul64modSub(const unsigned long long& a
 	uint128_t Temp2 = (c.high << 32);
 	ux2_6 = ux2_6 + Temp2.low;
 	uint64_t ux2_4 = (c.high >> 32) + ((uint32_t)c.high);
-
-	//while (ux2_6 >= p)
-	//{
-	//	ux2_6 = ux2_6 - p;
-	//}
 
 	ux2_3 = uint128_t(Subc) + ux2_4 + p + p - ux2_6;
 
@@ -463,7 +435,6 @@ __host__ __device__ __forceinline__ void mul64modAdd(const unsigned long long& a
 	uint128_t ux2_3 = uint128_t(x2) + x3;
 	ux2_3 = ux2_3 << 32;
 	uint128_t c(x1);
-	//c.low = x1;
 	c.high = x4;
 	c = ux2_3 + c;
 
@@ -483,46 +454,47 @@ __host__ __device__ __forceinline__ void mul64modAdd(const unsigned long long& a
 
 __host__ __device__ __forceinline__ void mul64(const unsigned long long& a, const unsigned long long& b, uint128_t& c)
 {
-	uint64_t x1= (uint64_t)(unsigned)a * (unsigned)b;
+	uint64_t x1 = (uint64_t)(unsigned)a * (unsigned)b;
 	uint64_t x2 = (uint64_t)(unsigned)(a >> 32) * (unsigned)b;
-	uint64_t x3 = (uint64_t)(unsigned) a * (unsigned) (b>> 32);
+	uint64_t x3 = (uint64_t)(unsigned)a * (unsigned)(b >> 32);
 	uint64_t x4 = (uint64_t)(unsigned)(a >> 32) * (unsigned)(b >> 32);
-	
+
 	uint128_t ux2_3 = uint128_t(x2) + x3;
 
-	//std::cout << std::endl << hex << x1;
-	//std::cout << std::endl << hex << ux2_3.low;
-	//std::cout << std::endl << hex << ux2_3.high;
-	//std::cout << std::endl << hex << x4;
-
 	ux2_3 = ux2_3 << 32;
-
-	//std::cout << std::endl << hex << ux2_3.low;
-	//std::cout << std::endl << hex << ux2_3.high;
-
 	c.low = x1;
 	c.high = x4;
 	c = ux2_3 + c;
-
-	//std::cout << std::endl << hex << c.low;
-	//std::cout << std::endl << hex << c.high;
-	//uint4 res;
-
-	//asm("{\n\t"
-	//	"mul.lo.u32      %3, %5, %7;    \n\t"
-	//	"mul.hi.u32      %2, %5, %7;    \n\t" //alow * blow
-	//	"mad.lo.cc.u32   %2, %4, %7, %2;\n\t"
-	//	"madc.hi.u32     %1, %4, %7,  0;\n\t" //ahigh * blow
-	//	"mad.lo.cc.u32   %2, %5, %6, %2;\n\t"
-	//	"madc.hi.cc.u32  %1, %5, %6, %1;\n\t" //alow * bhigh
-	//	"madc.hi.u32     %0, %4, %6,  0;\n\t"
-	//	"mad.lo.cc.u32   %1, %4, %6, %1;\n\t" //ahigh * bhigh
-	//	"addc.u32        %0, %0, 0;     \n\t" //add final carry
-	//	"}"
-	//	: "=r"(res.x), "=r"(res.y), "=r"(res.z), "=r"(res.w)
-	//	: "r"((unsigned)(a >> 32)), "r"((unsigned)a), "r"((unsigned)(b >> 32)), "r"((unsigned)b));
-
-	//c.high = ((unsigned long long)res.x << 32) + res.y;
-	//c.low = ((unsigned long long)res.z << 32) + res.w;;
 }
+
+__host__ __device__ __forceinline__ void mul64modNew(const unsigned long long& a, const unsigned long long& b, const unsigned long long& p, unsigned long long& d)
+{
+	uint32_t* x1_w = (uint32_t*)&a;
+	uint32_t* x2_w = (uint32_t*)&b;
+
+	uint64_t x1 = uint64_t(x1_w[0]) * x2_w[0]; 
+	uint64_t x2 = uint64_t(x1_w[1]) * x2_w[1]; 
+	uint64_t x3 = uint64_t(x1_w[0]) * x2_w[1]; 
+	uint64_t x4 = uint64_t(x1_w[1]) * x2_w[0]; 
+
+	uint128_t ux2_4 = uint128_t(x3) + x4 + x2;
+	ux2_4 = ux2_4 << 32;
+	ux2_4 = ux2_4 + x1 - x2;
+
+
+	x1_w = (uint32_t*)&(ux2_4.high);
+	x1 = x1_w[0] + x1_w[1];
+	ux2_4 = uint128_t(ux2_4.low) + (ux2_4.high << 32); 
+
+	ux2_4 = ux2_4 + p - x1;
+
+
+	while (ux2_4 >= p)
+	{
+		ux2_4 = ux2_4 - p;
+	}
+
+	d = ux2_4.low;
+}
+
 #pragma once

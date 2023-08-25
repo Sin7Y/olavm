@@ -5,7 +5,7 @@ use crate::{types::Field, goldilocks_field::GoldilocksField};
 #[allow(improper_ctypes)]
 extern "C" {
     fn evaluate_poly(vec: *mut u64, N: u64);
-    fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64);
+    fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64,result: *mut u64, result_len: u64);
     fn interpolate_poly(vec: *mut u64, N: u64);
     fn interpolate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64);
 }
@@ -34,8 +34,11 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
         }).collect::<Vec<u64>>();
         let domain_offset = domain_offset.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
         let blowup_factor: u64 = blowup_factor as u64;
-        evaluate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset, blowup_factor);
-        p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        let result_len = (p2.len() as u64) * blowup_factor;
+        let mut result = vec![0; result_len as usize];
+        evaluate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset, blowup_factor,result.as_mut_ptr(),result_len);
+        result.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        
     }
 }
 

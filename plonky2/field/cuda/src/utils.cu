@@ -1,31 +1,19 @@
-//Edit by Piaobo
-//data:2023.2.10
+//Edit by Malone and Longson
+//creat data:2023.1.1
 
 
-#include "utils.h" 	
+#include<stdio.h>
+#include<cuda.h>
+#include<cuda_runtime.h>
+#include <cmath>		
+#include <cstdint> 		
+#include <cstdlib>		
+#include <ctime>		
+#include <iostream> 		
 
-/*
-void cpuToGpuMemcpy(uint64_t* h_data,uint64_t* d_data,int size)
-{
-	cudaError_t err = cudaMemcpy(d_data,h_data,size,cudaMemcpyHostToDevice) ;
-	if(err != cudaSuccess)
-	{
-		fprintf(stderr,"Failed to copy vector from host device!",cudaGetErrorString(err)) ;
-			exit(EXIT_FAILURE) ;
-	}
-}
-
-void gpuToCpuMemcpy(uint64_t* d_data,uint64_t* h_data,int size)
-{
-	cudaError_t err = cudaMemcpy(h_data,d_data,size,cudaMemcpyDeviceToHost) ;
-	if(err != cudaSuccess)
-	{
-			fprintf(stderr,"Failed to copy vector from gpu device!",cudaGetErrorString(err)) ;
-			exit(EXIT_FAILURE) ;
-	}
-	cudaFree(d_data) ;
-}
-*/
+#include "utils.cuh" 	
+#include "uint128.h"
+#include "parameters.h"
 
 uint64_t ModularInv(uint64_t Data, uint64_t Mprime)
 {
@@ -38,17 +26,17 @@ uint64_t ModularInv(uint64_t Data, uint64_t Mprime)
 
 	while (DataV > 0)
 	{
-		if ( (DataU.low & uint64_t(1)) == 0)
+		if ((DataU.low & uint64_t(1)) == 0)
 		{
 			DataU = DataU >> 1;
-			if ( ( DataR.low & uint64_t(1)) == 0)
+			if ((DataR.low & uint64_t(1)) == 0)
 				DataR = DataR >> 1;
 			else
-			{				
+			{
 				DataR = (DataR + MprimeLocal) >> 1;
 			}
 		}
-		else if ( (DataV.low & uint64_t(1)) == 0)
+		else if ((DataV.low & uint64_t(1)) == 0)
 		{
 			DataV = DataV >> 1;
 			if ((DataS.low & uint64_t(1)) == 0)
@@ -81,7 +69,7 @@ uint64_t ModularInv(uint64_t Data, uint64_t Mprime)
 				{
 					DataS = DataS + MprimeLocal - DataR;
 				}
-				else 
+				else
 					DataS = DataS - DataR;
 			}
 		}
@@ -89,73 +77,48 @@ uint64_t ModularInv(uint64_t Data, uint64_t Mprime)
 
 	if (DataU > 1) return 0;
 	if (DataR > MprimeLocal) return (DataR - MprimeLocal).low;
-	
+
 	return DataR.low;
 
 }
 
-uint64_t* preComputeTwiddleFactor(uint64_t n, uint64_t p, uint64_t r)
+void preComputeTwiddleFactor(uint64_t* twiddleFactorArray, uint64_t n, uint64_t p, uint64_t r)
 {
-	uint64_t x, y;
 	uint64_t m = 1, a, k_;
-	uint64_t* twiddleFactorArray = (uint64_t*)calloc((log2(n) * (n / 2)), sizeof(uint64_t));
-	//uint64_t maxRow = log2(n);
-	//uint64_t maxCol = n / 2;
-	//for (x = 0; x < maxRow; x++) {
-	//	m = m << 1;
-	//	k_ = (p - 1) / m;
-	//	a = modExp(r, k_, p);
-	//	//std::cout << std::endl << modExp(r, k_, p);
-	//	for (y = 0; y < m / 2; y++) {
-	//		twiddleFactorArray[x * maxCol + y] = modExp(a, y, p);
-	//		//std::cout<<std::endl<<modExp(a,y,p) ;
-	//	}
-	//}
-	uint64_t w ,z=0;
+	uint64_t w, z = 0;
 	uint128_t  tmp;
-		for (uint64_t mid = 1, BitShiftNum = 1; mid < n; mid = mid << 1, BitShiftNum++) 
-		{
-			k_ = (p - 1) >> BitShiftNum;
-			a = modExp(r, k_, p);
-			for (uint64_t j = 0; j < n; j += (mid << 1)) {
-				w = 1;
-				for (uint64_t k = 0; k < mid; k++) 
-				{
-					//printf("%ld \n", w);
-					//std::cout << w << std::endl << '\n';
-					twiddleFactorArray[z] = w;
-					z++;
+	for (uint64_t mid = 1, BitShiftNum = 1; mid < n; mid = mid << 1, BitShiftNum++)
+	{
+		k_ = (p - 1) >> BitShiftNum;
+		a = modExp(r, k_, p);
+		for (uint64_t j = 0; j < n; j += (mid << 1)) {
+			w = 1;
+			for (uint64_t k = 0; k < mid; k++)
+			{
+				twiddleFactorArray[z] = w;
+				z++;
 
-					mul64(w, a, tmp);
-					w = (tmp % p).low;
+				mul64(w, a, tmp);
+				w = (tmp % p).low;
 
-					//uint64_t Outtest;
-					//mul64mod(w, a, p, Outtest);
-					//w = Outtest;
-					
-				}
 			}
 		}
+	}
 
-
-	return twiddleFactorArray;
 }
 
 
-uint64_t* preComputeTwiddleFactor_step2nd(uint64_t Len_1D, uint64_t Len_2D, uint64_t p, uint64_t r, uint64_t wCoeff)
+void preComputeTwiddleFactor_step2nd(uint64_t* twiddleFactorArray, uint64_t Len_1D, uint64_t Len_2D, uint64_t p, uint64_t r, uint64_t wCoeff)
 {
-	uint64_t x, y;
-	uint64_t m = 1, a, k_;
-	uint64_t* twiddleFactorArray = (uint64_t*)calloc(Len_1D * Len_2D, sizeof(uint64_t));
 
-	uint64_t* twiddleFactorArrayPre = (uint64_t*)calloc(Len_1D, sizeof(uint64_t));
+	uint64_t* twiddleFactorArrayPre = (uint64_t*)malloc(Len_1D * sizeof(uint64_t));
+
 
 	for (int64_t ir = 0; ir < Len_1D; ir++)
 	{
 		twiddleFactorArrayPre[ir] = modExp(wCoeff, ir, p);
 		twiddleFactorArray[ir] = 1;
 		twiddleFactorArray[ir + Len_1D] = twiddleFactorArrayPre[ir];
-		//std::cout << twiddleFactorArrayPre[ir] << std::endl << '\n';
 	}
 
 	uint128_t  tmp;
@@ -163,37 +126,27 @@ uint64_t* preComputeTwiddleFactor_step2nd(uint64_t Len_1D, uint64_t Len_2D, uint
 	{
 		for (int64_t ir2 = 0; ir2 < Len_1D; ir2++)
 		{
-			/*mul64(twiddleFactorArray[(ir-1) * Len_1D + ir2], twiddleFactorArrayPre[ir2], tmp);
-			twiddleFactorArray[ir * Len_1D + ir2] = (tmp % p).low;*/
 
 			uint64_t Outtest;
 			mul64modAdd(twiddleFactorArray[(ir - 1) * Len_1D + ir2], twiddleFactorArrayPre[ir2], 0, p, Outtest);
 			twiddleFactorArray[ir * Len_1D + ir2] = Outtest;
-
-			//std::cout << (tmp % p).low << std::endl << '\n';
-			//
-			//std::cout << Outtest << std::endl << '\n';
 		}
-		
+
 	}
 
 	free(twiddleFactorArrayPre);
-
-
-	return twiddleFactorArray;
 }
 
-uint64_t* DataReform(uint64_t* Data, uint64_t Len_1D, uint64_t Len_2D)
+void DataReform(uint64_t* Data, uint64_t* DataOut, uint64_t Len_1D, uint64_t Len_2D)
 {
-	uint64_t* dataArray = (uint64_t*)calloc(Len_1D * Len_2D, sizeof(uint64_t));
 	uint64_t* dataArray2 = (uint64_t*)calloc(Len_1D * Len_2D, sizeof(uint64_t));
 
 	int64_t DataCnt = 0;
-	uint64_t* DataSel = (uint64_t*)calloc( Len_2D, sizeof(uint64_t));
+	uint64_t* DataSel = (uint64_t*)calloc(Len_2D, sizeof(uint64_t));
 
 	for (uint64_t ir = 0; ir < Len_1D; ir++)
 	{
-		DataSel = bit_reverse(Data + ir * Len_2D, Len_2D);
+		bit_reverse(Data + ir * Len_2D, DataSel, Len_2D);
 		memcpy(dataArray2 + ir * Len_2D, DataSel, Len_2D * sizeof(uint64_t));
 	}
 
@@ -201,15 +154,13 @@ uint64_t* DataReform(uint64_t* Data, uint64_t Len_1D, uint64_t Len_2D)
 	{
 		for (uint64_t ir = 0; ir < Len_1D; ir++)
 		{
-			dataArray[DataCnt] = dataArray2[ir * Len_2D + ir2];
+			DataOut[DataCnt] = dataArray2[ir * Len_2D + ir2];
 			DataCnt++;
 		}
 	}
 
 	free(DataSel);
 	free(dataArray2);
-
-	return dataArray;
 }
 
 bool compVec(uint64_t* vec1, uint64_t* vec2, uint64_t n, bool debug) {
@@ -234,12 +185,9 @@ bool compVec(uint64_t* vec1, uint64_t* vec2, uint64_t n, bool debug) {
 	return comp;
 }
 
-uint64_t* bit_reverse(uint64_t* vec, uint64_t n) {
+void bit_reverse(uint64_t* vec, uint64_t* vecOut, uint64_t n) {
 
 	uint64_t num_bits = log2(n);
-
-	uint64_t* result;
-	result = (uint64_t*)malloc(n * sizeof(uint64_t));
 
 	uint64_t reverse_num;
 	for (uint64_t i = 0; i < n; i++) {
@@ -253,11 +201,9 @@ uint64_t* bit_reverse(uint64_t* vec, uint64_t n) {
 			}
 		}
 
-		result[reverse_num] = vec[i];
+		vecOut[reverse_num] = vec[i];
 
 	}
-
-	return result;
 }
 
 void bit_reverseOfNumber(const uint64_t* Number, const uint64_t* nbit, uint64_t* reNumber)
@@ -282,16 +228,14 @@ __host__ __device__ uint64_t modExp(uint64_t base, uint64_t exp, uint64_t m) {
 
 		if (exp % 2) {
 
-			mul64(result, base, tmp);//*********************************************************//
+			mul64(result, base, tmp);
 			result = (tmp % m).low;
-			//result = modulo(result * base, m);
 
 		}
 
 		exp = exp >> 1;
-		mul64(base, base, tmp);//*********************************************************//
+		mul64(base, base, tmp);
 		base = (tmp % m).low;
-		//base = modulo(base * base, m);
 	}
 
 	return result;
@@ -309,7 +253,7 @@ void printVec(uint64_t* vec, uint64_t n) {
 	std::cout << "[" << "\n";
 	for (uint64_t i = 0; i < n; i++) {
 
-		std::cout << vec[i] << ","<< "\n";
+		std::cout << vec[i] << "," << "\n";
 
 	}
 	std::cout << "]" << std::endl;
@@ -329,22 +273,32 @@ uint64_t* randVec(uint64_t n, uint64_t max) {
 	return vec;
 }
 
- void generateDate(uint64_t n, uint64_t* cpu_outdata)
+void generateDate(uint64_t n, uint64_t* cpu_outdata)
 {
-	uint64_t* cuda_outdata;
-	cudaMalloc(&cuda_outdata, n * sizeof(uint64_t));	
-	// Number of threads my_kernel will be launched with
-	int tpb = THREDS_PER_BLOCK;
-	int bpg = (n + 32) / THREDS_PER_BLOCK; // Blocks per grid
-	dim3 dimGrid(bpg, 1, 1);
-	dim3 dimBlock(tpb, 1, 1);
-	generate_data_kernal << <dimGrid, dimBlock >> > (cuda_outdata);
-	cudaMemcpy(cpu_outdata, cuda_outdata, n * sizeof(uint64_t), cudaMemcpyDeviceToHost);
-	cudaFree(cuda_outdata); //释放显存
+	if (n >= 256)
+	{
+		uint64_t* cuda_outdata;
+		cudaMalloc(&cuda_outdata, n * sizeof(uint64_t));
+		int tpb = THREDS_PER_BLOCK;
+		int bpg = (n + 32) / THREDS_PER_BLOCK; 
+		dim3 dimGrid(bpg, 1, 1);
+		dim3 dimBlock(tpb, 1, 1);
+		generate_data_kernal << <dimGrid, dimBlock >> > (cuda_outdata);
+		cudaMemcpyAsync(cpu_outdata, cuda_outdata, n * sizeof(uint64_t), cudaMemcpyDeviceToHost);
+		cudaFree(cuda_outdata); 
+	}
+	else
+	{
+		for (int16_t ir = 0; ir < n; ir++)
+		{
+			cpu_outdata[ir] = ir + 1;
+		}
+	}
+
 }
 
- __global__ void generate_data_kernal(uint64_t *data)
- {
-	 const int tid = blockDim.x * blockIdx.x + threadIdx.x;; //取得线程号
-	 data[tid] = tid + 1;
- }
+__global__ void generate_data_kernal(uint64_t* data)
+{
+	const int tid = blockDim.x * blockIdx.x + threadIdx.x;; 
+	data[tid] = tid + 1;
+}

@@ -38,7 +38,7 @@ where
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
-    if p[0].as_any().is::<GoldilocksField>() {
+    if p[0].as_any().is::<GoldilocksField>() && false {
         let p2 = run_evaluate_poly(p);
         for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
             *item1 = item2;
