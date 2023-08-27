@@ -9,6 +9,10 @@
 #![feature(specialization)]
 #![feature(stdsimd)]
 
+#[cfg(feature = "cuda")]
+#[macro_use]
+extern crate lazy_static;
+
 pub(crate) mod arch;
 pub mod batch_util;
 pub mod cfft;
