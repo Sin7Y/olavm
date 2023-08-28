@@ -439,7 +439,7 @@ fn ctl_storage_hash<F: Field>() -> CrossTableLookup<F> {
 
 #[allow(unused_imports)]
 mod tests {
-    use crate::generation::generate_traces;
+    use crate::generation::{generate_traces, GenerationInputs};
     use crate::stark::config::StarkConfig;
     use crate::stark::ola_stark::OlaStark;
     use crate::stark::proof::PublicValues;
@@ -591,8 +591,10 @@ mod tests {
             &mut AccountTree::new_test(),
         );
 
+        let inputs = GenerationInputs::default();
+
         let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
+        let (traces, public_values) = generate_traces(&program, &mut ola_stark, inputs);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
             &ola_stark,

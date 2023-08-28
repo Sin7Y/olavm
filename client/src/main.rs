@@ -4,6 +4,7 @@ use assembler::encoder::encode_asm_from_json_file;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::prover::prove;
+use circuits::generation::GenerationInputs;
 use circuits::stark::serialization::Buffer;
 use circuits::stark::verifier::verify_proof;
 use clap::{arg, Command};
@@ -136,11 +137,14 @@ fn main() {
                 debug_info: BTreeMap::new(),
             };
 
+            let inputs = GenerationInputs::default();
+
             let mut ola_stark = OlaStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
             let proof = prove::<F, C, D>(
                 &program,
                 &mut ola_stark,
+                inputs,
                 &config,
                 &mut TimingTree::default(),
             )

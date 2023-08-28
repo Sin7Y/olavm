@@ -39,13 +39,14 @@ use super::stark::Stark;
 use super::vanishing_poly::eval_vanishing_poly;
 use super::vars::StarkEvaluationVars;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::generation::generate_traces;
+use crate::generation::{generate_traces, GenerationInputs};
 use crate::memory::memory_stark::MemoryStark;
 
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(
     program: &Program,
     ola_stark: &mut OlaStark<F, D>,
+    inputs: GenerationInputs,
     config: &StarkConfig,
     timing: &mut TimingTree,
 ) -> Result<AllProof<F, C, D>>
@@ -62,7 +63,7 @@ where
     [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
 {
-    let (traces, public_values) = generate_traces(program, ola_stark);
+    let (traces, public_values) = generate_traces(program, ola_stark, inputs);
     prove_with_traces(ola_stark, config, traces, public_values, timing)
 }
 

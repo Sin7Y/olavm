@@ -1,7 +1,10 @@
 //use std::collections::HashMap;
 
 use core::program::Program;
+use std::collections::HashMap;
 
+use eth_trie_utils::partial_trie::HashedPartialTrie;
+use ethereum_types::{H256, Address};
 //use eth_trie_utils::partial_trie::PartialTrie;
 use plonky2::field::extension::Extendable;
 use plonky2::field::polynomial::PolynomialValues;
@@ -9,7 +12,7 @@ use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
 use crate::stark::ola_stark::{OlaStark, NUM_TABLES};
-use crate::stark::proof::PublicValues;
+use crate::stark::proof::{PublicValues, BlockMetadata, TrieRoots};
 use crate::stark::util::trace_to_poly_values;
 
 use self::builtin::{generate_bitwise_trace, generate_cmp_trace, generate_rc_trace};
@@ -27,11 +30,38 @@ pub mod storage;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 /// Inputs needed for trace generation.
-pub struct GenerationInputs {}
+pub struct GenerationInputs {
+    pub signed_txns: Vec<Vec<u8>>,
+    pub tries: TrieInputs,
+    pub trie_roots_after: TrieRoots,
+    pub contract_code: HashMap<H256, Vec<u8>>,
+    pub block_metadata: BlockMetadata,
+    pub addresses: Vec<Address>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+pub struct TrieInputs {
+    /// A partial version of the state trie prior to these transactions. It should include all nodes
+    /// that will be accessed by these transactions.
+    pub state_trie: HashedPartialTrie,
+
+    /// A partial version of the transaction trie prior to these transactions. It should include all
+    /// nodes that will be accessed by these transactions.
+    pub transactions_trie: HashedPartialTrie,
+
+    /// A partial version of the receipt trie prior to these transactions. It should include all nodes
+    /// that will be accessed by these transactions.
+    pub receipts_trie: HashedPartialTrie,
+
+    /// A partial version of each storage trie prior to these transactions. It should include all
+    /// storage tries, and nodes therein, that will be accessed by these transactions.
+    pub storage_tries: Vec<(H256, HashedPartialTrie)>,
+}
 
 pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     program: &Program,
     ola_stark: &mut OlaStark<F, D>,
+    inputs: GenerationInputs
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
     let cpu_trace = trace_to_poly_values(cpu_rows);
