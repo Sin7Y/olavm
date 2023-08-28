@@ -130,7 +130,7 @@ fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
     let all_cpu_lookers = vec![cpu_mem_store_load, cpu_mem_call_ret_pc, cpu_mem_call_ret_fp];
     let memory_looked =
         TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter()));
-    CrossTableLookup::new(all_cpu_lookers, memory_looked, None)
+    CrossTableLookup::new(all_cpu_lookers, memory_looked)
 }
 
 fn ctl_memory_rc_sort<F: Field>() -> CrossTableLookup<F> {
@@ -145,7 +145,6 @@ fn ctl_memory_rc_sort<F: Field>() -> CrossTableLookup<F> {
             rangecheck_stark::ctl_data_memory(),
             Some(rangecheck_stark::ctl_filter_memory_sort()),
         ),
-        None,
     )
 }
 
@@ -161,7 +160,6 @@ fn ctl_memory_rc_region<F: Field>() -> CrossTableLookup<F> {
             rangecheck_stark::ctl_data_memory(),
             Some(rangecheck_stark::ctl_filter_memory_region()),
         ),
-        None,
     )
 }
 
@@ -207,7 +205,6 @@ fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
             bitwise_stark::ctl_data_with_cpu(),
             Some(bitwise_stark::ctl_filter_with_cpu()),
         ),
-        None,
     )
 }
 
@@ -224,7 +221,6 @@ fn ctl_cmp_cpu<F: Field>() -> CrossTableLookup<F> {
             cmp_stark::ctl_data_with_cpu(),
             Some(cmp_stark::ctl_filter_with_cpu()),
         ),
-        None,
     )
 }
 
@@ -240,7 +236,6 @@ fn ctl_cmp_rangecheck<F: Field>() -> CrossTableLookup<F> {
             cmp_stark::ctl_data_with_rangecheck(),
             Some(cmp_stark::ctl_filter_with_rangecheck()),
         ),
-        None,
     )
 }
 
@@ -257,7 +252,6 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
             rangecheck_stark::ctl_data_with_cpu(),
             Some(rangecheck_stark::ctl_filter_with_cpu()),
         ),
-        None,
     )
 }
 
@@ -273,7 +267,6 @@ fn ctl_cpu_poseidon<F: Field>() -> CrossTableLookup<F> {
             poseidon_stark::ctl_data_with_cpu(),
             Some(poseidon_stark::ctl_filter_with_cpu()),
         ),
-        None,
     )
 }
 
@@ -289,7 +282,6 @@ fn ctl_cpu_poseidon_tree_key<F: Field>() -> CrossTableLookup<F> {
             poseidon_stark::ctl_data_with_cpu_tree_key(),
             Some(poseidon_stark::ctl_filter_with_cpu_tree_key()),
         ),
-        None,
     )
 }
 
@@ -305,7 +297,6 @@ fn ctl_cpu_storage_sstore<F: Field>() -> CrossTableLookup<F> {
             storage_stark::ctl_data_with_cpu(),
             Some(storage_stark::ctl_filter_with_cpu_sstore()),
         ),
-        None,
     )
 }
 
@@ -321,7 +312,6 @@ fn ctl_cpu_storage_sload<F: Field>() -> CrossTableLookup<F> {
             storage_stark::ctl_data_with_cpu(),
             Some(storage_stark::ctl_filter_with_cpu_sload()),
         ),
-        None,
     )
 }
 
@@ -337,7 +327,6 @@ fn ctl_storage_poseidon_tree_key<F: Field>() -> CrossTableLookup<F> {
             poseidon_stark::ctl_data_with_storage_tree_key(),
             Some(poseidon_stark::ctl_filter_with_cpu_tree_key()),
         ),
-        None,
     )
 }
 
@@ -353,7 +342,6 @@ fn ctl_storage_hash<F: Field>() -> CrossTableLookup<F> {
             storage_hash::ctl_data_with_storage(),
             Some(storage_hash::ctl_filter_with_storage()),
         ),
-        None,
     )
 }
 
