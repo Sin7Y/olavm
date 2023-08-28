@@ -8,6 +8,7 @@ use ethereum_types::{H256, Address};
 //use eth_trie_utils::partial_trie::PartialTrie;
 use plonky2::field::extension::Extendable;
 use plonky2::field::polynomial::PolynomialValues;
+use plonky2::gates::public_input;
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
@@ -103,6 +104,12 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         storage_trace,
         storage_hash_trace,
     ];
-    let public_values = PublicValues {};
+
+    // TODO: update trie_roots_before & trie_roots_after
+    let public_values = PublicValues {
+        trie_roots_before: TrieRoots::default(),
+        trie_roots_after: TrieRoots::default(),
+        block_metadata: inputs.block_metadata,
+    };
     (traces, public_values)
 }
