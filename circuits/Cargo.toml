@@ -20,7 +20,7 @@ plonky2_util = {  path = "../plonky2/util" }
 serde = { version = "1.0.144", features = ["derive"] }
 ethereum-types = "0.14.0"
 log = "0.4.14"
-eth_trie_utils = "0.2.1"
+eth_trie_utils = "0.6.0"
 env_logger = "0.9.0"
 hex = { version = "0.4.3", optional = true }
 hex-literal = "0.3.4"

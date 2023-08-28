@@ -61,7 +61,7 @@ pub struct PublicValues {
     // pub block_metadata: BlockMetadata,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TrieRoots {
     pub state_root: H256,
     pub transactions_root: H256,
