@@ -154,7 +154,6 @@ pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
 
 #[derive(Copy, Clone, Default)]
 pub struct CpuStark<F, const D: usize> {
-    compress_challenge: Option<F>,
     pub f: PhantomData<F>,
 }
 
@@ -164,16 +163,6 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
     pub const OP0_SHIFT_START: u32 = 61;
     pub const OP1_SHIFT_START: u32 = 51;
     pub const DST_SHIFT_START: u32 = 41;
-
-    pub fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
-        assert!(self.compress_challenge.is_none(), "already set?");
-        self.compress_challenge = Some(challenge);
-        Ok(())
-    }
-
-    pub fn get_compress_challenge(&self) -> Option<F> {
-        self.compress_challenge
-    }
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D> {
