@@ -55,10 +55,9 @@ pub struct AllProofTarget<const D: usize> {
 /// Memory values which are public.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PublicValues {
-    // TODO:
-    // pub trie_roots_before: TrieRoots,
-    // pub trie_roots_after: TrieRoots,
-    // pub block_metadata: BlockMetadata,
+    pub trie_roots_before: TrieRoots,
+    pub trie_roots_after: TrieRoots,
+    pub block_metadata: BlockMetadata,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
