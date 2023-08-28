@@ -9,10 +9,10 @@ use plonky2::plonk::plonk_common::reduce_with_powers;
 use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;
 use super::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
-use super::ola_stark::{OlaStark, Table};
-use super::permutation::PermutationCheckVars;
+use super::ola_stark::{OlaStark, Table, NUM_TABLES};
+use super::permutation::{PermutationCheckVars, GrandProductChallenge};
 use super::proof::{
-    AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges,
+    AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges, PublicValues,
 };
 use super::stark::Stark;
 use super::vanishing_poly::eval_vanishing_poly;
@@ -136,15 +136,34 @@ where
         config,
     )?;
 
-    let degrees_bits =
-        std::array::from_fn(|i| all_proof.stark_proofs[i].recover_degree_bits(config));
+    // TODO:
+    let public_values = all_proof.public_values;
+    let mut extra_looking_products = vec![vec![F::ONE; config.num_challenges]; NUM_TABLES - 1];
+    extra_looking_products.push(Vec::new());
+    for c in 0..config.num_challenges {
+        extra_looking_products[Table::StorageHash as usize].push(get_storagehash_extra_looking_products(
+            &public_values,
+            ctl_challenges.challenges[c],
+        ));
+    }
+
     verify_cross_table_lookups::<F, C, D>(
         cross_table_lookups,
         all_proof.stark_proofs.map(|p| p.openings.ctl_zs_last),
-        degrees_bits,
-        ctl_challenges,
+        extra_looking_products,
         config,
     )
+}
+
+pub(crate) fn get_storagehash_extra_looking_products<F, const D: usize>(
+    public_values: &PublicValues,
+    challenge: GrandProductChallenge<F>,
+) -> F
+where
+    F: RichField + Extendable<D>,
+{
+    let mut prod = F::ONE;
+    prod
 }
 
 pub(crate) fn verify_stark_proof_with_challenges<
