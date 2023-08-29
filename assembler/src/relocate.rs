@@ -159,45 +159,45 @@ pub(crate) fn asm_relocate(bundle: AsmBundle) -> Result<RelocatedAsmBundle, Stri
                     counter += instruction.binary_length() as usize;
                 }
                 AsmRow::LabelCall(_) => {
-                    for cached_label in &label_stack {
-                        match cached_label {
-                            AsmRow::LabelCall(_) => {
-                                return Err(format!(
-                                    "{} ==> more than one call label attached",
-                                    line
-                                ));
-                            }
-                            _ => {}
-                        }
-                    }
+                    // for cached_label in &label_stack {
+                    //     match cached_label {
+                    //         AsmRow::LabelCall(_) => {
+                    //             return Err(format!(
+                    //                 "{} ==> more than one call label attached",
+                    //                 line
+                    //             ));
+                    //         }
+                    //         _ => {}
+                    //     }
+                    // }
                     label_stack.push(row);
                 }
                 AsmRow::LabelJmp(_) => {
-                    for cached_label in &label_stack {
-                        match cached_label {
-                            AsmRow::LabelJmp(_) => {
-                                return Err(format!(
-                                    "{} ==> more than one jmp label attached",
-                                    line
-                                ));
-                            }
-                            _ => {}
-                        }
-                    }
+                    // for cached_label in &label_stack {
+                    //     match cached_label {
+                    //         AsmRow::LabelJmp(_) => {
+                    //             return Err(format!(
+                    //                 "{} ==> more than one jmp label attached",
+                    //                 line
+                    //             ));
+                    //         }
+                    //         _ => {}
+                    //     }
+                    // }
                     label_stack.push(row);
                 }
                 AsmRow::LabelProphet(_) => {
-                    for cached_label in &label_stack {
-                        match cached_label {
-                            AsmRow::LabelProphet(_) => {
-                                return Err(format!(
-                                    "{} ==> more than one prophet label attached",
-                                    line
-                                ));
-                            }
-                            _ => {}
-                        }
-                    }
+                    // for cached_label in &label_stack {
+                    //     match cached_label {
+                    //         AsmRow::LabelProphet(_) => {
+                    //             return Err(format!(
+                    //                 "{} ==> more than one prophet label attached",
+                    //                 line
+                    //             ));
+                    //         }
+                    //         _ => {}
+                    //     }
+                    // }
                     label_stack.push(row);
                 }
             }
