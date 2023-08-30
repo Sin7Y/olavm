@@ -2,6 +2,7 @@ use crate::error::ProcessorError;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use log::debug;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct TapeCell {

@@ -51,6 +51,7 @@ mod tape;
 #[cfg(test)]
 mod tests;
 mod trace;
+mod load_tx;
 
 #[macro_export]
 macro_rules! tape_copy {
@@ -677,6 +678,7 @@ impl Process {
                         self.registers[FP_REG_INDEX] - GoldilocksField::ONE;
                     self.register_selector.aux0 =
                         self.registers[FP_REG_INDEX] - GoldilocksField::TWO;
+                    debug!("ret fp:{}", self.registers[FP_REG_INDEX].0);
                     self.pc = self
                         .memory
                         .read(
@@ -1209,7 +1211,6 @@ impl Process {
                         ), ctx_regs_status, registers_status, zone_length,  mem_base_addr, tape_base_addr, aux_steps,
                         mem_addr, tape_addr, is_rw, region_prophet, region_heap, value);
 
-                    self.tp += GoldilocksField::from_canonical_u64(zone_length);
                     self.pc += step;
                 }
                 "tstore" => {

@@ -22,11 +22,12 @@ thiserror = "1.0.40"
 rocksdb = { version = "0.21", default-features = false, features = ["snappy"] }
 tempfile = "3"
 itertools = "0.10"
-
-[dev-dependencies]
 rand = "0.8"
 bincode = "1"
 byteorder = "1.3"
+
+[dev-dependencies]
+
 
 [[bench]]
 name = "fibo_loop"
