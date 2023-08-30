@@ -3,6 +3,7 @@ mod tests {
     use crate::encoder::encode_to_binary;
     use crate::relocate::{asm_relocate, AsmBundle};
     use std::fs;
+    use log::LevelFilter;
 
     #[test]
     fn generate_sqrt() {
@@ -118,6 +119,11 @@ mod tests {
     #[test]
     fn generate_tape() {
         generate_from_file("tape.json".to_string(), "tape.json".to_string());
+    }
+
+    #[test]
+    fn generate_sc_input() {
+        generate_from_file("sc_input.json".to_string(), "sc_input.json".to_string());
     }
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {

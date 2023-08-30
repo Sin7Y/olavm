@@ -6,6 +6,7 @@ use core::vm::opcodes::OlaOpcode;
 use core::vm::operands::{ImmediateValue, OlaOperand};
 use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
+use log::debug;
 
 pub fn encode_asm_from_json_file(path: String) -> Result<BinaryProgram, String> {
     let json_str = std::fs::read_to_string(path).unwrap();
@@ -102,6 +103,7 @@ pub(crate) fn encode_to_binary(bundle: RelocatedAsmBundle) -> Result<BinaryProgr
             prophet,
         };
         origin_asm.insert(binary_counter, asm.asm.clone());
+        debug!("binary_counter:{}, asm:{}, code:{}", binary_counter, asm.asm, instruction);
         binary_instructions.push(instruction);
         binary_counter += asm.binary_length() as usize;
     }
