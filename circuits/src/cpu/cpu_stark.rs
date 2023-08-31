@@ -199,7 +199,6 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
     {
         let lv = wrapper.lv;
         let nv = wrapper.nv;
-        let is_in_same_tx = P::ONES - (nv[COL_TX_IDX] - lv[COL_TX_IDX]);
         // first line context init
         yield_constr.constraint_first_row(lv[COL_TX_IDX]);
         yield_constr.constraint_first_row(lv[COL_ENV_IDX]);
@@ -211,19 +210,18 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         COL_REGS.for_each(|col_reg| {
             yield_constr.constraint_first_row(lv[col_reg]);
         });
-
         // tx_idx should be the same or increase by one
-        yield_constr.constraint_transition(is_in_same_tx * (nv[COL_TX_IDX] - lv[COL_TX_IDX]));
+        yield_constr.constraint_transition(wrapper.is_in_same_tx * (nv[COL_TX_IDX] - lv[COL_TX_IDX]));
         // each tx context init
-        yield_constr.constraint_transition((P::ONES - is_in_same_tx) * lv[COL_TX_IDX]);
-        yield_constr.constraint_transition((P::ONES - is_in_same_tx) * lv[COL_ENV_IDX]);
-        yield_constr.constraint_transition((P::ONES - is_in_same_tx) * lv[COL_CALL_SC_CNT]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_TX_IDX]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_ENV_IDX]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_CALL_SC_CNT]);
         // todo exe and code context should be entry system contract?
-        yield_constr.constraint_transition((P::ONES - is_in_same_tx) * lv[COL_TP]);
-        yield_constr.constraint_transition((P::ONES - is_in_same_tx) * lv[COL_CLK]);
-        yield_constr.constraint_transition((P::ONES - is_in_same_tx) * lv[COL_PC]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_TP]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_CLK]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_PC]);
         COL_REGS.for_each(|col_reg| {
-            yield_constr.constraint_transition((P::ONES - is_in_same_tx) * lv[col_reg]);
+            yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[col_reg]);
         });
     }
 
