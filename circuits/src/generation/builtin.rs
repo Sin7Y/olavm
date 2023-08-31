@@ -32,7 +32,7 @@ use crate::stark::lookup::permuted_cols;
 // Extend:
 //      looking_table: <0,1,2,3,4,5,5,5,5,5,5,5,5,5,5,5>
 //      looked_table: <0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15>
-pub fn generate_bitwise_trace<F: RichField>(
+pub fn generate_bitwise_trace<F: RichField, C: GenericConfig<D, F = F>, const D: usize>(
     cells: &[BitwiseCombinedRow],
 ) -> ([Vec<F>; bitwise::COL_NUM_BITWISE], F) {
     // Ensure the max rows number.
@@ -118,7 +118,7 @@ pub fn generate_bitwise_trace<F: RichField>(
 
     // TODO: We should choose proper columns for oracle.
     let mut challenger =
-        Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
+        Challenger::<F, C::Hasher>::new();
     for i in 0..bitwise::OP0_LIMBS.len() {
         challenger.observe_elements(&trace[bitwise::OP0_LIMBS.start + i]);
     }
