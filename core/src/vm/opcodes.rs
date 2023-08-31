@@ -29,6 +29,7 @@ pub enum OlaOpcode {
     SSTORE,
     TLOAD,
     TSTORE,
+    SCCALL,
 }
 
 impl Display for OlaOpcode {
@@ -66,6 +67,7 @@ impl OlaOpcode {
             OlaOpcode::SSTORE => "sstore".to_string(),
             OlaOpcode::TLOAD => "tload".to_string(),
             OlaOpcode::TSTORE => "tstore".to_string(),
+            OlaOpcode::SCCALL => "sc_call".to_string(),
         }
     }
 
@@ -95,6 +97,7 @@ impl OlaOpcode {
             OlaOpcode::SSTORE => 10,
             OlaOpcode::TLOAD => 9,
             OlaOpcode::TSTORE => 8,
+            OlaOpcode::SCCALL => 7,
         }
     }
 
