@@ -677,7 +677,7 @@ mod tests {
         let _ = process.execute(&mut program);
 
         let (cpu_rows, beta) =
-            generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+            generate_cpu_trace::<F, C, D>(&program.trace.exec, &program.trace.raw_binary_instructions);
 
         let mut stark = S::default();
         stark.set_compress_challenge(beta).unwrap();

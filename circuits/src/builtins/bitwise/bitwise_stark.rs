@@ -451,7 +451,7 @@ mod tests {
         let _ = process.execute(&mut program);
 
         let (rows, bitwise_beta) =
-            generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+            generate_bitwise_trace::<F, C, D>(&program.trace.builtin_bitwise_combined);
         let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",

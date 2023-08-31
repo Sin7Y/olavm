@@ -10,7 +10,7 @@ use plonky2::{
     plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
 };
 
-pub fn generate_cpu_trace<F: RichField>(
+pub fn generate_cpu_trace<F: RichField, C: GenericConfig<D, F = F>, const D: usize>(
     steps: &[Step],
     raw_instructions: &[String],
 ) -> ([Vec<F>; cpu::NUM_CPU_COLS], F) {
@@ -155,7 +155,7 @@ pub fn generate_cpu_trace<F: RichField>(
 
     // We use our public (program) column to generate oracles.
     let mut challenger =
-        Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
+        Challenger::<F, C::Hasher>::new();
     challenger.observe_elements(&trace[cpu::COL_RAW_INST]);
     let beta = challenger.get_challenge();
 

@@ -56,7 +56,7 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
 {
-    let (traces, public_values) = generate_traces(program, ola_stark);
+    let (traces, public_values) = generate_traces::<F, C, D>(program, ola_stark);
     prove_with_traces(ola_stark, config, traces, public_values, timing)
 }
 

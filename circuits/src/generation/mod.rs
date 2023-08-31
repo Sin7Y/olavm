@@ -6,6 +6,7 @@ use core::program::Program;
 use plonky2::field::extension::Extendable;
 use plonky2::field::polynomial::PolynomialValues;
 use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::GenericConfig;
 use serde::{Deserialize, Serialize};
 
 use crate::stark::ola_stark::{OlaStark, NUM_TABLES};
@@ -24,19 +25,19 @@ pub mod memory;
 /// Inputs needed for trace generation.
 pub struct GenerationInputs {}
 
-pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
+pub fn generate_traces<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     program: &Program,
     ola_stark: &mut OlaStark<F, D>,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     let (cpu_rows, cpu_beta) =
-        generate_cpu_trace::<F>(&program.trace.exec, &program.trace.raw_binary_instructions);
+        generate_cpu_trace::<F, C, D>(&program.trace.exec, &program.trace.raw_binary_instructions);
     let cpu_trace = trace_to_poly_values(cpu_rows);
 
     let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
     let memory_trace = trace_to_poly_values(memory_rows);
 
     let (bitwise_rows, bitwise_beta) =
-        generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
+        generate_bitwise_trace::<F, C, D>(&program.trace.builtin_bitwise_combined);
     let bitwise_trace = trace_to_poly_values(bitwise_rows);
 
     let cmp_rows = generate_cmp_trace(&program.trace.builtin_cmp);

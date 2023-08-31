@@ -361,7 +361,7 @@ mod tests {
         let _ = process.execute(&mut program);
 
         let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark);
+        let (traces, public_values) = generate_traces::<F, C, D>(&program, &mut ola_stark);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
             &ola_stark,

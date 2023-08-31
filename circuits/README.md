@@ -91,7 +91,7 @@ Here is a simple example of executing a program which calculates a fibonacci(8),
 
     // generate the proof with traces from the execution of the fibonacci program
     let mut ola_stark = OlaStark::default();
-    let (traces, public_values) = generate_traces(&program, &mut ola_stark);
+    let (traces, public_values) = generate_traces::<F, C, D>(&program, &mut ola_stark);
     let config = StarkConfig::standard_fast_config();
     let proof = prove_with_traces::<F, C, D>(
         &ola_stark,
