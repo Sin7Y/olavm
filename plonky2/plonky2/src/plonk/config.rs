@@ -130,6 +130,16 @@ impl GenericConfig<2> for Poseidon2GoldilocksConfig {
     type InnerHasher = Poseidon2Hash;
 }
 
+/// Configuration using Poseidon and Poseidon2 over the Goldilocks field.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize)]
+pub struct Poseidon2GoldilocksConfig2;
+impl GenericConfig<2> for Poseidon2GoldilocksConfig2 {
+    type F = GoldilocksField;
+    type FE = QuadraticExtension<Self::F>;
+    type Hasher = Poseidon2Hash;
+    type InnerHasher = PoseidonHash;
+}
+
 /// Configuration using truncated Keccak over the Goldilocks field.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct KeccakGoldilocksConfig;

@@ -3,21 +3,38 @@ use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::prover::prove_with_traces;
 use circuits::stark::serialization::Buffer;
+use plonky2::field::goldilocks_field::GoldilocksField;
 use core::program::Program;
+use std::time::Instant;
 use criterion::{criterion_group, criterion_main, Criterion};
 use executor::Process;
-use log::LevelFilter;
-use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig};
-use plonky2::util::timing::TimingTree;
+use log::{LevelFilter};
+use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, Poseidon2GoldilocksConfig2};
+use plonky2::util::timing::{TimingTree, self};
 
 const D: usize = 2;
-type C = Blake3GoldilocksConfig;
+// type C = Blake3GoldilocksConfig;
+type C = Poseidon2GoldilocksConfig2;
 type F = <C as GenericConfig<D>>::F;
 
 pub(crate) fn bench_fibo_loop_prover(program: &Program) {
-    let mut ola_stark = OlaStark::default();
-    let (traces, public_values) = generate_traces(&program, &mut ola_stark);
+    let mut ola_stark: OlaStark<GoldilocksField, 2> = OlaStark::default();
+
+    #[cfg(feature = "benchmark")]
+    let start_total = Instant::now();
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
+    let (traces, public_values) = generate_traces::<F, C, D>(&program, &mut ola_stark);
+
+    #[cfg(feature = "benchmark")]
+    println!("generate_traces total time: {:?}", start.elapsed());
+
     let config = StarkConfig::standard_fast_config();
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
 
     let _ = prove_with_traces::<F, C, D>(
         &ola_stark,
@@ -26,6 +43,13 @@ pub(crate) fn bench_fibo_loop_prover(program: &Program) {
         public_values,
         &mut TimingTree::default(),
     );
+
+    #[cfg(feature = "benchmark")]
+    println!("prove_with_traces total time: {:?}", start.elapsed());
+
+    #[cfg(feature = "benchmark")]
+    println!("all prove total time: {:?}", start_total.elapsed());
+
     // let mut buffer = Buffer::new(Vec::new());
     // buffer.write_all_proof(&proof).unwrap();
     // println!("proof_size: {}", buffer.bytes().len());
