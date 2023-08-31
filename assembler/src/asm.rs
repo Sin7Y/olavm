@@ -158,7 +158,8 @@ fn split_ola_asm_pieces(
         | OlaOpcode::MLOAD
         | OlaOpcode::MSTORE
         | OlaOpcode::CJMP
-        | OlaOpcode::TSTORE => {
+        | OlaOpcode::TSTORE
+        | OlaOpcode::SCCALL => {
             if ops.len() != 2 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }

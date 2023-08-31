@@ -335,7 +335,7 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::ASSERT | OlaOpcode::CJMP => {
+            OlaOpcode::CJMP | OlaOpcode::SCCALL => {
                 format!(
                     "{} {} {}",
                     self.opcode.token(),
@@ -344,7 +344,7 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC => {
+            OlaOpcode::JMP | OlaOpcode::CALL | OlaOpcode::RC | OlaOpcode::ASSERT => {
                 format!(
                     "{} {}",
                     self.opcode.token(),
