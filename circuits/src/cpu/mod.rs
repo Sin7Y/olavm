@@ -11,3 +11,5 @@ mod mul;
 mod poseidon;
 mod ret;
 mod sload;
+mod tape;
+mod call_sc;
