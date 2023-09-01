@@ -1,5 +1,5 @@
 use core::{
-    program::{instruction::Opcode, CTX_REGISTER_NUM, REGISTER_NUM},
+    program::{instruction::Opcode, REGISTER_NUM},
     trace::trace::Step,
 };
 

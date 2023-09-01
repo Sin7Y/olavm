@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct StorageCell {
+    pub tx_idx: GoldilocksField,
+    pub env_idx: GoldilocksField,
     pub clk: u32,
     pub op: GoldilocksField,
     pub root: ZkHash,
@@ -83,6 +85,8 @@ impl StorageTree {
         addr: TreeKey,
         root: ZkHash,
         value: TreeValue,
+        tx_idx: GoldilocksField,
+        env_idx: GoldilocksField,
     ) -> TreeValue {
         // look up the previous value in the appropriate address trace and add (clk,
         // prev_value) to it; if this is the first time we access this address,
@@ -98,6 +102,8 @@ impl StorageTree {
                     addr,
                     root,
                     value: last_value,
+                    tx_idx,
+                    env_idx,
                 };
                 addr_trace.push(new_value);
             })
@@ -108,6 +114,8 @@ impl StorageTree {
                     addr,
                     root,
                     value,
+                    tx_idx,
+                    env_idx,
                 };
                 vec![new_value]
             })
@@ -123,6 +131,8 @@ impl StorageTree {
         addr: TreeKey,
         value: TreeValue,
         root: ZkHash,
+        tx_idx: GoldilocksField,
+        env_idx: GoldilocksField,
     ) {
         // add a memory access to the appropriate address trace; if this is the first
         // time we access this address, initialize address trace.
@@ -132,6 +142,8 @@ impl StorageTree {
             addr,
             value,
             root,
+            tx_idx,
+            env_idx,
         };
         self.trace
             .entry(addr)

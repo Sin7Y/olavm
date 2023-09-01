@@ -25,6 +25,8 @@ pub fn calculate_poseidon_and_generate_intermediate_trace_row(
     poseidon_type: PoseidonType,
 ) -> ([GoldilocksField; POSEIDON_OUTPUT_VALUE_LEN], PoseidonRow) {
     let mut cell = PoseidonRow {
+        tx_idx: Default::default(),
+        env_idx: Default::default(),
         clk: 0,
         opcode: 0,
         input: [GoldilocksField::default(); 12],

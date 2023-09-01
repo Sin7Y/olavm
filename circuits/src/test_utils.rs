@@ -39,7 +39,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     }
 
     let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
+    process.ctx_caller = Address::default();
     let _ = process.execute(
         &mut program,
         &mut Some(prophets),

@@ -1,8 +1,10 @@
+use crate::Process;
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
-use serde_derive::{Deserialize, Serialize};
+use core::vm::vm_state::Address;
+use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::{Field, PrimeField64};
-use crate::Process;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct TxCtxInfo {
@@ -46,25 +48,25 @@ pub fn init_tx_context() -> TxCtxInfo {
     }
 }
 
-pub fn load_tx_context(process: &mut Process, tx_ctx: &TxCtxInfo) -> usize {
-    let mut serd = bincode::serialize(tx_ctx).expect("Serialization failed");
-
-    serd.chunks(8).enumerate().for_each(|(addr, mut e)| {
-        let value = e
-            .read_u64::<LittleEndian>()
-            .expect("failed to deserialize value");
-        process.tape.write(
-            addr as u64,
-            0,
-            GoldilocksField::from_canonical_u64(0),
-            GoldilocksField::ONE,
-            GoldilocksField::ZERO,
-            GoldilocksField::from_canonical_u64(value),
-        );
-    });
-
-    serd.len() / 8
-}
+// pub fn load_tx_context(process: &mut Process, tx_ctx: &TxCtxInfo) -> usize {
+//     let mut serd = bincode::serialize(tx_ctx).expect("Serialization failed");
+//
+//     serd.chunks(8).enumerate().for_each(|(addr, mut e)| {
+//         let value = e
+//             .read_u64::<LittleEndian>()
+//             .expect("failed to deserialize value");
+//         process.tape.write(
+//             addr as u64,
+//             0,
+//             GoldilocksField::from_canonical_u64(0),
+//             GoldilocksField::ONE,
+//             GoldilocksField::ZERO,
+//             GoldilocksField::from_canonical_u64(value),
+//         );
+//     });
+//
+//     serd.len() / 8
+// }
 
 pub fn load_tx_calldata(process: &mut Process, calldate: &Vec<GoldilocksField>) {
     for data in calldate {
@@ -78,4 +80,69 @@ pub fn load_tx_calldata(process: &mut Process, calldate: &Vec<GoldilocksField>) 
         );
         process.tp += GoldilocksField::ONE;
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub struct CtxAddrInfo {
+    pub caller_exe_addr: Address,
+    pub callee_code_addr: Address,
+    pub callee_exe_addr: Address,
+}
+
+pub fn init_ctx_addr_info(
+    caller_exe_addr: Address,
+    callee_code_addr: Address,
+    callee_exe_addr: Address,
+) -> CtxAddrInfo {
+    CtxAddrInfo {
+        caller_exe_addr,
+        callee_code_addr,
+        callee_exe_addr,
+    }
+}
+#[macro_export]
+macro_rules! load_ctx_to_tape {
+    ($func_name: tt, $input: tt) => {
+        pub fn $func_name(process: &mut Process, ctx_addr_info: &$input) -> usize {
+            let mut serd = bincode::serialize(ctx_addr_info).expect("Serialization failed");
+            let tp = process.tp.to_canonical_u64();
+
+            serd.chunks(8).enumerate().for_each(|(addr, mut e)| {
+                let value = e
+                    .read_u64::<LittleEndian>()
+                    .expect("failed to deserialize value");
+                process.tape.write(
+                    tp + addr as u64,
+                    0,
+                    GoldilocksField::from_canonical_u64(0),
+                    GoldilocksField::ONE,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::from_canonical_u64(value),
+                );
+            });
+
+            serd.len() / 8
+        }
+    };
+}
+
+load_ctx_to_tape!(load_ctx_addr_info, CtxAddrInfo);
+load_ctx_to_tape!(load_tx_context, TxCtxInfo);
+
+pub fn init_tape(process: &mut Process, calldata: Vec<GoldilocksField>, callee_addr: Address) {
+    let tx_ctx = init_tx_context();
+    let tp_start = load_tx_context(process, &tx_ctx);
+    process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
+    load_tx_calldata(process, &calldata);
+    let eoa_addr = [
+        GoldilocksField::from_canonical_u64(5),
+        GoldilocksField::from_canonical_u64(55),
+        GoldilocksField::from_canonical_u64(555),
+        GoldilocksField::from_canonical_u64(5555),
+    ];
+    let ctx_addr_len = load_ctx_addr_info(
+        process,
+        &init_ctx_addr_info(eoa_addr, callee_addr.clone(), callee_addr),
+    );
+    process.tp += GoldilocksField::from_canonical_u64(ctx_addr_len as u64);
 }
