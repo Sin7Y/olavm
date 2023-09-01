@@ -1,10 +1,10 @@
 extern crate clap;
 
 use assembler::encoder::encode_asm_from_json_file;
+use circuits::generation::GenerationInputs;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::prover::prove;
-use circuits::generation::GenerationInputs;
 use circuits::stark::serialization::Buffer;
 use circuits::stark::verifier::verify_proof;
 use clap::{arg, Command};

@@ -1,7 +1,6 @@
 /target
 /.idea
 *.txt
-Cargo.lock
 *.xlsx
 /**/.DS_Store
 /.vscode

@@ -2,8 +2,8 @@
 mod tests {
     use crate::encoder::encode_to_binary;
     use crate::relocate::{asm_relocate, AsmBundle};
-    use std::fs;
     use log::LevelFilter;
+    use std::fs;
 
     #[test]
     fn generate_sqrt() {
@@ -124,6 +124,30 @@ mod tests {
     #[test]
     fn generate_sc_input() {
         generate_from_file("sc_input.json".to_string(), "sc_input.json".to_string());
+    }
+
+    #[test]
+    fn generate_sccall() {
+        generate_from_file(
+            "sccall/sccall_caller.json".to_string(),
+            "sccall/sccall_caller.json".to_string(),
+        );
+        generate_from_file(
+            "sccall/sccall_callee.json".to_string(),
+            "sccall/sccall_callee.json".to_string(),
+        );
+    }
+
+    #[test]
+    fn generate_sccall_test() {
+        generate_from_file(
+            "sccall/caller.json".to_string(),
+            "sccall/caller.json".to_string(),
+        );
+        generate_from_file(
+            "sccall/callee.json".to_string(),
+            "sccall/callee.json".to_string(),
+        );
     }
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {

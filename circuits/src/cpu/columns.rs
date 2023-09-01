@@ -1,4 +1,4 @@
-use core::program::{CTX_REGISTER_NUM, REGISTER_NUM};
+use core::program::{REGISTER_NUM};
 use std::{collections::BTreeMap, ops::Range};
 
 // The Olavm trace for AIR:

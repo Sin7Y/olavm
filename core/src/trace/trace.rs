@@ -1,4 +1,5 @@
-use crate::program::{CTX_REGISTER_NUM, REGISTER_NUM};
+use crate::program::REGISTER_NUM;
+use crate::types::account::Address;
 use crate::utils::split_limbs_from_field;
 use crate::utils::split_u16_limbs_from_field;
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -63,20 +64,9 @@ pub enum ComparisonOperation {
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct MemoryCell {
-    pub clk: u32,
-    pub is_rw: GoldilocksField,
-    pub op: GoldilocksField,
-    pub is_write: GoldilocksField,
-    pub filter_looked_for_main: GoldilocksField,
-    pub region_prophet: GoldilocksField,
-    pub region_poseidon: GoldilocksField,
-    pub region_ecdsa: GoldilocksField,
-    pub value: GoldilocksField,
-}
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct MemoryTraceCell {
+    pub tx_idx: GoldilocksField,
+    pub env_idx: GoldilocksField,
     pub addr: GoldilocksField,
     pub clk: GoldilocksField,
     pub is_rw: GoldilocksField,
@@ -118,14 +108,18 @@ pub struct BuiltinSelector {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Step {
+    pub tx_idx: GoldilocksField,
+    pub env_idx: GoldilocksField,
+    pub call_sc_cnt: GoldilocksField,
     pub clk: u32,
     pub pc: u64,
     pub tp: GoldilocksField,
+    pub ctx_caller: Address,
+    pub ctx_exe_code: Address,
     pub instruction: GoldilocksField,
     pub immediate_data: GoldilocksField,
     pub opcode: GoldilocksField,
     pub op1_imm: GoldilocksField,
-    pub ctx_regs: [GoldilocksField; CTX_REGISTER_NUM],
     pub regs: [GoldilocksField; REGISTER_NUM],
     pub register_selector: RegisterSelector,
     pub is_ext_line: GoldilocksField,
@@ -183,8 +177,10 @@ pub struct CmpRow {
     pub filter_looking_rc: GoldilocksField,
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
 pub struct PoseidonRow {
+    pub tx_idx: GoldilocksField,
+    pub env_idx: GoldilocksField,
     pub clk: u32,
     pub opcode: u64,
     pub input: [GoldilocksField; 12],
@@ -208,7 +204,7 @@ impl Display for PoseidonRow {
                 .collect::<Vec<String>>()
                 .join(", ")
         };
-        let format_partial = |name: String, state: [GoldilocksField; 22]| -> String {
+        let format_partial = |_name: String, state: [GoldilocksField; 22]| -> String {
             state
                 .iter()
                 .map(|x| format!("0x{:x}", x.to_canonical_u64()))
@@ -247,8 +243,10 @@ impl Display for PoseidonRow {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct StorageRow {
-    pub clk: u64,
-    pub diff_clk: u64,
+    pub tx_idx: GoldilocksField,
+    pub env_idx: GoldilocksField,
+    pub clk: u32,
+    pub diff_clk: u32,
     pub opcode: GoldilocksField,
     pub root: [GoldilocksField; 4],
     pub addr: [GoldilocksField; 4],
@@ -257,6 +255,8 @@ pub struct StorageRow {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct StorageHashRow {
+    // pub tx_idx: GoldilocksField,
+    // pub env_idx: GoldilocksField,
     pub idx_storage: u64,
     pub layer: u64,
     pub layer_bit: u64,
@@ -290,6 +290,20 @@ pub struct TapeRow {
     pub filter_looked: GoldilocksField,
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct SCCallRow {
+    pub tx_idx: GoldilocksField,
+    pub caller_env_idx: GoldilocksField,
+    pub ctx_caller: Address,
+    pub ctx_exe_code: Address,
+    pub caller_op1_imm: GoldilocksField,
+    pub clk_caller_call: GoldilocksField,
+    pub clk_caller_ret: GoldilocksField,
+    pub regs: [GoldilocksField; REGISTER_NUM],
+    pub callee_env_idx: GoldilocksField,
+    pub clk_callee_end: GoldilocksField,
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Trace {
     //(inst_asm_str, imm_flag, step, inst_encode, imm_val)
@@ -307,6 +321,7 @@ pub struct Trace {
     pub builtin_storage: Vec<StorageRow>,
     pub builtin_storage_hash: Vec<StorageHashRow>,
     pub tape: Vec<TapeRow>,
+    pub sc_call: Vec<SCCallRow>,
 }
 
 impl Trace {
@@ -401,12 +416,16 @@ impl Trace {
         immediate_data: GoldilocksField,
         op1_imm: GoldilocksField,
         opcode: GoldilocksField,
-        ctx_regs: [GoldilocksField; CTX_REGISTER_NUM],
+        ctx_caller: Address,
         regs: [GoldilocksField; REGISTER_NUM],
         register_selector: RegisterSelector,
         is_ext_line: GoldilocksField,
         ext_cnt: GoldilocksField,
         filter_tape_looking: GoldilocksField,
+        ctx_exe_code: Address,
+        tx_idx: GoldilocksField,
+        env_idx: GoldilocksField,
+        call_sc_cnt: GoldilocksField,
     ) {
         let step = Step {
             clk,
@@ -417,12 +436,66 @@ impl Trace {
             immediate_data,
             op1_imm,
             opcode,
-            ctx_regs,
+            ctx_caller,
             register_selector,
             is_ext_line,
             ext_cnt,
             filter_tape_looking,
+            ctx_exe_code,
+            tx_idx,
+            env_idx,
+            call_sc_cnt,
         };
         self.exec.push(step);
+    }
+
+    pub fn insert_storage(
+        &mut self,
+        clk: u32,
+        diff_clk: u32,
+        opcode: GoldilocksField,
+        root: [GoldilocksField; 4],
+        addr: [GoldilocksField; 4],
+        value: [GoldilocksField; 4],
+        tx_idx: GoldilocksField,
+        env_idx: GoldilocksField,
+    ) {
+        self.builtin_storage.push(StorageRow {
+            clk,
+            diff_clk,
+            opcode,
+            root,
+            addr,
+            value,
+            tx_idx,
+            env_idx,
+        });
+    }
+
+    pub fn insert_sccall(
+        &mut self,
+        tx_idx: GoldilocksField,
+        caller_env_idx: GoldilocksField,
+        ctx_caller: Address,
+        ctx_exe_code: Address,
+        caller_op1_imm: GoldilocksField,
+        clk_caller_call: GoldilocksField,
+        clk_caller_ret: GoldilocksField,
+        regs: [GoldilocksField; REGISTER_NUM],
+        callee_env_idx: GoldilocksField,
+        clk_callee_end: GoldilocksField,
+    ) {
+        self.sc_call.push(SCCallRow {
+            tx_idx,
+            caller_env_idx,
+            ctx_caller,
+            ctx_exe_code,
+            caller_op1_imm,
+            clk_caller_call,
+            clk_caller_ret,
+            regs,
+            callee_env_idx,
+            clk_callee_end,
+        });
     }
 }

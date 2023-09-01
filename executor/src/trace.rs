@@ -3,12 +3,16 @@ use crate::memory::MEM_SPAN_SIZE;
 use crate::{GoldilocksField, MemRangeType, Process};
 use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
+use core::trace::dump::{DumpMemoryRow, DumpStep, DumpTapeRow, DumpTrace};
 use core::trace::trace::{MemoryTraceCell, StorageHashRow, TapeRow};
 use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use core::types::merkle_tree::{tree_key_to_u256, TreeKeyU256, TREE_VALUE_LEN};
 use log::debug;
 use plonky2::field::types::{Field, Field64, PrimeField64};
+use rocksdb::MemtableFactory::Vector;
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
 
 pub fn gen_memory_table(
     process: &mut Process,
@@ -49,6 +53,8 @@ pub fn gen_memory_table(
             if first_row_flag {
                 let rc_value = GoldilocksField::ZERO;
                 let trace_cell = MemoryTraceCell {
+                    tx_idx: cell.tx_idx,
+                    env_idx: cell.env_idx,
                     addr: GoldilocksField::from_canonical_u64(canonical_addr),
                     clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
                     is_rw: cell.is_rw,
@@ -100,6 +106,8 @@ pub fn gen_memory_table(
                 }
                 diff_clk = GoldilocksField::ZERO;
                 let trace_cell = MemoryTraceCell {
+                    tx_idx: cell.tx_idx,
+                    env_idx: cell.env_idx,
                     addr: GoldilocksField::from_canonical_u64(canonical_addr),
                     clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
                     is_rw: cell.is_rw,
@@ -139,6 +147,8 @@ pub fn gen_memory_table(
                 }
 
                 let trace_cell = MemoryTraceCell {
+                    tx_idx: cell.tx_idx,
+                    env_idx: cell.env_idx,
                     addr: GoldilocksField::from_canonical_u64(canonical_addr),
                     clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
                     is_rw: cell.is_rw,
@@ -289,6 +299,8 @@ pub fn gen_storage_table(
             root,
             item.1.addr,
             item.1.value,
+            item.1.tx_idx,
+            item.1.env_idx,
         );
 
         program.trace.insert_rangecheck(
@@ -320,4 +332,50 @@ pub fn gen_tape_table(process: &mut Process, program: &mut Program) -> Result<()
     }
 
     Ok(())
+}
+
+pub fn gen_dump_file(process: &mut Process, program: &mut Program) {
+    let mut dump_trace = DumpTrace {
+        exec: vec![],
+        memory: vec![],
+        tape: vec![],
+    };
+    for step in &program.trace.exec {
+        dump_trace.exec.push(DumpStep {
+            clk: step.clk,
+            pc: step.pc,
+            tp: step.tp,
+            op1_imm: step.op1_imm,
+            regs: step.regs,
+            is_ext_line: step.is_ext_line,
+            ext_cnt: step.ext_cnt,
+        });
+    }
+
+    for (addr, info) in &process.memory.trace {
+        for row in info {
+            dump_trace.memory.push(DumpMemoryRow {
+                addr: GoldilocksField::from_canonical_u64(*addr),
+                clk: GoldilocksField::from_canonical_u64(row.clk as u64),
+                is_rw: row.is_rw,
+                is_write: row.is_write,
+                value: row.value,
+            });
+        }
+    }
+
+    for (addr, info) in &process.tape.trace {
+        for row in info {
+            dump_trace.tape.push(DumpTapeRow {
+                is_init: row.is_init,
+                opcode: row.op,
+                addr: GoldilocksField::from_canonical_u64(*addr),
+                value: row.value,
+            });
+        }
+    }
+
+    let trace_json_format = serde_json::to_string(&dump_trace).unwrap();
+    let mut file = File::create(format!("dump.json")).unwrap();
+    file.write_all(trace_json_format.as_ref()).unwrap();
 }

@@ -1,6 +1,7 @@
 use crate::trace::gen_storage_table;
 use crate::Process;
 
+use crate::load_tx::{init_tape, init_tx_context, load_tx_calldata, load_tx_context};
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
@@ -15,7 +16,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
-use crate::load_tx::{init_tx_context, load_tx_calldata, load_tx_context};
 
 fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace: bool) {
     let _ = env_logger::builder()
@@ -43,18 +43,24 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
         program.instructions.push(inst.to_string());
     }
     let mut process = Process::new();
-    process.ctx_registers_stack.push(Address::default());
+    process.ctx_caller = Address::default();
 
     let mut tp_start = 0;
-    if trace_name.eq("tape_trace.txt") ||  trace_name.eq("sc_input_trace.txt") {
-        let tx_ctx = init_tx_context();
-        tp_start = load_tx_context(&mut process, &tx_ctx);
+    if trace_name.eq("tape_trace.txt")
+        || trace_name.eq("sc_input_trace.txt")
+        || trace_name.eq("call_trace.txt")
+    {
         process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
-        let calldata = vec![GoldilocksField::from_canonical_u64(10), GoldilocksField::from_canonical_u64(20),
-                            GoldilocksField::from_canonical_u64(2), GoldilocksField::from_canonical_u64(253268590)];
-        load_tx_calldata(&mut process, &calldata);
-    }
+        let mut calldata = vec![
+            GoldilocksField::from_canonical_u64(10),
+            GoldilocksField::from_canonical_u64(20),
+            GoldilocksField::from_canonical_u64(2),
+            GoldilocksField::from_canonical_u64(1494608717),
+        ];
 
+        init_tape(&mut process, calldata, Address::default());
+    }
+    //253268590
 
     let res = process.execute(
         &mut program,
@@ -276,6 +282,8 @@ fn gen_storage_table_test() {
         store_addr,
         store_val,
         tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
     store_val[3] = GoldilocksField::from_canonical_u64(5);
@@ -285,6 +293,8 @@ fn gen_storage_table_test() {
         store_addr,
         store_val,
         tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 
@@ -294,6 +304,8 @@ fn gen_storage_table_test() {
         store_addr,
         tree_key_default(),
         tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 
@@ -303,6 +315,8 @@ fn gen_storage_table_test() {
         store_addr,
         tree_key_default(),
         tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 
@@ -315,6 +329,8 @@ fn gen_storage_table_test() {
         store_addr,
         store_val,
         tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 
@@ -325,6 +341,8 @@ fn gen_storage_table_test() {
         store_addr,
         store_val,
         tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 
@@ -334,6 +352,8 @@ fn gen_storage_table_test() {
         store_addr,
         tree_key_default(),
         tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 

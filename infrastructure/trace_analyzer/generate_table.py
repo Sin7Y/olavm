@@ -34,10 +34,14 @@ class OpcodeValue(Enum):
 
 
 class JsonMainTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
+    SC_CNT = 'call_sc_cnt'
     CLK = 'clk'
     PC = 'pc'
     TP = 'tp'
-    CTX_REGS = "ctx_regs"
+    CTX_CALLER = "ctx_caller"
+    CTX_EXE_CODE = "ctx_exe_code"
     REGS = 'regs'
     INST = 'instruction'
     OP1_IMM = 'op1_imm'
@@ -71,6 +75,9 @@ class JsonMainTraceColumnType(Enum):
     SEL_SLOAD = 'sel_sload'
 
 class MainTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
+    SC_CNT = 'call_sc_cnt'
     CLK = 'clk'
     PC = 'pc'
     TP = 'tp'
@@ -79,6 +86,11 @@ class MainTraceColumnType(Enum):
     CTX1 = "ctx1"
     CTX2 = "ctx2"
     CTX3 = "ctx3"
+
+    CTX_EXE_CODE0 = "ctx_code0"
+    CTX_EXE_CODE1 = "ctx_code1"
+    CTX_EXE_CODE2 = "ctx_code2"
+    CTX_EXE_CODE3 = "ctx_code3"
 
     R0 = 'r0'
     R1 = 'r1'
@@ -164,6 +176,8 @@ class MainTraceColumnType(Enum):
 
 
 class MemoryTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
     ADDR = 'addr'
     CLK = 'clk'
     IS_RW = 'is_rw'
@@ -272,6 +286,13 @@ class TapeTraceColumnType(Enum):
     VALUE = 'value'
     FILTER_LOOKED = 'filter_looked'
 
+class ScCallColumnType(Enum):
+    IS_INIT = "is_init"
+    OPCODE = "opcode"
+    ADDR = "addr"
+    VALUE = 'value'
+    FILTER_LOOKED = 'filter_looked'
+
 def generate_columns_of_title(worksheet, trace_column_title):
     col = 0
     title_row = 0
@@ -317,7 +338,7 @@ def main():
                     else:
                         worksheet.write(row_index, col, row[data.value][i])
                     col += 1
-            elif data.value == "ctx_regs":
+            elif data.value == "ctx_caller":
                 for i in range(0, CTX_REG_NUM):
                     if args.format == 'hex':
                         worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
@@ -325,6 +346,14 @@ def main():
                     else:
                         worksheet.write(row_index, col, row[data.value][i])
                     col += 1
+            elif data.value == "ctx_exe_code":
+                            for i in range(0, CTX_REG_NUM):
+                                if args.format == 'hex':
+                                    worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                                        row[data.value][i] // (2 ** 32), row[data.value][i] % (2 ** 32)))
+                                else:
+                                    worksheet.write(row_index, col, row[data.value][i])
+                                col += 1
             elif data.value == 'register_selector':
                 if args.format == 'hex':
                     worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
@@ -369,8 +398,8 @@ def main():
                     worksheet.write(row_index, col, reg)
                     col += 1
             elif data.value == 'asm':
-                # print(trace_json["raw_instructions"]['{0}'.format(row["pc"])])
-                worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
+                if trace_json["raw_instructions"] != {}:
+                    worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
                 col += 1
             else:
                 if data.value == "instruction" or data.value == "opcode" or data.value == "aux0":

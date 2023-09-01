@@ -1,8 +1,8 @@
 use crate::error::ProcessorError;
+use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use log::debug;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct TapeCell {
@@ -13,7 +13,7 @@ pub struct TapeCell {
     pub value: GoldilocksField,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct TapeTree {
     // visit by memory address, MemoryCell vector store memory trace value， the last one is the
     // current status

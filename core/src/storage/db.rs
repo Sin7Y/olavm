@@ -1,3 +1,4 @@
+use crate::storage::db::StateKeeperColumnFamily::State;
 use log::info;
 use once_cell::sync::Lazy;
 use rocksdb::{
@@ -37,6 +38,9 @@ pub enum MerkleTreeColumnFamily {
 pub enum StateKeeperColumnFamily {
     State,
     Contracts,
+    Prophets,
+    Debugs,
+    ContractMap,
     FactoryDeps,
 }
 
@@ -48,7 +52,14 @@ impl MerkleTreeColumnFamily {
 
 impl StateKeeperColumnFamily {
     fn all() -> &'static [Self] {
-        &[Self::State, Self::Contracts, Self::FactoryDeps]
+        &[
+            Self::State,
+            Self::Contracts,
+            Self::Prophets,
+            Self::Debugs,
+            Self::ContractMap,
+            Self::FactoryDeps,
+        ]
     }
 }
 
@@ -67,6 +78,9 @@ impl std::fmt::Display for StateKeeperColumnFamily {
         let value = match self {
             StateKeeperColumnFamily::State => "state",
             StateKeeperColumnFamily::Contracts => "contracts",
+            StateKeeperColumnFamily::Prophets => "prophets",
+            StateKeeperColumnFamily::Debugs => "debugs",
+            StateKeeperColumnFamily::ContractMap => "contract_map",
             StateKeeperColumnFamily::FactoryDeps => "factory_deps",
         };
         write!(formatter, "{}", value)
