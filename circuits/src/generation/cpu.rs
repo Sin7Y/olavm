@@ -87,10 +87,9 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
         }
 
         // Selectors of opcode related columns.
-        for (opcode, selector) in &opcode_to_selector {
-            if s.opcode.0 == opcode.clone() {
-                trace[selector.clone()][i] = F::from_canonical_u64(1)
-            }
+        match opcode_to_selector.get(&s.opcode.0) {
+            Some(selector) => trace[selector.clone()][i] = F::from_canonical_u64(1),
+            None => (),
         }
     }
 
