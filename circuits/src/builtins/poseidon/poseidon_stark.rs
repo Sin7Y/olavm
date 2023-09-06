@@ -152,8 +152,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
 
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_POSEIDON_CLK,
-        COL_POSEIDON_OPCODE,
         COL_POSEIDON_INPUT_RANGE.start + 4,
         COL_POSEIDON_INPUT_RANGE.start + 5,
         COL_POSEIDON_INPUT_RANGE.start + 6,
