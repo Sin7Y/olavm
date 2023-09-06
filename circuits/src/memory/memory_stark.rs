@@ -33,8 +33,15 @@ pub fn ctl_filter_mem_sort_rc<F: Field>() -> Column<F> {
 }
 
 pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
-    let cols: Vec<_> =
-        Column::singles([COL_MEM_CLK, COL_MEM_OP, COL_MEM_ADDR, COL_MEM_VALUE]).collect();
+    let cols: Vec<_> = Column::singles([
+        COL_MEM_TX_IDX,
+        COL_MEM_ENV_IDX,
+        COL_MEM_CLK,
+        COL_MEM_OP,
+        COL_MEM_ADDR,
+        COL_MEM_VALUE,
+    ])
+    .collect();
     cols
 }
 

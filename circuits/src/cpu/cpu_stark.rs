@@ -19,7 +19,15 @@ use {
 };
 
 pub fn ctl_data_cpu_mem_store_load<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_AUX1, COL_DST]).collect_vec()
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_AUX1,
+        COL_DST,
+    ])
+    .collect_vec()
 }
 
 pub fn ctl_filter_cpu_mem_store_load<F: Field>() -> Column<F> {
@@ -27,11 +35,27 @@ pub fn ctl_filter_cpu_mem_store_load<F: Field>() -> Column<F> {
 }
 
 pub fn ctl_data_cpu_mem_call_ret_pc<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP0, COL_DST]).collect_vec()
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_OP0,
+        COL_DST,
+    ])
+    .collect_vec()
 }
 
 pub fn ctl_data_cpu_mem_call_ret_fp<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_AUX0, COL_AUX1]).collect_vec()
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_AUX0,
+        COL_AUX1,
+    ])
+    .collect_vec()
 }
 
 pub fn ctl_filter_cpu_mem_call_ret<F: Field>() -> Column<F> {
@@ -211,7 +235,8 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
             yield_constr.constraint_first_row(lv[col_reg]);
         });
         // tx_idx should be the same or increase by one
-        yield_constr.constraint_transition(wrapper.is_in_same_tx * (nv[COL_TX_IDX] - lv[COL_TX_IDX]));
+        yield_constr
+            .constraint_transition(wrapper.is_in_same_tx * (nv[COL_TX_IDX] - lv[COL_TX_IDX]));
         // each tx context init
         yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_TX_IDX]);
         yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_ENV_IDX]);
