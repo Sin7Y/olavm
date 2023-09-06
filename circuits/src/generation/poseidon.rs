@@ -16,6 +16,8 @@ pub fn generate_poseidon_trace<F: RichField>(cells: &[PoseidonRow]) -> [Vec<F>; 
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_POSEIDON_COLS];
     for (i, c) in cells.iter().enumerate() {
+        // trace[COL_POSEIDON_TX_IDX][i] = F::from_canonical_u32(c.tx_idx);
+        // trace[COL_POSEIDON_ENV_IDX][i] = F::from_canonical_u32(c.env_idx);
         trace[COL_POSEIDON_CLK][i] = F::from_canonical_u32(c.clk);
         trace[COL_POSEIDON_OPCODE][i] = F::from_canonical_u64(c.opcode);
 
