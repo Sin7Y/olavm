@@ -12,8 +12,8 @@ class uint128_t
 {
 public:
 
-	unsigned long long low;
-	unsigned long long high;
+	uint64_t low;
+	uint64_t high;
 
 	__host__ __device__ __forceinline__ uint128_t()
 	{
@@ -369,7 +369,7 @@ __device__ __forceinline__ void sub128(uint128_t& a, const uint128_t& b)
 
 }
 
-__host__ __device__ __forceinline__ void mul64mod(const unsigned long long& a, const unsigned long long& b, const unsigned long long& p, unsigned long long& d)
+__host__ __device__ __forceinline__ void mul64mod(const uint64_t& a, const uint64_t& b, const uint64_t& p, uint64_t& d)
 {
 	uint64_t x1 = (uint64_t)(unsigned)a * (unsigned)b;
 	uint64_t x2 = (uint64_t)(unsigned)(a >> 32) * (unsigned)b;
@@ -398,7 +398,7 @@ __host__ __device__ __forceinline__ void mul64mod(const unsigned long long& a, c
 	d = ux2_3.low;
 }
 
-__host__ __device__ __forceinline__ void mul64modSub(const unsigned long long& a, const unsigned long long& b, const unsigned long long& Subc, const unsigned long long& p, unsigned long long& d)
+__host__ __device__ __forceinline__ void mul64modSub(const uint64_t& a, const uint64_t& b, const uint64_t& Subc, const uint64_t& p, uint64_t& d)
 {
 	uint64_t x1 = (uint64_t)(unsigned)a * (unsigned)b;
 	uint64_t x2 = (uint64_t)(unsigned)(a >> 32) * (unsigned)b;
@@ -425,7 +425,7 @@ __host__ __device__ __forceinline__ void mul64modSub(const unsigned long long& a
 	d = ux2_3.low;
 }
 
-__host__ __device__ __forceinline__ void mul64modAdd(const unsigned long long& a, const unsigned long long& b, const uint128_t& Addc, const unsigned long long& p, unsigned long long& d)
+__host__ __device__ __forceinline__ void mul64modAdd(const uint64_t& a, const uint64_t& b, const uint128_t& Addc, const uint64_t& p, uint64_t& d)
 {
 	uint64_t x1 = (uint64_t)(unsigned)a * (unsigned)b;
 	uint64_t x2 = (uint64_t)(unsigned)(a >> 32) * (unsigned)b;
@@ -452,7 +452,7 @@ __host__ __device__ __forceinline__ void mul64modAdd(const unsigned long long& a
 	d = ux2_3.low;
 }
 
-__host__ __device__ __forceinline__ void mul64(const unsigned long long& a, const unsigned long long& b, uint128_t& c)
+__host__ __device__ __forceinline__ void mul64(const uint64_t& a, const uint64_t& b, uint128_t& c)
 {
 	uint64_t x1 = (uint64_t)(unsigned)a * (unsigned)b;
 	uint64_t x2 = (uint64_t)(unsigned)(a >> 32) * (unsigned)b;
@@ -467,7 +467,7 @@ __host__ __device__ __forceinline__ void mul64(const unsigned long long& a, cons
 	c = ux2_3 + c;
 }
 
-__host__ __device__ __forceinline__ void mul64modNew(const unsigned long long& a, const unsigned long long& b, const unsigned long long& p, unsigned long long& d)
+__host__ __device__ __forceinline__ void mul64modNew(const uint64_t& a, const uint64_t& b, const uint64_t& p, uint64_t& d)
 {
 	uint32_t* x1_w = (uint32_t*)&a;
 	uint32_t* x2_w = (uint32_t*)&b;
