@@ -220,6 +220,10 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
                 * (P::ONES - wrapper.is_in_same_tx)
                 * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX] - P::ONES),
         );
+        // when crossing inst, ext cnt must be ext length.
+        yield_constr.constraint(
+            wrapper.is_crossing_inst * (wrapper.lv_ext_length - wrapper.lv[COL_EXT_CNT]),
+        )
     }
 
     fn constraint_tx_init<FE, P, const D2: usize>(
@@ -246,15 +250,14 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         yield_constr
             .constraint_transition(wrapper.is_in_same_tx * (nv[COL_TX_IDX] - lv[COL_TX_IDX]));
         // each tx context init
-        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_TX_IDX]);
-        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_ENV_IDX]);
-        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_CALL_SC_CNT]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_ENV_IDX]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_CALL_SC_CNT]);
         // todo exe and code context should be entry system contract?
-        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_TP]);
-        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_CLK]);
-        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[COL_PC]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_TP]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_CLK]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_PC]);
         COL_REGS.for_each(|col_reg| {
-            yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * lv[col_reg]);
+            yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[col_reg]);
         });
     }
 
@@ -663,7 +666,11 @@ impl<
             + lv[COL_S_TSTORE]
             + lv[COL_S_CALL_SC] * P::Scalar::from_canonical_u64(4)
             + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
-        let is_crossing_inst = P::ONES - nv_is_ext_inst;
+        let is_crossing_inst = if lv_ext_length.as_slice() == lv[COL_EXT_CNT].as_slice() {
+            P::ONES
+        } else {
+            P::ZEROS
+        };
         let is_in_same_tx = if lv_is_padding.as_slice() == P::ONES.as_slice()
             || nv_is_padding.as_slice() == P::ONES.as_slice()
         {
