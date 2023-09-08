@@ -121,6 +121,8 @@ pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
 
 pub fn ctl_data_with_poseidon_tree_key<F: Field>() -> Vec<Column<F>> {
     Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
         COL_CLK,
         COL_OPCODE,
         COL_CTX_REG_RANGE.start,
@@ -734,6 +736,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         Self::constaint_env_unchanged_clk(&wrapper, yield_constr);
         Self::constaint_env_unchanged_pc(&wrapper, yield_constr);
         Self::constaint_reg_consistency(&wrapper, yield_constr);
+
+        // idx_storage
+        yield_constr.constraint_first_row(lv[COL_IDX_STORAGE]);
+        yield_constr.constraint(
+            lv[COL_IDX_STORAGE] + nv[COL_S_SSTORE] + nv[COL_S_SLOAD] - nv[COL_IDX_STORAGE],
+        );
 
         // opcode
         add::eval_packed_generic(lv, nv, yield_constr);

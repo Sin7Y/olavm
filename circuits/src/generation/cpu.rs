@@ -44,6 +44,7 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     opcode_to_selector.insert(OlaOpcode::TLOAD.binary_bit_mask(), cpu::COL_S_TLOAD);
     opcode_to_selector.insert(OlaOpcode::TSTORE.binary_bit_mask(), cpu::COL_S_TSTORE);
     opcode_to_selector.insert(OlaOpcode::SCCALL.binary_bit_mask(), cpu::COL_S_CALL_SC);
+    let mut idx_storage = 0u64;
     for (i, s) in steps.iter().enumerate() {
         // env related columns.
         // trace[cpu::COL_TX_IDX] = F::from_canonical_u32(s.tx_idx);
@@ -77,6 +78,13 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
         trace[cpu::COL_DST][i] = F::from_canonical_u64(s.register_selector.dst.0);
         trace[cpu::COL_AUX0][i] = F::from_canonical_u64(s.register_selector.aux0.0);
         trace[cpu::COL_AUX1][i] = F::from_canonical_u64(s.register_selector.aux1.0);
+        if s.opcode.0 == OlaOpcode::SLOAD.binary_bit_mask()
+            || s.opcode.0 == OlaOpcode::SSTORE.binary_bit_mask()
+        {
+            idx_storage += 1;
+        }
+        trace[cpu::COL_IDX_STORAGE][i] = F::from_canonical_u64(idx_storage);
+
         for j in 0..REGISTER_NUM {
             trace[cpu::COL_S_OP0_START + j][i] =
                 F::from_canonical_u64(s.register_selector.op0_reg_sel[j].0);
@@ -98,6 +106,7 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
         trace[cpu::COL_TX_IDX][trace_len..].fill(F::NEG_ONE);
         trace[cpu::COL_OPCODE][trace_len..]
             .fill(F::from_canonical_u64(OlaOpcode::END.binary_bit_mask()));
+trace[cpu::COL_IDX_STORAGE][trace_len..].fill(F::from_canonical_u64(idx_storage));
         trace[cpu::COL_S_END][trace_len..].fill(F::ZERO);
     }
 

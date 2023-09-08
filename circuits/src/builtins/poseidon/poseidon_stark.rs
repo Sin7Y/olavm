@@ -174,6 +174,8 @@ pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
 
 pub fn ctl_data_with_cpu_tree_key<F: Field>() -> Vec<Column<F>> {
     Column::singles([
+        COL_POSEIDON_TX_IDX,
+        COL_POSEIDON_ENV_IDX,
         COL_POSEIDON_CLK,
         COL_POSEIDON_OPCODE,
         COL_POSEIDON_INPUT_RANGE.start + 4,

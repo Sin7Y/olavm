@@ -9,10 +9,9 @@ use std::marker::PhantomData;
 use crate::stark::{cross_table_lookup::Column, stark::Stark};
 
 use super::columns::{
-    COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_DIFF_CLK,
-    COL_STORAGE_FILTER_LOOKED_FOR_SLOAD, COL_STORAGE_FILTER_LOOKED_FOR_SSTORE,
-    COL_STORAGE_LOOKING_RC, COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE,
-    COL_STORAGE_VALUE_RANGE,
+    COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_FILTER_LOOKED_FOR_SLOAD,
+    COL_STORAGE_FILTER_LOOKED_FOR_SSTORE, COL_STORAGE_IDX_STORAGE, COL_STORAGE_LOOKING_RC,
+    COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE, COL_STORAGE_VALUE_RANGE,
 };
 #[derive(Copy, Clone, Default)]
 pub struct StorageStark<F, const D: usize> {
@@ -30,10 +29,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
         FE: plonky2::field::extension::FieldExtension<D2, BaseField = F>,
         P: plonky2::field::packed::PackedField<Scalar = FE>,
     {
-        let lv_clk = vars.local_values[COL_STORAGE_CLK];
-        let nv_clk = vars.next_values[COL_STORAGE_CLK];
-        let lv_diff_clk = vars.local_values[COL_STORAGE_DIFF_CLK];
-        let nv_diff_clk = vars.next_values[COL_STORAGE_DIFF_CLK];
+        let lv_idx_storage = vars.local_values[COL_STORAGE_IDX_STORAGE];
+        let nv_idx_storage = vars.next_values[COL_STORAGE_IDX_STORAGE];
+
         let filter_looking_rc = vars.local_values[COL_STORAGE_LOOKING_RC];
         let filter_looked_sstore = vars.local_values[COL_STORAGE_FILTER_LOOKED_FOR_SSTORE];
         let filter_looked_sload = vars.local_values[COL_STORAGE_FILTER_LOOKED_FOR_SLOAD];
@@ -47,11 +45,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
                 * filter_looked_sload,
         );
 
-        // clk diff constraint
-        yield_constr.constraint_transition(nv_clk * (nv_clk - lv_clk - nv_diff_clk));
-        // rc filter constraint
+        // diff constraint
+        yield_constr.constraint_first_row(P::ONES - lv_idx_storage);
+        yield_constr
+            .constraint_transition(nv_idx_storage * (nv_idx_storage - lv_idx_storage - P::ONES));
+
         yield_constr.constraint(filter_looking_rc * (P::ONES - filter_looking_rc));
-        yield_constr.constraint(lv_diff_clk * (P::ONES - filter_looking_rc));
+        yield_constr.constraint(lv_idx_storage * (P::ONES - filter_looking_rc));
     }
 
     fn eval_ext_circuit(
