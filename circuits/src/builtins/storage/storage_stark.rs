@@ -6,12 +6,16 @@ use plonky2::{
 };
 use std::marker::PhantomData;
 
-use crate::stark::{cross_table_lookup::Column, stark::Stark};
+use crate::{
+    cpu::columns::COL_IDX_STORAGE,
+    stark::{cross_table_lookup::Column, stark::Stark},
+};
 
 use super::columns::{
     COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_FILTER_LOOKED_FOR_SLOAD,
     COL_STORAGE_FILTER_LOOKED_FOR_SSTORE, COL_STORAGE_IDX_STORAGE, COL_STORAGE_LOOKING_RC,
-    COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE, COL_STORAGE_VALUE_RANGE,
+    COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE, COL_STORAGE_TX_IDX,
+    COL_STORAGE_VALUE_RANGE, COL_STORAGE_ENV_IDX,
 };
 #[derive(Copy, Clone, Default)]
 pub struct StorageStark<F, const D: usize> {
@@ -69,7 +73,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
 
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_STORAGE_CLK,
+        COL_IDX_STORAGE,
         COL_STORAGE_OPCODE,
         COL_STORAGE_VALUE_RANGE.start,
         COL_STORAGE_VALUE_RANGE.start + 1,
@@ -107,6 +111,8 @@ pub fn ctl_data_with_hash<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
     Column::singles([
+        COL_STORAGE_TX_IDX,
+        COL_STORAGE_ENV_IDX,
         COL_STORAGE_CLK,
         COL_STORAGE_OPCODE,
         COL_STORAGE_ADDR_RANGE.start,
