@@ -102,12 +102,14 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     }
 
     // fill in padding.
+    let inst_end = trace[cpu::COL_INST][trace_len - 1];
     if trace_len != ext_trace_len {
         trace[cpu::COL_TX_IDX][trace_len..].fill(F::NEG_ONE);
+        trace[cpu::COL_INST][trace_len..].fill(inst_end);
         trace[cpu::COL_OPCODE][trace_len..]
             .fill(F::from_canonical_u64(OlaOpcode::END.binary_bit_mask()));
-trace[cpu::COL_IDX_STORAGE][trace_len..].fill(F::from_canonical_u64(idx_storage));
-        trace[cpu::COL_S_END][trace_len..].fill(F::ZERO);
+        trace[cpu::COL_IDX_STORAGE][trace_len..].fill(F::from_canonical_u64(idx_storage));
+        trace[cpu::COL_S_END][trace_len..].fill(F::ONE);
     }
 
     let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
