@@ -1,6 +1,7 @@
 /target
 /.idea
 *.txt
+!CMakeLists.txt
 Cargo.lock
 *.xlsx
 /**/.DS_Store

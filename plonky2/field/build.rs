@@ -16,7 +16,8 @@ fn main() {
     
     println!("cargo:rustc-link-search=native={}", dst.display());
     println!("cargo:rustc-link-lib=static=cuda_lib");
-    let default_cuda_lib_path: &str = "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.1\\lib\\x64";
+    let default_cuda_lib_path: &str = "/usr/local/cuda/lib64";
     println!("cargo:rustc-link-search=native={}",default_cuda_lib_path);
-    println!("cargo:rustc-link-lib=cudart");  
+    println!("cargo:rustc-link-lib=cudart");
+    println!("cargo:rustc-link-lib=stdc++");
 }
