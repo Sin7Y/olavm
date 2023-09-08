@@ -142,12 +142,20 @@ pub fn ctl_filter_with_poseidon_tree_key<F: Field>() -> Column<F> {
 
 // get the data source for storage in Cpu table
 pub fn ctl_data_cpu_sload<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP0, COL_OP1, COL_DST, COL_AUX0]).collect_vec()
+    Column::singles([
+        COL_IDX_STORAGE,
+        COL_OPCODE,
+        COL_OP0,
+        COL_OP1,
+        COL_DST,
+        COL_AUX0,
+    ])
+    .collect_vec()
 }
 
 pub fn ctl_data_cpu_sstore<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_CLK,
+        COL_IDX_STORAGE,
         COL_OPCODE,
         COL_START_REG + 5,
         COL_START_REG + 6,
@@ -823,6 +831,12 @@ mod tests {
     #[test]
     fn test_malloc() {
         let program_path = "malloc.json";
+        test_cpu_with_asm_file_name(program_path.to_string());
+    }
+
+    #[test]
+    fn test_vote() {
+        let program_path = "vote.json";
         test_cpu_with_asm_file_name(program_path.to_string());
     }
 

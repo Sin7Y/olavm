@@ -157,6 +157,7 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_DST, "dst".to_string());
     m.insert(COL_AUX0, "aux0".to_string());
     m.insert(COL_AUX1, "aux1".to_string());
+    m.insert(COL_IDX_STORAGE, "idx_storage".to_string());
     for (index, col) in COL_S_OP0.into_iter().enumerate() {
         let name = format!("sel_op0_r{}", index);
         m.insert(col, name);
