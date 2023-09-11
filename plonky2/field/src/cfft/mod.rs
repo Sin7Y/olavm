@@ -22,7 +22,7 @@ const MIN_CONCURRENT_SIZE: usize = 1024;
 
 #[cfg(feature = "cuda")]
 lazy_static! {
-    static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(1));
+    static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(2));
     // static ref RT: Runtime = Runtime::new().unwrap();
 }
 
@@ -244,16 +244,6 @@ where
             }
             drop(permit);
         });
-        // let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
-        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
-        // if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
-        //     #[cfg(feature = "parallel")]
-        //     concurrent::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
-        // } else {
-        //     serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
-        // }
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
