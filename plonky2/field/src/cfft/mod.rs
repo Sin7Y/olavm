@@ -105,7 +105,6 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        #[cfg(feature = "cuda")]
         result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
