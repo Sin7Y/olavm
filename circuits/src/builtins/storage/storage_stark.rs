@@ -7,7 +7,6 @@ use plonky2::{
 use std::marker::PhantomData;
 
 use crate::{
-    cpu::columns::COL_IDX_STORAGE,
     stark::{cross_table_lookup::Column, stark::Stark},
 };
 
@@ -69,7 +68,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
 
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_IDX_STORAGE,
+        COL_STORAGE_IDX_STORAGE,
         COL_STORAGE_OPCODE,
         COL_STORAGE_VALUE_RANGE.start,
         COL_STORAGE_VALUE_RANGE.start + 1,
