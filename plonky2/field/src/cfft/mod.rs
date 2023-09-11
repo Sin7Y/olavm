@@ -51,15 +51,27 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        let rt = Runtime::new().unwrap();
-        rt.block_on(async {
-            let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-            let p2 = run_evaluate_poly(p);
-            for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-                *item1 = item2;
-            }
-            drop(permit);
-        });
+        // #[cfg(feature = "cuda")]
+        // {
+        //     RT.block_on(async {
+        //         let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+        //         let p2 = run_evaluate_poly(p);
+        //         for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+        //             *item1 = item2;
+        //         }
+        //         drop(permit);
+        //     });
+        // }
+        // let p2 = run_evaluate_poly(p);
+        // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+        //     *item1 = item2;
+        // }
+        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
+            #[cfg(feature = "parallel")]
+            concurrent::evaluate_poly(p, twiddles);
+        } else {
+            serial::evaluate_poly(p, twiddles);
+        }
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
