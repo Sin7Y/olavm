@@ -51,27 +51,15 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        // #[cfg(feature = "cuda")]
-        // {
-        //     RT.block_on(async {
-        //         let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-        //         let p2 = run_evaluate_poly(p);
-        //         for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-        //             *item1 = item2;
-        //         }
-        //         drop(permit);
-        //     });
-        // }
-        // let p2 = run_evaluate_poly(p);
-        // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
-        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
-            #[cfg(feature = "parallel")]
-            concurrent::evaluate_poly(p, twiddles);
-        } else {
-            serial::evaluate_poly(p, twiddles);
-        }
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            let p2 = run_evaluate_poly(p);
+            for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+                *item1 = item2;
+            }
+            drop(permit);
+        });
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -121,22 +109,12 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        // #[cfg(feature = "cuda")]
-        // RT.block_on(async {
-        //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-        //     result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
-        //     drop(permit);
-        // });
-        // result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
-        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
-            #[cfg(feature = "parallel")]
-            {
-                result =
-                    concurrent::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
-            }
-        } else {
-            result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
-        }
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
+            drop(permit);
+        });
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -187,10 +165,6 @@ where
             }
             drop(permit);
         });
-        // let p2 = run_interpolate_poly(evaluations);
-        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
