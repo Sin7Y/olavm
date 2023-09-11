@@ -23,7 +23,7 @@ const MIN_CONCURRENT_SIZE: usize = 1024;
 #[cfg(feature = "cuda")]
 lazy_static! {
     static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(1));
-    static ref RT: Runtime = Runtime::new().unwrap();
+    // static ref RT: Runtime = Runtime::new().unwrap();
 }
 
 pub fn evaluate_poly<F>(p: &mut [F], twiddles: &[F])
@@ -62,9 +62,15 @@ where
         //         drop(permit);
         //     });
         // }
-        let p2 = run_evaluate_poly(p);
-        for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
+        // let p2 = run_evaluate_poly(p);
+        // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+        //     *item1 = item2;
+        // }
+        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
+            #[cfg(feature = "parallel")]
+            concurrent::evaluate_poly(p, twiddles);
+        } else {
+            serial::evaluate_poly(p, twiddles);
         }
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
@@ -121,7 +127,16 @@ where
         //     result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
         //     drop(permit);
         // });
-        result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
+        // result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
+        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
+            #[cfg(feature = "parallel")]
+            {
+                result =
+                    concurrent::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+            }
+        } else {
+            result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+        }
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -172,9 +187,15 @@ where
         //     }
         //     drop(permit);
         // });
-        let p2 = run_interpolate_poly(evaluations);
-        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
+        // let p2 = run_interpolate_poly(evaluations);
+        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+        //     *item1 = item2;
+        // }
+        if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
+            #[cfg(feature = "parallel")]
+            concurrent::interpolate_poly(evaluations, inv_twiddles);
+        } else {
+            serial::interpolate_poly(evaluations, inv_twiddles);
         }
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
@@ -222,9 +243,15 @@ where
         //     }
         //     drop(permit);
         // });
-        let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
-        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
+        // let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
+        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+        //     *item1 = item2;
+        // }
+        if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
+            #[cfg(feature = "parallel")]
+            concurrent::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
+        } else {
+            serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
         }
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
