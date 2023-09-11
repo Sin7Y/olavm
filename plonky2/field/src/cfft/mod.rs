@@ -178,25 +178,19 @@ where
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        // #[cfg(feature = "cuda")]
-        // RT.block_on(async {
-        //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-        //     let p2 = run_interpolate_poly(evaluations);
-        //     for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //         *item1 = item2;
-        //     }
-        //     drop(permit);
-        // });
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            let p2 = run_interpolate_poly(evaluations);
+            for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+                *item1 = item2;
+            }
+            drop(permit);
+        });
         // let p2 = run_interpolate_poly(evaluations);
         // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
         //     *item1 = item2;
         // }
-        if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
-            #[cfg(feature = "parallel")]
-            concurrent::interpolate_poly(evaluations, inv_twiddles);
-        } else {
-            serial::interpolate_poly(evaluations, inv_twiddles);
-        }
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -234,7 +228,6 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        // #[cfg(feature = "cuda")]
         let rt = Runtime::new().unwrap();
         rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
