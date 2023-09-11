@@ -847,6 +847,7 @@ mod tests {
         test_cpu_with_asm_file_name(program_path.to_string());
     }
 
+    #[allow(unused)]
     fn test_cpu_with_asm_file_name(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");

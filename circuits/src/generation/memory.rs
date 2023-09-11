@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::Sub};
 
 use plonky2::{field::types::PrimeField64, hash::hash_types::RichField};
 
-use crate::memory::columns as memory;
+use crate::memory::columns::{self as memory, COL_MEM_S_PROPHET};
 
 pub fn generate_memory_trace<F: RichField>(
     cells: &[MemoryTraceCell],
@@ -36,6 +36,7 @@ pub fn generate_memory_trace<F: RichField>(
         OlaOpcode::SCCALL.binary_bit_mask(),
         memory::COL_MEM_S_SCCALL,
     );
+    opcode_to_selector.insert(0, memory::COL_MEM_S_PROPHET);
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; memory::NUM_MEM_COLS];
     for (i, c) in cells.iter().enumerate() {
@@ -115,6 +116,7 @@ pub fn generate_memory_trace<F: RichField>(
 
         let mut is_first_pad_row = true;
         for i in num_filled_row_len..num_padded_rows {
+            trace[COL_MEM_S_PROPHET][i] = F::ONE;
             trace[memory::COL_MEM_TX_IDX][i] = tx_idx;
             trace[memory::COL_MEM_ENV_IDX][i] = env_idx;
             trace[memory::COL_MEM_ADDR][i] = addr;

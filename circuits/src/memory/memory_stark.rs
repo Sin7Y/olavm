@@ -106,7 +106,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let rc_value = lv[COL_MEM_RC_VALUE];
         let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
         let lv_filter_looking_rc_cond = lv[COL_MEM_FILTER_LOOKING_RC_COND];
-        let nv_filter_looking_rc_cond = nv[COL_MEM_FILTER_LOOKING_RC_COND];
 
         let op_mload = P::Scalar::from_canonical_u64(OlaOpcode::MLOAD.binary_bit_mask());
         let op_mstore = P::Scalar::from_canonical_u64(OlaOpcode::MSTORE.binary_bit_mask());
@@ -310,6 +309,13 @@ mod tests {
         test_memory_with_asm_file_name(program_path.to_string());
     }
 
+    #[test]
+    fn test_memory_vote() {
+        let program_path = "vote.json";
+        test_memory_with_asm_file_name(program_path.to_string());
+    }
+
+    #[allow(unused)]
     fn test_memory_with_asm_file_name(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
