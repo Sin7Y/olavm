@@ -5,7 +5,7 @@ use core::{
 };
 use std::collections::HashMap;
 
-use crate::cpu::columns as cpu;
+use crate::cpu::columns::{self as cpu, COL_IS_ENTRY_SC};
 use plonky2::hash::hash_types::RichField;
 
 pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU_COLS] {
@@ -44,12 +44,14 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     opcode_to_selector.insert(OlaOpcode::TLOAD.binary_bit_mask(), cpu::COL_S_TLOAD);
     opcode_to_selector.insert(OlaOpcode::TSTORE.binary_bit_mask(), cpu::COL_S_TSTORE);
     opcode_to_selector.insert(OlaOpcode::SCCALL.binary_bit_mask(), cpu::COL_S_CALL_SC);
+
     let mut idx_storage = 0u64;
     for (i, s) in steps.iter().enumerate() {
         // env related columns.
-        // trace[cpu::COL_TX_IDX] = F::from_canonical_u32(s.tx_idx);
-        // trace[cpu::COL_ENV_IDX] = F::from_canonical_u32(s.env_idx);
-        // trace[cpu::COL_CALL_SC_CNT] = F::from_canonical_u32(s.call_sc_cnt);
+        // trace[cpu::COL_TX_IDX][i] = F::from_canonical_u32(s.tx_idx);
+        // trace[cpu::COL_ENV_IDX][i] = F::from_canonical_u32(s.env_idx);
+        // trace[cpu::COL_CALL_SC_CNT][i] = F::from_canonical_u32(s.call_sc_cnt);
+
         // Context related columns.
         for j in 0..CTX_REGISTER_NUM {
             trace[cpu::COL_CTX_REG_RANGE.start + j][i] = F::from_canonical_u64(s.ctx_regs[j].0);
@@ -99,6 +101,41 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
             Some(selector) => trace[selector.clone()][i] = F::from_canonical_u64(1),
             None => (),
         }
+
+        trace[COL_IS_ENTRY_SC][i] = if trace[cpu::COL_ENV_IDX][i].is_zero() {
+            F::ONE
+        } else {
+            F::ZERO
+        };
+
+        // let a = OlaOpcode::TLOAD.binary_bit_mask();
+        let ext_length = if s.opcode.0 == OlaOpcode::TLOAD.binary_bit_mask() {
+            s.register_selector.op0.0 * s.register_selector.op1.0 + (1 - s.register_selector.op0.0)
+        } else if s.opcode.0 == OlaOpcode::TSTORE.binary_bit_mask() {
+            1
+        } else if s.opcode.0 == OlaOpcode::SCCALL.binary_bit_mask() {
+            4
+        } else if s.opcode.0 == OlaOpcode::END.binary_bit_mask()
+            && !trace[cpu::COL_ENV_IDX][i].is_zero()
+        {
+            1
+        } else {
+            0
+        };
+
+        trace[cpu::COL_IS_NEXT_LINE_DIFF_INST][i] = F::ONE; // todo
+                                                            // trace[cpu::COL_IS_NEXT_LINE_DIFF_INST][i] = if ext_length == s.ext_cnt {
+                                                            //     F::ONE
+                                                            // } else {
+                                                            //     F::ZERO
+                                                            // }
+        trace[cpu::COL_IS_NEXT_LINE_SAME_TX][i] = if trace[cpu::COL_ENV_IDX][i].is_zero()
+            && s.opcode.0 == OlaOpcode::END.binary_bit_mask()
+        {
+            F::ZERO
+        } else {
+            F::ONE
+        };
     }
 
     // fill in padding.
@@ -110,6 +147,10 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
             .fill(F::from_canonical_u64(OlaOpcode::END.binary_bit_mask()));
         trace[cpu::COL_IDX_STORAGE][trace_len..].fill(F::from_canonical_u64(idx_storage));
         trace[cpu::COL_S_END][trace_len..].fill(F::ONE);
+        trace[cpu::COL_IS_ENTRY_SC][trace_len..].fill(F::ONE);
+        trace[cpu::COL_IS_NEXT_LINE_DIFF_INST][trace_len..].fill(F::ONE);
+        trace[cpu::COL_IS_NEXT_LINE_SAME_TX][trace_len..].fill(F::ZERO);
+        trace[cpu::COL_IS_PADDING][trace_len..].fill(F::ONE);
     }
 
     let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {

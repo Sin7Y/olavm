@@ -194,18 +194,20 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
     pub const OP1_SHIFT_START: u32 = 51;
     pub const DST_SHIFT_START: u32 = 41;
 
-    fn constraint_wrapper_virtual_cols<FE, P, const D2: usize>(
+    fn constraint_wrapper_cols<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
     {
-        // tx_idx = -1 when padding
-        yield_constr
-            .constraint(wrapper.lv_is_padding * (wrapper.lv[COL_TX_IDX] - P::Scalar::NEG_ONE));
-        yield_constr
-            .constraint(wrapper.nv_is_padding * (wrapper.nv[COL_TX_IDX] - P::Scalar::NEG_ONE));
+        // padding from zero to one, and padding row op is end.
+        yield_constr.constraint(wrapper.lv_is_padding * (wrapper.lv_is_padding - P::ONES));
+        yield_constr.constraint_transition(
+            (wrapper.nv_is_padding - wrapper.lv_is_padding)
+                * (wrapper.nv_is_padding - wrapper.lv_is_padding - P::ONES),
+        );
+        yield_constr.constraint(wrapper.lv_is_padding * (wrapper.lv[COL_S_END] - P::ONES));
         // entry sc env_idx = 0
         yield_constr.constraint(wrapper.lv_is_entry_sc * wrapper.nv[COL_ENV_IDX]);
         // if in same tx, tx_idx should be same
@@ -645,39 +647,17 @@ impl<
         let regs: [P; REGISTER_NUM] = lv[COL_REGS].try_into().unwrap();
         let n_regs: [P; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
 
-        let lv_is_padding = if lv[COL_TX_IDX].as_slice() == P::Scalar::NEG_ONE.as_slice() {
-            P::ONES
-        } else {
-            P::ZEROS
-        };
-        let nv_is_padding = if nv[COL_TX_IDX].as_slice() == P::Scalar::NEG_ONE.as_slice() {
-            P::ONES
-        } else {
-            P::ZEROS
-        };
+        let lv_is_padding = lv[COL_IS_PADDING];
+        let nv_is_padding = nv[COL_IS_PADDING];
         let lv_is_ext_inst = lv[COL_S_TLOAD] + lv[COL_S_SLOAD] + lv[COL_S_CALL_SC] + lv[COL_S_END];
         let nv_is_ext_inst = nv[COL_S_TLOAD] + nv[COL_S_SLOAD] + nv[COL_S_CALL_SC] + nv[COL_S_END];
-        let lv_is_entry_sc = if lv[COL_ENV_IDX].as_slice() == P::ZEROS.as_slice() {
-            P::ONES
-        } else {
-            P::ZEROS
-        };
+        let lv_is_entry_sc = lv[COL_IS_ENTRY_SC];
         let lv_ext_length = lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
             + lv[COL_S_TSTORE]
             + lv[COL_S_CALL_SC] * P::Scalar::from_canonical_u64(4)
             + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
-        let is_crossing_inst = if lv_ext_length.as_slice() == lv[COL_EXT_CNT].as_slice() {
-            P::ONES
-        } else {
-            P::ZEROS
-        };
-        let is_in_same_tx = if lv_is_padding.as_slice() == P::ONES.as_slice()
-            || nv_is_padding.as_slice() == P::ONES.as_slice()
-        {
-            P::ZEROS
-        } else {
-            P::ONES - (nv[COL_TX_IDX] - lv[COL_TX_IDX])
-        };
+        let is_crossing_inst = lv[COL_IS_NEXT_LINE_DIFF_INST];
+        let is_in_same_tx = lv[COL_IS_NEXT_LINE_SAME_TX];
         Self {
             lv,
             nv,
@@ -711,7 +691,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         let wrapper = CpuAdjacentRowWrapper::from_vars(vars);
 
-        Self::constraint_wrapper_virtual_cols(&wrapper, yield_constr);
+        Self::constraint_wrapper_cols(&wrapper, yield_constr);
         Self::constraint_tx_init(&wrapper, yield_constr);
         // tx_idx not change or increase by 1
         yield_constr.constraint_transition(
@@ -782,7 +762,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     }
 
     fn constraint_degree(&self) -> usize {
-        5
+        6
     }
 }
 

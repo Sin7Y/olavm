@@ -124,7 +124,12 @@ pub(crate) const COL_S_TLOAD: usize = COL_S_SSTORE + 1;
 pub(crate) const COL_S_TSTORE: usize = COL_S_TLOAD + 1;
 pub(crate) const COL_S_CALL_SC: usize = COL_S_TSTORE + 1;
 
-pub(crate) const NUM_CPU_COLS: usize = COL_S_CALL_SC + 1;
+pub(crate) const COL_IS_ENTRY_SC: usize = COL_S_CALL_SC + 1;
+pub(crate) const COL_IS_NEXT_LINE_DIFF_INST: usize = COL_IS_ENTRY_SC + 1;
+pub(crate) const COL_IS_NEXT_LINE_SAME_TX: usize = COL_IS_NEXT_LINE_DIFF_INST + 1;
+pub(crate) const COL_IS_PADDING: usize = COL_IS_NEXT_LINE_SAME_TX + 1;
+
+pub(crate) const NUM_CPU_COLS: usize = COL_IS_PADDING + 1;
 
 pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
@@ -195,5 +200,9 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_S_TLOAD, "s_tload".to_string());
     m.insert(COL_S_TSTORE, "s_tstore".to_string());
     m.insert(COL_S_CALL_SC, "s_call_sc".to_string());
+    m.insert(COL_IS_ENTRY_SC, "is_entry_sc".to_string());
+    m.insert(COL_IS_NEXT_LINE_DIFF_INST, "is_next_line_diff_inst".to_string());
+    m.insert(COL_IS_NEXT_LINE_SAME_TX, "is_next_line_same_tx".to_string());
+    m.insert(COL_IS_PADDING, "is_padding".to_string());
     m
 }
