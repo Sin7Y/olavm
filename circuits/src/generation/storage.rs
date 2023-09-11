@@ -49,10 +49,6 @@ pub fn generate_storage_trace<F: RichField>(cells: &[StorageRow]) -> [Vec<F>; CO
             } else {
                 F::ZERO
             };
-        trace[COL_STORAGE_LOOKING_RC][i] = match i {
-            0 => F::ZERO,
-            _ => F::ONE,
-        }
     }
 
     // Pad with zero should be ok, no need pad manually here.
