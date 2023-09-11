@@ -22,7 +22,7 @@ const MIN_CONCURRENT_SIZE: usize = 1024;
 
 #[cfg(feature = "cuda")]
 lazy_static! {
-    static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(1));
+    static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(2));
     // static ref RT: Runtime = Runtime::new().unwrap();
 }
 
@@ -62,15 +62,9 @@ where
         //         drop(permit);
         //     });
         // }
-        // let p2 = run_evaluate_poly(p);
-        // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
-        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
-            #[cfg(feature = "parallel")]
-            concurrent::evaluate_poly(p, twiddles);
-        } else {
-            serial::evaluate_poly(p, twiddles);
+        let p2 = run_evaluate_poly(p);
+        for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+            *item1 = item2;
         }
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
