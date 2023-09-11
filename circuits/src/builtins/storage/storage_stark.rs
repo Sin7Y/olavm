@@ -12,10 +12,10 @@ use crate::{
 };
 
 use super::columns::{
-    COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_FILTER_LOOKED_FOR_SLOAD,
-    COL_STORAGE_FILTER_LOOKED_FOR_SSTORE, COL_STORAGE_IDX_STORAGE, COL_STORAGE_LOOKING_RC,
-    COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE, COL_STORAGE_TX_IDX,
-    COL_STORAGE_VALUE_RANGE, COL_STORAGE_ENV_IDX,
+    COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_ENV_IDX,
+    COL_STORAGE_FILTER_LOOKED_FOR_SLOAD, COL_STORAGE_FILTER_LOOKED_FOR_SSTORE,
+    COL_STORAGE_IDX_STORAGE, COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE,
+    COL_STORAGE_TX_IDX, COL_STORAGE_VALUE_RANGE,
 };
 #[derive(Copy, Clone, Default)]
 pub struct StorageStark<F, const D: usize> {
@@ -36,7 +36,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
         let lv_idx_storage = vars.local_values[COL_STORAGE_IDX_STORAGE];
         let nv_idx_storage = vars.next_values[COL_STORAGE_IDX_STORAGE];
 
-        let filter_looking_rc = vars.local_values[COL_STORAGE_LOOKING_RC];
         let filter_looked_sstore = vars.local_values[COL_STORAGE_FILTER_LOOKED_FOR_SSTORE];
         let filter_looked_sload = vars.local_values[COL_STORAGE_FILTER_LOOKED_FOR_SLOAD];
         let opcode = vars.local_values[COL_STORAGE_OPCODE];
@@ -49,13 +48,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
                 * filter_looked_sload,
         );
 
-        // diff constraint
+        // storage idx constraint
         yield_constr.constraint_first_row(P::ONES - lv_idx_storage);
         yield_constr
             .constraint_transition(nv_idx_storage * (nv_idx_storage - lv_idx_storage - P::ONES));
-
-        yield_constr.constraint(filter_looking_rc * (P::ONES - filter_looking_rc));
-        yield_constr.constraint(lv_idx_storage * (P::ONES - filter_looking_rc));
     }
 
     fn eval_ext_circuit(
@@ -156,6 +152,13 @@ mod tests {
         test_storage_with_asm_file_name(file_name);
     }
 
+    #[test]
+    fn test_storage_vote() {
+        let file_name = "vote.json".to_string();
+        test_storage_with_asm_file_name(file_name);
+    }
+
+    #[allow(unused)]
     fn test_storage_with_asm_file_name(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");

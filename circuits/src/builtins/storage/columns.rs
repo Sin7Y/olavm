@@ -15,8 +15,7 @@ pub(crate) const COL_STORAGE_VALUE_RANGE: Range<usize> =
 pub(crate) const COL_STORAGE_FILTER_LOOKED_FOR_SSTORE: usize = COL_STORAGE_VALUE_RANGE.end;
 pub(crate) const COL_STORAGE_FILTER_LOOKED_FOR_SLOAD: usize =
     COL_STORAGE_FILTER_LOOKED_FOR_SSTORE + 1;
-pub(crate) const COL_STORAGE_LOOKING_RC: usize = COL_STORAGE_FILTER_LOOKED_FOR_SLOAD + 1;
-pub(crate) const COL_STORAGE_NUM: usize = COL_STORAGE_LOOKING_RC + 1;
+pub(crate) const COL_STORAGE_NUM: usize = COL_STORAGE_FILTER_LOOKED_FOR_SLOAD + 1;
 
 pub(crate) const COL_STORAGE_HASH_IDX_STORAGE: usize = 0;
 pub(crate) const COL_STORAGE_HASH_LAYER: usize = COL_STORAGE_HASH_IDX_STORAGE + 1;
@@ -96,7 +95,6 @@ pub(crate) fn get_storage_col_name_map() -> BTreeMap<usize, String> {
         COL_STORAGE_FILTER_LOOKED_FOR_SLOAD,
         String::from("LOOKED_FOR_SLOAD"),
     );
-    m.insert(COL_STORAGE_LOOKING_RC, String::from("LOOKING_RC"));
     m
 }
 
