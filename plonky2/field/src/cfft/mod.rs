@@ -23,7 +23,6 @@ const MIN_CONCURRENT_SIZE: usize = 1024;
 #[cfg(feature = "cuda")]
 lazy_static! {
     static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(1));
-    static ref RT: Runtime = Runtime::new().unwrap();
 }
 
 pub fn evaluate_poly<F>(p: &mut [F], twiddles: &[F])
@@ -51,17 +50,15 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        #[cfg(feature = "cuda")]
-        {
-            RT.block_on(async {
-                let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-                let p2 = run_evaluate_poly(p);
-                for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-                    *item1 = item2;
-                }
-                drop(permit);
-            });
-        }
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            let p2 = run_evaluate_poly(p);
+            for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+                *item1 = item2;
+            }
+            drop(permit);
+        });
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -111,8 +108,8 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        #[cfg(feature = "cuda")]
-        RT.block_on(async {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
             drop(permit);
@@ -158,8 +155,8 @@ where
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        #[cfg(feature = "cuda")]
-        RT.block_on(async {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_interpolate_poly(evaluations);
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
@@ -204,8 +201,8 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        #[cfg(feature = "cuda")]
-        RT.block_on(async {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
