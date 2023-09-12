@@ -53,7 +53,7 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        let rt = Runtime::new().unwrap();
+        let rt = build_runtime();
         rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_evaluate_poly(p);
@@ -111,7 +111,7 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        let rt = Runtime::new().unwrap();
+        let rt = build_runtime();
         rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
@@ -158,7 +158,7 @@ where
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        let rt = Runtime::new().unwrap();
+        let rt = build_runtime();
         rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_interpolate_poly(evaluations);
@@ -204,8 +204,8 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        // let rt = Runtime::new().unwrap();
-        RT.block_on(async {
+        let rt = build_runtime();
+        rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
@@ -287,4 +287,10 @@ pub unsafe fn uninit_vector<T>(length: usize) -> Vec<T> {
     let mut vector = Vec::with_capacity(length);
     vector.set_len(length);
     vector
+}
+
+pub fn build_runtime() -> Runtime {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build().unwrap()
 }
