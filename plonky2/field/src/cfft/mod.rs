@@ -23,7 +23,7 @@ const MIN_CONCURRENT_SIZE: usize = 1024;
 #[cfg(feature = "cuda")]
 lazy_static! {
     static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(1));
-    static ref RT: Runtime = tokio::runtime::Builder::new_multi_thread()
+    static ref RT: Runtime = tokio::runtime::Builder::new_current_thread()
     .enable_all()
     .build().unwrap();
 }
