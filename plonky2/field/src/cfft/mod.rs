@@ -205,7 +205,7 @@ where
     // concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let rt = Runtime::new().unwrap();
-        rt.block_on(async {
+        RT.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
