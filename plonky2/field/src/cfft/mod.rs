@@ -23,7 +23,7 @@ const MIN_CONCURRENT_SIZE: usize = 1024;
 #[cfg(feature = "cuda")]
 lazy_static! {
     static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(1));
-    static ref RT: Runtime = tokio::runtime::Builder::new_current_thread()
+    static ref RT: Runtime = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .build().unwrap();
 }
@@ -158,8 +158,8 @@ where
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        // let rt = Runtime::new().unwrap();
-        RT.block_on(async {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_interpolate_poly(evaluations);
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
