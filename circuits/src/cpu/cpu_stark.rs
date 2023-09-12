@@ -734,8 +734,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
 
         // idx_storage
         yield_constr.constraint_first_row(lv[COL_IDX_STORAGE]);
-        yield_constr.constraint(
-            lv[COL_IDX_STORAGE] + nv[COL_S_SSTORE] + nv[COL_S_SLOAD] - nv[COL_IDX_STORAGE],
+        yield_constr.constraint_transition(
+            (nv[COL_IDX_STORAGE] - lv[COL_IDX_STORAGE]) - (nv[COL_S_SSTORE] + nv[COL_S_SLOAD]),
         );
 
         // opcode
