@@ -56,7 +56,8 @@ where
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         // let lock = Arc::clone(&GPU_LOCK);
-        let mut gpu = GPU_LOCK.lock().unwrap();
+        let gpu = Arc::clone(&GPU_LOCK);
+        let mut gpu = gpu.lock().unwrap();
         let p2 = run_evaluate_poly(p);
         for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
             *item1 = item2;
@@ -133,7 +134,8 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        let mut gpu = GPU_LOCK.lock().unwrap();
+        let gpu = Arc::clone(&GPU_LOCK);
+        let mut gpu = gpu.lock().unwrap();
         result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
         *gpu += 1;
         // let rt = build_runtime();
@@ -184,7 +186,8 @@ where
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        let mut gpu = GPU_LOCK.lock().unwrap();
+        let gpu = Arc::clone(&GPU_LOCK);
+        let mut gpu = gpu.lock().unwrap();
         let p2 = run_interpolate_poly(evaluations);
         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
             *item1 = item2;
@@ -237,7 +240,8 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        let mut gpu = GPU_LOCK.lock().unwrap();
+        let gpu = Arc::clone(&GPU_LOCK);
+        let mut gpu = gpu.lock().unwrap();
         let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
             *item1 = item2;
