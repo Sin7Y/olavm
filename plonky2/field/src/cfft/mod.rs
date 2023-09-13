@@ -58,10 +58,13 @@ where
         // let lock = Arc::clone(&GPU_LOCK);
         let gpu = Arc::clone(&GPU_LOCK);
         let mut gpu = gpu.lock().unwrap();
-        let p2 = run_evaluate_poly(p);
-        for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
-        }
+        // let p2 = run_evaluate_poly(p);
+        // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+        //     *item1 = item2;
+        // }
+
+        serial::evaluate_poly(p, twiddles);
+
         *gpu += 1;
         // let rt = build_runtime();
         // let (h, rt) = get_runtime_handle();
@@ -136,7 +139,10 @@ where
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         let gpu = Arc::clone(&GPU_LOCK);
         let mut gpu = gpu.lock().unwrap();
-        result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
+        // result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
+
+        result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+
         *gpu += 1;
         // let rt = build_runtime();
         // let (h, rt) = get_runtime_handle();
@@ -188,10 +194,13 @@ where
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let gpu = Arc::clone(&GPU_LOCK);
         let mut gpu = gpu.lock().unwrap();
-        let p2 = run_interpolate_poly(evaluations);
-        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
-        }
+        // let p2 = run_interpolate_poly(evaluations);
+        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+        //     *item1 = item2;
+        // }
+
+        serial::interpolate_poly(evaluations, inv_twiddles);
+
         *gpu += 1;
         // let rt = build_runtime();
         // let (h, rt) = get_runtime_handle();
@@ -242,10 +251,12 @@ where
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let gpu = Arc::clone(&GPU_LOCK);
         let mut gpu = gpu.lock().unwrap();
-        let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
-        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
-        }
+        // let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
+        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+        //     *item1 = item2;
+        // }
+
+        serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
 
         *gpu += 1;
         // let rt = build_runtime();
