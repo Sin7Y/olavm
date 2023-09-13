@@ -57,15 +57,9 @@ where
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         // let lock = Arc::clone(&GPU_LOCK);
         let mut gpu = GPU_LOCK.lock().unwrap();
-        // let p2 = run_evaluate_poly(p);
-        // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
-        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
-            #[cfg(feature = "parallel")]
-            concurrent::evaluate_poly(p, twiddles);
-        } else {
-            serial::evaluate_poly(p, twiddles);
+        let p2 = run_evaluate_poly(p);
+        for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+            *item1 = item2;
         }
         *gpu += 1;
         // let rt = build_runtime();
@@ -140,16 +134,7 @@ where
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         let mut gpu = GPU_LOCK.lock().unwrap();
-        // result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
-        if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
-            #[cfg(feature = "parallel")]
-            {
-                result =
-                    concurrent::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
-            }
-        } else {
-            result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
-        }
+        result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
         *gpu += 1;
         // let rt = build_runtime();
         // let (h, rt) = get_runtime_handle();
@@ -200,15 +185,9 @@ where
     // bother with the concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let mut gpu = GPU_LOCK.lock().unwrap();
-        // let p2 = run_interpolate_poly(evaluations);
-        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
-        if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
-            #[cfg(feature = "parallel")]
-            concurrent::interpolate_poly(evaluations, inv_twiddles);
-        } else {
-            serial::interpolate_poly(evaluations, inv_twiddles);
+        let p2 = run_interpolate_poly(evaluations);
+        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+            *item1 = item2;
         }
         *gpu += 1;
         // let rt = build_runtime();
@@ -259,16 +238,11 @@ where
     // concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let mut gpu = GPU_LOCK.lock().unwrap();
-        // let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
-        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
-        if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
-            #[cfg(feature = "parallel")]
-            concurrent::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
-        } else {
-            serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
+        let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
+        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+            *item1 = item2;
         }
+
         *gpu += 1;
         // let rt = build_runtime();
         // RT.block_on(async {
