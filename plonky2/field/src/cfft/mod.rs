@@ -58,12 +58,12 @@ where
         // let lock = Arc::clone(&GPU_LOCK);
         let gpu = Arc::clone(&GPU_LOCK);
         let mut gpu = gpu.lock().unwrap();
-        // let p2 = run_evaluate_poly(p);
-        // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
+        let p2 = run_evaluate_poly(p);
+        for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+            *item1 = item2;
+        }
 
-        serial::evaluate_poly(p, twiddles);
+        // serial::evaluate_poly(p, twiddles);
 
         *gpu += 1;
         // let rt = build_runtime();
@@ -139,9 +139,9 @@ where
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         let gpu = Arc::clone(&GPU_LOCK);
         let mut gpu = gpu.lock().unwrap();
-        result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
+        // result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
 
-        // result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+        result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
 
         *gpu += 1;
         // let rt = build_runtime();
