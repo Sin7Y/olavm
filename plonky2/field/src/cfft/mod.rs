@@ -54,7 +54,7 @@ where
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         let rt = build_runtime();
-        rt.block_on(async {
+        futures::executor::block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_evaluate_poly(p);
             for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
@@ -112,7 +112,7 @@ where
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         let rt = build_runtime();
-        rt.block_on(async {
+        futures::executor::block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
             drop(permit);
@@ -159,7 +159,7 @@ where
     // bother with the concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let rt = build_runtime();
-        rt.block_on(async {
+        futures::executor::block_on(async {
             let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
             let p2 = run_interpolate_poly(evaluations);
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
