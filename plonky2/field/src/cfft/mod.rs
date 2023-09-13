@@ -194,12 +194,12 @@ where
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         let gpu = Arc::clone(&GPU_LOCK);
         let mut gpu = gpu.lock().unwrap();
-        // let p2 = run_interpolate_poly(evaluations);
-        // for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //     *item1 = item2;
-        // }
+        let p2 = run_interpolate_poly(evaluations);
+        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+            *item1 = item2;
+        }
 
-        serial::interpolate_poly(evaluations, inv_twiddles);
+        // serial::interpolate_poly(evaluations, inv_twiddles);
 
         *gpu += 1;
         // let rt = build_runtime();
