@@ -22,15 +22,6 @@ mod tests;
 const USIZE_BITS: usize = 0_usize.count_zeros() as usize;
 const MIN_CONCURRENT_SIZE: usize = 1024;
 
-#[cfg(feature = "cuda")]
-lazy_static! {
-    static ref CUDA_SP: Arc<Semaphore> = Arc::new(Semaphore::new(1));
-    static ref RT: Runtime = tokio::runtime::Builder::new_current_thread()
-    .enable_all()
-    .build().unwrap();
-    static ref GPU_LOCK: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
-}
-
 pub fn evaluate_poly<F>(p: &mut [F], twiddles: &[F])
 where
     F: Field,
@@ -58,8 +49,8 @@ where
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         #[cfg(feature = "cuda")]
         {
-            let gpu = Arc::clone(&GPU_LOCK);
-            let mut gpu = gpu.lock().unwrap();
+            // let gpu = Arc::clone(&GPU_LOCK);
+            // let mut gpu = gpu.lock().unwrap();
 
             let p2 = run_evaluate_poly(p);
             for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
@@ -68,7 +59,7 @@ where
 
             // serial::evaluate_poly(p, twiddles);
 
-            *gpu += 1;
+            // *gpu += 1;
 
             // let rt = build_runtime();
             // let (h, rt) = get_runtime_handle();
@@ -146,13 +137,13 @@ where
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
         #[cfg(feature = "cuda")]
         {
-            let gpu = Arc::clone(&GPU_LOCK);
-            let mut gpu = gpu.lock().unwrap();
+            // let gpu = Arc::clone(&GPU_LOCK);
+            // let mut gpu = gpu.lock().unwrap();
             result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
     
             // result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
     
-            *gpu += 1;
+            // *gpu += 1;
             // let rt = build_runtime();
             // let (h, rt) = get_runtime_handle();
             // h.block_on(async {
@@ -204,8 +195,8 @@ where
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         #[cfg(feature = "cuda")]
         {
-            let gpu = Arc::clone(&GPU_LOCK);
-            let mut gpu = gpu.lock().unwrap();
+            // let gpu = Arc::clone(&GPU_LOCK);
+            // let mut gpu = gpu.lock().unwrap();
             let p2 = run_interpolate_poly(evaluations);
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
                 *item1 = item2;
@@ -213,7 +204,7 @@ where
     
             // serial::interpolate_poly(evaluations, inv_twiddles);
     
-            *gpu += 1;
+            // *gpu += 1;
             // let rt = build_runtime();
             // let (h, rt) = get_runtime_handle();
             // h.block_on(async {
@@ -264,8 +255,8 @@ where
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
         #[cfg(feature = "cuda")]
         {
-            let gpu = Arc::clone(&GPU_LOCK);
-            let mut gpu = gpu.lock().unwrap();
+            // let gpu = Arc::clone(&GPU_LOCK);
+            // let mut gpu = gpu.lock().unwrap();
             let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
                 *item1 = item2;
@@ -273,7 +264,7 @@ where
     
             // serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
     
-            *gpu += 1;
+            // *gpu += 1;
             // let rt = build_runtime();
             // RT.block_on(async {
             //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
