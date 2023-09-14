@@ -1,4 +1,5 @@
 use plonky2_util::log2_strict;
+#[cfg(feature = "cuda")]
 use tokio::runtime::Handle;
 
 use crate::{types::Field, goldilocks_field::GoldilocksField};
@@ -55,39 +56,45 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        // let lock = Arc::clone(&GPU_LOCK);
-        let gpu = Arc::clone(&GPU_LOCK);
-        let mut gpu = gpu.lock().unwrap();
-        let p2 = run_evaluate_poly(p);
-        for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
+        #[cfg(feature = "cuda")]
+        {
+            let gpu = Arc::clone(&GPU_LOCK);
+            let mut gpu = gpu.lock().unwrap();
+
+            let p2 = run_evaluate_poly(p);
+            for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+                *item1 = item2;
+            }
+
+            // serial::evaluate_poly(p, twiddles);
+
+            *gpu += 1;
+
+            // let rt = build_runtime();
+            // let (h, rt) = get_runtime_handle();
+            // h.block_on(async {
+            //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            //     let p2 = run_evaluate_poly(p);
+            //     for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+            //         *item1 = item2;
+            //     }
+            //     drop(permit);
+            // });
+            // futures::executor::block_on(async {
+            //     RT.block_on(async move {
+            //         // println!("{:?}", p2);
+            //         // let p2 = run_evaluate_poly(p);
+            //         // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
+            //         //     *item1 = item2;
+            //         // }
+            //     });
+            //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+                
+            //     drop(permit);
+            // });
         }
-
-        // serial::evaluate_poly(p, twiddles);
-
-        *gpu += 1;
-        // let rt = build_runtime();
-        // let (h, rt) = get_runtime_handle();
-        // h.block_on(async {
-        //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-        //     let p2 = run_evaluate_poly(p);
-        //     for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-        //         *item1 = item2;
-        //     }
-        //     drop(permit);
-        // });
-        // futures::executor::block_on(async {
-        //     RT.block_on(async move {
-        //         // println!("{:?}", p2);
-        //         // let p2 = run_evaluate_poly(p);
-        //         // for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
-        //         //     *item1 = item2;
-        //         // }
-        //     });
-        //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-            
-        //     drop(permit);
-        // });
+        
+        
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -137,20 +144,23 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && p[0].as_any().is::<GoldilocksField>() {
-        let gpu = Arc::clone(&GPU_LOCK);
-        let mut gpu = gpu.lock().unwrap();
-        result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
-
-        // result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
-
-        *gpu += 1;
-        // let rt = build_runtime();
-        // let (h, rt) = get_runtime_handle();
-        // h.block_on(async {
-        //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-        //     result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
-        //     drop(permit);
-        // });
+        #[cfg(feature = "cuda")]
+        {
+            let gpu = Arc::clone(&GPU_LOCK);
+            let mut gpu = gpu.lock().unwrap();
+            result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
+    
+            // result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+    
+            *gpu += 1;
+            // let rt = build_runtime();
+            // let (h, rt) = get_runtime_handle();
+            // h.block_on(async {
+            //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            //     result = run_evaluate_poly_with_offset(p, domain_offset, blowup_factor);
+            //     drop(permit);
+            // });
+        }
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -192,26 +202,29 @@ where
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        let gpu = Arc::clone(&GPU_LOCK);
-        let mut gpu = gpu.lock().unwrap();
-        let p2 = run_interpolate_poly(evaluations);
-        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
+        #[cfg(feature = "cuda")]
+        {
+            let gpu = Arc::clone(&GPU_LOCK);
+            let mut gpu = gpu.lock().unwrap();
+            let p2 = run_interpolate_poly(evaluations);
+            for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+                *item1 = item2;
+            }
+    
+            // serial::interpolate_poly(evaluations, inv_twiddles);
+    
+            *gpu += 1;
+            // let rt = build_runtime();
+            // let (h, rt) = get_runtime_handle();
+            // h.block_on(async {
+            //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            //     let p2 = run_interpolate_poly(evaluations);
+            //     for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+            //         *item1 = item2;
+            //     }
+            //     drop(permit);
+            // });
         }
-
-        // serial::interpolate_poly(evaluations, inv_twiddles);
-
-        *gpu += 1;
-        // let rt = build_runtime();
-        // let (h, rt) = get_runtime_handle();
-        // h.block_on(async {
-        //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-        //     let p2 = run_interpolate_poly(evaluations);
-        //     for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //         *item1 = item2;
-        //     }
-        //     drop(permit);
-        // });
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -249,36 +262,39 @@ where
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
     if cfg!(feature = "cuda") && evaluations[0].as_any().is::<GoldilocksField>() {
-        let gpu = Arc::clone(&GPU_LOCK);
-        let mut gpu = gpu.lock().unwrap();
-        let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
-        for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-            *item1 = item2;
+        #[cfg(feature = "cuda")]
+        {
+            let gpu = Arc::clone(&GPU_LOCK);
+            let mut gpu = gpu.lock().unwrap();
+            let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
+            for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+                *item1 = item2;
+            }
+    
+            // serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
+    
+            *gpu += 1;
+            // let rt = build_runtime();
+            // RT.block_on(async {
+            //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            //     let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
+            //     for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+            //         *item1 = item2;
+            //     }
+            //     drop(permit);
+            // });
+            // let (h, rt) = get_runtime_handle();
+            // h.block_on(async {
+            //     // RT.block_on(async {
+            //         let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
+            //         let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
+            //         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
+            //             *item1 = item2;
+            //         }
+            //         drop(permit);
+            //     // });
+            // });
         }
-
-        // serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
-
-        *gpu += 1;
-        // let rt = build_runtime();
-        // RT.block_on(async {
-        //     let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-        //     let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
-        //     for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //         *item1 = item2;
-        //     }
-        //     drop(permit);
-        // });
-        // let (h, rt) = get_runtime_handle();
-        // h.block_on(async {
-        //     // RT.block_on(async {
-        //         let permit = CUDA_SP.clone().acquire_owned().await.unwrap();
-        //         let p2 = run_interpolate_poly_with_offset(evaluations, domain_offset);
-        //         for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
-        //             *item1 = item2;
-        //         }
-        //         drop(permit);
-        //     // });
-        // });
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
@@ -355,12 +371,14 @@ pub unsafe fn uninit_vector<T>(length: usize) -> Vec<T> {
     vector
 }
 
+#[cfg(feature = "cuda")]
 pub fn build_runtime() -> Runtime {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build().unwrap()
 }
 
+#[cfg(feature = "cuda")]
 fn get_runtime_handle() -> (Handle, Option<Runtime>) {
     match Handle::try_current() {
         Ok(h) => (h, None),
