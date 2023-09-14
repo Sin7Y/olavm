@@ -18,14 +18,14 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
         F: Field,
 {
     unsafe {
-        let mut p2: Vec::<u64> = p.par_iter().map(|f| {
+        let mut p2: Vec::<u64> = p.iter().map(|f| {
             f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
         }).collect::<Vec<u64>>();
         
         #[cfg(feature = "cuda")]
         evaluate_poly(p2.as_mut_ptr(), p2.len() as u64);
 
-        p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        p2.iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
     }
 }
 
@@ -35,7 +35,7 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
         F: Field,
 {
     unsafe {
-        let mut p2: Vec::<u64> = p.par_iter().map(|f| {
+        let mut p2: Vec::<u64> = p.iter().map(|f| {
             f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
         }).collect::<Vec<u64>>();
         let domain_offset = domain_offset.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
@@ -46,7 +46,7 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
         #[cfg(feature = "cuda")]
         evaluate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset, blowup_factor,result.as_mut_ptr(),result_len);
 
-        result.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        result.iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
         
     }
 }
@@ -57,14 +57,14 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
         F: Field,
 {
     unsafe {
-        let mut p2: Vec::<u64> = p.par_iter().map(|f| {
+        let mut p2: Vec::<u64> = p.iter().map(|f| {
             f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
         }).collect::<Vec<u64>>();
 
         #[cfg(feature = "cuda")]
         interpolate_poly(p2.as_mut_ptr(), p2.len() as u64);
 
-        p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        p2.iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
     }
 }
 
@@ -74,7 +74,7 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
         F: Field,
 {
     unsafe {
-        let mut p2: Vec::<u64> = p.par_iter().map(|f| {
+        let mut p2: Vec::<u64> = p.iter().map(|f| {
             f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
         }).collect::<Vec<u64>>();
         let domain_offset = domain_offset.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
@@ -82,6 +82,6 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
         #[cfg(feature = "cuda")]
         interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset);
 
-        p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        p2.iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
     }
 }
