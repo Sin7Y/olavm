@@ -6,6 +6,7 @@ use crate::{types::Field, goldilocks_field::GoldilocksField};
 
 use crate::cfft::ntt::*;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 #[cfg(feature = "cuda")]
 use tokio::{ self, runtime::Runtime, sync::Semaphore };
 
@@ -131,6 +132,8 @@ where
     #[allow(unused_assignments)]
     let mut result = Vec::new();
 
+    let start = Instant::now();
+
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
@@ -152,16 +155,20 @@ where
             //     drop(permit);
             // });
         }
+        println!("[cuda](evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
             {
                 result =
                     concurrent::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+                    println!("[concurrent](evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
             }
         } else {
             result = serial::evaluate_poly_with_offset(p, twiddles, domain_offset, blowup_factor);
+            println!("[serial](evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
         }
+        
     }
 
     result
@@ -189,6 +196,8 @@ where
         evaluations.len()
     );
 
+    let start = Instant::now();
+
     // when `concurrent` feature is enabled, run the concurrent version of
     // interpolate_poly; unless the number of evaluations is small, then don't
     // bother with the concurrent version
@@ -201,6 +210,8 @@ where
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
                 *item1 = item2;
             }
+
+            println!("[cuda](interpolate_poly) data_len = {}, cost_time = {:?}", evaluations.len(), start.elapsed());
     
             // serial::interpolate_poly(evaluations, inv_twiddles);
     
@@ -220,8 +231,10 @@ where
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
             concurrent::interpolate_poly(evaluations, inv_twiddles);
+            println!("[concurrent](interpolate_poly) data_len = {}, cost_time = {:?}", evaluations.len(), start.elapsed());
         } else {
             serial::interpolate_poly(evaluations, inv_twiddles);
+            println!("[serial](interpolate_poly) data_len = {}, cost_time = {:?}", evaluations.len(), start.elapsed());
         }
     }
 }
@@ -249,6 +262,8 @@ where
     );
     assert_ne!(domain_offset, F::ZERO, "domain offset cannot be zero");
 
+    let start = Instant::now();
+
     // when `concurrent` feature is enabled, run the concurrent version of the
     // function; unless the polynomial is small, then don't bother with the
     // concurrent version
@@ -261,6 +276,8 @@ where
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
                 *item1 = item2;
             }
+
+            println!("[cuda](interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", evaluations.len(), start.elapsed());
     
             // serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
     
@@ -290,8 +307,10 @@ where
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
             #[cfg(feature = "parallel")]
             concurrent::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
+            println!("[concurrent](interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", evaluations.len(), start.elapsed());
         } else {
             serial::interpolate_poly_with_offset(evaluations, inv_twiddles, domain_offset);
+            println!("[serial](interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", evaluations.len(), start.elapsed());
         }
     }
 }
