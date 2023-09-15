@@ -1,6 +1,7 @@
 use core::program::Program;
 use std::any::type_name;
 use std::collections::BTreeMap;
+use std::time::Instant;
 
 use anyhow::{ensure, Result};
 use maybe_rayon::*;
@@ -83,6 +84,8 @@ where
 
     let mut twiddle_map = BTreeMap::new();
 
+    let start = Instant::now();
+
     let trace_commitments = timed!(
         timing,
         "compute trace commitments",
@@ -103,6 +106,8 @@ where
             })
             .collect::<Vec<_>>()
     );
+
+    println!("trace_commitments: {:?}", start.elapsed());
 
     let trace_caps = trace_commitments
         .iter()
