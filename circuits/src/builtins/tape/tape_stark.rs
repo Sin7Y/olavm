@@ -1,6 +1,7 @@
-use core::vm::opcodes::OlaOpcode;
+use core::{types::Field, vm::opcodes::OlaOpcode};
 use std::marker::PhantomData;
 
+use itertools::Itertools;
 use plonky2::{
     field::{
         extension::{Extendable, FieldExtension},
@@ -12,6 +13,7 @@ use plonky2::{
 
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    cross_table_lookup::Column,
     stark::Stark,
     vars::{StarkEvaluationTargets, StarkEvaluationVars},
 };
@@ -20,6 +22,20 @@ use super::columns::{
     COL_FILTER_LOOKED, COL_TAPE_ADDR, COL_TAPE_IS_INIT_SEG, COL_TAPE_OPCODE, COL_TAPE_TX_IDX,
     COL_TAPE_VALUE, NUM_COL_TAPE,
 };
+
+pub fn ctl_data_tape_tload_tstore<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_TAPE_TX_IDX,
+        COL_TAPE_OPCODE,
+        COL_TAPE_ADDR,
+        COL_TAPE_VALUE,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_tape_tload_tstore<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_LOOKED)
+}
 
 #[derive(Copy, Clone, Default)]
 pub struct TapeStark<F, const D: usize> {

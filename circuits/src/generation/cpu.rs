@@ -136,6 +136,7 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
         } else {
             F::ONE
         };
+        trace[cpu::COL_FILTER_TAPE_LOOKING][i] = F::from_canonical_u64(s.filter_tape_looking.0);
     }
 
     // fill in padding.
