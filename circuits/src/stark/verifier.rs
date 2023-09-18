@@ -10,9 +10,9 @@ use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;
 use super::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
 use super::ola_stark::{OlaStark, Table, NUM_TABLES};
-use super::permutation::{PermutationCheckVars, GrandProductChallenge};
+use super::permutation::{GrandProductChallenge, PermutationCheckVars};
 use super::proof::{
-    AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges, PublicValues,
+    AllProof, AllProofChallenges, PublicValues, StarkOpeningSet, StarkProof, StarkProofChallenges,
 };
 use super::stark::Stark;
 use super::vanishing_poly::eval_vanishing_poly;
@@ -21,8 +21,10 @@ use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
+use crate::builtins::sccall::sccall_stark::SCCallStark;
 use crate::builtins::storage::storage_hash::StorageHashStark;
 use crate::builtins::storage::storage_stark::StorageStark;
+use crate::builtins::tape::tape_stark::TapeStark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::MemoryStark;
 
@@ -32,6 +34,7 @@ pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, co
     config: &StarkConfig,
 ) -> Result<()>
 where
+    [(); C::Hasher::HASH_SIZE]:,
     [(); CpuStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
     [(); BitwiseStark::<F, D>::COLUMNS]:,
@@ -40,7 +43,8 @@ where
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
-    [(); C::Hasher::HASH_SIZE]:,
+    [(); TapeStark::<F, D>::COLUMNS]:,
+    [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let AllProofChallenges {
         stark_challenges,
@@ -58,6 +62,8 @@ where
         poseidon_stark,
         storage_stark,
         storage_hash_stark,
+        tape_stark,
+        sccall_stark,
         cross_table_lookups,
     } = ola_stark;
 
@@ -136,15 +142,30 @@ where
         config,
     )?;
 
+    verify_stark_proof_with_challenges(
+        tape_stark,
+        &all_proof.stark_proofs[Table::Tape as usize],
+        &stark_challenges[Table::Tape as usize],
+        &ctl_vars_per_table[Table::Tape as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        sccall_stark,
+        &all_proof.stark_proofs[Table::SCCall as usize],
+        &stark_challenges[Table::SCCall as usize],
+        &ctl_vars_per_table[Table::SCCall as usize],
+        config,
+    )?;
+
     // TODO:
     let public_values = all_proof.public_values;
     let mut extra_looking_products = vec![vec![F::ONE; config.num_challenges]; NUM_TABLES - 1];
     extra_looking_products.push(Vec::new());
     for c in 0..config.num_challenges {
-        extra_looking_products[Table::StorageHash as usize].push(get_storagehash_extra_looking_products(
-            &public_values,
-            ctl_challenges.challenges[c],
-        ));
+        extra_looking_products[Table::StorageHash as usize].push(
+            get_storagehash_extra_looking_products(&public_values, ctl_challenges.challenges[c]),
+        );
     }
 
     verify_cross_table_lookups::<F, C, D>(

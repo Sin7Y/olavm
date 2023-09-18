@@ -5,8 +5,10 @@ use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
 use crate::builtins::poseidon::poseidon_stark::{self, PoseidonStark};
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
+use crate::builtins::sccall::sccall_stark::SCCallStark;
 use crate::builtins::storage::storage_hash::{self, StorageHashStark};
 use crate::builtins::storage::storage_stark::{self, StorageStark};
+use crate::builtins::tape::tape_stark::{self, TapeStark};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::{
@@ -28,6 +30,8 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub poseidon_stark: PoseidonStark<F, D>,
     pub storage_stark: StorageStark<F, D>,
     pub storage_hash_stark: StorageHashStark<F, D>,
+    pub tape_stark: TapeStark<F, D>,
+    pub sccall_stark: SCCallStark<F, D>,
 
     pub cross_table_lookups: Vec<CrossTableLookup<F>>,
 }
@@ -43,6 +47,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
             poseidon_stark: PoseidonStark::default(),
             storage_stark: StorageStark::default(),
             storage_hash_stark: StorageHashStark::default(),
+            tape_stark: TapeStark::default(),
+            sccall_stark: SCCallStark::default(),
             cross_table_lookups: all_cross_table_lookups(),
         }
     }
@@ -59,6 +65,8 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.poseidon_stark.num_permutation_batches(config),
             self.storage_stark.num_permutation_batches(config),
             self.storage_hash_stark.num_permutation_batches(config),
+            self.tape_stark.num_permutation_batches(config),
+            self.sccall_stark.num_permutation_batches(config),
         ]
     }
 
@@ -72,6 +80,8 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.poseidon_stark.permutation_batch_size(),
             self.storage_stark.permutation_batch_size(),
             self.storage_hash_stark.permutation_batch_size(),
+            self.tape_stark.permutation_batch_size(),
+            self.sccall_stark.permutation_batch_size(),
         ]
     }
 }
@@ -87,11 +97,13 @@ pub enum Table {
     Poseidon = 5,
     Storage = 6,
     StorageHash = 7,
+    Tape = 8,
+    SCCall = 9,
     // program table
     // Program = 8,
 }
 
-pub(crate) const NUM_TABLES: usize = 8;
+pub(crate) const NUM_TABLES: usize = 10;
 
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     vec![
@@ -108,6 +120,7 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
         ctl_cpu_storage_sload(),
         ctl_storage_poseidon_tree_key(),
         ctl_storage_hash(),
+        ctl_cpu_tape(),
     ]
 }
 
@@ -127,7 +140,18 @@ fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
         cpu_stark::ctl_data_cpu_mem_call_ret_fp(),
         Some(cpu_stark::ctl_filter_cpu_mem_call_ret()),
     );
-    let all_cpu_lookers = vec![cpu_mem_store_load, cpu_mem_call_ret_pc, cpu_mem_call_ret_fp];
+    let cpu_mem_tload_tstore = TableWithColumns::new(
+        Table::Cpu,
+        cpu_stark::ctl_data_cpu_mem_tload_tstore(),
+        Some(cpu_stark::ctl_filter_cpu_mem_tload_tstore()),
+    );
+
+    let all_cpu_lookers = vec![
+        cpu_mem_store_load,
+        cpu_mem_call_ret_pc,
+        cpu_mem_call_ret_fp,
+        cpu_mem_tload_tstore,
+    ];
     let memory_looked =
         TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter()));
     CrossTableLookup::new(all_cpu_lookers, memory_looked)
@@ -341,6 +365,21 @@ fn ctl_storage_hash<F: Field>() -> CrossTableLookup<F> {
             Table::StorageHash,
             storage_hash::ctl_data_with_storage(),
             Some(storage_hash::ctl_filter_with_storage()),
+        ),
+    )
+}
+
+fn ctl_cpu_tape<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_tape(),
+            Some(cpu_stark::ctl_filter_cpu_tape()),
+        )],
+        TableWithColumns::new(
+            Table::Tape,
+            tape_stark::ctl_data_tape_tload_tstore(),
+            Some(tape_stark::ctl_filter_tape_tload_tstore()),
         ),
     )
 }

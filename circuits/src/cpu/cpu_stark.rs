@@ -62,6 +62,22 @@ pub fn ctl_filter_cpu_mem_call_ret<F: Field>() -> Column<F> {
     Column::sum([COL_S_CALL, COL_S_RET])
 }
 
+pub fn ctl_data_cpu_mem_tload_tstore<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_AUX0,
+        COL_AUX1,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_cpu_mem_tload_tstore<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_TAPE_LOOKING)
+}
+
 // get the data source for bitwise in Cpu table
 pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
     Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec()
@@ -173,6 +189,14 @@ pub fn ctl_filter_with_sstore<F: Field>() -> Column<F> {
     Column::single(COL_S_SSTORE)
 }
 
+pub fn ctl_data_cpu_tape<F: Field>() -> Vec<Column<F>> {
+    Column::singles([COL_TX_IDX, COL_TP, COL_OPCODE, COL_AUX1]).collect_vec()
+}
+
+pub fn ctl_filter_cpu_tape<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_TAPE_LOOKING)
+}
+
 // get the data source for Rangecheck in Cpu table
 pub fn ctl_data_with_program<F: Field>() -> Vec<Column<F>> {
     Column::singles([COL_PC, COL_INST, COL_IMM_VAL]).collect_vec()
@@ -263,7 +287,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         });
     }
 
-    fn constaint_env_idx<FE, P, const D2: usize>(
+    fn constraint_env_idx<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
@@ -313,7 +337,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         );
     }
 
-    fn constaint_opcode_selector<FE, P, const D2: usize>(
+    fn constraint_opcode_selector<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
@@ -371,7 +395,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         yield_constr.constraint(lv[COL_OPCODE] - opcode);
     }
 
-    fn constaint_instruction_encode<FE, P, const D2: usize>(
+    fn constraint_instruction_encode<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
@@ -419,7 +443,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         yield_constr.constraint(lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL]));
     }
 
-    fn constaint_operands_mathches_registers<FE, P, const D2: usize>(
+    fn constraint_operands_mathches_registers<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
@@ -479,7 +503,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         yield_constr.constraint_transition(sum_s_dst * (lv[COL_DST] - dst_sum));
     }
 
-    fn constaint_ext_lines<FE, P, const D2: usize>(
+    fn constraint_ext_lines<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
@@ -510,7 +534,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         );
     }
 
-    fn constaint_env_unchanged_clk<FE, P, const D2: usize>(
+    fn constraint_env_unchanged_clk<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
@@ -532,7 +556,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         )
     }
 
-    fn constaint_env_unchanged_pc<FE, P, const D2: usize>(
+    fn constraint_env_unchanged_pc<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
@@ -576,7 +600,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         );
     }
 
-    fn constaint_reg_consistency<FE, P, const D2: usize>(
+    fn constraint_reg_consistency<FE, P, const D2: usize>(
         wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
@@ -607,6 +631,35 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
                 - wrapper.lv[COL_S_END])
                 * (P::ONES - s_dsts[REGISTER_NUM - 1])
                 * (wrapper.n_regs[REGISTER_NUM - 1] - wrapper.regs[REGISTER_NUM - 1]),
+        );
+    }
+
+    fn constraint_tape_filter<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        // tstore, tload ext lines should trigger lookup.
+        // binary
+        yield_constr.constraint(
+            wrapper.lv[COL_FILTER_TAPE_LOOKING] * (P::ONES - wrapper.lv[COL_FILTER_TAPE_LOOKING]),
+        );
+        // non tstore, tload should be 0
+        yield_constr.constraint(
+            wrapper.lv[COL_FILTER_TAPE_LOOKING]
+                * (P::ONES - wrapper.lv[COL_S_TLOAD] - wrapper.lv[COL_S_TSTORE]),
+        );
+        // non ext line should be 0
+        yield_constr.constraint(
+            wrapper.lv[COL_FILTER_TAPE_LOOKING] * (P::ONES - wrapper.lv[COL_IS_EXT_LINE]),
+        );
+        // tstore/tload ext line should be 1
+        yield_constr.constraint(
+            (wrapper.lv[COL_S_TLOAD] + wrapper.lv[COL_S_TSTORE])
+                * wrapper.lv[COL_IS_EXT_LINE]
+                * (P::ONES - wrapper.lv[COL_FILTER_TAPE_LOOKING]),
         );
     }
 }
@@ -723,14 +776,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             );
         }
 
-        Self::constaint_ext_lines(&wrapper, yield_constr);
-        Self::constaint_env_idx(&wrapper, yield_constr);
-        Self::constaint_opcode_selector(&wrapper, yield_constr);
-        Self::constaint_instruction_encode(&wrapper, yield_constr);
-        Self::constaint_operands_mathches_registers(&wrapper, yield_constr);
-        Self::constaint_env_unchanged_clk(&wrapper, yield_constr);
-        Self::constaint_env_unchanged_pc(&wrapper, yield_constr);
-        Self::constaint_reg_consistency(&wrapper, yield_constr);
+        Self::constraint_ext_lines(&wrapper, yield_constr);
+        Self::constraint_env_idx(&wrapper, yield_constr);
+        Self::constraint_opcode_selector(&wrapper, yield_constr);
+        Self::constraint_instruction_encode(&wrapper, yield_constr);
+        Self::constraint_operands_mathches_registers(&wrapper, yield_constr);
+        Self::constraint_env_unchanged_clk(&wrapper, yield_constr);
+        Self::constraint_env_unchanged_pc(&wrapper, yield_constr);
+        Self::constraint_reg_consistency(&wrapper, yield_constr);
+        Self::constraint_tape_filter(&wrapper, yield_constr);
 
         // idx_storage
         yield_constr.constraint_first_row(lv[COL_IDX_STORAGE]);
