@@ -30,7 +30,7 @@ fn fft_in_place() {
 
 #[test]
 #[ignore]
-fn fft_2_20() {
+fn evaluate_poly_2_20() {
     type F = GoldilocksField;
     let degree: usize = 1 << 20;
     let degree_padded = degree.next_power_of_two();
@@ -63,7 +63,7 @@ fn fft_2_20() {
 
     super::evaluate_poly(&mut points, &twiddles);
 
-    println!("evaluate_poly cost time = {}", start.elapsed());
+    println!("evaluate_poly cost time = {:?}", start.elapsed());
 
     // let mut coeffs_file = std::fs::File::create("./coeffs_20.txt").unwrap();
     // let mut values_file = std::fs::File::create("./values_20.txt").unwrap();
@@ -77,7 +77,7 @@ fn fft_2_20() {
 
 #[test]
 #[ignore]
-fn ifft_2_20() {
+fn interpolate_poly_2_20() {
     type F = GoldilocksField;
     let degree: usize = 1 << 20;
     let degree_padded = degree.next_power_of_two();
@@ -105,16 +105,21 @@ fn ifft_2_20() {
 
     let points: Vec<GoldilocksField> = coeffs.clone();
     let twiddles = super::get_inv_twiddles::<F>(degree_padded);
+
+    let start = Instant::now();
+
     super::interpolate_poly(&mut coeffs, &twiddles);
 
-    let mut coeffs_file = std::fs::File::create("./coeffs_20_copy_copy.txt").unwrap();
-    let mut values_file = std::fs::File::create("./values_20_copy_copy.txt").unwrap();
-    for (coeff, point) in coeffs.into_iter().zip(points) {
-        coeffs_file.write_all(coeff.to_canonical_u64().to_string().as_bytes()).unwrap();
-        writeln!(coeffs_file).unwrap();
-        values_file.write_all(point.to_canonical_u64().to_string().as_bytes()).unwrap();
-        writeln!(values_file).unwrap();
-    }
+    println!("interpolate_poly cost time = {:?}", start.elapsed());
+
+    // let mut coeffs_file = std::fs::File::create("./coeffs_20_copy_copy.txt").unwrap();
+    // let mut values_file = std::fs::File::create("./values_20_copy_copy.txt").unwrap();
+    // for (coeff, point) in coeffs.into_iter().zip(points) {
+    //     coeffs_file.write_all(coeff.to_canonical_u64().to_string().as_bytes()).unwrap();
+    //     writeln!(coeffs_file).unwrap();
+    //     values_file.write_all(point.to_canonical_u64().to_string().as_bytes()).unwrap();
+    //     writeln!(values_file).unwrap();
+    // }
 }
 
 fn build_domain(size: usize) -> Vec<F> {
