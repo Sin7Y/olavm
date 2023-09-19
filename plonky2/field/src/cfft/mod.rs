@@ -22,6 +22,7 @@ mod tests;
 
 const USIZE_BITS: usize = 0_usize.count_zeros() as usize;
 const MIN_CONCURRENT_SIZE: usize = 1024;
+const MIN_CUDA_SIZE: usize = 1024;
 
 pub fn evaluate_poly<F>(p: &mut [F], twiddles: &[F])
 where
@@ -386,15 +387,4 @@ pub fn build_runtime() -> Runtime {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build().unwrap()
-}
-
-#[cfg(feature = "cuda")]
-fn get_runtime_handle() -> (Handle, Option<Runtime>) {
-    match Handle::try_current() {
-        Ok(h) => (h, None),
-        Err(_) => {
-            let rt = Runtime::new().unwrap();
-            (rt.handle().clone(), Some(rt))
-        }
-    }
 }

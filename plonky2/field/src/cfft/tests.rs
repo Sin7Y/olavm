@@ -1,4 +1,4 @@
-use std::{io::{Write, self, BufRead}, fs::File, path::Path};
+use std::{io::{Write, self, BufRead}, fs::File, path::Path, time::Instant};
 
 use plonky2_util::log2_strict;
 
@@ -58,16 +58,21 @@ fn fft_2_20() {
 
     let coeffs = points.clone();
     let twiddles = super::get_twiddles::<F>(degree_padded);
+
+    let start = Instant::now();
+
     super::evaluate_poly(&mut points, &twiddles);
 
-    let mut coeffs_file = std::fs::File::create("./coeffs_20.txt").unwrap();
-    let mut values_file = std::fs::File::create("./values_20.txt").unwrap();
-    for (coeff, point) in coeffs.into_iter().zip(points) {
-        coeffs_file.write_all(coeff.0.to_string().as_bytes()).unwrap();
-        writeln!(coeffs_file).unwrap();
-        values_file.write_all(point.0.to_string().as_bytes()).unwrap();
-        writeln!(values_file).unwrap();
-    }
+    println!("evaluate_poly cost time = {}", start.elapsed());
+
+    // let mut coeffs_file = std::fs::File::create("./coeffs_20.txt").unwrap();
+    // let mut values_file = std::fs::File::create("./values_20.txt").unwrap();
+    // for (coeff, point) in coeffs.into_iter().zip(points) {
+    //     coeffs_file.write_all(coeff.0.to_string().as_bytes()).unwrap();
+    //     writeln!(coeffs_file).unwrap();
+    //     values_file.write_all(point.0.to_string().as_bytes()).unwrap();
+    //     writeln!(values_file).unwrap();
+    // }
 }
 
 #[test]
