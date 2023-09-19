@@ -85,23 +85,23 @@ fn interpolate_poly_2_20() {
     // [1] sample points
     // Create a vector of coeffs; the first degree of them are
     // "random", the last degree_padded-degree of them are zero.
-    // let mut points = (0..degree)
-    //     .map(|i| F::from_canonical_usize(i * 1337 % 100))
-    //     .chain(std::iter::repeat(F::ZERO).take(degree_padded - degree))
-    //     .collect::<Vec<_>>();
+    let mut points = (0..degree)
+        .map(|i| F::from_canonical_usize(i * 1337 % 100))
+        .chain(std::iter::repeat(F::ZERO).take(degree_padded - degree))
+        .collect::<Vec<_>>();
 
     // [2] read points from file
-    let mut coeffs = vec![F::ZERO; degree_padded];
-    if let Ok(lines) = read_lines("./values_20.txt") {
-        for (idx, line) in lines.enumerate() {
-            if let Ok(v) = line {
-                let val = u64::from_str_radix(v.as_str(), 10);
-                if let Ok(val) = val {
-                    coeffs[idx] = F::from_canonical_u64(val);
-                }
-            }
-        }
-    }
+    // let mut coeffs = vec![F::ZERO; degree_padded];
+    // if let Ok(lines) = read_lines("./values_20.txt") {
+    //     for (idx, line) in lines.enumerate() {
+    //         if let Ok(v) = line {
+    //             let val = u64::from_str_radix(v.as_str(), 10);
+    //             if let Ok(val) = val {
+    //                 coeffs[idx] = F::from_canonical_u64(val);
+    //             }
+    //         }
+    //     }
+    // }
 
     let points: Vec<GoldilocksField> = coeffs.clone();
     let twiddles = super::get_inv_twiddles::<F>(degree_padded);
