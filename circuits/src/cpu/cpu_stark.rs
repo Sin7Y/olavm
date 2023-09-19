@@ -78,6 +78,36 @@ pub fn ctl_filter_cpu_mem_tload_tstore<F: Field>() -> Column<F> {
     Column::single(COL_FILTER_TAPE_LOOKING)
 }
 
+pub(crate) fn ctl_data_cpu_mem_sccall<F: Field>(i: usize) -> Vec<Column<F>> {
+    let col_addr = match i {
+        0 => COL_OP0,
+        1 => COL_DST,
+        2 => COL_AUX0,
+        3 => COL_AUX1,
+        _ => panic!("invalid cpu-mem sccall idx"),
+    };
+    let col_value = match i {
+        0 => COL_CODE_CTX_REG_RANGE.start,
+        1 => COL_CODE_CTX_REG_RANGE.start + 1,
+        2 => COL_CODE_CTX_REG_RANGE.start + 2,
+        3 => COL_CODE_CTX_REG_RANGE.start + 3,
+        _ => panic!("invalid cpu-mem sccall idx"),
+    };
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        col_addr,
+        col_value,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_cpu_mem_sccall<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_SCCALL_MEM_LOOKING)
+}
+
 // get the data source for bitwise in Cpu table
 pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
     Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec()
@@ -189,12 +219,57 @@ pub fn ctl_filter_with_sstore<F: Field>() -> Column<F> {
     Column::single(COL_S_SSTORE)
 }
 
-pub fn ctl_data_cpu_tape<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_cpu_tape_load_store<F: Field>() -> Vec<Column<F>> {
     Column::singles([COL_TX_IDX, COL_TP, COL_OPCODE, COL_AUX1]).collect_vec()
 }
 
-pub fn ctl_filter_cpu_tape<F: Field>() -> Column<F> {
+pub fn ctl_filter_cpu_tape_load_store<F: Field>() -> Column<F> {
     Column::single(COL_FILTER_TAPE_LOOKING)
+}
+
+pub fn ctl_data_cpu_sccall<F: Field>() -> Vec<Column<F>> {
+    let mut res = vec![COL_TX_IDX, COL_ENV_IDX];
+    for limb_exe_ctx_col in COL_CTX_REG_RANGE {
+        res.push(limb_exe_ctx_col);
+    }
+    for limb_code_ctx_col in COL_CODE_CTX_REG_RANGE {
+        res.push(limb_code_ctx_col);
+    }
+    res.extend([COL_CLK, COL_OP1_IMM]);
+    for reg_col in COL_REGS {
+        res.push(reg_col);
+    }
+    res.push(COL_AUX0);
+    Column::singles(res.into_iter()).collect_vec()
+}
+
+pub fn ctl_filter_cpu_sccall<F: Field>() -> Column<F> {
+    Column::linear_combination([
+        (COL_S_CALL_SC, F::ONE),
+        (COL_FILTER_SCCALL_MEM_LOOKING, F::NEG_ONE),
+        (COL_FILTER_SCCALL_TAPE_CALLER_CTX_LOOKING, F::NEG_ONE),
+        (COL_FILTER_SCCALL_TAPE_CALLEE_CTX_LOOKING, F::NEG_ONE),
+    ])
+}
+
+pub fn ctl_data_cpu_sccall_end<F: Field>() -> Vec<Column<F>> {
+    let mut res = vec![COL_TX_IDX, COL_ENV_IDX];
+    for limb_exe_ctx_col in COL_CTX_REG_RANGE {
+        res.push(limb_exe_ctx_col);
+    }
+    for limb_code_ctx_col in COL_CODE_CTX_REG_RANGE {
+        res.push(limb_code_ctx_col);
+    }
+    res.push(COL_CLK);
+    for reg_col in COL_REGS {
+        res.push(reg_col);
+    }
+    res.extend([COL_AUX0, COL_AUX1]);
+    Column::singles(res.into_iter()).collect_vec()
+}
+
+pub fn ctl_filter_cpu_sccall_end<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_SCCALL_END)
 }
 
 // get the data source for Rangecheck in Cpu table
@@ -204,6 +279,48 @@ pub fn ctl_data_with_program<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
     Column::single(COL_INST)
+}
+
+pub(crate) fn ctl_data_cpu_tape_sccall_caller<F: Field>(i: usize) -> Vec<Column<F>> {
+    let col_addr = match i {
+        0 => COL_OP0,
+        1 => COL_DST,
+        2 => COL_AUX0,
+        3 => COL_AUX1,
+        _ => panic!("invalid cpu-mem sccall idx"),
+    };
+    let col_value = match i {
+        0 => COL_CTX_REG_RANGE.start,
+        1 => COL_CTX_REG_RANGE.start + 1,
+        2 => COL_CTX_REG_RANGE.start + 2,
+        3 => COL_CTX_REG_RANGE.start + 3,
+        _ => panic!("invalid cpu-mem sccall idx"),
+    };
+    Column::singles([COL_TX_IDX, col_addr, COL_OPCODE, col_value]).collect_vec()
+}
+pub fn ctl_filter_cpu_tape_sccall_caller<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_SCCALL_TAPE_CALLER_CTX_LOOKING)
+}
+
+pub(crate) fn ctl_data_cpu_tape_sccall_callee<F: Field>(i: usize) -> Vec<Column<F>> {
+    let col_addr = match i {
+        0 => COL_OP0,
+        1 => COL_DST,
+        2 => COL_AUX0,
+        3 => COL_AUX1,
+        _ => panic!("invalid cpu-mem sccall idx"),
+    };
+    let col_value = match i {
+        0 => COL_CODE_CTX_REG_RANGE.start,
+        1 => COL_CODE_CTX_REG_RANGE.start + 1,
+        2 => COL_CODE_CTX_REG_RANGE.start + 2,
+        3 => COL_CODE_CTX_REG_RANGE.start + 3,
+        _ => panic!("invalid cpu-mem sccall idx"),
+    };
+    Column::singles([COL_TX_IDX, col_addr, COL_OPCODE, col_value]).collect_vec()
+}
+pub fn ctl_filter_cpu_tape_sccall_callee<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_SCCALL_TAPE_CALLEE_CTX_LOOKING)
 }
 
 #[derive(Copy, Clone, Default)]
@@ -633,35 +750,6 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
                 * (wrapper.n_regs[REGISTER_NUM - 1] - wrapper.regs[REGISTER_NUM - 1]),
         );
     }
-
-    fn constraint_tape_filter<FE, P, const D2: usize>(
-        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
-        yield_constr: &mut ConstraintConsumer<P>,
-    ) where
-        FE: FieldExtension<D2, BaseField = F>,
-        P: PackedField<Scalar = FE>,
-    {
-        // tstore, tload ext lines should trigger lookup.
-        // binary
-        yield_constr.constraint(
-            wrapper.lv[COL_FILTER_TAPE_LOOKING] * (P::ONES - wrapper.lv[COL_FILTER_TAPE_LOOKING]),
-        );
-        // non tstore, tload should be 0
-        yield_constr.constraint(
-            wrapper.lv[COL_FILTER_TAPE_LOOKING]
-                * (P::ONES - wrapper.lv[COL_S_TLOAD] - wrapper.lv[COL_S_TSTORE]),
-        );
-        // non ext line should be 0
-        yield_constr.constraint(
-            wrapper.lv[COL_FILTER_TAPE_LOOKING] * (P::ONES - wrapper.lv[COL_IS_EXT_LINE]),
-        );
-        // tstore/tload ext line should be 1
-        yield_constr.constraint(
-            (wrapper.lv[COL_S_TLOAD] + wrapper.lv[COL_S_TSTORE])
-                * wrapper.lv[COL_IS_EXT_LINE]
-                * (P::ONES - wrapper.lv[COL_FILTER_TAPE_LOOKING]),
-        );
-    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -707,7 +795,7 @@ impl<
         let lv_is_entry_sc = lv[COL_IS_ENTRY_SC];
         let lv_ext_length = lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
             + lv[COL_S_TSTORE]
-            + lv[COL_S_CALL_SC] * P::Scalar::from_canonical_u64(4)
+            + lv[COL_S_CALL_SC] * P::Scalar::from_canonical_u64(3)
             + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
         let is_crossing_inst = lv[COL_IS_NEXT_LINE_DIFF_INST];
         let is_in_same_tx = lv[COL_IS_NEXT_LINE_SAME_TX];
@@ -784,7 +872,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         Self::constraint_env_unchanged_clk(&wrapper, yield_constr);
         Self::constraint_env_unchanged_pc(&wrapper, yield_constr);
         Self::constraint_reg_consistency(&wrapper, yield_constr);
-        Self::constraint_tape_filter(&wrapper, yield_constr);
 
         // idx_storage
         yield_constr.constraint_first_row(lv[COL_IDX_STORAGE]);
@@ -804,6 +891,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         mstore::eval_packed_generic(lv, nv, yield_constr);
         poseidon::eval_packed_generic(lv, nv, yield_constr);
         sload::eval_packed_generic(lv, nv, yield_constr);
+        tape::eval_packed_generic(&wrapper, yield_constr);
         call_sc::eval_packed_generic(&wrapper, yield_constr);
     }
 

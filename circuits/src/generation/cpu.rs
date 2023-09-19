@@ -137,6 +137,38 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
             F::ONE
         };
         trace[cpu::COL_FILTER_TAPE_LOOKING][i] = F::from_canonical_u64(s.filter_tape_looking.0);
+        trace[cpu::COL_FILTER_SCCALL_TAPE_LOOKING][i] = if s.opcode.0
+            == OlaOpcode::SCCALL.binary_bit_mask()
+            && (s.ext_cnt.0 == 2 || s.ext_cnt.0 == 3)
+        {
+            F::ONE
+        } else {
+            F::ZERO
+        };
+        trace[cpu::COL_FILTER_SCCALL_MEM_LOOKING][i] =
+            if s.opcode.0 == OlaOpcode::SCCALL.binary_bit_mask() && s.ext_cnt.0 == 1 {
+                F::ONE
+            } else {
+                F::ZERO
+            };
+        trace[cpu::COL_FILTER_SCCALL_TAPE_CALLER_CTX_LOOKING][i] =
+            if s.opcode.0 == OlaOpcode::SCCALL.binary_bit_mask() && s.ext_cnt.0 == 2 {
+                F::ONE
+            } else {
+                F::ZERO
+            };
+        trace[cpu::COL_FILTER_SCCALL_TAPE_CALLEE_CTX_LOOKING][i] =
+            if s.opcode.0 == OlaOpcode::SCCALL.binary_bit_mask() && s.ext_cnt.0 == 3 {
+                F::ONE
+            } else {
+                F::ZERO
+            };
+        trace[cpu::COL_FILTER_SCCALL_END][i] =
+            if s.opcode.0 == OlaOpcode::END.binary_bit_mask() && s.is_ext_line.0 == 1 {
+                F::ONE
+            } else {
+                F::ZERO
+            };
     }
 
     // fill in padding.
