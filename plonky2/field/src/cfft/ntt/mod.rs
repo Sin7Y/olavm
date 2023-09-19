@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, time::Instant};
 
 use maybe_rayon::*;
 
@@ -35,13 +35,17 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
         
         #[cfg(feature = "cuda")]
         {
-            let gpu = Arc::clone(&GPU_LOCK);
-            let mut gpu = gpu.lock().unwrap();
+            // let gpu = Arc::clone(&GPU_LOCK);
+            let gpu = GPU_LOCK.lock().unwrap();
+
+            let start = Instant::now();
     
-            #[cfg(feature = "cuda")]
+            // #[cfg(feature = "cuda")]
             evaluate_poly(p2.as_mut_ptr(), p2.len() as u64);
+
+            println!("[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
     
-            *gpu += 1;
+            // *gpu += 1;
         }
 
         p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
@@ -64,12 +68,16 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
 
         #[cfg(feature = "cuda")]
         {
-            let gpu = Arc::clone(&GPU_LOCK);
-            let mut gpu = gpu.lock().unwrap();
+            // let gpu = Arc::clone(&GPU_LOCK);
+            let gpu = GPU_LOCK.lock().unwrap();
+
+            let start = Instant::now();
 
             evaluate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset, blowup_factor,result.as_mut_ptr(),result_len);
 
-            *gpu += 1;
+            println!("[cuda](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
+
+            // *gpu += 1;
         }
 
         result.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
@@ -89,12 +97,16 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
 
         #[cfg(feature = "cuda")]
         {
-            let gpu = Arc::clone(&GPU_LOCK);
-            let mut gpu = gpu.lock().unwrap();
+            // let gpu = Arc::clone(&GPU_LOCK);
+            let gpu = GPU_LOCK.lock().unwrap();
+
+            let start = Instant::now();
 
             interpolate_poly(p2.as_mut_ptr(), p2.len() as u64);
 
-            *gpu += 1;
+            println!("[cuda](run_interpolate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+
+            // *gpu += 1;
         }
 
         p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
@@ -114,10 +126,14 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
         
         #[cfg(feature = "cuda")]
         {
-            let gpu = Arc::clone(&GPU_LOCK);
-            let mut gpu = gpu.lock().unwrap();
+            // let gpu = Arc::clone(&GPU_LOCK);
+            let gpu = GPU_LOCK.lock().unwrap();
+
+            let start = Instant::now();
 
             interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset);
+
+            println!("[cuda](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
         }
 
         p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
