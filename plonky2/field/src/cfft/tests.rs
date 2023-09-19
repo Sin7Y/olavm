@@ -103,12 +103,12 @@ fn interpolate_poly_2_20() {
     //     }
     // }
 
-    let points: Vec<GoldilocksField> = coeffs.clone();
+    // let points: Vec<GoldilocksField> = coeffs.clone();
     let twiddles = super::get_inv_twiddles::<F>(degree_padded);
 
     let start = Instant::now();
 
-    super::interpolate_poly(&mut coeffs, &twiddles);
+    super::interpolate_poly(&mut points, &twiddles);
 
     println!("interpolate_poly cost time = {:?}", start.elapsed());
 
