@@ -64,7 +64,7 @@ where
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
-    [(); TapeStark::<F, D>::COLUMNS]:,
+    // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let (traces, public_values) = generate_traces(program, ola_stark, inputs);
@@ -91,7 +91,7 @@ where
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
-    [(); TapeStark::<F, D>::COLUMNS]:,
+    // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let rate_bits = config.fri_config.rate_bits;

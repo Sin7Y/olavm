@@ -43,7 +43,7 @@ where
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
-    [(); TapeStark::<F, D>::COLUMNS]:,
+    // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let AllProofChallenges {

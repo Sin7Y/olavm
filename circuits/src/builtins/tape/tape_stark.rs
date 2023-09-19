@@ -23,7 +23,7 @@ use super::columns::{
     COL_TAPE_VALUE, NUM_COL_TAPE,
 };
 
-pub fn ctl_data_tape_tload_tstore<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_tape<F: Field>() -> Vec<Column<F>> {
     Column::singles([
         COL_TAPE_TX_IDX,
         COL_TAPE_OPCODE,
@@ -33,7 +33,7 @@ pub fn ctl_data_tape_tload_tstore<F: Field>() -> Vec<Column<F>> {
     .collect_vec()
 }
 
-pub fn ctl_filter_tape_tload_tstore<F: Field>() -> Column<F> {
+pub fn ctl_filter_tape<F: Field>() -> Column<F> {
     Column::single(COL_FILTER_LOOKED)
 }
 

@@ -1,3 +1,5 @@
+use std::iter;
+
 use super::config::StarkConfig;
 use super::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use super::stark::Stark;
@@ -5,7 +7,7 @@ use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
 use crate::builtins::poseidon::poseidon_stark::{self, PoseidonStark};
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
-use crate::builtins::sccall::sccall_stark::SCCallStark;
+use crate::builtins::sccall::sccall_stark::{self, SCCallStark};
 use crate::builtins::storage::storage_hash::{self, StorageHashStark};
 use crate::builtins::storage::storage_stark::{self, StorageStark};
 use crate::builtins::tape::tape_stark::{self, TapeStark};
@@ -121,6 +123,8 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
         ctl_storage_poseidon_tree_key(),
         ctl_storage_hash(),
         ctl_cpu_tape(),
+        ctl_cpu_sccall(),
+        ctl_cpu_sccall_end(),
     ]
 }
 
@@ -145,13 +149,21 @@ fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
         cpu_stark::ctl_data_cpu_mem_tload_tstore(),
         Some(cpu_stark::ctl_filter_cpu_mem_tload_tstore()),
     );
+    let cpu_sccall_mems = (0..4).map(|i: usize| {
+        TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_mem_sccall(i),
+            Some(cpu_stark::ctl_filter_cpu_mem_sccall()),
+        )
+    });
 
-    let all_cpu_lookers = vec![
+    let mut all_cpu_lookers = vec![
         cpu_mem_store_load,
         cpu_mem_call_ret_pc,
         cpu_mem_call_ret_fp,
         cpu_mem_tload_tstore,
     ];
+    all_cpu_lookers.extend(cpu_sccall_mems);
     let memory_looked =
         TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter()));
     CrossTableLookup::new(all_cpu_lookers, memory_looked)
@@ -370,16 +382,65 @@ fn ctl_storage_hash<F: Field>() -> CrossTableLookup<F> {
 }
 
 fn ctl_cpu_tape<F: Field>() -> CrossTableLookup<F> {
+    let cpu_tape_tload_tstore = TableWithColumns::new(
+        Table::Cpu,
+        cpu_stark::ctl_data_cpu_tape_load_store(),
+        Some(cpu_stark::ctl_filter_cpu_tape_load_store()),
+    );
+    let cpu_tape_sccall_callers = (0..3).map(|i: usize| {
+        TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_tape_sccall_caller(i),
+            Some(cpu_stark::ctl_filter_cpu_tape_sccall_caller()),
+        )
+    });
+    let cpu_tape_sccall_callees = (0..3).map(|i: usize| {
+        TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_tape_sccall_callee(i),
+            Some(cpu_stark::ctl_filter_cpu_tape_sccall_callee()),
+        )
+    });
+
+    let all_lookers = iter::once(cpu_tape_tload_tstore)
+        .chain(cpu_tape_sccall_callers)
+        .chain(cpu_tape_sccall_callees)
+        .collect();
+
+    let tape_looked = TableWithColumns::new(
+        Table::Tape,
+        tape_stark::ctl_data_tape(),
+        Some(tape_stark::ctl_filter_tape()),
+    );
+    CrossTableLookup::new(all_lookers, tape_looked)
+}
+
+fn ctl_cpu_sccall<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
-            cpu_stark::ctl_data_cpu_tape(),
-            Some(cpu_stark::ctl_filter_cpu_tape()),
+            cpu_stark::ctl_data_cpu_sccall(),
+            Some(cpu_stark::ctl_filter_cpu_sccall()),
         )],
         TableWithColumns::new(
-            Table::Tape,
-            tape_stark::ctl_data_tape_tload_tstore(),
-            Some(tape_stark::ctl_filter_tape_tload_tstore()),
+            Table::SCCall,
+            sccall_stark::ctl_data_sccall(),
+            Some(sccall_stark::ctl_filter_sccall()),
+        ),
+    )
+}
+
+fn ctl_cpu_sccall_end<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_sccall_end(),
+            Some(cpu_stark::ctl_filter_cpu_sccall_end()),
+        )],
+        TableWithColumns::new(
+            Table::SCCall,
+            sccall_stark::ctl_data_sccall_end(),
+            Some(sccall_stark::ctl_filter_sccall_end()),
         ),
     )
 }
