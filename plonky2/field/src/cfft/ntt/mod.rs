@@ -29,9 +29,13 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
         F: Field,
 {
     unsafe {
+        let start = Instant::now();
+
         let mut p2: Vec::<u64> = p.par_iter().map(|f| {
             f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
         }).collect::<Vec<u64>>();
+
+        println!("[cuda][before](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
         
         #[cfg(feature = "cuda")]
         {
@@ -48,7 +52,13 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
             // *gpu += 1;
         }
 
-        p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        let start = Instant::now();
+
+        let res = p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>();
+
+        println!("[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+
+        res
     }
 }
 
@@ -58,6 +68,8 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
         F: Field,
 {
     unsafe {
+        let start = Instant::now();
+
         let mut p2: Vec::<u64> = p.par_iter().map(|f| {
             f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
         }).collect::<Vec<u64>>();
@@ -65,6 +77,8 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
         let blowup_factor: u64 = blowup_factor as u64;
         let result_len = (p2.len() as u64) * blowup_factor;
         let mut result = vec![0; result_len as usize];
+
+        println!("[cuda][before](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
 
         #[cfg(feature = "cuda")]
         {
@@ -80,7 +94,13 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
             // *gpu += 1;
         }
 
-        result.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        let start = Instant::now();
+
+        let res = result.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>();
+
+        println!("[cuda][after](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
+
+        res
         
     }
 }
@@ -91,9 +111,13 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
         F: Field,
 {
     unsafe {
+        let start = Instant::now();
+
         let mut p2: Vec::<u64> = p.par_iter().map(|f| {
             f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
         }).collect::<Vec<u64>>();
+
+        println!("[cuda][before](run_interpolate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
 
         #[cfg(feature = "cuda")]
         {
@@ -109,7 +133,13 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
             // *gpu += 1;
         }
 
-        p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        let start = Instant::now();
+
+        let res = p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>();
+
+        println!("[cuda][after](run_interpolate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+
+        res
     }
 }
 
@@ -119,10 +149,14 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
         F: Field,
 {
     unsafe {
+        let start = Instant::now();
+
         let mut p2: Vec::<u64> = p.par_iter().map(|f| {
             f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
         }).collect::<Vec<u64>>();
         let domain_offset = domain_offset.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+
+        println!("[cuda][before](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
         
         #[cfg(feature = "cuda")]
         {
@@ -136,6 +170,12 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
             println!("[cuda](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
         }
 
-        p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>()
+        let start = Instant::now();
+
+        let res = p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>();
+
+        println!("[cuda][after](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+
+        res
     }
 }
