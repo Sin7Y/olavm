@@ -49,7 +49,7 @@ where
         // validate_fri_proof_shape), so we ignore it here.
         opening_proof: _,
     } = proof;
-
+    
     let OpeningSet {
         constants,
         plonk_sigmas,
@@ -58,13 +58,14 @@ where
         plonk_zs_next,
         partial_products,
         quotient_polys,
+        lookup_zs,
+        lookup_zs_next,
     } = openings;
 
     let cap_height = common_data.fri_params.config.cap_height;
     ensure!(wires_cap.height() == cap_height);
     ensure!(plonk_zs_partial_products_cap.height() == cap_height);
     ensure!(quotient_polys_cap.height() == cap_height);
-
     ensure!(constants.len() == common_data.num_constants);
     ensure!(plonk_sigmas.len() == config.num_routed_wires);
     ensure!(wires.len() == config.num_wires);
@@ -72,6 +73,7 @@ where
     ensure!(plonk_zs_next.len() == config.num_challenges);
     ensure!(partial_products.len() == config.num_challenges * common_data.num_partial_products);
     ensure!(quotient_polys.len() == common_data.num_quotient_polys());
-
+    ensure!(lookup_zs.len() == common_data.num_all_lookup_polys());
+    ensure!(lookup_zs_next.len() == common_data.num_all_lookup_polys());
     Ok(())
 }

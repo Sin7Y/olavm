@@ -10,6 +10,8 @@
 #![feature(specialization)]
 #![feature(stdsimd)]
 
+extern crate alloc;
+
 pub use plonky2_field as field;
 
 pub mod fri;

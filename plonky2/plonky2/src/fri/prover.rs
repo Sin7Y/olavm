@@ -27,15 +27,12 @@ pub fn fri_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const
     challenger: &mut Challenger<F, C::Hasher>,
     fri_params: &FriParams,
     timing: &mut TimingTree,
-    twiddle_map: &mut BTreeMap<usize, Vec<F>>,
 ) -> FriProof<F, C::Hasher, D>
 where
     [(); C::Hasher::HASH_SIZE]:,
 {
     let n = lde_polynomial_values.len();
     assert_eq!(lde_polynomial_coeffs.len(), n);
-
-    let twiddle = twiddle_map;
 
     // Commit phase
     let (trees, final_coeffs) = timed!(

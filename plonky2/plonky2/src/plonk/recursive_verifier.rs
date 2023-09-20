@@ -67,6 +67,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         };
         let local_zs = &proof.openings.plonk_zs;
         let next_zs = &proof.openings.plonk_zs_next;
+        let local_lookup_zs = &proof.openings.lookup_zs;
+        let next_lookup_zs = &proof.openings.next_lookup_zs;
         let s_sigmas = &proof.openings.plonk_sigmas;
         let partial_products = &proof.openings.partial_products;
 
@@ -83,11 +85,14 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
                 vars,
                 local_zs,
                 next_zs,
+                local_lookup_zs,
+                next_lookup_zs,
                 partial_products,
                 s_sigmas,
                 &challenges.plonk_betas,
                 &challenges.plonk_gammas,
                 &challenges.plonk_alphas,
+                &challenges.plonk_deltas,
             )
         );
 
@@ -171,12 +176,21 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let config = &common_data.config;
         let num_challenges = config.num_challenges;
         let total_partial_products = num_challenges * common_data.num_partial_products;
+        let has_lookup = common_data.num_lookup_polys != 0;
+        //let has_lookup = false;
+        let num_lookups = if has_lookup {
+            common_data.num_all_lookup_polys()
+        } else {
+            0
+        };
         OpeningSetTarget {
             constants: self.add_virtual_extension_targets(common_data.num_constants),
             plonk_sigmas: self.add_virtual_extension_targets(config.num_routed_wires),
             wires: self.add_virtual_extension_targets(config.num_wires),
             plonk_zs: self.add_virtual_extension_targets(num_challenges),
             plonk_zs_next: self.add_virtual_extension_targets(num_challenges),
+            lookup_zs: self.add_virtual_extension_targets(num_lookups),
+            next_lookup_zs: self.add_virtual_extension_targets(num_lookups),
             partial_products: self.add_virtual_extension_targets(total_partial_products),
             quotient_polys: self.add_virtual_extension_targets(common_data.num_quotient_polys()),
         }

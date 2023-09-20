@@ -172,7 +172,6 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         challenger: &mut Challenger<F, C::Hasher>,
         fri_params: &FriParams,
         timing: &mut TimingTree,
-        twiddle_map: &mut BTreeMap<usize, Vec<F>>,
     ) -> FriProof<F, C::Hasher, D>
     where
         [(); C::Hasher::HASH_SIZE]:,
@@ -236,7 +235,6 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             challenger,
             fri_params,
             timing,
-            twiddle_map,
         );
 
         fri_proof

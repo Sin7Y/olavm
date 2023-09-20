@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use itertools::Itertools;
+use itertools::{zip_eq, Itertools};
 use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::types::Field;
 
@@ -305,7 +305,9 @@ impl<'a, F: Field> PartitionWitness<'a, F> {
     /// Set a `Target`. On success, returns the representative index of the
     /// newly-set target. If the target was already set, returns `None`.
     pub(crate) fn set_target_returning_rep(&mut self, target: Target, value: F) -> Option<usize> {
-        let rep_index = self.representative_map[self.target_index(target)];
+
+        let target_index = self.target_index(target);
+        let rep_index = self.representative_map[target_index];
         let rep_value = &mut self.values[rep_index];
         if let Some(old_value) = *rep_value {
             assert_eq!(
