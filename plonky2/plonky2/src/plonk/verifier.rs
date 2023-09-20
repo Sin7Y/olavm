@@ -61,6 +61,8 @@ where
     };
     let local_zs = &proof.openings.plonk_zs;
     let next_zs = &proof.openings.plonk_zs_next;
+    let local_lookup_zs = &proof.openings.lookup_zs;
+    let next_lookup_zs = &proof.openings.lookup_zs_next;
     let s_sigmas = &proof.openings.plonk_sigmas;
     let partial_products = &proof.openings.partial_products;
 
@@ -71,11 +73,14 @@ where
         vars,
         local_zs,
         next_zs,
+        local_lookup_zs,
+        next_lookup_zs,
         partial_products,
         s_sigmas,
         &challenges.plonk_betas,
         &challenges.plonk_gammas,
         &challenges.plonk_alphas,
+        &challenges.plonk_deltas,
     );
 
     // Check each polynomial identity, of the form `vanishing(x) = Z_H(x)
