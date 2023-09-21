@@ -554,10 +554,14 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         }
 
         instruction += lv[COL_OPCODE];
-        yield_constr.constraint(lv[COL_INST] - instruction);
+        yield_constr
+            .constraint((P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * (lv[COL_INST] - instruction));
 
         // When oprand exists, op1 is imm.
-        yield_constr.constraint(lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL]));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
+                * (lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL])),
+        );
     }
 
     fn constraint_operands_mathches_registers<FE, P, const D2: usize>(
@@ -573,28 +577,35 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         let s_op1s: [P; REGISTER_NUM] = lv[COL_S_OP1].try_into().unwrap();
         let s_dsts: [P; REGISTER_NUM] = lv[COL_S_DST].try_into().unwrap();
 
-        // op0, op1, dst selectors should be binary.
-        s_op0s
-            .iter()
-            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
-        s_op1s
-            .iter()
-            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
-        s_dsts
-            .iter()
-            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
+        // op0, op1, dst selectors should be binary. (only used as selector in main
+        // line)
+        s_op0s.iter().for_each(|s| {
+            yield_constr.constraint((P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * *s * (P::ONES - *s))
+        });
+        s_op1s.iter().for_each(|s| {
+            yield_constr.constraint((P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * *s * (P::ONES - *s))
+        });
+        s_dsts.iter().for_each(|s| {
+            yield_constr.constraint((P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * *s * (P::ONES - *s))
+        });
 
         // Only one register used for op0.
         let sum_s_op0: P = s_op0s.into_iter().sum();
-        yield_constr.constraint(sum_s_op0 * (P::ONES - sum_s_op0));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_op0 * (P::ONES - sum_s_op0),
+        );
 
         // Only one register used for op1.
         let sum_s_op1: P = s_op1s.into_iter().sum();
-        yield_constr.constraint(sum_s_op1 * (P::ONES - sum_s_op1));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_op1 * (P::ONES - sum_s_op1),
+        );
 
         // Only one register used for dst.
         let sum_s_dst: P = s_dsts.into_iter().sum();
-        yield_constr.constraint(sum_s_dst * (P::ONES - sum_s_dst));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_dst * (P::ONES - sum_s_dst),
+        );
 
         // Op and register permutation.
         // Register should be next line.
@@ -603,21 +614,27 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
             .zip(wrapper.regs.iter())
             .map(|(s, r)| *s * *r)
             .sum();
-        yield_constr.constraint(sum_s_op0 * (lv[COL_OP0] - op0_sum));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_op0 * (lv[COL_OP0] - op0_sum),
+        );
 
         let op1_sum: P = s_op1s
             .iter()
             .zip(wrapper.regs.iter())
             .map(|(s, r)| *s * *r)
             .sum();
-        yield_constr.constraint(sum_s_op1 * (lv[COL_OP1] - op1_sum));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_op1 * (lv[COL_OP1] - op1_sum),
+        );
 
         let dst_sum: P = s_dsts
             .iter()
             .zip(wrapper.n_regs.iter())
             .map(|(s, r)| *s * *r)
             .sum();
-        yield_constr.constraint_transition(sum_s_dst * (lv[COL_DST] - dst_sum));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_dst * (lv[COL_DST] - dst_sum),
+        );
     }
 
     fn constraint_ext_lines<FE, P, const D2: usize>(
@@ -647,7 +664,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         );
         // opcode not change
         yield_constr.constraint(
-            wrapper.lv[COL_IS_EXT_LINE] * (wrapper.nv[COL_OPCODE] - wrapper.lv[COL_OPCODE]),
+            wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[COL_OPCODE] - wrapper.lv[COL_OPCODE]),
         );
     }
 
