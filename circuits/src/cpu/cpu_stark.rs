@@ -105,7 +105,7 @@ pub(crate) fn ctl_data_cpu_mem_sccall<F: Field>(i: usize) -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_cpu_mem_sccall<F: Field>() -> Column<F> {
-    Column::single(COL_FILTER_SCCALL_MEM_LOOKING)
+    Column::single(IS_SCCALL_EXT_LINE)
 }
 
 // get the data source for bitwise in Cpu table
@@ -228,28 +228,27 @@ pub fn ctl_filter_cpu_tape_load_store<F: Field>() -> Column<F> {
 }
 
 pub fn ctl_data_cpu_sccall<F: Field>() -> Vec<Column<F>> {
-    let mut res = vec![COL_TX_IDX, COL_ENV_IDX];
-    for limb_exe_ctx_col in COL_CTX_REG_RANGE {
-        res.push(limb_exe_ctx_col);
+    let mut res: Vec<Column<F>> = vec![Column::single(COL_TX_IDX), Column::single(COL_ENV_IDX)];
+    for limb_addr_storage_col in COL_S_OP0.start..COL_S_OP0.start + 4 {
+        res.push(Column::single(limb_addr_storage_col));
     }
-    for limb_code_ctx_col in COL_CODE_CTX_REG_RANGE {
-        res.push(limb_code_ctx_col);
+    for limb_addr_code_col in COL_S_OP0.start + 4..COL_S_OP0.start + 8 {
+        res.push(Column::single(limb_addr_code_col));
     }
-    res.extend([COL_CLK, COL_OP1_IMM]);
+    res.extend(Column::singles([COL_CLK, COL_OP1_IMM]));
     for reg_col in COL_REGS {
-        res.push(reg_col);
+        res.push(Column::single(reg_col));
     }
-    res.push(COL_AUX0);
-    Column::singles(res.into_iter()).collect_vec()
+    // callee env_idx
+    res.push(Column::linear_combination_with_constant(
+        [(COL_ENV_IDX, F::ONE)],
+        F::ONE,
+    ));
+    res
 }
 
 pub fn ctl_filter_cpu_sccall<F: Field>() -> Column<F> {
-    Column::linear_combination([
-        (COL_S_CALL_SC, F::ONE),
-        (COL_FILTER_SCCALL_MEM_LOOKING, F::NEG_ONE),
-        (COL_FILTER_SCCALL_TAPE_CALLER_CTX_LOOKING, F::NEG_ONE),
-        (COL_FILTER_SCCALL_TAPE_CALLEE_CTX_LOOKING, F::NEG_ONE),
-    ])
+    Column::single(IS_SCCALL_EXT_LINE)
 }
 
 pub fn ctl_data_cpu_sccall_end<F: Field>() -> Vec<Column<F>> {
@@ -299,7 +298,7 @@ pub(crate) fn ctl_data_cpu_tape_sccall_caller<F: Field>(i: usize) -> Vec<Column<
     Column::singles([COL_TX_IDX, col_addr, COL_OPCODE, col_value]).collect_vec()
 }
 pub fn ctl_filter_cpu_tape_sccall_caller<F: Field>() -> Column<F> {
-    Column::single(COL_FILTER_SCCALL_TAPE_CALLER_CTX_LOOKING)
+    Column::single(IS_SCCALL_EXT_LINE)
 }
 
 pub(crate) fn ctl_data_cpu_tape_sccall_callee<F: Field>(i: usize) -> Vec<Column<F>> {
@@ -320,7 +319,7 @@ pub(crate) fn ctl_data_cpu_tape_sccall_callee<F: Field>(i: usize) -> Vec<Column<
     Column::singles([COL_TX_IDX, col_addr, COL_OPCODE, col_value]).collect_vec()
 }
 pub fn ctl_filter_cpu_tape_sccall_callee<F: Field>() -> Column<F> {
-    Column::single(COL_FILTER_SCCALL_TAPE_CALLEE_CTX_LOOKING)
+    Column::single(IS_SCCALL_EXT_LINE)
 }
 
 #[derive(Copy, Clone, Default)]
@@ -662,9 +661,17 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
                 * wrapper.nv[COL_IS_EXT_LINE]
                 * (wrapper.nv[COL_EXT_CNT] - wrapper.lv[COL_EXT_CNT] - P::ONES),
         );
-        // opcode not change
+        // opcode, opcode selector, op1_imm not change
         yield_constr.constraint(
             wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[COL_OPCODE] - wrapper.lv[COL_OPCODE]),
+        );
+        for col_op_sel in (COL_S_ADD..COL_S_ADD + NUM_OP_SELECTOR).step_by(1) {
+            yield_constr.constraint(
+                wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[col_op_sel] - wrapper.lv[col_op_sel]),
+            );
+        }
+        yield_constr.constraint(
+            wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[COL_OP1_IMM] - wrapper.lv[COL_OP1_IMM]),
         );
     }
 
@@ -807,13 +814,16 @@ impl<
 
         let lv_is_padding = lv[COL_IS_PADDING];
         let nv_is_padding = nv[COL_IS_PADDING];
-        let lv_is_ext_inst = lv[COL_S_TLOAD] + lv[COL_S_SLOAD] + lv[COL_S_CALL_SC] + lv[COL_S_END];
-        let nv_is_ext_inst = nv[COL_S_TLOAD] + nv[COL_S_SLOAD] + nv[COL_S_CALL_SC] + nv[COL_S_END];
+        let lv_is_ext_inst =
+            lv[COL_S_TLOAD] + lv[COL_S_SLOAD] + lv[COL_S_CALL_SC] + lv[COL_S_END] + lv[COL_S_PSDN];
+        let nv_is_ext_inst =
+            nv[COL_S_TLOAD] + nv[COL_S_SLOAD] + nv[COL_S_CALL_SC] + nv[COL_S_END] + nv[COL_S_PSDN];
         let lv_is_entry_sc = lv[COL_IS_ENTRY_SC];
         let lv_ext_length = lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
             + lv[COL_S_TSTORE]
-            + lv[COL_S_CALL_SC] * P::Scalar::from_canonical_u64(3)
-            + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
+            + lv[COL_S_CALL_SC]
+            + lv[COL_S_END] * (P::ONES - lv_is_entry_sc)
+            + lv[COL_S_PSDN];
         let is_crossing_inst = lv[COL_IS_NEXT_LINE_DIFF_INST];
         let is_in_same_tx = lv[COL_IS_NEXT_LINE_SAME_TX];
         Self {
