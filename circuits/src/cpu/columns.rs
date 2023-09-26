@@ -23,11 +23,11 @@ use std::{collections::BTreeMap, ops::Range};
 pub(crate) const COL_TX_IDX: usize = 0;
 pub(crate) const COL_ENV_IDX: usize = COL_TX_IDX + 1;
 pub(crate) const COL_CALL_SC_CNT: usize = COL_ENV_IDX + 1;
-pub(crate) const COL_CTX_REG_RANGE: Range<usize> =
+pub(crate) const COL_ADDR_STORAGE_RANGE: Range<usize> =
     COL_CALL_SC_CNT + 1..COL_CALL_SC_CNT + 1 + CTX_REGISTER_NUM;
-pub(crate) const COL_CODE_CTX_REG_RANGE: Range<usize> =
-    COL_CTX_REG_RANGE.end..COL_CTX_REG_RANGE.end + 1 + CTX_REGISTER_NUM;
-pub(crate) const COL_TP: usize = COL_CODE_CTX_REG_RANGE.end;
+pub(crate) const COL_ADDR_CODE_RANGE: Range<usize> =
+    COL_ADDR_STORAGE_RANGE.end..COL_ADDR_STORAGE_RANGE.end + 1 + CTX_REGISTER_NUM;
+pub(crate) const COL_TP: usize = COL_ADDR_CODE_RANGE.end;
 pub(crate) const COL_CLK: usize = COL_TP + 1;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
 pub(crate) const COL_IS_EXT_LINE: usize = COL_PC + 1;
@@ -141,12 +141,12 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_TX_IDX, "tx_idx".to_string());
     m.insert(COL_ENV_IDX, "env_idx".to_string());
     m.insert(COL_CALL_SC_CNT, "call_sc_cnt".to_string());
-    for (index, col) in COL_CTX_REG_RANGE.into_iter().enumerate() {
-        let name = format!("ctx_reg_{}", index);
+    for (index, col) in COL_ADDR_STORAGE_RANGE.into_iter().enumerate() {
+        let name = format!("addr_storage_{}", index);
         m.insert(col, name);
     }
-    for (index, col) in COL_CODE_CTX_REG_RANGE.into_iter().enumerate() {
-        let name = format!("ctx_code_reg_{}", index);
+    for (index, col) in COL_ADDR_CODE_RANGE.into_iter().enumerate() {
+        let name = format!("addr_code_{}", index);
         m.insert(col, name);
     }
     m.insert(COL_TP, "tp".to_string());
@@ -212,10 +212,7 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     );
     m.insert(COL_IS_NEXT_LINE_SAME_TX, "is_next_line_same_tx".to_string());
     m.insert(COL_FILTER_TAPE_LOOKING, "filter_tape_looking".to_string());
-    m.insert(
-        IS_SCCALL_EXT_LINE,
-        "filter_sccall_mem_looking".to_string(),
-    );
+    m.insert(IS_SCCALL_EXT_LINE, "is_sccall_ext_line".to_string());
     m.insert(COL_FILTER_SCCALL_END, "filter_sccall_end".to_string());
     m.insert(COL_IS_PADDING, "is_padding".to_string());
     m
