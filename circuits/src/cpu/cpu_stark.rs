@@ -281,44 +281,33 @@ pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
 }
 
 pub(crate) fn ctl_data_cpu_tape_sccall_caller<F: Field>(i: usize) -> Vec<Column<F>> {
-    let col_addr = match i {
-        0 => COL_OP0,
-        1 => COL_DST,
-        2 => COL_AUX0,
-        3 => COL_AUX1,
-        _ => panic!("invalid cpu-mem sccall idx"),
-    };
-    let col_value = match i {
-        0 => COL_ADDR_STORAGE_RANGE.start,
-        1 => COL_ADDR_STORAGE_RANGE.start + 1,
-        2 => COL_ADDR_STORAGE_RANGE.start + 2,
-        3 => COL_ADDR_STORAGE_RANGE.start + 3,
-        _ => panic!("invalid cpu-mem sccall idx"),
-    };
-    Column::singles([COL_TX_IDX, col_addr, COL_OPCODE, col_value]).collect_vec()
+    let mut res: Vec<Column<F>> = vec![Column::single(COL_TX_IDX), Column::single(COL_OPCODE)];
+    res.push(Column::linear_combination_with_constant(
+        [(COL_TP, F::ONE)],
+        F::from_canonical_usize(i),
+    ));
+    res.push(Column::single(COL_S_OP0.start + i));
+    res
 }
-pub fn ctl_filter_cpu_tape_sccall_caller<F: Field>() -> Column<F> {
-    Column::single(IS_SCCALL_EXT_LINE)
+pub(crate) fn ctl_data_cpu_tape_sccall_callee_code<F: Field>(i: usize) -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![Column::single(COL_TX_IDX), Column::single(COL_OPCODE)];
+    res.push(Column::linear_combination_with_constant(
+        [(COL_TP, F::ONE)],
+        F::from_canonical_usize(4 + i),
+    ));
+    res.push(Column::single(COL_ADDR_CODE_RANGE.start + i));
+    res
 }
-
-pub(crate) fn ctl_data_cpu_tape_sccall_callee<F: Field>(i: usize) -> Vec<Column<F>> {
-    let col_addr = match i {
-        0 => COL_OP0,
-        1 => COL_DST,
-        2 => COL_AUX0,
-        3 => COL_AUX1,
-        _ => panic!("invalid cpu-mem sccall idx"),
-    };
-    let col_value = match i {
-        0 => COL_ADDR_CODE_RANGE.start,
-        1 => COL_ADDR_CODE_RANGE.start + 1,
-        2 => COL_ADDR_CODE_RANGE.start + 2,
-        3 => COL_ADDR_CODE_RANGE.start + 3,
-        _ => panic!("invalid cpu-mem sccall idx"),
-    };
-    Column::singles([COL_TX_IDX, col_addr, COL_OPCODE, col_value]).collect_vec()
+pub(crate) fn ctl_data_cpu_tape_sccall_callee_storage<F: Field>(i: usize) -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![Column::single(COL_TX_IDX), Column::single(COL_OPCODE)];
+    res.push(Column::linear_combination_with_constant(
+        [(COL_TP, F::ONE)],
+        F::from_canonical_usize(8 + i),
+    ));
+    res.push(Column::single(COL_ADDR_STORAGE_RANGE.start + i));
+    res
 }
-pub fn ctl_filter_cpu_tape_sccall_callee<F: Field>() -> Column<F> {
+pub fn ctl_filter_cpu_is_sccall_ext<F: Field>() -> Column<F> {
     Column::single(IS_SCCALL_EXT_LINE)
 }
 
