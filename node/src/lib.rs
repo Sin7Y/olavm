@@ -212,8 +212,8 @@ impl OlaNode {
         mutex_data!(process).tx_idx = tx_idx;
         mutex_data!(process).env_idx = GoldilocksField::from_canonical_u64(env_idx);
         mutex_data!(process).call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);
-        mutex_data!(process).ctx_caller = caller_addr;
-        mutex_data!(process).ctx_exe_code = code_exe_addr;
+        mutex_data!(process).addr_storage = caller_addr;
+        mutex_data!(process).addr_code = code_exe_addr;
         init_tape(&mut mutex_data!(process), calldata, code_exe_addr);
         let mut program = Arc::new(Mutex::new(Program {
             instructions: Vec::new(),
@@ -274,8 +274,8 @@ impl OlaNode {
                             code_exe_addr = addr.clone();
                         }
                     }
-                    mutex_data!(process).ctx_caller = caller_addr;
-                    mutex_data!(process).ctx_exe_code = code_exe_addr;
+                    mutex_data!(process).addr_storage = caller_addr;
+                    mutex_data!(process).addr_code = code_exe_addr;
                     res = self.contract_run(
                         &mut mutex_data!(process),
                         &mut mutex_data!(program),
@@ -285,7 +285,7 @@ impl OlaNode {
                     )?;
                 }
                 VMState::ExeEnd(step) => {
-                    debug!("end contract:{:?}", mutex_data!(process).ctx_exe_code);
+                    debug!("end contract:{:?}", mutex_data!(process).addr_code);
                     let mut trace =
                         std::mem::replace(&mut mutex_data!(program).trace, Trace::default());
 
@@ -309,8 +309,8 @@ impl OlaNode {
                         let mut step = step.unwrap();
                         step.clk = mutex_data!(process).clk;
                         step.env_idx = mutex_data!(process).env_idx;
-                        step.ctx_caller = mutex_data!(process).ctx_caller;
-                        step.ctx_exe_code = mutex_data!(process).ctx_exe_code;
+                        step.addr_storage = mutex_data!(process).addr_storage;
+                        step.addr_code = mutex_data!(process).addr_code;
                         trace.exec.push(step);
                         {
                             let mut sccall_rows = &mut mutex_data!(program).trace.sc_call;

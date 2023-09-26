@@ -43,7 +43,7 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
         program.instructions.push(inst.to_string());
     }
     let mut process = Process::new();
-    process.ctx_caller = Address::default();
+    process.addr_storage = Address::default();
 
     let mut tp_start = 0;
     if trace_name.eq("tape_trace.txt")

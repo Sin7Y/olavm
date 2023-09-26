@@ -40,8 +40,8 @@ class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
     TP = 'tp'
-    CTX_CALLER = "ctx_caller"
-    CTX_EXE_CODE = "ctx_exe_code"
+    CTX_CALLER = "addr_storage"
+    CTX_EXE_CODE = "addr_code"
     REGS = 'regs'
     INST = 'instruction'
     OP1_IMM = 'op1_imm'
@@ -87,10 +87,10 @@ class MainTraceColumnType(Enum):
     CTX2 = "ctx2"
     CTX3 = "ctx3"
 
-    CTX_EXE_CODE0 = "ctx_code0"
-    CTX_EXE_CODE1 = "ctx_code1"
-    CTX_EXE_CODE2 = "ctx_code2"
-    CTX_EXE_CODE3 = "ctx_code3"
+    CTX_EXE_CODE0 = "addr_code0"
+    CTX_EXE_CODE1 = "addr_code1"
+    CTX_EXE_CODE2 = "addr_code2"
+    CTX_EXE_CODE3 = "addr_code3"
 
     R0 = 'r0'
     R1 = 'r1'
@@ -338,7 +338,7 @@ def main():
                     else:
                         worksheet.write(row_index, col, row[data.value][i])
                     col += 1
-            elif data.value == "ctx_caller":
+            elif data.value == "addr_storage":
                 for i in range(0, CTX_REG_NUM):
                     if args.format == 'hex':
                         worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
@@ -346,7 +346,7 @@ def main():
                     else:
                         worksheet.write(row_index, col, row[data.value][i])
                     col += 1
-            elif data.value == "ctx_exe_code":
+            elif data.value == "addr_code":
                             for i in range(0, CTX_REG_NUM):
                                 if args.format == 'hex':
                                     worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(

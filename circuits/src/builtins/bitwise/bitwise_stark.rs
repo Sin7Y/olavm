@@ -455,7 +455,7 @@ mod tests {
         }
 
         let mut process = Process::new();
-        process.ctx_caller = Address::default();
+        process.addr_storage = Address::default();
         let _ = process.execute(
             &mut program,
             &mut Some(prophets),
