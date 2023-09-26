@@ -55,12 +55,14 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for TapeStark<F, 
         let nv = vars.next_values;
         let op_tload = P::Scalar::from_canonical_u64(OlaOpcode::TLOAD.binary_bit_mask());
         let op_tstore = P::Scalar::from_canonical_u64(OlaOpcode::TSTORE.binary_bit_mask());
+        let op_sccall = P::Scalar::from_canonical_u64(OlaOpcode::SCCALL.binary_bit_mask());
 
         // opcode can be 0, tstore, tstore
         yield_constr.constraint(
             lv[COL_TAPE_OPCODE]
                 * (lv[COL_TAPE_OPCODE] - op_tstore)
-                * (lv[COL_TAPE_OPCODE] - op_tload),
+                * (lv[COL_TAPE_OPCODE] - op_tload)
+                * (lv[COL_TAPE_OPCODE] - op_sccall),
         );
 
         // tx_idx from 0, not change or increase by one
@@ -85,11 +87,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for TapeStark<F, 
         yield_constr.constraint(
             lv[COL_TAPE_IS_INIT_SEG] * lv[COL_TAPE_OPCODE] * (lv[COL_TAPE_OPCODE] - op_tload),
         );
-        // in non-init segment opcode can be tstore, tstore
+        // in non-init segment opcode can be tstore, tstore, sccall
         yield_constr.constraint(
             (P::ONES - lv[COL_TAPE_IS_INIT_SEG])
                 * (lv[COL_TAPE_OPCODE] - op_tload)
-                * (lv[COL_TAPE_OPCODE] - op_tstore),
+                * (lv[COL_TAPE_OPCODE] - op_tstore)
+                * (lv[COL_TAPE_OPCODE] - op_sccall),
         );
         // addr start from 0 and can be same or increase by 1
         yield_constr.constraint_first_row(lv[COL_TAPE_ADDR]);
@@ -116,9 +119,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for TapeStark<F, 
             is_in_same_tx
                 * (nv[COL_TAPE_ADDR] - lv[COL_TAPE_ADDR])
                 * nv[COL_TAPE_OPCODE]
-                * (nv[COL_TAPE_OPCODE] - op_tstore),
+                * (nv[COL_TAPE_OPCODE] - op_tstore)
+                * (nv[COL_TAPE_OPCODE] - op_sccall),
         );
-        // sstore must be looked
+        // sstore and sccall must be looked
         yield_constr.constraint(
             lv[COL_TAPE_OPCODE]
                 * (lv[COL_TAPE_OPCODE] - op_tload)
@@ -135,6 +139,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for TapeStark<F, 
     }
 
     fn constraint_degree(&self) -> usize {
-        4
+        5
     }
 }
