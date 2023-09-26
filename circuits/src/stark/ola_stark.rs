@@ -387,24 +387,32 @@ fn ctl_cpu_tape<F: Field>() -> CrossTableLookup<F> {
         cpu_stark::ctl_data_cpu_tape_load_store(),
         Some(cpu_stark::ctl_filter_cpu_tape_load_store()),
     );
-    let cpu_tape_sccall_callers = (0..3).map(|i: usize| {
+    let cpu_tape_sccall_caller = (0..4).map(|i: usize| {
         TableWithColumns::new(
             Table::Cpu,
             cpu_stark::ctl_data_cpu_tape_sccall_caller(i),
-            Some(cpu_stark::ctl_filter_cpu_tape_sccall_caller()),
+            Some(cpu_stark::ctl_filter_cpu_is_sccall_ext()),
         )
     });
-    let cpu_tape_sccall_callees = (0..3).map(|i: usize| {
+    let cpu_tape_sccall_callee_code = (0..4).map(|i: usize| {
         TableWithColumns::new(
             Table::Cpu,
-            cpu_stark::ctl_data_cpu_tape_sccall_callee(i),
-            Some(cpu_stark::ctl_filter_cpu_tape_sccall_callee()),
+            cpu_stark::ctl_data_cpu_tape_sccall_callee_code(i),
+            Some(cpu_stark::ctl_filter_cpu_is_sccall_ext()),
+        )
+    });
+    let cpu_tape_sccall_callee_storage = (0..4).map(|i: usize| {
+        TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_tape_sccall_callee_storage(i),
+            Some(cpu_stark::ctl_filter_cpu_is_sccall_ext()),
         )
     });
 
     let all_lookers = iter::once(cpu_tape_tload_tstore)
-        .chain(cpu_tape_sccall_callers)
-        .chain(cpu_tape_sccall_callees)
+        .chain(cpu_tape_sccall_caller)
+        .chain(cpu_tape_sccall_callee_code)
+        .chain(cpu_tape_sccall_callee_storage)
         .collect();
 
     let tape_looked = TableWithColumns::new(
