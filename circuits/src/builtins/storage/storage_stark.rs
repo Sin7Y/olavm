@@ -6,13 +6,15 @@ use plonky2::{
 };
 use std::marker::PhantomData;
 
-use crate::stark::{cross_table_lookup::Column, stark::Stark};
+use crate::{
+    stark::{cross_table_lookup::Column, stark::Stark},
+};
 
 use super::columns::{
-    COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_DIFF_CLK,
+    COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_ENV_IDX,
     COL_STORAGE_FILTER_LOOKED_FOR_SLOAD, COL_STORAGE_FILTER_LOOKED_FOR_SSTORE,
-    COL_STORAGE_LOOKING_RC, COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE,
-    COL_STORAGE_VALUE_RANGE,
+    COL_STORAGE_IDX_STORAGE, COL_STORAGE_NUM, COL_STORAGE_OPCODE, COL_STORAGE_ROOT_RANGE,
+    COL_STORAGE_TX_IDX, COL_STORAGE_VALUE_RANGE,
 };
 #[derive(Copy, Clone, Default)]
 pub struct StorageStark<F, const D: usize> {
@@ -30,11 +32,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
         FE: plonky2::field::extension::FieldExtension<D2, BaseField = F>,
         P: plonky2::field::packed::PackedField<Scalar = FE>,
     {
-        let lv_clk = vars.local_values[COL_STORAGE_CLK];
-        let nv_clk = vars.next_values[COL_STORAGE_CLK];
-        let lv_diff_clk = vars.local_values[COL_STORAGE_DIFF_CLK];
-        let nv_diff_clk = vars.next_values[COL_STORAGE_DIFF_CLK];
-        let filter_looking_rc = vars.local_values[COL_STORAGE_LOOKING_RC];
+        let lv_idx_storage = vars.local_values[COL_STORAGE_IDX_STORAGE];
+        let nv_idx_storage = vars.next_values[COL_STORAGE_IDX_STORAGE];
+
         let filter_looked_sstore = vars.local_values[COL_STORAGE_FILTER_LOOKED_FOR_SSTORE];
         let filter_looked_sload = vars.local_values[COL_STORAGE_FILTER_LOOKED_FOR_SLOAD];
         let opcode = vars.local_values[COL_STORAGE_OPCODE];
@@ -47,11 +47,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
                 * filter_looked_sload,
         );
 
-        // clk diff constraint
-        yield_constr.constraint_transition(nv_clk * (nv_clk - lv_clk - nv_diff_clk));
-        // rc filter constraint
-        yield_constr.constraint(filter_looking_rc * (P::ONES - filter_looking_rc));
-        yield_constr.constraint(lv_diff_clk * (P::ONES - filter_looking_rc));
+        // storage idx constraint
+        yield_constr.constraint_first_row(P::ONES - lv_idx_storage);
+        yield_constr
+            .constraint_transition(nv_idx_storage * (nv_idx_storage - lv_idx_storage - P::ONES));
     }
 
     fn eval_ext_circuit(
@@ -69,7 +68,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageStark<
 
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_STORAGE_CLK,
+        COL_STORAGE_IDX_STORAGE,
         COL_STORAGE_OPCODE,
         COL_STORAGE_VALUE_RANGE.start,
         COL_STORAGE_VALUE_RANGE.start + 1,
@@ -107,6 +106,8 @@ pub fn ctl_data_with_hash<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
     Column::singles([
+        COL_STORAGE_TX_IDX,
+        COL_STORAGE_ENV_IDX,
         COL_STORAGE_CLK,
         COL_STORAGE_OPCODE,
         COL_STORAGE_ADDR_RANGE.start,
@@ -150,6 +151,13 @@ mod tests {
         test_storage_with_asm_file_name(file_name);
     }
 
+    #[test]
+    fn test_storage_vote() {
+        let file_name = "vote.json".to_string();
+        test_storage_with_asm_file_name(file_name);
+    }
+
+    #[allow(unused)]
     fn test_storage_with_asm_file_name(file_name: String) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");

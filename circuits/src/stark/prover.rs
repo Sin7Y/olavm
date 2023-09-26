@@ -24,8 +24,10 @@ use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
+use crate::builtins::sccall::sccall_stark::SCCallStark;
 use crate::builtins::storage::storage_hash::StorageHashStark;
 use crate::builtins::storage::storage_stark::StorageStark;
+use crate::builtins::tape::tape_stark::TapeStark;
 //use crate::columns::NUM_CPU_COLS;
 use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;
@@ -62,6 +64,8 @@ where
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
+    // [(); TapeStark::<F, D>::COLUMNS]:,
+    [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let (traces, public_values) = generate_traces(program, ola_stark, inputs);
     prove_with_traces(ola_stark, config, traces, public_values, timing)
@@ -87,6 +91,8 @@ where
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
+    // [(); TapeStark::<F, D>::COLUMNS]:,
+    [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let rate_bits = config.fri_config.rate_bits;
     let cap_height = config.fri_config.cap_height;
@@ -211,6 +217,26 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    let tape_proof = prove_single_table(
+        &ola_stark.tape_stark,
+        config,
+        &trace_poly_values[Table::Tape as usize],
+        &trace_commitments[Table::Tape as usize],
+        &ctl_data_per_table[Table::Tape as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    let sccall_proof = prove_single_table(
+        &ola_stark.sccall_stark,
+        config,
+        &trace_poly_values[Table::SCCall as usize],
+        &trace_commitments[Table::SCCall as usize],
+        &ctl_data_per_table[Table::SCCall as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
 
     let stark_proofs = [
         cpu_proof,
@@ -221,12 +247,16 @@ where
         poseidon_proof,
         storage_proof,
         storage_hash_proof,
+        tape_proof,
+        sccall_proof,
     ];
 
     let compress_challenges = [
         F::ZERO,
         F::ZERO,
         ola_stark.bitwise_stark.get_compress_challenge().unwrap(),
+        F::ZERO,
+        F::ZERO,
         F::ZERO,
         F::ZERO,
         F::ZERO,

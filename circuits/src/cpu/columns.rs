@@ -1,4 +1,4 @@
-use core::program::{REGISTER_NUM};
+use core::program::{REGISTER_NUM, CTX_REGISTER_NUM};
 use std::{collections::BTreeMap, ops::Range};
 
 // The Olavm trace for AIR:
@@ -20,10 +20,19 @@ use std::{collections::BTreeMap, ops::Range};
 // ┼───────┼───────┼───────┼───────┼───────|
 // │   0   │   0   │   0   |   0   │   0   │
 // ┴───────┴───────┴───────┴───────┴───────┘
-pub(crate) const COL_CLK: usize = 0;
+pub(crate) const COL_TX_IDX: usize = 0;
+pub(crate) const COL_ENV_IDX: usize = COL_TX_IDX + 1;
+pub(crate) const COL_CALL_SC_CNT: usize = COL_ENV_IDX + 1;
+pub(crate) const COL_CTX_REG_RANGE: Range<usize> =
+    COL_CALL_SC_CNT + 1..COL_CALL_SC_CNT + 1 + CTX_REGISTER_NUM;
+pub(crate) const COL_CODE_CTX_REG_RANGE: Range<usize> =
+    COL_CTX_REG_RANGE.end..COL_CTX_REG_RANGE.end + 1 + CTX_REGISTER_NUM;
+pub(crate) const COL_TP: usize = COL_CODE_CTX_REG_RANGE.end;
+pub(crate) const COL_CLK: usize = COL_TP + 1;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
-pub(crate) const COL_CTX_REG_RANGE: Range<usize> = COL_PC + 1..COL_PC + 1 + CTX_REGISTER_NUM;
-pub(crate) const COL_START_REG: usize = COL_CTX_REG_RANGE.end;
+pub(crate) const COL_IS_EXT_LINE: usize = COL_PC + 1;
+pub(crate) const COL_EXT_CNT: usize = COL_IS_EXT_LINE + 1;
+pub(crate) const COL_START_REG: usize = COL_EXT_CNT + 1;
 pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTER_NUM;
 
 // Instruction related columns(5):
@@ -58,7 +67,8 @@ pub(crate) const COL_OP1: usize = COL_OP0 + 1;
 pub(crate) const COL_DST: usize = COL_OP1 + 1;
 pub(crate) const COL_AUX0: usize = COL_DST + 1;
 pub(crate) const COL_AUX1: usize = COL_AUX0 + 1;
-pub(crate) const COL_S_OP0_START: usize = COL_AUX1 + 1;
+pub(crate) const COL_IDX_STORAGE: usize = COL_AUX1 + 1;
+pub(crate) const COL_S_OP0_START: usize = COL_IDX_STORAGE + 1;
 pub(crate) const COL_S_OP0: Range<usize> = COL_S_OP0_START..COL_S_OP0_START + REGISTER_NUM;
 pub(crate) const COL_S_OP1_START: usize = COL_S_OP0.end;
 pub(crate) const COL_S_OP1: Range<usize> = COL_S_OP1_START..COL_S_OP1_START + REGISTER_NUM;
@@ -110,17 +120,44 @@ pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
 pub(crate) const COL_S_SLOAD: usize = COL_S_PSDN + 1;
 pub(crate) const COL_S_SSTORE: usize = COL_S_SLOAD + 1;
+pub(crate) const COL_S_TLOAD: usize = COL_S_SSTORE + 1;
+pub(crate) const COL_S_TSTORE: usize = COL_S_TLOAD + 1;
+pub(crate) const COL_S_CALL_SC: usize = COL_S_TSTORE + 1;
 
-pub(crate) const NUM_CPU_COLS: usize = COL_S_SSTORE + 1;
+pub(crate) const COL_IS_ENTRY_SC: usize = COL_S_CALL_SC + 1;
+pub(crate) const COL_IS_NEXT_LINE_DIFF_INST: usize = COL_IS_ENTRY_SC + 1;
+pub(crate) const COL_IS_NEXT_LINE_SAME_TX: usize = COL_IS_NEXT_LINE_DIFF_INST + 1;
+
+pub(crate) const COL_FILTER_TAPE_LOOKING: usize = COL_IS_NEXT_LINE_SAME_TX + 1;
+pub(crate) const COL_FILTER_SCCALL_TAPE_LOOKING: usize = COL_FILTER_TAPE_LOOKING + 1;
+pub(crate) const COL_FILTER_SCCALL_MEM_LOOKING: usize = COL_FILTER_SCCALL_TAPE_LOOKING + 1;
+pub(crate) const COL_FILTER_SCCALL_TAPE_CALLER_CTX_LOOKING: usize =
+    COL_FILTER_SCCALL_MEM_LOOKING + 1;
+pub(crate) const COL_FILTER_SCCALL_TAPE_CALLEE_CTX_LOOKING: usize =
+    COL_FILTER_SCCALL_TAPE_CALLER_CTX_LOOKING + 1;
+pub(crate) const COL_FILTER_SCCALL_END: usize = COL_FILTER_SCCALL_TAPE_CALLEE_CTX_LOOKING + 1;
+pub(crate) const COL_IS_PADDING: usize = COL_FILTER_SCCALL_END + 1;
+
+pub(crate) const NUM_CPU_COLS: usize = COL_IS_PADDING + 1;
 
 pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
-    m.insert(COL_CLK, "clk".to_string());
-    m.insert(COL_PC, "pc".to_string());
+    m.insert(COL_TX_IDX, "tx_idx".to_string());
+    m.insert(COL_ENV_IDX, "env_idx".to_string());
+    m.insert(COL_CALL_SC_CNT, "call_sc_cnt".to_string());
     for (index, col) in COL_CTX_REG_RANGE.into_iter().enumerate() {
         let name = format!("ctx_reg_{}", index);
         m.insert(col, name);
     }
+    for (index, col) in COL_CODE_CTX_REG_RANGE.into_iter().enumerate() {
+        let name = format!("ctx_code_reg_{}", index);
+        m.insert(col, name);
+    }
+    m.insert(COL_TP, "tp".to_string());
+    m.insert(COL_CLK, "clk".to_string());
+    m.insert(COL_PC, "pc".to_string());
+    m.insert(COL_IS_EXT_LINE, "is_ext_line".to_string());
+    m.insert(COL_EXT_CNT, "ext_cnt".to_string());
     for (index, col) in COL_REGS.into_iter().enumerate() {
         let name = format!("r{}", index);
         m.insert(col, name);
@@ -134,6 +171,7 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_DST, "dst".to_string());
     m.insert(COL_AUX0, "aux0".to_string());
     m.insert(COL_AUX1, "aux1".to_string());
+    m.insert(COL_IDX_STORAGE, "idx_storage".to_string());
     for (index, col) in COL_S_OP0.into_iter().enumerate() {
         let name = format!("sel_op0_r{}", index);
         m.insert(col, name);
@@ -168,5 +206,33 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_S_PSDN, "s_psdn".to_string());
     m.insert(COL_S_SLOAD, "s_sload".to_string());
     m.insert(COL_S_SSTORE, "s_sstore".to_string());
+    m.insert(COL_S_TLOAD, "s_tload".to_string());
+    m.insert(COL_S_TSTORE, "s_tstore".to_string());
+    m.insert(COL_S_CALL_SC, "s_call_sc".to_string());
+    m.insert(COL_IS_ENTRY_SC, "is_entry_sc".to_string());
+    m.insert(
+        COL_IS_NEXT_LINE_DIFF_INST,
+        "is_next_line_diff_inst".to_string(),
+    );
+    m.insert(COL_IS_NEXT_LINE_SAME_TX, "is_next_line_same_tx".to_string());
+    m.insert(COL_FILTER_TAPE_LOOKING, "filter_tape_looking".to_string());
+    m.insert(
+        COL_FILTER_SCCALL_TAPE_LOOKING,
+        "filter_sccall_tape_looking".to_string(),
+    );
+    m.insert(
+        COL_FILTER_SCCALL_MEM_LOOKING,
+        "filter_sccall_mem_looking".to_string(),
+    );
+    m.insert(
+        COL_FILTER_SCCALL_TAPE_CALLER_CTX_LOOKING,
+        "filter_sccall_tape_caller_ctx_looking".to_string(),
+    );
+    m.insert(
+        COL_FILTER_SCCALL_TAPE_CALLEE_CTX_LOOKING,
+        "filter_sccall_tape_callee_ctx_looking".to_string(),
+    );
+    m.insert(COL_FILTER_SCCALL_END, "filter_sccall_end".to_string());
+    m.insert(COL_IS_PADDING, "is_padding".to_string());
     m
 }

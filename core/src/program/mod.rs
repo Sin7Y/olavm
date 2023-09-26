@@ -11,6 +11,7 @@ pub mod instruction;
 /// fixme: use 9 registers
 pub const REGISTER_NUM: usize = 10;
 pub const FIELD_ORDER: u64 = GoldilocksField::ORDER;
+pub const CTX_REGISTER_NUM: usize = 4;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Program {

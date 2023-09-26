@@ -3,7 +3,9 @@ use core::util::poseidon_utils::{
 };
 use std::{collections::BTreeMap, ops::Range};
 
-pub(crate) const COL_POSEIDON_CLK: usize = 0;
+pub(crate) const COL_POSEIDON_TX_IDX: usize = 0;
+pub(crate) const COL_POSEIDON_ENV_IDX: usize = COL_POSEIDON_TX_IDX + 1;
+pub(crate) const COL_POSEIDON_CLK: usize = COL_POSEIDON_ENV_IDX + 1;
 pub(crate) const COL_POSEIDON_OPCODE: usize = COL_POSEIDON_CLK + 1;
 pub(crate) const COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON: usize = COL_POSEIDON_OPCODE + 1;
 pub(crate) const COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY: usize =
@@ -43,6 +45,8 @@ pub(crate) const NUM_POSEIDON_COLS: usize = COL_POSEIDON_FULL_ROUND_1_3_STATE_RA
 
 pub(crate) fn get_poseidon_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
+    m.insert(COL_POSEIDON_TX_IDX, "TX_IDX".to_string());
+    m.insert(COL_POSEIDON_ENV_IDX, "ENV_IDX".to_string());
     m.insert(COL_POSEIDON_CLK, "CLK".to_string());
     m.insert(COL_POSEIDON_OPCODE, "OPCODE".to_string());
     m.insert(
