@@ -96,13 +96,13 @@ macro_rules! tape_copy {
                 immediate_data:  $v.immediate_data,
                 op1_imm:  $v.op1_imm,
                 opcode:  $v.opcode,
-                ctx_caller: $ctx_regs_status,
+                addr_storage: $ctx_regs_status,
                 regs: $registers_status,
                 register_selector: register_selector.clone(),
                 is_ext_line: GoldilocksField::ONE,
                 ext_cnt,
                 filter_tape_looking: GoldilocksField::ONE,
-                ctx_exe_code: $ctx_code_regs_status,
+                addr_code: $ctx_code_regs_status,
                 tx_idx:  $v.tx_idx,
                 env_idx: $v.env_idx,
                 call_sc_cnt: $v.call_sc_cnt
@@ -132,8 +132,8 @@ pub struct Process {
     pub env_idx: GoldilocksField,
     pub call_sc_cnt: GoldilocksField,
     pub clk: u32,
-    pub ctx_caller: Address,
-    pub ctx_exe_code: Address,
+    pub addr_storage: Address,
+    pub addr_code: Address,
     pub registers: [GoldilocksField; REGISTER_NUM],
     pub register_selector: RegisterSelector,
     pub pc: u64,
@@ -158,8 +158,8 @@ impl Process {
             env_idx: Default::default(),
             call_sc_cnt: Default::default(),
             clk: 0,
-            ctx_caller: Address::default(),
-            ctx_exe_code: Address::default(),
+            addr_storage: Address::default(),
+            addr_code: Address::default(),
             registers: [Default::default(); REGISTER_NUM],
             register_selector: Default::default(),
             pc: 0,
@@ -424,8 +424,8 @@ impl Process {
         loop {
             self.register_selector = RegisterSelector::default();
             let registers_status = self.registers;
-            let ctx_regs_status = self.ctx_caller.clone();
-            let ctx_code_regs_status = self.ctx_exe_code.clone();
+            let ctx_regs_status = self.addr_storage.clone();
+            let ctx_code_regs_status = self.addr_code.clone();
             let pc_status = self.pc;
             let tp_status = self.tp;
             let mut aux_steps = Vec::new();
@@ -1096,8 +1096,8 @@ impl Process {
                             env_idx: GoldilocksField::default(),
                             call_sc_cnt: self.call_sc_cnt,
                             tp: self.tp,
-                            ctx_caller: Address::default(),
-                            ctx_exe_code: Address::default(),
+                            addr_storage: Address::default(),
+                            addr_code: Address::default(),
                             instruction: self.instruction,
                             immediate_data: self.immediate_data,
                             opcode: self.opcode,
@@ -1123,7 +1123,7 @@ impl Process {
                         store_value[i] = self.registers[i + 5];
                     }
                     let storage_key =
-                        StorageKey::new(AccountTreeId::new(self.ctx_caller.clone()), slot_key);
+                        StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
                     let (tree_key, mut hash_row) = storage_key.hashed_key();
 
                     self.storage_log.push(WitnessStorageLog {
@@ -1157,7 +1157,7 @@ impl Process {
                     }
 
                     let storage_key =
-                        StorageKey::new(AccountTreeId::new(self.ctx_caller.clone()), slot_key);
+                        StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
                     let (tree_key, mut hash_row) = storage_key.hashed_key();
                     let path = tree_key_to_leaf_index(&tree_key);
 
@@ -1409,8 +1409,8 @@ impl Process {
                     program.trace.insert_sccall(
                         self.tx_idx,
                         self.env_idx,
-                        self.ctx_caller,
-                        self.ctx_exe_code,
+                        self.addr_storage,
+                        self.addr_code,
                         self.register_selector.op1,
                         GoldilocksField::from_canonical_u64(self.clk as u64),
                         GoldilocksField::from_canonical_u64((self.clk + 1) as u64),
@@ -1423,13 +1423,13 @@ impl Process {
                     if op1_value.0 == GoldilocksField::ONE {
                         len = load_ctx_addr_info(
                             self,
-                            &init_ctx_addr_info(self.ctx_caller, callee_address, self.ctx_caller),
+                            &init_ctx_addr_info(self.addr_storage, callee_address, self.addr_storage),
                         );
                         self.tp += GoldilocksField::from_canonical_u64(len as u64);
                     } else if op1_value.0 == GoldilocksField::ZERO {
                         len = load_ctx_addr_info(
                             self,
-                            &init_ctx_addr_info(self.ctx_caller, callee_address, callee_address),
+                            &init_ctx_addr_info(self.addr_storage, callee_address, callee_address),
                         );
                         self.tp += GoldilocksField::from_canonical_u64(len as u64);
                     } else {
