@@ -54,7 +54,7 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
 
         // Context related columns.
         for j in 0..CTX_REGISTER_NUM {
-            trace[cpu::COL_CTX_REG_RANGE.start + j][i] = F::from_canonical_u64(s.addr_storage[j].0);
+            trace[cpu::COL_ADDR_STORAGE_RANGE.start + j][i] = F::from_canonical_u64(s.addr_storage[j].0);
         }
         // for j in 0..CTX_REGISTER_NUM {
         //     trace[cpu::COL_CODE_CTX_REG_RANGE.start + j][i] =

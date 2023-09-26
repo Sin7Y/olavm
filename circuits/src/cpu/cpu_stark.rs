@@ -87,10 +87,10 @@ pub(crate) fn ctl_data_cpu_mem_sccall<F: Field>(i: usize) -> Vec<Column<F>> {
         _ => panic!("invalid cpu-mem sccall idx"),
     };
     let col_value = match i {
-        0 => COL_CODE_CTX_REG_RANGE.start,
-        1 => COL_CODE_CTX_REG_RANGE.start + 1,
-        2 => COL_CODE_CTX_REG_RANGE.start + 2,
-        3 => COL_CODE_CTX_REG_RANGE.start + 3,
+        0 => COL_ADDR_CODE_RANGE.start,
+        1 => COL_ADDR_CODE_RANGE.start + 1,
+        2 => COL_ADDR_CODE_RANGE.start + 2,
+        3 => COL_ADDR_CODE_RANGE.start + 3,
         _ => panic!("invalid cpu-mem sccall idx"),
     };
     Column::singles([
@@ -171,10 +171,10 @@ pub fn ctl_data_with_poseidon_tree_key<F: Field>() -> Vec<Column<F>> {
         COL_ENV_IDX,
         COL_CLK,
         COL_OPCODE,
-        COL_CTX_REG_RANGE.start,
-        COL_CTX_REG_RANGE.start + 1,
-        COL_CTX_REG_RANGE.start + 2,
-        COL_CTX_REG_RANGE.start + 3,
+        COL_ADDR_STORAGE_RANGE.start,
+        COL_ADDR_STORAGE_RANGE.start + 1,
+        COL_ADDR_STORAGE_RANGE.start + 2,
+        COL_ADDR_STORAGE_RANGE.start + 3,
         COL_START_REG + 1,
         COL_START_REG + 2,
         COL_START_REG + 3,
@@ -253,10 +253,10 @@ pub fn ctl_filter_cpu_sccall<F: Field>() -> Column<F> {
 
 pub fn ctl_data_cpu_sccall_end<F: Field>() -> Vec<Column<F>> {
     let mut res = vec![COL_TX_IDX, COL_ENV_IDX];
-    for limb_exe_ctx_col in COL_CTX_REG_RANGE {
+    for limb_exe_ctx_col in COL_ADDR_STORAGE_RANGE {
         res.push(limb_exe_ctx_col);
     }
-    for limb_code_ctx_col in COL_CODE_CTX_REG_RANGE {
+    for limb_code_ctx_col in COL_ADDR_CODE_RANGE {
         res.push(limb_code_ctx_col);
     }
     res.push(COL_CLK);
@@ -289,10 +289,10 @@ pub(crate) fn ctl_data_cpu_tape_sccall_caller<F: Field>(i: usize) -> Vec<Column<
         _ => panic!("invalid cpu-mem sccall idx"),
     };
     let col_value = match i {
-        0 => COL_CTX_REG_RANGE.start,
-        1 => COL_CTX_REG_RANGE.start + 1,
-        2 => COL_CTX_REG_RANGE.start + 2,
-        3 => COL_CTX_REG_RANGE.start + 3,
+        0 => COL_ADDR_STORAGE_RANGE.start,
+        1 => COL_ADDR_STORAGE_RANGE.start + 1,
+        2 => COL_ADDR_STORAGE_RANGE.start + 2,
+        3 => COL_ADDR_STORAGE_RANGE.start + 3,
         _ => panic!("invalid cpu-mem sccall idx"),
     };
     Column::singles([COL_TX_IDX, col_addr, COL_OPCODE, col_value]).collect_vec()
@@ -310,10 +310,10 @@ pub(crate) fn ctl_data_cpu_tape_sccall_callee<F: Field>(i: usize) -> Vec<Column<
         _ => panic!("invalid cpu-mem sccall idx"),
     };
     let col_value = match i {
-        0 => COL_CODE_CTX_REG_RANGE.start,
-        1 => COL_CODE_CTX_REG_RANGE.start + 1,
-        2 => COL_CODE_CTX_REG_RANGE.start + 2,
-        3 => COL_CODE_CTX_REG_RANGE.start + 3,
+        0 => COL_ADDR_CODE_RANGE.start,
+        1 => COL_ADDR_CODE_RANGE.start + 1,
+        2 => COL_ADDR_CODE_RANGE.start + 2,
+        3 => COL_ADDR_CODE_RANGE.start + 3,
         _ => panic!("invalid cpu-mem sccall idx"),
     };
     Column::singles([COL_TX_IDX, col_addr, COL_OPCODE, col_value]).collect_vec()
@@ -879,15 +879,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
                 (P::ONES - wrapper.nv_is_padding)
                     * (P::ONES - wrapper.lv[COL_S_END])
                     * (P::ONES - wrapper.lv[COL_S_CALL_SC])
-                    * (wrapper.nv[COL_CTX_REG_RANGE.start + ctx_reg_idx]
-                        - wrapper.lv[COL_CTX_REG_RANGE.start + ctx_reg_idx]),
+                    * (wrapper.nv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]
+                        - wrapper.lv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]),
             );
             yield_constr.constraint_transition(
                 (P::ONES - wrapper.nv_is_padding)
                     * (P::ONES - wrapper.lv[COL_S_END])
                     * (P::ONES - wrapper.lv[COL_S_CALL_SC])
-                    * (wrapper.nv[COL_CODE_CTX_REG_RANGE.start + ctx_reg_idx]
-                        - wrapper.lv[COL_CODE_CTX_REG_RANGE.start + ctx_reg_idx]),
+                    * (wrapper.nv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]
+                        - wrapper.lv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]),
             );
         }
 
