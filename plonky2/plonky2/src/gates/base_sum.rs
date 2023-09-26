@@ -56,14 +56,16 @@ impl<F: RichField + Extendable<D>, const D: usize, const B: usize> Gate<F, D> fo
         let sum = vars.local_wires[Self::WIRE_SUM];
         let limbs = vars.local_wires[self.limbs()].to_vec();
         let computed_sum = reduce_with_powers(&limbs, F::Extension::from_canonical_usize(B));
-        let mut constraints = vec![computed_sum - sum];
+        let constraints = vec![computed_sum - sum];
+        // limbs will be used in lookup, so dont need to rangecheck constraints
+        /*let mut constraints = vec![computed_sum - sum];
         for limb in limbs {
             constraints.push(
                 (0..B)
                     .map(|i| limb - F::Extension::from_canonical_usize(i))
                     .product(),
             );
-        }
+        }*/
         constraints
     }
 
@@ -88,7 +90,8 @@ impl<F: RichField + Extendable<D>, const D: usize, const B: usize> Gate<F, D> fo
         let sum = vars.local_wires[Self::WIRE_SUM];
         let limbs = vars.local_wires[self.limbs()].to_vec();
         let computed_sum = reduce_with_powers_ext_circuit(builder, &limbs, base);
-        let mut constraints = vec![builder.sub_extension(computed_sum, sum)];
+        let constraints = vec![builder.sub_extension(computed_sum, sum)];
+        /*let mut constraints = vec![builder.sub_extension(computed_sum, sum)];
         for limb in limbs {
             constraints.push({
                 let mut acc = builder.one_extension();
@@ -102,7 +105,7 @@ impl<F: RichField + Extendable<D>, const D: usize, const B: usize> Gate<F, D> fo
                 });
                 acc
             });
-        }
+        }*/
         constraints
     }
 
@@ -125,12 +128,14 @@ impl<F: RichField + Extendable<D>, const D: usize, const B: usize> Gate<F, D> fo
 
     // Bounded by the range-check (x-0)*(x-1)*...*(x-B+1).
     fn degree(&self) -> usize {
-        B
+        //B
+        1
     }
 
     // 1 for checking the sum then `num_limbs` for range-checking the limbs.
     fn num_constraints(&self) -> usize {
-        1 + self.num_limbs
+        //1 + self.num_limbs
+        1
     }
 }
 
@@ -148,12 +153,12 @@ impl<F: RichField + Extendable<D>, const D: usize, const B: usize> PackedEvaluab
 
         yield_constr.one(computed_sum - sum);
 
-        let constraints_iter = limbs.iter().map(|&limb| {
+        /*let constraints_iter = limbs.iter().map(|&limb| {
             (0..B)
                 .map(|i| limb - F::from_canonical_usize(i))
                 .product::<P>()
         });
-        yield_constr.many(constraints_iter);
+        yield_constr.many(constraints_iter);*/
     }
 }
 

@@ -72,6 +72,19 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         looking_out
     }
 
+        /// Adds a lookup (input, output) pair to the stored lookups. Takes a `Target` input and returns a `Target` output.
+    pub fn add_lookup_from_index_bitwise(&mut self, looking_in_0: Target, looking_in_1: Target, looking_out: Target, lut_index: usize) {
+        assert!(
+            lut_index < self.get_luts_length(),
+            "lut number {} not in luts (length = {})",
+            lut_index,
+            self.get_luts_length()
+        );
+        //let looking_out = self.add_virtual_target();
+        self.update_lookups(looking_in_0, looking_in_1, looking_out, lut_index);
+        //looking_out
+    }
+
     /// We call this function at the end of circuit building right before the PI gate to add all `LookupTableGate` and `LookupGate`.
     /// It also updates `self.lookup_rows` accordingly.
     pub fn add_all_lookups(&mut self) {

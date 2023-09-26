@@ -15,9 +15,10 @@ use crate::field::polynomial::{PolynomialCoeffs, PolynomialValues};
 use crate::field::types::Field;
 use crate::field::zero_poly_coset::ZeroPolyOnCoset;
 use crate::fri::oracle::PolynomialBatch;
-use crate::gates::lookup::{LookupGate, BitwiseLookupGate};
-use crate::gates::lookup_table::{LookupTableGate, BitwiseLookupTableGate};
+use crate::gates::lookup::BitwiseLookupGate;
+use crate::gates::lookup_table::BitwiseLookupTableGate;
 use crate::gates::selectors::LookupSelectors;
+use crate::hash::blake3::LOOKUP_LIMB_RANGE;
 use crate::hash::hash_types::RichField;
 use crate::iop::challenger::Challenger;
 use crate::iop::generator::generate_partial_witness;
@@ -66,15 +67,15 @@ pub fn set_lookup_wires<
         let table_value_to_idx: HashMap<u8, usize> = common_data.luts[lut_index]
             .iter()
             .enumerate()
-            .map(|(_, (inp_target0, inp_target1, out_target))| (*inp_target0 * 16 + *inp_target1, *out_target as usize))
+            .map(|(_, (inp_target0, inp_target1, out_target))| (*inp_target0 * LOOKUP_LIMB_RANGE as u8 + *inp_target1, *out_target as usize))
             .collect();
 
         for (inp_target0, inp_target1, _) in prover_data.lut_to_lookups[lut_index].iter() {
             let inp_value0 = pw.get_target(*inp_target0);
             let inp_value1 = pw.get_target(*inp_target1);
-            let index = inp_value0.to_canonical_u64() * 16 + inp_value1.to_canonical_u64();
+            let index = inp_value0.to_canonical_u64() * LOOKUP_LIMB_RANGE as u64 + inp_value1.to_canonical_u64();
             let idx = table_value_to_idx
-                .get(&u8::try_from(inp_value0.to_canonical_u64() * 16 + inp_value1.to_canonical_u64()).unwrap())
+                .get(&u8::try_from(inp_value0.to_canonical_u64() * LOOKUP_LIMB_RANGE as u64 + inp_value1.to_canonical_u64()).unwrap())
                 .is_some();
 
             if idx {
@@ -480,7 +481,9 @@ fn compute_lookup_polys<
                     let looked_out = witness.get_wire(row, BitwiseLookupTableGate::wire_ith_looked_out(s));
 
                     
-                    looked_inp_0 + looked_inp_1 + deltas[LookupChallenges::ChallengeA as usize] * looked_out
+                    looked_inp_0
+                    + looked_inp_1 * deltas[LookupChallenges::ChallengeA as usize] * deltas[LookupChallenges::ChallengeA as usize] 
+                    + deltas[LookupChallenges::ChallengeA as usize] * looked_out
                 })
                 .collect();
             // Get (alpha - combo).
@@ -497,7 +500,9 @@ fn compute_lookup_polys<
                     let looked_inp_1 = witness.get_wire(row, BitwiseLookupTableGate::wire_ith_looked_inp1(s));
                     let looked_out = witness.get_wire(row, BitwiseLookupTableGate::wire_ith_looked_out(s));
 
-                    looked_inp_0 + looked_inp_1 + deltas[LookupChallenges::ChallengeB as usize] * looked_out
+                    looked_inp_0
+                    + looked_inp_1 * deltas[LookupChallenges::ChallengeB as usize] * deltas[LookupChallenges::ChallengeB as usize]
+                    + deltas[LookupChallenges::ChallengeB as usize] * looked_out
                 })
                 .collect();
 
@@ -535,7 +540,9 @@ fn compute_lookup_polys<
                     let looking_in_1 = witness.get_wire(row, BitwiseLookupGate::wire_ith_looking_inp1(s));
                     let looking_out = witness.get_wire(row, BitwiseLookupGate::wire_ith_looking_out(s));
 
-                    looking_in_0 + looking_in_1 + deltas[LookupChallenges::ChallengeA as usize] * looking_out
+                    looking_in_0 
+                    + looking_in_1 * deltas[LookupChallenges::ChallengeA as usize] * deltas[LookupChallenges::ChallengeA as usize]
+                    + deltas[LookupChallenges::ChallengeA as usize] * looking_out
                 })
                 .collect();
             // Get (alpha - combo).

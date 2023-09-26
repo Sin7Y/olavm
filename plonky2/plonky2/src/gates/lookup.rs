@@ -13,6 +13,7 @@ use crate::gates::gate::Gate;
 use crate::gates::packed_util::PackedEvaluableBase;
 use crate::gates::util::StridedConstraintConsumer;
 use crate::hash::hash_types::RichField;
+use crate::hash::blake3::LOOKUP_LIMB_RANGE;
 use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
 use crate::iop::target::Target;
@@ -327,29 +328,35 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for Bitwis
     }
 
     fn run_once(&self, witness: &PartitionWitness<F>, out_buffer: &mut GeneratedValues<F>) {
+
         let get_wire = |wire: usize| -> F { witness.get_target(Target::wire(self.row, wire)) };
 
         let input0_val = get_wire(BitwiseLookupGate::wire_ith_looking_inp0(self.slot_nb));
         let input1_val = get_wire(BitwiseLookupGate::wire_ith_looking_inp1(self.slot_nb));
-        let (input0, input1, output) = self.lut[(input0_val.to_canonical_u64() * 16 +  input1_val.to_canonical_u64()) as usize];
+        let (input0, input1, output) = self.lut[(input0_val.to_canonical_u64() * LOOKUP_LIMB_RANGE as u64 +  input1_val.to_canonical_u64()) as usize];
         // find directly
         if input0_val == F::from_canonical_u8(input0) && input1_val == F::from_canonical_u8(input1){
-            let output_val = F::from_canonical_u8(output);
+            
+            let output_val = get_wire(BitwiseLookupGate::wire_ith_looking_out(self.slot_nb));
 
-            let out_wire = Target::wire(self.row, BitwiseLookupGate::wire_ith_looking_out(self.slot_nb));
-            out_buffer.set_target(out_wire, output_val);
+            assert_eq!(F::from_canonical_u8(output), output_val, "unvalid lookup input, 
+                input is {:?}, {:?}, {:?}, \n expect_output is {:?}, {:?}, {:?} \n, trace info is {:?}, {:?} \n",
+                input0_val, input1_val, output_val,
+                input0_val, input1_val, output,
+                self.row, self.slot_nb);
+
+            return;
+
         } else {
             // loop all case
             for (input0, input1, output) in self.lut.iter() {
 
                 if input0_val == F::from_canonical_u8(*input0) && input1_val == F::from_canonical_u8(*input1){
 
-                    let output_val = F::from_canonical_u8(*output);
+                    let output_val = get_wire(BitwiseLookupGate::wire_ith_looking_out(self.slot_nb));
 
-                    let out_wire =
-                        Target::wire(self.row, BitwiseLookupGate::wire_ith_looking_out(self.slot_nb));
-                    out_buffer.set_target(out_wire, output_val);
-                    return;
+                    assert_eq!(F::from_canonical_u8(*output), output_val, "unvalid lookup input")
+                     
                 }
             }
             panic!("Incorrect input value provided");
@@ -362,14 +369,9 @@ mod tests {
     static LOGGER_INITIALIZED: Once = Once::new();
 
     use alloc::sync::Arc;
-    use std::ops::Add;
     use std::sync::Once;
-
-    use itertools::Itertools;
     use log::{Level, LevelFilter};
 
-    use crate::gadgets::lookup::{OTHER_TABLE, SMALLER_TABLE, TIP5_TABLE};
-    use crate::gates::lookup_table::LookupTable;
     use crate::gates::noop::NoopGate;
     use crate::plonk::prover::prove;
     use crate::util::timing::TimingTree;
@@ -514,6 +516,91 @@ mod tests {
         pw.set_target(initial_a, F::from_canonical_usize(look_val_a));
         pw.set_target(initial_b, F::from_canonical_usize(look_val_b));
         pw.set_target(initial_a_and_b, F::from_canonical_usize(look_val_a_and_b));
+
+        let data = builder.build::<C>();
+        let mut timing = TimingTree::new("prove one lookup", Level::Debug);
+        let proof = prove(&data.prover_only, &data.common, pw, &mut timing)?;
+        timing.print();
+        data.verify(proof.clone())?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_one_lookup_bitwise_multi() -> anyhow::Result<()> {
+        use crate::field::types::Field;
+        use crate::iop::witness::{PartialWitness, Witness};
+        use crate::plonk::circuit_builder::CircuitBuilder;
+        use crate::plonk::circuit_data::CircuitConfig;
+        use crate::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+
+        LOGGER_INITIALIZED.call_once(|| init_logger().unwrap());
+
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let mut table =Vec::<(u8,u8,u8)>::with_capacity(256);
+
+        for i in 0..16 {
+            for j in 0..16 {
+
+                 let xor = i as u8 ^ j as u8;
+
+                 table.push((i as u8, j as u8, xor));
+            }
+        }
+
+        let table_index = builder.add_lookup_table_from_pairs(Arc::new(table));
+
+        let looking_a = builder.add_virtual_target();
+        let looking_b = builder.add_virtual_target();
+        let looking_a_xor_b = builder.add_virtual_target();
+
+        let looking_val_a = 1;
+        let looking_val_b = 2;
+        let looking_val_a_xor_b = looking_val_a ^ looking_val_b;// 0x11 = 3
+
+        let looking_c = builder.add_virtual_target();
+        let looking_d = builder.add_virtual_target();
+        let looking_c_xor_d = builder.add_virtual_target();
+
+        let looking_val_c = 4;
+        let looking_val_d = 5;
+        let looking_val_c_xor_d = looking_val_c ^ looking_val_d;// 0x001 = 1
+
+
+        //let output_a_xor_b = builder.add_lookup_from_index(looking_a, looking_b, table_index);
+        //let output_c_xor_d = builder.add_lookup_from_index(looking_c, looking_d, table_index);
+
+        builder.add_lookup_from_index_bitwise(looking_a, looking_b, looking_a_xor_b, table_index);
+        builder.add_lookup_from_index_bitwise(looking_c, looking_d, looking_c_xor_d, table_index);
+
+
+        builder.register_public_input(looking_a);
+        builder.register_public_input(looking_b);
+        builder.register_public_input(looking_a_xor_b);
+
+        //builder.register_public_input(output_a_xor_b);
+
+        builder.register_public_input(looking_c);
+        builder.register_public_input(looking_d);
+        builder.register_public_input(looking_c_xor_d);
+
+        //builder.register_public_input(output_c_xor_d);
+
+        let mut pw = PartialWitness::new();
+
+        pw.set_target(looking_a, F::from_canonical_usize(looking_val_a));
+        pw.set_target(looking_b, F::from_canonical_usize(looking_val_b));
+        pw.set_target(looking_a_xor_b, F::from_canonical_usize(looking_val_a_xor_b));
+
+        pw.set_target(looking_c, F::from_canonical_usize(looking_val_c));
+        pw.set_target(looking_d, F::from_canonical_usize(looking_val_d));
+        pw.set_target(looking_c_xor_d, F::from_canonical_usize(looking_val_c_xor_d));
 
         let data = builder.build::<C>();
         let mut timing = TimingTree::new("prove one lookup", Level::Debug);

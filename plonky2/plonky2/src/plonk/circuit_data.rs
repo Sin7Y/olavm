@@ -99,6 +99,13 @@ impl CircuitConfig {
         }
     }
 
+    pub fn wide_blake3_config() -> Self {
+        Self {
+            num_wires: 696,
+            ..Self::standard_recursion_config()
+        }
+    }
+
     pub fn standard_recursion_zk_config() -> Self {
         CircuitConfig {
             zero_knowledge: true,
