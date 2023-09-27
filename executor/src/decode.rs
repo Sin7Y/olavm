@@ -56,7 +56,8 @@ pub fn decode_raw_instruction(
             | Opcode::NEQ
             | Opcode::GTE
             | Opcode::EQ
-            | Opcode::TLOAD => {
+            | Opcode::TLOAD
+            | Opcode::POSEIDON => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg0_name = format!("r{}", reg0);
@@ -188,7 +189,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::RET | Opcode::END | Opcode::SLOAD | Opcode::SSTORE | Opcode::POSEIDON => {
+            Opcode::RET | Opcode::END | Opcode::SLOAD | Opcode::SSTORE  => {
                 instruction += &op_code.to_string();
             }
         };
