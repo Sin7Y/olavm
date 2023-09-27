@@ -307,7 +307,8 @@ impl BinaryInstruction {
             | OlaOpcode::EQ
             | OlaOpcode::NEQ
             | OlaOpcode::GTE
-            | OlaOpcode::TLOAD => {
+            | OlaOpcode::TLOAD
+            | OlaOpcode::POSEIDON => {
                 format!(
                     "{} {} {} {}",
                     self.opcode.token(),
@@ -335,7 +336,7 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::CJMP | OlaOpcode::SCCALL => {
+            OlaOpcode::CJMP | OlaOpcode::SCCALL | OlaOpcode::SLOAD | OlaOpcode::SSTORE => {
                 format!(
                     "{} {} {}",
                     self.opcode.token(),
@@ -352,11 +353,9 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::RET
-            | OlaOpcode::END
-            | OlaOpcode::POSEIDON
-            | OlaOpcode::SLOAD
-            | OlaOpcode::SSTORE => format!("{}", self.opcode.token()),
+            OlaOpcode::RET | OlaOpcode::END => {
+                format!("{}", self.opcode.token())
+            }
         }
     }
 }

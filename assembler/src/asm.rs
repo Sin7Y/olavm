@@ -138,7 +138,8 @@ fn split_ola_asm_pieces(
         | OlaOpcode::EQ
         | OlaOpcode::NEQ
         | OlaOpcode::GTE
-        | OlaOpcode::TLOAD => {
+        | OlaOpcode::TLOAD
+        | OlaOpcode::POSEIDON => {
             if ops.len() != 3 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }
@@ -159,7 +160,9 @@ fn split_ola_asm_pieces(
         | OlaOpcode::MSTORE
         | OlaOpcode::CJMP
         | OlaOpcode::TSTORE
-        | OlaOpcode::SCCALL => {
+        | OlaOpcode::SCCALL
+        | OlaOpcode::SLOAD
+        | OlaOpcode::SSTORE => {
             if ops.len() != 2 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }
@@ -182,11 +185,7 @@ fn split_ola_asm_pieces(
             Ok((opcode, None, Some(op1.clone()), None))
         }
 
-        OlaOpcode::RET
-        | OlaOpcode::END
-        | OlaOpcode::POSEIDON
-        | OlaOpcode::SLOAD
-        | OlaOpcode::SSTORE => {
+        OlaOpcode::RET | OlaOpcode::END => {
             if ops.len() != 0 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }
