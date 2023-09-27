@@ -40,8 +40,8 @@ class JsonMainTraceColumnType(Enum):
     CLK = 'clk'
     PC = 'pc'
     TP = 'tp'
-    CTX_CALLER = "addr_storage"
-    CTX_EXE_CODE = "addr_code"
+    ADDR_STORAGE = "addr_storage"
+    ADDR_CODE = "addr_code"
     REGS = 'regs'
     INST = 'instruction'
     OP1_IMM = 'op1_imm'

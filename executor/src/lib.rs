@@ -1207,6 +1207,53 @@ impl Process {
                         input[i] = self.registers[i + 1];
                     }
 
+                    let dst_index = self.get_reg_index(ops[1]);
+                    let op0_index = self.get_reg_index(ops[2]);
+                    let op1_value = self.get_index_value(ops[3]);
+
+                    self.register_selector.op0 = self.registers[op0_index];
+                    self.register_selector.op1 = op1_value.0;
+                    self.register_selector.op0_reg_sel[op0_index] =
+                        GoldilocksField::from_canonical_u64(1);
+                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
+
+                    self.register_selector.dst = self.registers[dst_index];
+                    self.register_selector.dst_reg_sel[dst_index] =
+                        GoldilocksField::from_canonical_u64(1);
+
+                    let dst_mem_addr = self.registers[dst_index].to_canonical_u64();
+                    let src_mem_addr = self.registers[op0_index].to_canonical_u64();
+                    let input_len = op1_value.0;
+
+                    let read_ptr = 0;
+                    loop {
+                        // input = self.memory.read(
+                        //     src_mem_addr ,
+                        //     self.clk,
+                        //     GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u64),
+                        //     GoldilocksField::from_canonical_u64(is_rw as u64),
+                        //     GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
+                        //     GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+                        //     region_prophet,
+                        //     region_heap,
+                        //     self.tx_idx,
+                        //     self.env_idx,
+                        // )
+
+                        // if read_ptr+8 > input_len {
+                        //
+                        // } else {
+                        //
+                        // }
+                        //
+                        // let mut row = calculate_poseidon_and_generate_intermediate_trace_row(
+                        //     input,
+                        //     PoseidonType::Normal,
+                        // );
+                    }
                     let mut row = calculate_poseidon_and_generate_intermediate_trace_row(
                         input,
                         PoseidonType::Normal,
