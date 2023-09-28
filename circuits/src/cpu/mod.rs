@@ -1,6 +1,7 @@
 mod add;
 mod assert;
 mod call;
+mod call_sc;
 mod cmp;
 pub mod columns;
 pub mod cpu_stark;
@@ -12,4 +13,3 @@ mod poseidon;
 mod ret;
 mod sload;
 mod tape;
-mod call_sc;

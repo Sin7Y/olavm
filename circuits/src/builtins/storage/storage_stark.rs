@@ -6,9 +6,7 @@ use plonky2::{
 };
 use std::marker::PhantomData;
 
-use crate::{
-    stark::{cross_table_lookup::Column, stark::Stark},
-};
+use crate::stark::{cross_table_lookup::Column, stark::Stark};
 
 use super::columns::{
     COL_STORAGE_ADDR_RANGE, COL_STORAGE_CLK, COL_STORAGE_ENV_IDX,

@@ -1423,7 +1423,11 @@ impl Process {
                     if op1_value.0 == GoldilocksField::ONE {
                         len = load_ctx_addr_info(
                             self,
-                            &init_ctx_addr_info(self.addr_storage, callee_address, self.addr_storage),
+                            &init_ctx_addr_info(
+                                self.addr_storage,
+                                callee_address,
+                                self.addr_storage,
+                            ),
                         );
                         self.tp += GoldilocksField::from_canonical_u64(len as u64);
                     } else if op1_value.0 == GoldilocksField::ZERO {
