@@ -17,7 +17,7 @@ use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType};
 use core::types::account::AccountTreeId;
 
 use core::crypto::poseidon_trace::{
-    calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
+    calculate_poseidon_and_generate_intermediate_trace, POSEIDON_INPUT_VALUE_LEN,
     POSEIDON_OUTPUT_VALUE_LEN,
 };
 use core::program::binary_program::OlaProphet;
@@ -27,6 +27,7 @@ use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::tree_key_to_leaf_index;
 use core::types::merkle_tree::{u8_arr_to_tree_key, TREE_VALUE_LEN};
 use core::types::storage::StorageKey;
+use core::util::poseidon_utils::POSEIDON_INPUT_NUM;
 use core::vm::heap::HEAP_PTR;
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
@@ -58,28 +59,109 @@ mod tests;
 pub mod trace;
 
 #[macro_export]
+macro_rules! memory_zone_detect {
+    ($mem_addr: tt, $is_rw: tt, $region_prophet:tt, $region_heap: tt, $panic: expr) => {
+        memory_zone_process!(
+            $mem_addr,
+            $panic,
+            {
+                $is_rw = MemoryType::ReadWrite;
+                $region_prophet = GoldilocksField::ZERO;
+                $region_heap = GoldilocksField::ONE
+            },
+            {
+                $is_rw = MemoryType::ReadWrite;
+                $region_prophet = GoldilocksField::ZERO;
+                $region_heap = GoldilocksField::ZERO
+            }
+        );
+    };
+}
+
+#[macro_export]
+macro_rules! memory_op {
+    ($v: expr, $mem_addr: tt, $read_addr: expr,  $opcode: expr) => {
+        let mut is_rw = MemoryType::ReadWrite;
+        let mut region_prophet = GoldilocksField::ZERO;
+        let mut region_heap = GoldilocksField::ZERO;
+
+        memory_zone_detect!($mem_addr, is_rw, region_prophet, region_heap, {
+            is_rw = MemoryType::WriteOnce;
+            region_prophet = GoldilocksField::ONE;
+            region_heap = GoldilocksField::ZERO;
+        });
+        $read_addr = $v.memory.read(
+            $mem_addr,
+            $v.clk,
+            GoldilocksField::from_canonical_u64(1 << $opcode as u64),
+            GoldilocksField::from_canonical_u64(is_rw as u64),
+            GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
+            GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+            region_prophet,
+            region_heap,
+            $v.tx_idx,
+            $v.env_idx,
+        )?;
+    };
+    ($v: expr, $mem_addr: tt, $value: expr,  $opcode: expr,$panic: expr) => {
+        let mut is_rw = MemoryType::ReadWrite;
+        let mut region_prophet = GoldilocksField::ZERO;
+        let mut region_heap = GoldilocksField::ZERO;
+        memory_zone_detect!($mem_addr, is_rw, region_prophet, region_heap, $panic);
+        $v.memory.write(
+            $mem_addr,
+            $v.clk,
+            GoldilocksField::from_canonical_u64(1 << $opcode as u64),
+            GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+            GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
+            GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
+            GoldilocksField::ZERO,
+            region_heap,
+            $value,
+            $v.tx_idx,
+            $v.env_idx,
+        );
+    };
+}
+
+#[macro_export]
+macro_rules! aux_insert {
+    ($v: expr, $aux_steps: tt, $ctx_regs_status: tt, $ctx_code_regs_status: tt, $registers_status: tt, $register_selector: expr, $ext_cnt: tt, $filter_tape_looking: tt) => {
+        $aux_steps.push(Step {
+            clk: $v.clk,
+            pc: $v.pc,
+            tp: $v.tp,
+            instruction: $v.instruction,
+            immediate_data: $v.immediate_data,
+            op1_imm: $v.op1_imm,
+            opcode: $v.opcode,
+            addr_storage: $ctx_regs_status,
+            regs: $registers_status,
+            register_selector: $register_selector,
+            is_ext_line: GoldilocksField::ONE,
+            ext_cnt: $ext_cnt,
+            filter_tape_looking: $filter_tape_looking,
+            addr_code: $ctx_code_regs_status,
+            tx_idx: $v.tx_idx,
+            env_idx: $v.env_idx,
+            call_sc_cnt: $v.call_sc_cnt,
+            storage_access_idx: $v.storage_access_idx,
+        });
+    };
+}
+
+#[macro_export]
 macro_rules! tape_copy {
     ($v: expr, $read_proc: stmt, $write_proc: stmt, $ctx_regs_status: tt, $ctx_code_regs_status: tt, $registers_status: tt, $zone_length: tt, $mem_base_addr: tt, $tape_base_addr: tt, $aux_steps: tt,
      $mem_addr: tt, $tape_addr: tt, $is_rw: tt, $region_prophet:tt, $region_heap: tt, $value: tt) => {
         let mut ext_cnt = GoldilocksField::ONE;
+        let filter_tape_looking = GoldilocksField::ONE;
         let mut register_selector = $v.register_selector.clone();
         for index in 0..$zone_length {
             $mem_addr = $mem_base_addr + index;
             $tape_addr = $tape_base_addr+index;
             assert!($tape_addr < GoldilocksField::ORDER, "tape_addr is big than ORDER");
-            memory_zone_process!(
-                $mem_addr,
-                { panic!("tstore in prophet") },
-                {
-                    $is_rw = MemoryType::ReadWrite;
-                    $region_prophet = GoldilocksField::ZERO;
-                    $region_heap = GoldilocksField::ONE
-                },
-                {   $is_rw = MemoryType::ReadWrite;
-                    $region_prophet = GoldilocksField::ZERO;
-                    $region_heap = GoldilocksField::ZERO}
-            );
-
+            memory_zone_detect!($mem_addr, $is_rw,  $region_prophet, $region_heap, panic!("tstore in prophet"));
             register_selector.aux0 = GoldilocksField::from_canonical_u64($mem_addr);
 
             $read_proc
@@ -88,25 +170,7 @@ macro_rules! tape_copy {
 
             $write_proc
 
-            $aux_steps.push(Step {
-                clk:  $v.clk,
-                pc:  $v.pc,
-                tp:  $v.tp,
-                instruction:  $v.instruction,
-                immediate_data:  $v.immediate_data,
-                op1_imm:  $v.op1_imm,
-                opcode:  $v.opcode,
-                addr_storage: $ctx_regs_status,
-                regs: $registers_status,
-                register_selector: register_selector.clone(),
-                is_ext_line: GoldilocksField::ONE,
-                ext_cnt,
-                filter_tape_looking: GoldilocksField::ONE,
-                addr_code: $ctx_code_regs_status,
-                tx_idx:  $v.tx_idx,
-                env_idx: $v.env_idx,
-                call_sc_cnt: $v.call_sc_cnt
-            });
+            aux_insert!($v, $aux_steps, $ctx_regs_status, $ctx_code_regs_status, $registers_status, register_selector.clone(), ext_cnt, filter_tape_looking);
             ext_cnt += GoldilocksField::ONE;
         }
     };
@@ -149,6 +213,7 @@ pub struct Process {
     pub storage_log: Vec<WitnessStorageLog>,
     pub tp: GoldilocksField,
     pub tape: TapeTree,
+    pub storage_access_idx: GoldilocksField,
 }
 
 impl Process {
@@ -181,6 +246,7 @@ impl Process {
             tape: TapeTree {
                 trace: BTreeMap::new(),
             },
+            storage_access_idx: GoldilocksField::ZERO,
         }
     }
 
@@ -217,13 +283,6 @@ impl Process {
                 panic!("reg index: {} out of bounds", src_index);
             }
         }
-    }
-
-    pub fn update_hash_key(&mut self, key: &[GoldilocksField; 4]) {
-        self.register_selector.op0 = key[0];
-        self.register_selector.op1 = key[1];
-        self.register_selector.dst = key[2];
-        self.register_selector.aux0 = key[3];
     }
 
     pub fn read_prophet_input(
@@ -428,6 +487,7 @@ impl Process {
             let ctx_code_regs_status = self.addr_code.clone();
             let pc_status = self.pc;
             let tp_status = self.tp;
+            let storage_acc_id_status = self.storage_access_idx;
             let mut aux_steps = Vec::new();
 
             let instruction;
@@ -670,18 +730,14 @@ impl Process {
                         format!("{} params len is 1", opcode.as_str())
                     );
                     let call_addr = self.get_index_value(ops[1]);
-                    self.memory.write(
-                        self.registers[FP_REG_INDEX].0 - 1,
-                        self.clk,
-                        GoldilocksField::from_canonical_u64(1 << Opcode::CALL as u64),
-                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
-                        GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
-                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(self.pc + step),
-                        self.tx_idx,
-                        self.env_idx,
+                    let write_addr = self.registers[FP_REG_INDEX].0 - 1;
+                    let next_pc = GoldilocksField::from_canonical_u64(self.pc + step);
+                    memory_op!(
+                        self,
+                        write_addr,
+                        next_pc,
+                        Opcode::CALL,
+                        return Err(ProcessorError::MemVistInv(write_addr))
                     );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::CALL as u8);
                     self.register_selector.op0 =
@@ -692,18 +748,8 @@ impl Process {
                     // fixme: not need aux0 and aux1
                     self.register_selector.aux0 =
                         self.registers[FP_REG_INDEX] - GoldilocksField::TWO;
-                    self.register_selector.aux1 = self.memory.read(
-                        self.registers[FP_REG_INDEX].0 - 2,
-                        self.clk,
-                        GoldilocksField::from_canonical_u64(1 << Opcode::CALL as u64),
-                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
-                        GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
-                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        self.tx_idx,
-                        self.env_idx,
-                    )?;
+                    let fp_addr = self.registers[FP_REG_INDEX].0 - 2;
+                    memory_op!(self, fp_addr, self.register_selector.aux1, Opcode::CALL);
                     self.pc = call_addr.0 .0;
                 }
                 "ret" => {
@@ -714,34 +760,12 @@ impl Process {
                     self.register_selector.aux0 =
                         self.registers[FP_REG_INDEX] - GoldilocksField::TWO;
                     debug!("ret fp:{}", self.registers[FP_REG_INDEX].0);
-                    self.pc = self
-                        .memory
-                        .read(
-                            self.registers[FP_REG_INDEX].0 - 1,
-                            self.clk,
-                            GoldilocksField::from_canonical_u64(1 << Opcode::RET as u64),
-                            GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
-                            GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
-                            GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                            GoldilocksField::from_canonical_u64(0_u64),
-                            GoldilocksField::from_canonical_u64(0_u64),
-                            self.tx_idx,
-                            self.env_idx,
-                        )?
-                        .0;
-                    self.registers[FP_REG_INDEX] = self.memory.read(
-                        self.registers[FP_REG_INDEX].0 - 2,
-                        self.clk,
-                        GoldilocksField::from_canonical_u64(1 << Opcode::RET as u64),
-                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
-                        GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
-                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        self.tx_idx,
-                        self.env_idx,
-                    )?;
-
+                    let pc_value;
+                    let pc_addr = self.registers[FP_REG_INDEX].0 - 1;
+                    memory_op!(self, pc_addr, pc_value, Opcode::RET);
+                    self.pc = pc_value.to_canonical_u64();
+                    let fp_addr = self.registers[FP_REG_INDEX].0 - 2;
+                    memory_op!(self, fp_addr, self.registers[FP_REG_INDEX], Opcode::RET);
                     self.register_selector.dst = GoldilocksField::from_canonical_u64(self.pc);
                     self.register_selector.aux1 = self.registers[FP_REG_INDEX];
                 }
@@ -797,26 +821,12 @@ impl Process {
                     .to_canonical_u64();
                     self.register_selector.aux1 = GoldilocksField::from_canonical_u64(write_addr);
 
-                    let mut region_heap_flag = GoldilocksField::ZERO;
-                    memory_zone_process!(
+                    memory_op!(
+                        self,
                         write_addr,
-                        return Err(ProcessorError::MemVistInv(write_addr)),
-                        region_heap_flag = GoldilocksField::ONE,
-                        {}
-                    );
-
-                    self.memory.write(
-                        write_addr,
-                        self.clk,
-                        GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u64),
-                        GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
-                        GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
-                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        GoldilocksField::ZERO,
-                        region_heap_flag,
                         self.registers[dst_index],
-                        self.tx_idx,
-                        self.env_idx,
+                        Opcode::MSTORE,
+                        return Err(ProcessorError::MemVistInv(write_addr))
                     );
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MSTORE as u8);
 
@@ -871,37 +881,8 @@ impl Process {
                         + GoldilocksField::from_canonical_u64(offset_addr))
                     .to_canonical_u64();
                     self.register_selector.aux1 = GoldilocksField::from_canonical_u64(read_addr);
-                    let is_rw;
-                    let mut region_prophet = GoldilocksField::ZERO;
-                    let mut region_heap = GoldilocksField::ZERO;
 
-                    memory_zone_process!(
-                        read_addr,
-                        {
-                            region_prophet = GoldilocksField::ONE;
-                            is_rw = MemoryType::WriteOnce;
-                        },
-                        {
-                            region_heap = GoldilocksField::ONE;
-                            is_rw = MemoryType::ReadWrite;
-                        },
-                        {
-                            is_rw = MemoryType::ReadWrite;
-                        }
-                    );
-
-                    self.registers[dst_index] = self.memory.read(
-                        read_addr,
-                        self.clk,
-                        GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u64),
-                        GoldilocksField::from_canonical_u64(is_rw as u64),
-                        GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
-                        GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        region_prophet,
-                        region_heap,
-                        self.tx_idx,
-                        self.env_idx,
-                    )?;
+                    memory_op!(self, read_addr, self.registers[dst_index], Opcode::MLOAD);
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u8);
 
                     self.register_selector.dst = self.registers[dst_index];
@@ -1085,6 +1066,7 @@ impl Process {
                         self.tx_idx,
                         self.env_idx,
                         self.call_sc_cnt,
+                        self.storage_access_idx,
                     );
                     if self.env_idx.ne(&GoldilocksField::ZERO) {
                         self.register_selector.aux0 = self.env_idx;
@@ -1109,6 +1091,7 @@ impl Process {
                             ext_cnt: GoldilocksField::ONE,
                             regs: self.registers,
                             filter_tape_looking: GoldilocksField::ZERO,
+                            storage_access_idx: self.storage_access_idx,
                         });
                     }
                     break;
@@ -1117,15 +1100,44 @@ impl Process {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u8);
                     let mut slot_key = [GoldilocksField::ZERO; 4];
                     let mut store_value = [GoldilocksField::ZERO; 4];
+                    let mut register_selector_regs: RegisterSelector = Default::default();
 
-                    for i in 0..TREE_VALUE_LEN {
-                        slot_key[i] = self.registers[i + 1];
-                        store_value[i] = self.registers[i + 5];
+                    let op0_index = self.get_reg_index(ops[1]);
+                    let value = self.get_index_value(ops[2]);
+
+                    self.register_selector.op0 = self.registers[op0_index];
+                    self.register_selector.op1 = value.0;
+                    self.register_selector.op0_reg_sel[op0_index] =
+                        GoldilocksField::from_canonical_u64(1);
+                    if let ImmediateOrRegName::RegName(op1_index) = value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
                     }
+
+                    let key_mem_addr = self.registers[op0_index].to_canonical_u64();
+                    let mut value_mem_addr = value.0.to_canonical_u64();
+
+                    for index in 0..TREE_VALUE_LEN {
+                        let mut mem_addr = key_mem_addr + index as u64;
+                        memory_op!(self, mem_addr, slot_key[index], Opcode::SSTORE);
+                        register_selector_regs.op0_reg_sel[index] =
+                            GoldilocksField::from_canonical_u64(mem_addr);
+                        register_selector_regs.op0_reg_sel[TREE_VALUE_LEN + index] =
+                            slot_key[index];
+
+                        mem_addr = value_mem_addr + index as u64;
+                        memory_op!(self, mem_addr, store_value[index], Opcode::SSTORE);
+                        register_selector_regs.op1_reg_sel[index] =
+                            GoldilocksField::from_canonical_u64(mem_addr);
+                        register_selector_regs.op1_reg_sel[TREE_VALUE_LEN + index] =
+                            store_value[index];
+                    }
+
                     let storage_key =
                         StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
                     let (tree_key, mut hash_row) = storage_key.hashed_key();
-
+                    register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN]
+                        .clone_from_slice(&tree_key);
                     self.storage_log.push(WitnessStorageLog {
                         storage_log: StorageLog::new_write_log(tree_key, store_value),
                         previous_value: tree_key_default(),
@@ -1140,26 +1152,59 @@ impl Process {
                         self.tx_idx,
                         self.env_idx,
                     );
-                    self.update_hash_key(&tree_key);
-                    hash_row.tx_idx = self.tx_idx;
-                    hash_row.env_idx = self.env_idx;
-                    hash_row.clk = self.clk;
-                    hash_row.opcode = 1 << Opcode::SSTORE as u64;
-                    program.trace.builtin_posiedon.push(hash_row);
 
+                    program.trace.builtin_poseidon.push(hash_row);
+
+                    self.storage_access_idx += GoldilocksField::ONE;
+                    let ext_cnt = GoldilocksField::ONE;
+                    let filter_tape_looking = GoldilocksField::ZERO;
+                    aux_insert!(
+                        self,
+                        aux_steps,
+                        ctx_regs_status,
+                        ctx_code_regs_status,
+                        registers_status,
+                        register_selector_regs,
+                        ext_cnt,
+                        filter_tape_looking
+                    );
                     self.pc += step;
                 }
                 "sload" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u8);
                     let mut slot_key = [GoldilocksField::ZERO; 4];
-                    for i in 0..TREE_VALUE_LEN {
-                        slot_key[i] = self.registers[i + 1];
+                    let mut register_selector_regs: RegisterSelector = Default::default();
+
+                    let op0_index = self.get_reg_index(ops[1]);
+                    let value = self.get_index_value(ops[2]);
+
+                    self.register_selector.op0 = self.registers[op0_index];
+                    self.register_selector.op1 = value.0;
+                    self.register_selector.op0_reg_sel[op0_index] =
+                        GoldilocksField::from_canonical_u64(1);
+                    if let ImmediateOrRegName::RegName(op1_index) = value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
+
+                    let key_mem_addr = self.registers[op0_index].to_canonical_u64();
+                    let mut value_mem_addr = value.0.to_canonical_u64();
+
+                    for index in 0..TREE_VALUE_LEN {
+                        let mut mem_addr = key_mem_addr + index as u64;
+                        memory_op!(self, mem_addr, slot_key[index], Opcode::SLOAD);
+                        register_selector_regs.op0_reg_sel[index] =
+                            GoldilocksField::from_canonical_u64(mem_addr);
+                        register_selector_regs.op0_reg_sel[TREE_VALUE_LEN + index] =
+                            slot_key[index];
                     }
 
                     let storage_key =
                         StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
                     let (tree_key, mut hash_row) = storage_key.hashed_key();
                     let path = tree_key_to_leaf_index(&tree_key);
+                    register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN]
+                        .clone_from_slice(&tree_key);
 
                     let read_value;
                     if let Some(data) = self.storage.trace.get(&tree_key) {
@@ -1174,8 +1219,19 @@ impl Process {
                         }
                     }
 
-                    for i in 0..TREE_VALUE_LEN {
-                        self.registers[i + 1] = read_value[i];
+                    for index in 0..TREE_VALUE_LEN {
+                        let mut mem_addr = value_mem_addr + index as u64;
+                        memory_op!(
+                            self,
+                            mem_addr,
+                            read_value[index],
+                            Opcode::SLOAD,
+                            return Err(ProcessorError::MemVistInv(mem_addr))
+                        );
+                        register_selector_regs.op1_reg_sel[index] =
+                            GoldilocksField::from_canonical_u64(mem_addr);
+                        register_selector_regs.op1_reg_sel[TREE_VALUE_LEN + index] =
+                            read_value[index];
                     }
 
                     self.storage_log.push(WitnessStorageLog {
@@ -1192,20 +1248,27 @@ impl Process {
                         self.tx_idx,
                         self.env_idx,
                     );
-                    self.update_hash_key(&read_value);
-                    hash_row.tx_idx = self.tx_idx;
-                    hash_row.env_idx = self.env_idx;
-                    hash_row.clk = self.clk;
-                    hash_row.opcode = 1 << Opcode::SLOAD as u64;
-                    program.trace.builtin_posiedon.push(hash_row);
+                    program.trace.builtin_poseidon.push(hash_row);
+
+                    self.storage_access_idx += GoldilocksField::ONE;
+                    let ext_cnt = GoldilocksField::ONE;
+                    let filter_tape_looking = GoldilocksField::ZERO;
+                    aux_insert!(
+                        self,
+                        aux_steps,
+                        ctx_regs_status,
+                        ctx_code_regs_status,
+                        registers_status,
+                        register_selector_regs,
+                        ext_cnt,
+                        filter_tape_looking
+                    );
                     self.pc += step;
                 }
                 "poseidon" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::POSEIDON as u64);
-                    let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
-                    for i in 0..POSEIDON_INPUT_VALUE_LEN {
-                        input[i] = self.registers[i + 1];
-                    }
+                    let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_NUM];
+                    let mut output = [GoldilocksField::ZERO; POSEIDON_OUTPUT_VALUE_LEN];
 
                     let dst_index = self.get_reg_index(ops[1]);
                     let op0_index = self.get_reg_index(ops[2]);
@@ -1225,48 +1288,117 @@ impl Process {
                         GoldilocksField::from_canonical_u64(1);
 
                     let dst_mem_addr = self.registers[dst_index].to_canonical_u64();
-                    let src_mem_addr = self.registers[op0_index].to_canonical_u64();
-                    let input_len = op1_value.0;
+                    let mut src_mem_addr = self.registers[op0_index].to_canonical_u64();
+                    let input_len = op1_value.0.to_canonical_u64();
+                    let mut read_ptr = 0;
+                    assert_ne!(input_len, 0, "poseidon hash input len should not equal 0");
 
-                    let read_ptr = 0;
-                    loop {
-                        // input = self.memory.read(
-                        //     src_mem_addr ,
-                        //     self.clk,
-                        //     GoldilocksField::from_canonical_u64(1 << Opcode::MLOAD as u64),
-                        //     GoldilocksField::from_canonical_u64(is_rw as u64),
-                        //     GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
-                        //     GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                        //     region_prophet,
-                        //     region_heap,
-                        //     self.tx_idx,
-                        //     self.env_idx,
-                        // )
+                    let mut hash_pre = [GoldilocksField::ZERO; POSEIDON_INPUT_NUM];
+                    let mut hash_cap = [GoldilocksField::ZERO; POSEIDON_OUTPUT_VALUE_LEN];
+                    let mut hash_input_value = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
 
-                        // if read_ptr+8 > input_len {
-                        //
-                        // } else {
-                        //
-                        // }
-                        //
-                        // let mut row = calculate_poseidon_and_generate_intermediate_trace_row(
-                        //     input,
-                        //     PoseidonType::Normal,
-                        // );
-                    }
-                    let mut row = calculate_poseidon_and_generate_intermediate_trace_row(
-                        input,
-                        PoseidonType::Normal,
+                    program.trace.insert_poseidon_chunk(
+                        self.tx_idx,
+                        self.env_idx,
+                        self.clk,
+                        self.opcode,
+                        self.register_selector.dst,
+                        self.register_selector.op0,
+                        self.register_selector.op1,
+                        GoldilocksField::ZERO,
+                        hash_input_value,
+                        hash_cap,
+                        hash_pre,
+                        GoldilocksField::ZERO,
                     );
-                    for i in 0..POSEIDON_OUTPUT_VALUE_LEN {
-                        self.registers[i + 1] = row.0[i];
+
+                    let tail_len: usize;
+                    loop {
+                        if read_ptr + 8 > input_len {
+                            tail_len = (input_len - read_ptr) as usize;
+                            break;
+                        } else {
+                            for index in 0..8 {
+                                let mem_addr = src_mem_addr + read_ptr + index;
+                                memory_op!(self, mem_addr, input[index as usize], Opcode::POSEIDON);
+                            }
+                        }
+
+                        let mut row = calculate_poseidon_and_generate_intermediate_trace(input);
+                        row.filter_looked_normal = true;
+                        output.clone_from_slice(&row.output[0..POSEIDON_OUTPUT_VALUE_LEN]);
+                        read_ptr += 8;
+                        hash_input_value.clone_from_slice(&input[0..POSEIDON_INPUT_VALUE_LEN]);
+                        hash_cap.clone_from_slice(&hash_pre[POSEIDON_INPUT_VALUE_LEN..]);
+                        program.trace.insert_poseidon_chunk(
+                            self.tx_idx,
+                            self.env_idx,
+                            self.clk,
+                            self.opcode,
+                            self.register_selector.dst,
+                            GoldilocksField::from_canonical_u64(src_mem_addr + read_ptr),
+                            GoldilocksField::from_canonical_u64(input_len),
+                            GoldilocksField::from_canonical_u64(read_ptr),
+                            hash_input_value,
+                            hash_cap,
+                            row.output,
+                            GoldilocksField::ONE,
+                        );
+                        hash_pre.clone_from_slice(&row.output);
+                        program.trace.builtin_poseidon.push(row);
+
+                        if read_ptr + 8 > input_len {
+                            tail_len = (input_len - read_ptr) as usize;
+                            if tail_len != 0 {
+                                input[tail_len..].clone_from_slice(&row.output[tail_len..]);
+                            }
+
+                            break;
+                        } else {
+                            input[8..].clone_from_slice(&row.output[POSEIDON_INPUT_VALUE_LEN..]);
+                        }
                     }
-                    self.update_hash_key(&row.0);
-                    row.1.clk = self.clk;
-                    row.1.tx_idx = self.tx_idx;
-                    row.1.env_idx = self.env_idx;
-                    row.1.opcode = 1 << Opcode::POSEIDON as u64;
-                    program.trace.builtin_posiedon.push(row.1);
+
+                    if tail_len != 0 {
+                        for index in 0..tail_len {
+                            let mem_addr = src_mem_addr + read_ptr + index as u64;
+                            memory_op!(self, mem_addr, input[index as usize], Opcode::POSEIDON);
+                        }
+
+                        let mut row = calculate_poseidon_and_generate_intermediate_trace(input);
+                        row.filter_looked_normal = true;
+                        output.clone_from_slice(&row.output[0..POSEIDON_OUTPUT_VALUE_LEN]);
+
+                        hash_input_value.clone_from_slice(&input[0..POSEIDON_INPUT_VALUE_LEN]);
+                        hash_cap.clone_from_slice(&hash_pre[POSEIDON_INPUT_VALUE_LEN..]);
+                        program.trace.insert_poseidon_chunk(
+                            self.tx_idx,
+                            self.env_idx,
+                            self.clk,
+                            self.opcode,
+                            self.register_selector.dst,
+                            GoldilocksField::from_canonical_u64(src_mem_addr + read_ptr),
+                            GoldilocksField::from_canonical_u64(input_len),
+                            GoldilocksField::from_canonical_u64(read_ptr),
+                            hash_input_value,
+                            hash_cap,
+                            row.output,
+                            GoldilocksField::ONE,
+                        );
+                        program.trace.builtin_poseidon.push(row);
+                    }
+
+                    for index in 0..POSEIDON_OUTPUT_VALUE_LEN {
+                        let mem_addr = dst_mem_addr + index as u64;
+                        memory_op!(
+                            self,
+                            mem_addr,
+                            output[index],
+                            Opcode::POSEIDON,
+                            return Err(ProcessorError::MemVistInv(mem_addr))
+                        );
+                    }
+
                     self.pc += step;
                 }
                 "tload" => {
@@ -1419,38 +1551,16 @@ impl Process {
                     self.register_selector.aux0 = self.call_sc_cnt + GoldilocksField::ONE;
 
                     let mut callee_address = Address::default();
-                    let mut is_rw;
-                    let mut region_prophet;
-                    let mut region_heap;
+
                     let mem_base_addr = self.registers[op0_index].to_canonical_u64();
                     for index in 0..4 {
                         let mem_addr = mem_base_addr + index;
-                        memory_zone_process!(
+                        memory_op!(
+                            self,
                             mem_addr,
-                            { panic!("sccall in prophet") },
-                            {
-                                is_rw = MemoryType::ReadWrite;
-                                region_prophet = GoldilocksField::ZERO;
-                                region_heap = GoldilocksField::ONE
-                            },
-                            {
-                                is_rw = MemoryType::ReadWrite;
-                                region_prophet = GoldilocksField::ZERO;
-                                region_heap = GoldilocksField::ZERO
-                            }
+                            callee_address[index as usize],
+                            Opcode::SCCALL
                         );
-                        callee_address[index as usize] = self.memory.read(
-                            mem_addr,
-                            self.clk,
-                            GoldilocksField::from_canonical_u64(1 << Opcode::SCCALL as u64),
-                            GoldilocksField::from_canonical_u64(is_rw as u64),
-                            GoldilocksField::from_canonical_u64(MemoryOperation::Read as u64),
-                            GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-                            region_prophet,
-                            region_heap,
-                            self.tx_idx,
-                            self.env_idx,
-                        )?;
                     }
 
                     program.trace.insert_sccall(
@@ -1470,7 +1580,11 @@ impl Process {
                     if op1_value.0 == GoldilocksField::ONE {
                         len = load_ctx_addr_info(
                             self,
-                            &init_ctx_addr_info(self.addr_storage, callee_address, self.addr_storage),
+                            &init_ctx_addr_info(
+                                self.addr_storage,
+                                callee_address,
+                                self.addr_storage,
+                            ),
                         );
                         self.tp += GoldilocksField::from_canonical_u64(len as u64);
                     } else if op1_value.0 == GoldilocksField::ZERO {
@@ -1501,8 +1615,37 @@ impl Process {
                         self.tx_idx,
                         self.env_idx,
                         self.call_sc_cnt,
+                        self.storage_access_idx,
                     );
 
+                    //aux
+                    let mut register_selector_regs: RegisterSelector = Default::default();
+                    register_selector_regs
+                        .op0_reg_sel
+                        .clone_from_slice(&ctx_regs_status);
+                    register_selector_regs
+                        .op1_reg_sel
+                        .clone_from_slice(&ctx_code_regs_status);
+                    program.trace.insert_step(
+                        self.clk,
+                        pc_status,
+                        self.tp,
+                        self.instruction,
+                        self.immediate_data,
+                        self.op1_imm,
+                        self.opcode,
+                        self.addr_storage,
+                        registers_status,
+                        register_selector_regs,
+                        GoldilocksField::ONE,
+                        GoldilocksField::ONE,
+                        GoldilocksField::ZERO,
+                        self.addr_code,
+                        self.tx_idx,
+                        self.env_idx,
+                        self.call_sc_cnt,
+                        self.storage_access_idx,
+                    );
                     self.pc += step;
                     self.clk += 1;
                     if op1_value.0 == GoldilocksField::ONE {
@@ -1542,6 +1685,7 @@ impl Process {
                 self.tx_idx,
                 self.env_idx,
                 self.call_sc_cnt,
+                storage_acc_id_status,
             );
 
             if !aux_steps.is_empty() {

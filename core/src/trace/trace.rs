@@ -125,6 +125,7 @@ pub struct Step {
     pub is_ext_line: GoldilocksField,
     pub ext_cnt: GoldilocksField,
     pub filter_tape_looking: GoldilocksField,
+    pub storage_access_idx: GoldilocksField,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -178,11 +179,23 @@ pub struct CmpRow {
 }
 
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
-pub struct PoseidonRow {
+pub struct PoseidonChunkRow {
     pub tx_idx: GoldilocksField,
     pub env_idx: GoldilocksField,
     pub clk: u32,
-    pub opcode: u64,
+    pub opcode: GoldilocksField,
+    pub dst: GoldilocksField,
+    pub op0: GoldilocksField,
+    pub op1: GoldilocksField,
+    pub acc_cnt: GoldilocksField,
+    pub value: [GoldilocksField; 8],
+    pub cap: [GoldilocksField; 4],
+    pub hash: [GoldilocksField; 12],
+    pub is_ext_line: GoldilocksField,
+}
+
+#[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
+pub struct PoseidonRow {
     pub input: [GoldilocksField; 12],
     pub full_0_1: [GoldilocksField; 12],
     pub full_0_2: [GoldilocksField; 12],
@@ -193,6 +206,10 @@ pub struct PoseidonRow {
     pub full_1_2: [GoldilocksField; 12],
     pub full_1_3: [GoldilocksField; 12],
     pub output: [GoldilocksField; 12],
+    pub filter_looked_normal: bool,
+    pub filter_looked_treekey: bool,
+    pub filter_looked_storage: bool,
+    pub filter_looked_storage_branch: bool,
 }
 
 impl Display for PoseidonRow {
@@ -317,7 +334,8 @@ pub struct Trace {
     pub builtin_rangecheck: Vec<RangeCheckRow>,
     pub builtin_bitwise_combined: Vec<BitwiseCombinedRow>,
     pub builtin_cmp: Vec<CmpRow>,
-    pub builtin_posiedon: Vec<PoseidonRow>,
+    pub builtin_poseidon: Vec<PoseidonRow>,
+    pub builtin_poseidon_chunk: Vec<PoseidonChunkRow>,
     pub builtin_storage: Vec<StorageRow>,
     pub builtin_storage_hash: Vec<StorageHashRow>,
     pub tape: Vec<TapeRow>,
@@ -426,6 +444,7 @@ impl Trace {
         tx_idx: GoldilocksField,
         env_idx: GoldilocksField,
         call_sc_cnt: GoldilocksField,
+        storage_access_idx: GoldilocksField,
     ) {
         let step = Step {
             clk,
@@ -445,6 +464,7 @@ impl Trace {
             tx_idx,
             env_idx,
             call_sc_cnt,
+            storage_access_idx,
         };
         self.exec.push(step);
     }
@@ -498,4 +518,35 @@ impl Trace {
             clk_callee_end,
         });
     }
+
+    pub fn insert_poseidon_chunk( &mut self,
+                                  tx_idx: GoldilocksField,
+                                  env_idx: GoldilocksField,
+                                  clk: u32,
+                                    opcode: GoldilocksField,
+                                  dst: GoldilocksField,
+                                  op0: GoldilocksField,
+                                  op1: GoldilocksField,
+                                  acc_cnt: GoldilocksField,
+                                  value: [GoldilocksField; 8],
+                                  cap: [GoldilocksField; 4],
+                                  hash: [GoldilocksField; 12],
+                                  is_ext_line: GoldilocksField,
+    ) {
+        self.builtin_poseidon_chunk.push(PoseidonChunkRow {
+            tx_idx,
+            env_idx,
+            clk,
+            opcode,
+            dst,
+            op0,
+            op1,
+            acc_cnt,
+            value,
+            cap,
+            hash,
+            is_ext_line
+        });
+    }
+
 }

@@ -1,4 +1,4 @@
-use crate::trace::gen_storage_table;
+use crate::trace::{gen_dump_file, gen_storage_table};
 use crate::Process;
 
 use crate::load_tx::{init_tape, init_tx_context, load_tx_calldata, load_tx_context};
@@ -49,18 +49,21 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
     if trace_name.eq("tape_trace.txt")
         || trace_name.eq("sc_input_trace.txt")
         || trace_name.eq("call_trace.txt")
+        || trace_name.eq("storage_u32.txt")
     {
         process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
+        // let mut calldata = vec![
+        //     GoldilocksField::from_canonical_u64(10),
+        //     GoldilocksField::from_canonical_u64(20),
+        //     GoldilocksField::from_canonical_u64(2),
+        //     GoldilocksField::from_canonical_u64(1494608717),
+        // ];
         let mut calldata = vec![
-            GoldilocksField::from_canonical_u64(10),
-            GoldilocksField::from_canonical_u64(20),
-            GoldilocksField::from_canonical_u64(2),
-            GoldilocksField::from_canonical_u64(1494608717),
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(2364819430),
         ];
-
         init_tape(&mut process, calldata, Address::default());
     }
-    //253268590
 
     let res = process.execute(
         &mut program,
@@ -69,6 +72,7 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
     );
 
     if res.is_err() {
+        gen_dump_file(&mut process, &mut program);
         println!("err tp:{}", process.tp);
     }
     println!("execute res:{:?}", res);
@@ -122,7 +126,7 @@ fn call_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/call.json",
         "call_trace.txt",
-        true,
+        false,
     );
 }
 
@@ -248,6 +252,15 @@ fn sc_input_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/sc_input.json",
         "sc_input_trace.txt",
+        false,
+    );
+}
+
+#[test]
+fn storage_u32_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/storage_u32.json",
+        "storage_u32_trace.txt",
         false,
     );
 }

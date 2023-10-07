@@ -565,7 +565,7 @@ mod tests {
     fn get_poseidon_rows_from_trace(
         trace: &Trace,
     ) -> Vec<[GoldilocksField; poseidon::columns::NUM_POSEIDON_COLS]> {
-        let poseidon_cols = generate_poseidon_trace::<GoldilocksField>(&trace.builtin_posiedon);
+        let poseidon_cols = generate_poseidon_trace::<GoldilocksField>(&trace.builtin_poseidon);
         get_rows_from_trace(poseidon_cols)
     }
 

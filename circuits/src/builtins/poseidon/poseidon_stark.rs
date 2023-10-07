@@ -255,7 +255,7 @@ mod test {
         type S = PoseidonStark<F, D>;
         let stark = S::default();
 
-        let get_trace_rows = |trace: Trace| trace.builtin_posiedon;
+        let get_trace_rows = |trace: Trace| trace.builtin_poseidon;
         let generate_trace = |rows: &[PoseidonRow]| generate_poseidon_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_POSEIDON_COLS>,

@@ -75,7 +75,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::CJMP | Opcode::TSTORE | Opcode::SCCALL => {
+            Opcode::CJMP | Opcode::TSTORE | Opcode::SCCALL | Opcode::SLOAD | Opcode::SSTORE => {
                 instruction += &op_code.to_string();
                 instruction += " ";
                 let reg1_name = format!("r{}", reg1);
@@ -189,7 +189,7 @@ pub fn decode_raw_instruction(
                     instruction += &reg2_name;
                 }
             }
-            Opcode::RET | Opcode::END | Opcode::SLOAD | Opcode::SSTORE  => {
+            Opcode::RET | Opcode::END => {
                 instruction += &op_code.to_string();
             }
         };

@@ -15,20 +15,17 @@ use plonky2::{
 pub const POSEIDON_INPUT_VALUE_LEN: usize = 8;
 pub const POSEIDON_OUTPUT_VALUE_LEN: usize = 4;
 
+#[derive(PartialEq)]
 pub enum PoseidonType {
     Normal,
-    Variant,
+    Branch,
+    Leaf,
 }
 
-pub fn calculate_poseidon_and_generate_intermediate_trace_row(
-    input: [GoldilocksField; POSEIDON_INPUT_VALUE_LEN],
-    poseidon_type: PoseidonType,
-) -> ([GoldilocksField; POSEIDON_OUTPUT_VALUE_LEN], PoseidonRow) {
+pub fn calculate_poseidon_and_generate_intermediate_trace(
+    full_input: [GoldilocksField; POSEIDON_INPUT_NUM],
+) -> PoseidonRow {
     let mut cell = PoseidonRow {
-        tx_idx: Default::default(),
-        env_idx: Default::default(),
-        clk: 0,
-        opcode: 0,
         input: [GoldilocksField::default(); 12],
         full_0_1: [GoldilocksField::default(); 12],
         full_0_2: [GoldilocksField::default(); 12],
@@ -39,13 +36,11 @@ pub fn calculate_poseidon_and_generate_intermediate_trace_row(
         full_1_2: [GoldilocksField::default(); 12],
         full_1_3: [GoldilocksField::default(); 12],
         output: [GoldilocksField::default(); 12],
+        filter_looked_normal: false,
+        filter_looked_treekey: false,
+        filter_looked_storage: false,
+        filter_looked_storage_branch: false,
     };
-    let mut full_input = [GoldilocksField::default(); POSEIDON_INPUT_NUM];
-    full_input[0] = match poseidon_type {
-        PoseidonType::Normal => GoldilocksField::default(),
-        PoseidonType::Variant => GoldilocksField::ONE,
-    };
-    full_input[4..].clone_from_slice(&input);
     cell.input[..].clone_from_slice(&full_input[..]);
 
     let mut state = full_input;
@@ -112,16 +107,14 @@ pub fn calculate_poseidon_and_generate_intermediate_trace_row(
     }
 
     cell.output[..].clone_from_slice(&state[..]);
-    let output = [state[0], state[1], state[2], state[3]];
-    (output, cell)
+    cell
 }
 
 #[test]
 fn test_poseidon_trace() {
-    let mut input: [GoldilocksField; 8] = [GoldilocksField::default(); 8];
-    let poseidon_type = PoseidonType::Variant;
-    // input[0] = GoldilocksField::ONE;
-    let (_, row) = calculate_poseidon_and_generate_intermediate_trace_row(input, poseidon_type);
+    let mut input: [GoldilocksField; 12] = [GoldilocksField::default(); 12];
+    input[0] = GoldilocksField::ONE;
+    let row = calculate_poseidon_and_generate_intermediate_trace(input);
 
-    println!("{}", row);
+    println!("{:?}", row.output);
 }

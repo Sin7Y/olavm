@@ -88,7 +88,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let rc_rows = generate_rc_trace(&program.trace.builtin_rangecheck);
     let rc_trace = trace_to_poly_values(rc_rows);
 
-    let poseidon_rows = generate_poseidon_trace(&program.trace.builtin_posiedon);
+    let poseidon_rows = generate_poseidon_trace(&program.trace.builtin_poseidon);
     let poseidon_trace = trace_to_poly_values(poseidon_rows);
 
     let storage_rows = generate_storage_trace(&program.trace.builtin_storage);

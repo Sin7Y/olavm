@@ -2,6 +2,7 @@ use crate::crypto::hash::Hasher;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use crate::types::merkle_tree::{NodeEntry, TreeKey, TreeValue, ZkHash, TREE_VALUE_LEN};
 
+use crate::crypto::poseidon_trace::PoseidonType::{Branch, Leaf};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::iter::once;
@@ -81,9 +82,14 @@ where
     fn calc_default_hashes(depth: usize, hasher: &H) -> Vec<ZkHash> {
         let mut def_hashes = Vec::with_capacity(depth + 1);
         def_hashes.push(Self::empty_leaf(hasher));
-        for _ in 0..depth {
+        for index in 0..depth {
             let last_hash = def_hashes.last().unwrap();
-            let hash = hasher.compress(last_hash, last_hash);
+
+            let hash = if index == 0 {
+                hasher.compress(last_hash, last_hash, Leaf)
+            } else {
+                hasher.compress(last_hash, last_hash, Branch)
+            };
 
             def_hashes.push(hash.0);
         }

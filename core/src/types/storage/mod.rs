@@ -1,9 +1,12 @@
 use crate::crypto::poseidon_trace::{
-    calculate_poseidon_and_generate_intermediate_trace_row, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
+    calculate_poseidon_and_generate_intermediate_trace, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
 };
 use crate::trace::trace::PoseidonRow;
 use crate::types::account::{AccountTreeId, Address};
-use crate::types::merkle_tree::{TreeKey, GOLDILOCKS_FIELD_U8_LEN};
+use crate::types::merkle_tree::{
+    tree_key_default, TreeKey, GOLDILOCKS_FIELD_U8_LEN, TREE_VALUE_LEN,
+};
+use crate::util::poseidon_utils::POSEIDON_INPUT_NUM;
 use itertools::Itertools;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
@@ -34,10 +37,14 @@ impl StorageKey {
     }
 
     pub fn raw_hashed_key(address: &Address, key: &TreeKey) -> (TreeKey, PoseidonRow) {
-        let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
-        input[0..4].clone_from_slice(address);
-        input[4..].clone_from_slice(key);
-        calculate_poseidon_and_generate_intermediate_trace_row(input, PoseidonType::Normal)
+        let mut tree_key = tree_key_default();
+        let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_NUM];
+        input[0..TREE_VALUE_LEN].clone_from_slice(address);
+        input[TREE_VALUE_LEN..TREE_VALUE_LEN*2].clone_from_slice(key);
+        let mut hash = calculate_poseidon_and_generate_intermediate_trace(input);
+        hash.filter_looked_treekey = true;
+        tree_key.clone_from_slice(&hash.output[0..TREE_VALUE_LEN]);
+        (tree_key, hash)
     }
 
     pub fn hashed_key(&self) -> (TreeKey, PoseidonRow) {

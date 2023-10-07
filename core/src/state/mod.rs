@@ -115,7 +115,7 @@ where
                         .extend(item.builtin_bitwise_combined);
                     trace.builtin_cmp.extend(item.builtin_cmp);
                     trace.builtin_rangecheck.extend(item.builtin_rangecheck);
-                    trace.builtin_posiedon.extend(item.builtin_posiedon);
+                    trace.builtin_poseidon.extend(item.builtin_poseidon);
                     trace.builtin_storage.extend(item.builtin_storage);
                     trace.builtin_storage_hash.extend(item.builtin_storage_hash);
                     trace.sc_call.extend(item.sc_call);

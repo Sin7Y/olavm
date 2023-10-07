@@ -10,6 +10,7 @@ use itertools::Itertools;
 use log::debug;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
+use crate::crypto::poseidon_trace::PoseidonType;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -82,7 +83,7 @@ impl UpdatesBatch {
         H: Hasher<TreeValue> + Send + Sync,
     {
         let hash_trace = Arc::new(Mutex::new(Vec::new()));
-        let res_map = (0..ROOT_TREE_DEPTH).fold(self.updates, |cur_lvl_updates_map, _| {
+        let res_map = (0..ROOT_TREE_DEPTH).fold(self.updates, |cur_lvl_updates_map, depth| {
             // Calculate next level map based on current in parallel
             let res = cur_lvl_updates_map
                 .into_iter()
@@ -147,7 +148,11 @@ impl UpdatesBatch {
                                 (&current_hash, &nei_hash)
                             };
 
-                            let hash = hasher.compress(left_hash, right_hash);
+                            let hash = if depth == 0 {
+                                hasher.compress(left_hash, right_hash, PoseidonType::Leaf)
+                            } else {
+                                hasher.compress(left_hash, right_hash, PoseidonType::Branch)
+                            };
                             let branch = NodeEntry::Branch {
                                 hash: hash.0,
                                 left_hash: left_hash.clone(),

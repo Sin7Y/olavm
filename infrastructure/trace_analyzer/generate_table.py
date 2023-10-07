@@ -266,9 +266,6 @@ class StorageHashTraceColumnType(Enum):
     OUTPUT = 'output'
 
 class PoseidonHashTraceColumnType(Enum):
-    CLK = "clk"
-    OPCODE = "opcode"
-    INPUT = "input"
     FULL_0_1 = 'full_0_1'
     FULL_0_2 = 'full_0_2'
     FULL_0_3 = 'full_0_3'
@@ -278,6 +275,23 @@ class PoseidonHashTraceColumnType(Enum):
     FULL_1_2 = 'full_1_2'
     FULL_1_3 = 'full_1_3'
     OUTPUT = 'output'
+    FILTER_LOOKED_NORMAL = 'filter_looked_normal'
+    FILTER_LOOKED_STORAGE = 'filter_looked_storage'
+    FILTER_LOOKED_STORAGE_BRANCH = 'filter_looked_storage_branch'
+
+class PoseidonChunkTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
+    CLK = 'clk'
+    OPCODE = "opcode"
+    OP0 = 'op0'
+    OP1 = 'op1'
+    DST = 'dst'
+    ACC_CNT = 'acc_cnt'
+    VALUE =    'value'
+    CAP = 'cap'
+    HASH = 'hash'
+    IS_EXT_LINE = 'is_ext_line'
 
 class TapeTraceColumnType(Enum):
     IS_INIT = "is_init"
@@ -531,7 +545,7 @@ def main():
 
     # generate storage hash trace table
     row_index = 1
-    for row in trace_json["store_hashes"]:
+    for row in trace_json["builtin_storage_hash"]:
         col = 0
         for data in StorageHashTraceColumnType:
             if data.value == "addr" or data.value == "caps" or  data.value == "paths" or \
@@ -570,16 +584,36 @@ def main():
 
     # Poseidon Hash Trace
     worksheet = workbook.add_worksheet("PoseidonTrace")
-    generate_columns_of_title(worksheet, TapeTraceColumnType)
+    generate_columns_of_title(worksheet, PoseidonHashTraceColumnType)
     # generate poseidon hash trace table
     row_index = 1
-    for row in trace_json["builtin_posiedon"]:
+    for row in trace_json["builtin_poseidon"]:
         col = 0
         for data in PoseidonHashTraceColumnType:
             if data.value == "input" or  data.value == "full_0_1" or \
                     data.value == "full_0_2" or data.value == "full_0_3" or  data.value == "partial" or \
                     data.value == "full_1_0" or data.value == "full_1_1" or  data.value == "full_1_2" or \
                     data.value == "full_1_3" or  data.value == "output":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "opcode":
+                worksheet.write(row_index, col,
+                                    '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                        row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
+    # Poseidon CHUNK Trace
+    worksheet = workbook.add_worksheet("PoseidonChunkTrace")
+    generate_columns_of_title(worksheet, PoseidonChunkTraceColumnType)
+    # generate poseidon hash trace table
+    row_index = 1
+    for row in trace_json["builtin_poseidon_chunk"]:
+        col = 0
+        for data in PoseidonChunkTraceColumnType:
+            if data.value == "value" or  data.value == "cap" or \
+                    data.value == "hash":
                 worksheet.write(row_index, col, '{0}'.format(row[data.value]))
             elif data.value == "opcode":
                 worksheet.write(row_index, col,
