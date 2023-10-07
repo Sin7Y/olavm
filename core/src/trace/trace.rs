@@ -178,6 +178,23 @@ pub struct CmpRow {
 }
 
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
+pub struct PoseidonRow2 {
+    pub input: [GoldilocksField; 12],
+    pub full_0_1: [GoldilocksField; 12],
+    pub full_0_2: [GoldilocksField; 12],
+    pub full_0_3: [GoldilocksField; 12],
+    pub partial: [GoldilocksField; 22],
+    pub full_1_0: [GoldilocksField; 12],
+    pub full_1_1: [GoldilocksField; 12],
+    pub full_1_2: [GoldilocksField; 12],
+    pub full_1_3: [GoldilocksField; 12],
+    pub output: [GoldilocksField; 12],
+    pub filter_looked_normal: bool,
+    pub filter_looked_storage: bool,
+    pub filter_looked_storage_branch: bool,
+}
+
+#[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
 pub struct PoseidonRow {
     pub tx_idx: GoldilocksField,
     pub env_idx: GoldilocksField,
