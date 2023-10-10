@@ -106,10 +106,10 @@ pub fn ctl_data_with_hash<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_STORAGE_TX_IDX,
-        COL_STORAGE_ENV_IDX,
-        COL_STORAGE_CLK,
-        COL_STORAGE_OPCODE,
+        // COL_STORAGE_TX_IDX,
+        // COL_STORAGE_ENV_IDX,
+        // COL_STORAGE_CLK,
+        // COL_STORAGE_OPCODE,
         COL_STORAGE_ADDR_RANGE.start,
         COL_STORAGE_ADDR_RANGE.start + 1,
         COL_STORAGE_ADDR_RANGE.start + 2,

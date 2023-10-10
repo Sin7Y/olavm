@@ -167,10 +167,10 @@ pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
 
 pub fn ctl_data_with_poseidon_tree_key<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_TX_IDX,
-        COL_ENV_IDX,
-        COL_CLK,
-        COL_OPCODE,
+        // COL_TX_IDX,
+        // COL_ENV_IDX,
+        // COL_CLK,
+        // COL_OPCODE,
         COL_ADDR_STORAGE_RANGE.start,
         COL_ADDR_STORAGE_RANGE.start + 1,
         COL_ADDR_STORAGE_RANGE.start + 2,

@@ -68,18 +68,20 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
     {
-        let filter_for_poseidon = vars.local_values[COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON];
-        let filter_for_tree_key = vars.local_values[COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY];
-        let opcode = vars.local_values[COL_POSEIDON_OPCODE];
+        COL_POSEIDON_INPUT_RANGE
+            .skip(1)
+            .take(3)
+            .map(|col| vars.local_values[col])
+            .for_each(|cap| {
+                yield_constr.constraint(vars.local_values[FILTER_LOOKED_TREEKEY] * cap);
+                yield_constr.constraint(vars.local_values[FILTER_LOOKED_STORAGE_LEAF] * cap);
+                yield_constr.constraint(vars.local_values[FILTER_LOOKED_STORAGE_BRANCH] * cap);
+            });
         yield_constr.constraint(
-            filter_for_poseidon
-                * (opcode - P::Scalar::from_canonical_u64(OlaOpcode::POSEIDON.binary_bit_mask())),
+            vars.local_values[FILTER_LOOKED_STORAGE_LEAF]
+                * (P::ONES - vars.local_values[COL_POSEIDON_INPUT_RANGE.start]),
         );
-        yield_constr.constraint(
-            filter_for_tree_key
-                * (opcode - P::Scalar::from_canonical_u64(OlaOpcode::SLOAD.binary_bit_mask()))
-                * (opcode - P::Scalar::from_canonical_u64(OlaOpcode::SSTORE.binary_bit_mask())),
-        );
+
         let mut state: [P; POSEIDON_STATE_WIDTH] = vars.local_values[COL_POSEIDON_INPUT_RANGE]
             .try_into()
             .unwrap();
@@ -169,15 +171,15 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-    Column::single(COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON)
+    Column::single(FILTER_LOOKED_NORMAL)
 }
 
 pub fn ctl_data_with_cpu_tree_key<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_POSEIDON_TX_IDX,
-        COL_POSEIDON_ENV_IDX,
-        COL_POSEIDON_CLK,
-        COL_POSEIDON_OPCODE,
+        // COL_POSEIDON_TX_IDX,
+        // COL_POSEIDON_ENV_IDX,
+        // COL_POSEIDON_CLK,
+        // COL_POSEIDON_OPCODE,
         COL_POSEIDON_INPUT_RANGE.start + 4,
         COL_POSEIDON_INPUT_RANGE.start + 5,
         COL_POSEIDON_INPUT_RANGE.start + 6,
@@ -191,15 +193,15 @@ pub fn ctl_data_with_cpu_tree_key<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu_tree_key<F: Field>() -> Column<F> {
-    Column::single(COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY)
+    Column::single(FILTER_LOOKED_STORAGE_LEAF)
 }
 
 pub fn ctl_data_with_storage_tree_key<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_POSEIDON_TX_IDX,
-        COL_POSEIDON_ENV_IDX,
-        COL_POSEIDON_CLK,
-        COL_POSEIDON_OPCODE,
+        // COL_POSEIDON_TX_IDX,
+        // COL_POSEIDON_ENV_IDX,
+        // COL_POSEIDON_CLK,
+        // COL_POSEIDON_OPCODE,
         COL_POSEIDON_OUTPUT_RANGE.start,
         COL_POSEIDON_OUTPUT_RANGE.start + 1,
         COL_POSEIDON_OUTPUT_RANGE.start + 2,
@@ -209,7 +211,7 @@ pub fn ctl_data_with_storage_tree_key<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_storage_tree_key<F: Field>() -> Column<F> {
-    Column::single(COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY)
+    Column::single(FILTER_LOOKED_STORAGE_LEAF)
 }
 
 mod test {
