@@ -803,16 +803,25 @@ impl<
 
         let lv_is_padding = lv[COL_IS_PADDING];
         let nv_is_padding = nv[COL_IS_PADDING];
-        let lv_is_ext_inst =
-            lv[COL_S_TLOAD] + lv[COL_S_SLOAD] + lv[COL_S_CALL_SC] + lv[COL_S_END] + lv[COL_S_PSDN];
-        let nv_is_ext_inst =
-            nv[COL_S_TLOAD] + nv[COL_S_SLOAD] + nv[COL_S_CALL_SC] + nv[COL_S_END] + nv[COL_S_PSDN];
-        let lv_is_entry_sc = lv[COL_IS_ENTRY_SC];
-        let lv_ext_length = lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
+        let lv_is_ext_inst = lv[COL_S_SLOAD]
+            + lv[COL_S_SSTORE]
+            + lv[COL_S_TLOAD]
             + lv[COL_S_TSTORE]
             + lv[COL_S_CALL_SC]
-            + lv[COL_S_END] * (P::ONES - lv_is_entry_sc)
-            + lv[COL_S_PSDN];
+            + lv[COL_S_END];
+        let nv_is_ext_inst = nv[COL_S_SLOAD]
+            + nv[COL_S_SSTORE]
+            + nv[COL_S_TLOAD]
+            + nv[COL_S_TSTORE]
+            + nv[COL_S_CALL_SC]
+            + nv[COL_S_END];
+        let lv_is_entry_sc = lv[COL_IS_ENTRY_SC];
+        let lv_ext_length = lv[COL_S_SLOAD]
+            + lv[COL_S_SSTORE]
+            + lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
+            + lv[COL_S_TSTORE]
+            + lv[COL_S_CALL_SC]
+            + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
         let is_crossing_inst = lv[COL_IS_NEXT_LINE_DIFF_INST];
         let is_in_same_tx = lv[COL_IS_NEXT_LINE_SAME_TX];
         Self {
@@ -889,12 +898,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         Self::constraint_env_unchanged_pc(&wrapper, yield_constr);
         Self::constraint_reg_consistency(&wrapper, yield_constr);
 
-        // idx_storage
-        yield_constr.constraint_first_row(lv[COL_IDX_STORAGE]);
-        yield_constr.constraint_transition(
-            (nv[COL_IDX_STORAGE] - lv[COL_IDX_STORAGE]) - (nv[COL_S_SSTORE] + nv[COL_S_SLOAD]),
-        );
-
         // opcode
         add::eval_packed_generic(lv, nv, yield_constr);
         mul::eval_packed_generic(lv, nv, yield_constr);
@@ -905,8 +908,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         ret::eval_packed_generic(lv, nv, yield_constr);
         mload::eval_packed_generic(lv, nv, yield_constr);
         mstore::eval_packed_generic(lv, nv, yield_constr);
-        poseidon::eval_packed_generic(lv, nv, yield_constr);
-        sload::eval_packed_generic(lv, nv, yield_constr);
+        storage::eval_packed_generic(lv, nv, yield_constr);
         tape::eval_packed_generic(&wrapper, yield_constr);
         call_sc::eval_packed_generic(&wrapper, yield_constr);
     }
