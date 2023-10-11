@@ -20,6 +20,7 @@ use self::builtin::{generate_bitwise_trace, generate_cmp_trace, generate_rc_trac
 use self::cpu::generate_cpu_trace;
 use self::memory::generate_memory_trace;
 use self::poseidon::generate_poseidon_trace;
+use self::poseidon_chunk::generate_poseidon_chunk_trace;
 use self::sccall::generate_sccall_trace;
 use self::storage::{generate_storage_hash_trace, generate_storage_trace};
 use self::tape::generate_tape_trace;
@@ -29,6 +30,7 @@ pub mod cpu;
 mod debug_trace_print;
 pub mod memory;
 pub mod poseidon;
+pub mod poseidon_chunk;
 pub mod sccall;
 pub mod storage;
 pub mod tape;
@@ -91,6 +93,9 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let poseidon_rows = generate_poseidon_trace(&program.trace.builtin_posiedon);
     let poseidon_trace = trace_to_poly_values(poseidon_rows);
 
+    let poseidon_chunk_rows: [Vec<F>; 53] = generate_poseidon_chunk_trace();
+    let poseidon_chunk_trace = trace_to_poly_values(poseidon_chunk_rows);
+
     let storage_rows = generate_storage_trace(&program.trace.builtin_storage);
     let storage_trace = trace_to_poly_values(storage_rows);
 
@@ -115,6 +120,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         cmp_trace,
         rc_trace,
         poseidon_trace,
+        poseidon_chunk_trace,
         storage_trace,
         storage_hash_trace,
         tape_trace,

@@ -19,6 +19,7 @@ use super::vanishing_poly::eval_vanishing_poly;
 use super::vars::StarkEvaluationVars;
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
+use crate::builtins::poseidon::poseidon_chunk_stark::PoseidonChunkStark;
 use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::sccall::sccall_stark::SCCallStark;
@@ -41,6 +42,7 @@ where
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
     [(); StorageStark::<F, D>::COLUMNS]:,
     [(); StorageHashStark::<F, D>::COLUMNS]:,
     // [(); TapeStark::<F, D>::COLUMNS]:,
@@ -60,6 +62,7 @@ where
         cmp_stark,
         rangecheck_stark,
         poseidon_stark,
+        poseidon_chunk_stark,
         storage_stark,
         storage_hash_stark,
         tape_stark,
@@ -123,6 +126,14 @@ where
         &all_proof.stark_proofs[Table::Poseidon as usize],
         &stark_challenges[Table::Poseidon as usize],
         &ctl_vars_per_table[Table::Poseidon as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        poseidon_chunk_stark,
+        &all_proof.stark_proofs[Table::PoseidonChunk as usize],
+        &stark_challenges[Table::PoseidonChunk as usize],
+        &ctl_vars_per_table[Table::PoseidonChunk as usize],
         config,
     )?;
 

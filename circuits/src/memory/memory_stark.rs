@@ -49,6 +49,24 @@ pub fn ctl_filter<F: Field>() -> Column<F> {
     Column::single(COL_MEM_FILTER_LOOKED_FOR_MAIN)
 }
 
+pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
+    let cols: Vec<_> = Column::singles([
+        COL_MEM_TX_IDX,
+        COL_MEM_ENV_IDX,
+        COL_MEM_CLK,
+        COL_MEM_OP,
+        COL_MEM_ADDR,
+        COL_MEM_VALUE,
+        COL_MEM_IS_WRITE,
+    ])
+    .collect();
+    cols
+}
+
+pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
+    Column::single(COL_MEM_FILTER_LOOKED_FOR_POSEIDON_CHUNK)
+}
+
 #[derive(Copy, Clone, Default)]
 pub struct MemoryStark<F, const D: usize> {
     pub f: PhantomData<F>,

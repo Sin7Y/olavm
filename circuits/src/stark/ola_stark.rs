@@ -5,6 +5,7 @@ use super::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use super::stark::Stark;
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
+use crate::builtins::poseidon::poseidon_chunk_stark::{self, PoseidonChunkStark};
 use crate::builtins::poseidon::poseidon_stark::{self, PoseidonStark};
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
 use crate::builtins::sccall::sccall_stark::{self, SCCallStark};
@@ -14,8 +15,9 @@ use crate::builtins::tape::tape_stark::{self, TapeStark};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::{
-    ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_cond, ctl_data_mem_sort_rc,
-    ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_cond, ctl_filter_mem_sort_rc, MemoryStark,
+    self, ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_cond, ctl_data_mem_sort_rc,
+    ctl_data_with_poseidon_chunk, ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_cond,
+    ctl_filter_mem_sort_rc, MemoryStark,
 };
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
@@ -30,6 +32,7 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub cmp_stark: CmpStark<F, D>,
     pub rangecheck_stark: RangeCheckStark<F, D>,
     pub poseidon_stark: PoseidonStark<F, D>,
+    pub poseidon_chunk_stark: PoseidonChunkStark<F, D>,
     pub storage_stark: StorageStark<F, D>,
     pub storage_hash_stark: StorageHashStark<F, D>,
     pub tape_stark: TapeStark<F, D>,
@@ -47,6 +50,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
             cmp_stark: CmpStark::default(),
             rangecheck_stark: RangeCheckStark::default(),
             poseidon_stark: PoseidonStark::default(),
+            poseidon_chunk_stark: PoseidonChunkStark::default(),
             storage_stark: StorageStark::default(),
             storage_hash_stark: StorageHashStark::default(),
             tape_stark: TapeStark::default(),
@@ -65,6 +69,7 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.cmp_stark.num_permutation_batches(config),
             self.rangecheck_stark.num_permutation_batches(config),
             self.poseidon_stark.num_permutation_batches(config),
+            self.poseidon_chunk_stark.num_permutation_batches(config),
             self.storage_stark.num_permutation_batches(config),
             self.storage_hash_stark.num_permutation_batches(config),
             self.tape_stark.num_permutation_batches(config),
@@ -80,6 +85,7 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.cmp_stark.permutation_batch_size(),
             self.rangecheck_stark.permutation_batch_size(),
             self.poseidon_stark.permutation_batch_size(),
+            self.poseidon_chunk_stark.permutation_batch_size(),
             self.storage_stark.permutation_batch_size(),
             self.storage_hash_stark.permutation_batch_size(),
             self.tape_stark.permutation_batch_size(),
@@ -97,15 +103,16 @@ pub enum Table {
     Cmp = 3,
     RangeCheck = 4,
     Poseidon = 5,
-    Storage = 6,
-    StorageHash = 7,
-    Tape = 8,
-    SCCall = 9,
+    PoseidonChunk = 6,
+    Storage = 7,
+    StorageHash = 8,
+    Tape = 9,
+    SCCall = 10,
     // program table
     // Program = 8,
 }
 
-pub(crate) const NUM_TABLES: usize = 10;
+pub(crate) const NUM_TABLES: usize = 11;
 
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     vec![
@@ -116,7 +123,9 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
         ctl_cmp_cpu(),
         ctl_cmp_rangecheck(),
         ctl_rangecheck_cpu(),
-        ctl_cpu_poseidon(),
+        ctl_cpu_poseidon_chunk(),
+        ctl_poseidon_chunk_mem(),
+        ctl_poseidon_chunk_poseidon(),
         ctl_cpu_poseidon_tree_key(),
         ctl_cpu_storage_sstore(),
         ctl_cpu_storage_sload(),
@@ -291,17 +300,56 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-fn ctl_cpu_poseidon<F: Field>() -> CrossTableLookup<F> {
+fn ctl_cpu_poseidon_chunk<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
-            cpu_stark::ctl_data_with_poseidon(),
-            Some(cpu_stark::ctl_filter_with_poseidon()),
+            cpu_stark::ctl_data_with_poseidon_chunk(),
+            Some(cpu_stark::ctl_filter_with_poseidon_chunk()),
+        )],
+        TableWithColumns::new(
+            Table::PoseidonChunk,
+            poseidon_chunk_stark::ctl_data_with_cpu(),
+            Some(poseidon_chunk_stark::ctl_filter_with_cpu()),
+        ),
+    )
+}
+
+fn ctl_poseidon_chunk_mem<F: Field>() -> CrossTableLookup<F> {
+    let looker_src = (0..8).map(|i: usize| {
+        TableWithColumns::new(
+            Table::PoseidonChunk,
+            poseidon_chunk_stark::ctl_data_with_mem_src(i),
+            Some(poseidon_chunk_stark::ctl_filter_with_mem_src(i)),
+        )
+    });
+    let looker_dst = (0..4).map(|i: usize| {
+        TableWithColumns::new(
+            Table::PoseidonChunk,
+            poseidon_chunk_stark::ctl_data_with_mem_dst(i),
+            Some(poseidon_chunk_stark::ctl_filter_with_mem_dst()),
+        )
+    });
+    let all_lookers = looker_src.into_iter().chain(looker_dst).collect();
+    let mem_looked = TableWithColumns::new(
+        Table::Memory,
+        memory_stark::ctl_data_with_poseidon_chunk(),
+        Some(memory_stark::ctl_filter_with_poseidon_chunk()),
+    );
+    CrossTableLookup::new(all_lookers, mem_looked)
+}
+
+fn ctl_poseidon_chunk_poseidon<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::PoseidonChunk,
+            poseidon_chunk_stark::ctl_data_with_poseidon(),
+            Some(poseidon_chunk_stark::ctl_filter_with_poseidon()),
         )],
         TableWithColumns::new(
             Table::Poseidon,
-            poseidon_stark::ctl_data_with_cpu(),
-            Some(poseidon_stark::ctl_filter_with_cpu()),
+            poseidon_stark::ctl_data_with_poseidon_chunk(),
+            Some(poseidon_stark::ctl_filter_with_poseidon_chunk()),
         ),
     )
 }

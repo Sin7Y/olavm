@@ -143,25 +143,20 @@ pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
     Column::single(COL_S_RC)
 }
 
-// get the data source for poseidon in Cpu table
-pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
     Column::singles([
-        COL_START_REG + 1,
-        COL_START_REG + 2,
-        COL_START_REG + 3,
-        COL_START_REG + 4,
-        COL_START_REG + 5,
-        COL_START_REG + 6,
-        COL_START_REG + 7,
-        COL_START_REG + 8,
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
         COL_OP0,
         COL_OP1,
         COL_DST,
-        COL_AUX0,
     ])
     .collect_vec()
 }
-pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
+
+pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
     Column::single(COL_S_PSDN)
 }
 

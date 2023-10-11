@@ -1,5 +1,7 @@
+use core::types::Field;
 use std::marker::PhantomData;
 
+use itertools::Itertools;
 use plonky2::{
     field::{
         extension::{Extendable, FieldExtension},
@@ -11,11 +13,82 @@ use plonky2::{
 
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    cross_table_lookup::Column,
     stark::Stark,
     vars::{StarkEvaluationTargets, StarkEvaluationVars},
 };
 
 use super::columns::*;
+
+pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_POSEIDON_CHUNK_TX_IDX,
+        COL_POSEIDON_CHUNK_ENV_IDX,
+        COL_POSEIDON_CHUNK_CLK,
+        COL_POSEIDON_CHUNK_OPCODE,
+        COL_POSEIDON_CHUNK_OP0,
+        COL_POSEIDON_CHUNK_OP1,
+        COL_POSEIDON_CHUNK_DST,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
+    Column::single(COL_POSEIDON_CHUNK_FILTER_LOOKED_CPU)
+}
+
+pub fn ctl_data_with_mem_src<F: Field>(i: usize) -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![
+        Column::single(COL_POSEIDON_CHUNK_TX_IDX),
+        Column::single(COL_POSEIDON_CHUNK_ENV_IDX),
+        Column::single(COL_POSEIDON_CHUNK_CLK),
+        Column::single(COL_POSEIDON_CHUNK_OPCODE),
+    ];
+    res.push(Column::linear_combination_with_constant(
+        [(COL_POSEIDON_CHUNK_OP0, F::ONE)],
+        F::from_canonical_usize(i),
+    ));
+    res.push(Column::single(COL_POSEIDON_CHUNK_VALUE_RANGE.start + i));
+    res.push(Column::zero());
+    res
+}
+
+pub fn ctl_filter_with_mem_src<F: Field>(i: usize) -> Column<F> {
+    Column::single(COL_POSEIDON_CHUNK_FILTER_LOOKING_MEM_RANGE.start + i)
+}
+
+pub fn ctl_data_with_mem_dst<F: Field>(i: usize) -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![
+        Column::single(COL_POSEIDON_CHUNK_TX_IDX),
+        Column::single(COL_POSEIDON_CHUNK_ENV_IDX),
+        Column::single(COL_POSEIDON_CHUNK_CLK),
+        Column::single(COL_POSEIDON_CHUNK_OPCODE),
+    ];
+    res.push(Column::linear_combination_with_constant(
+        [(COL_POSEIDON_CHUNK_DST, F::ONE)],
+        F::from_canonical_usize(i),
+    ));
+    res.push(Column::single(COL_POSEIDON_CHUNK_HASH_RANGE.start + i));
+    res.push(Column::zero());
+    res
+}
+
+pub fn ctl_filter_with_mem_dst<F: Field>() -> Column<F> {
+    Column::single(COL_POSEIDON_CHUNK_IS_RESULT_LINE)
+}
+
+pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
+    Column::singles(
+        COL_POSEIDON_CHUNK_VALUE_RANGE
+            .chain(COL_POSEIDON_CHUNK_CAP_RANGE)
+            .chain(COL_POSEIDON_CHUNK_HASH_RANGE),
+    )
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
+    Column::single(COL_POSEIDON_CHUNK_FILTER_LOOKING_POSEIDON)
+}
 
 #[derive(Copy, Clone, Default)]
 pub struct PoseidonChunkStark<F, const D: usize> {
@@ -59,7 +132,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonChunk
                 * (nv[COL_POSEIDON_CHUNK_ENV_IDX] - lv[COL_POSEIDON_CHUNK_ENV_IDX]),
         );
         yield_constr.constraint(
-            nv[COL_POSEIDON_CHUNK_IS_EXT_LINE] * (nv[COL_POSEIDON_CHUNK_CLK] - lv[COL_POSEIDON_CHUNK_CLK]),
+            nv[COL_POSEIDON_CHUNK_IS_EXT_LINE]
+                * (nv[COL_POSEIDON_CHUNK_CLK] - lv[COL_POSEIDON_CHUNK_CLK]),
         );
         yield_constr.constraint(
             nv[COL_POSEIDON_CHUNK_IS_EXT_LINE]
