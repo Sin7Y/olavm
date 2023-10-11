@@ -198,3 +198,34 @@ pub(crate) fn get_storage_hash_col_name_map() -> BTreeMap<usize, String> {
     );
     m
 }
+
+pub(crate) const COL_ST_ACCESS_IDX: usize = 0;
+pub(crate) const COL_ST_PRE_ROOT_RANGE: Range<usize> =
+    COL_ST_ACCESS_IDX + 1..COL_ST_ACCESS_IDX + 1 + 4;
+pub(crate) const COL_ST_ROOT_RANGE: Range<usize> =
+    COL_ST_PRE_ROOT_RANGE.end..COL_ST_PRE_ROOT_RANGE.end + 4;
+pub(crate) const COL_ST_IS_WRITE: usize = COL_ST_ROOT_RANGE.end;
+pub(crate) const COL_ST_LAYER: usize = COL_ST_IS_WRITE + 1;
+pub(crate) const COL_ST_LAYER_BIT: usize = COL_ST_LAYER + 1;
+pub(crate) const COL_ST_ADDR_ACC: usize = COL_ST_LAYER_BIT + 1;
+pub(crate) const COL_ST_ADDR_RANGE: Range<usize> = COL_ST_ADDR_ACC + 1..COL_ST_ADDR_ACC + 1 + 4;
+pub(crate) const COL_ST_PRE_PATH_RANGE: Range<usize> =
+    COL_ST_ADDR_RANGE.end..COL_ST_ADDR_RANGE.end + 4;
+pub(crate) const COL_ST_PATH_RANGE: Range<usize> =
+    COL_ST_PRE_PATH_RANGE.end..COL_ST_PRE_PATH_RANGE.end + 4;
+pub(crate) const COL_ST_SIB_RANGE: Range<usize> = COL_ST_PATH_RANGE.end..COL_ST_PATH_RANGE.end + 4;
+pub(crate) const COL_ST_HASH_TYPE: usize = COL_ST_SIB_RANGE.end;
+pub(crate) const COL_ST_PRE_HASH_RANGE: Range<usize> =
+    COL_ST_HASH_TYPE + 1..COL_ST_HASH_TYPE + 1 + 4;
+pub(crate) const COL_ST_HASH_RANGE: Range<usize> =
+    COL_ST_PRE_HASH_RANGE.end..COL_ST_PRE_HASH_RANGE.end + 4;
+pub(crate) const COL_ST_IS_LAYER_1: usize = COL_ST_HASH_RANGE.end;
+pub(crate) const COL_ST_IS_LAYER_64: usize = COL_ST_IS_LAYER_1 + 1;
+pub(crate) const COL_ST_IS_LAYER_128: usize = COL_ST_IS_LAYER_64 + 1;
+pub(crate) const COL_ST_IS_LAYER_192: usize = COL_ST_IS_LAYER_128 + 1;
+pub(crate) const COL_ST_IS_LAYER_256: usize = COL_ST_IS_LAYER_192 + 1;
+pub(crate) const COL_ST_ACC_LAYER_MARKER: usize = COL_ST_IS_LAYER_256 + 1;
+pub(crate) const COL_ST_FILTER_IS_HASH_BIT_0: usize = COL_ST_ACC_LAYER_MARKER + 1;
+pub(crate) const COL_ST_FILTER_IS_HASH_BIT_1: usize = COL_ST_FILTER_IS_HASH_BIT_0 + 1;
+pub(crate) const COL_ST_IS_PADDING: usize = COL_ST_FILTER_IS_HASH_BIT_1 + 1;
+pub(crate) const NUM_COL_ST: usize = COL_ST_IS_PADDING + 1;
