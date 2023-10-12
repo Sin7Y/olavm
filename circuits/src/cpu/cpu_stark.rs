@@ -160,66 +160,76 @@ pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
     Column::single(COL_S_PSDN)
 }
 
-pub fn ctl_data_with_poseidon_tree_key<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        // COL_TX_IDX,
-        // COL_ENV_IDX,
-        // COL_CLK,
-        // COL_OPCODE,
-        COL_ADDR_STORAGE_RANGE.start,
-        COL_ADDR_STORAGE_RANGE.start + 1,
-        COL_ADDR_STORAGE_RANGE.start + 2,
-        COL_ADDR_STORAGE_RANGE.start + 3,
-        COL_START_REG + 1,
-        COL_START_REG + 2,
-        COL_START_REG + 3,
-        COL_START_REG + 4,
-    ])
-    .collect_vec()
-}
-pub fn ctl_filter_with_poseidon_tree_key<F: Field>() -> Column<F> {
-    Column::sum([COL_S_SLOAD, COL_S_SSTORE])
-}
-
-// get the data source for storage in Cpu table
-pub fn ctl_data_cpu_sload<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        COL_IDX_STORAGE,
-        COL_OPCODE,
-        COL_OP0,
-        COL_OP1,
-        COL_DST,
-        COL_AUX0,
-    ])
-    .collect_vec()
-}
-
-pub fn ctl_data_cpu_sstore<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        COL_IDX_STORAGE,
-        COL_OPCODE,
-        COL_START_REG + 5,
-        COL_START_REG + 6,
-        COL_START_REG + 7,
-        COL_START_REG + 8,
-    ])
-    .collect_vec()
-}
-
-pub fn ctl_filter_with_sload<F: Field>() -> Column<F> {
-    Column::single(COL_S_SLOAD)
-}
-
-pub fn ctl_filter_with_sstore<F: Field>() -> Column<F> {
-    Column::single(COL_S_SSTORE)
-}
-
 pub fn ctl_data_cpu_tape_load_store<F: Field>() -> Vec<Column<F>> {
     Column::singles([COL_TX_IDX, COL_TP, COL_OPCODE, COL_AUX1]).collect_vec()
 }
 
 pub fn ctl_filter_cpu_tape_load_store<F: Field>() -> Column<F> {
     Column::single(COL_FILTER_TAPE_LOOKING)
+}
+
+pub fn ctl_data_poseidon_treekey<F: Field>() -> Vec<Column<F>> {
+    let mut res =
+        Column::singles(COL_ADDR_STORAGE_RANGE.chain(COL_S_OP0.skip(4).take(4))).collect_vec();
+    res.extend([
+        Column::zero(),
+        Column::zero(),
+        Column::zero(),
+        Column::zero(),
+    ]);
+    res.extend(Column::singles(COL_S_DST.take(4)).collect_vec());
+    res
+}
+
+pub fn ctl_filter_poseidon_treekey<F: Field>() -> Column<F> {
+    Column::single(COL_IS_STORAGE_EXT_LINE)
+}
+
+pub fn ctl_data_cpu_storage_access<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_IDX_STORAGE,
+        // is_write
+        COL_S_SSTORE,
+        // addr
+        COL_S_DST.start,
+        COL_S_DST.start + 1,
+        COL_S_DST.start + 2,
+        COL_S_DST.start + 3,
+        // path
+        COL_S_OP1.start + 4,
+        COL_S_OP1.start + 5,
+        COL_S_OP1.start + 6,
+        COL_S_OP1.start + 7,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_cpu_storage_access<F: Field>() -> Column<F> {
+    Column::single(COL_IS_STORAGE_EXT_LINE)
+}
+
+pub fn ctl_data_cpu_mem_for_storage_addr<F: Field>(i: usize) -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_S_OP0.start + i,
+        COL_S_OP0.start + 4 + i,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_data_cpu_mem_for_storage_value<F: Field>(i: usize) -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_S_OP1.start + i,
+        COL_S_OP1.start + 4 + i,
+    ])
+    .collect_vec()
 }
 
 pub fn ctl_data_cpu_sccall<F: Field>() -> Vec<Column<F>> {

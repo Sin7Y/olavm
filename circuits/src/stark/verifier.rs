@@ -23,8 +23,7 @@ use crate::builtins::poseidon::poseidon_chunk_stark::PoseidonChunkStark;
 use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::sccall::sccall_stark::SCCallStark;
-use crate::builtins::storage::storage_hash::StorageHashStark;
-use crate::builtins::storage::storage_stark::StorageStark;
+use crate::builtins::storage::storage_access_stark::StorageAccessStark;
 use crate::builtins::tape::tape_stark::TapeStark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::MemoryStark;
@@ -43,8 +42,7 @@ where
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
-    [(); StorageStark::<F, D>::COLUMNS]:,
-    [(); StorageHashStark::<F, D>::COLUMNS]:,
+    [(); StorageAccessStark::<F, D>::COLUMNS]:,
     // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
 {
@@ -63,8 +61,7 @@ where
         rangecheck_stark,
         poseidon_stark,
         poseidon_chunk_stark,
-        storage_stark,
-        storage_hash_stark,
+        storage_access_stark,
         tape_stark,
         sccall_stark,
         cross_table_lookups,
@@ -138,18 +135,10 @@ where
     )?;
 
     verify_stark_proof_with_challenges(
-        storage_stark,
-        &all_proof.stark_proofs[Table::Storage as usize],
-        &stark_challenges[Table::Storage as usize],
-        &ctl_vars_per_table[Table::Storage as usize],
-        config,
-    )?;
-
-    verify_stark_proof_with_challenges(
-        storage_hash_stark,
-        &all_proof.stark_proofs[Table::StorageHash as usize],
-        &stark_challenges[Table::StorageHash as usize],
-        &ctl_vars_per_table[Table::StorageHash as usize],
+        storage_access_stark,
+        &all_proof.stark_proofs[Table::StorageAccess as usize],
+        &stark_challenges[Table::StorageAccess as usize],
+        &ctl_vars_per_table[Table::StorageAccess as usize],
         config,
     )?;
 
@@ -174,7 +163,7 @@ where
     let mut extra_looking_products = vec![vec![F::ONE; config.num_challenges]; NUM_TABLES - 1];
     extra_looking_products.push(Vec::new());
     for c in 0..config.num_challenges {
-        extra_looking_products[Table::StorageHash as usize].push(
+        extra_looking_products[Table::StorageAccess as usize].push(
             get_storagehash_extra_looking_products(&public_values, ctl_challenges.challenges[c]),
         );
     }

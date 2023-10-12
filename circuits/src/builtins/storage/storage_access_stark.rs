@@ -1,6 +1,7 @@
+use core::types::Field;
 use std::marker::PhantomData;
 
-use itertools::izip;
+use itertools::{izip, Itertools};
 use plonky2::{
     field::{
         extension::{Extendable, FieldExtension},
@@ -12,12 +13,79 @@ use plonky2::{
 
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    cross_table_lookup::Column,
     stark::Stark,
     vars::{StarkEvaluationTargets, StarkEvaluationVars},
 };
 
 use super::columns::*;
 
+pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles([COL_ST_ACCESS_IDX, COL_ST_IS_WRITE]).collect_vec();
+    res.extend(Column::singles(COL_ST_ADDR_RANGE.chain(COL_ST_PATH_RANGE)));
+    res
+}
+
+pub fn ctl_filter_with_cpu_sstore<F: Field>() -> Column<F> {
+    Column::single(COL_ST_IS_LAYER_256)
+}
+
+pub fn ctl_data_with_poseidon_bit0<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles(COL_ST_PATH_RANGE.chain(COL_ST_SIB_RANGE)).collect_vec();
+    res.push(Column::single(COL_ST_HASH_TYPE));
+    res.extend([Column::zero(), Column::zero(), Column::zero()]);
+    res.extend(Column::singles(COL_ST_HASH_RANGE));
+    res.push(Column::single(COL_ST_IS_LAYER_256));
+    res.push(Column::linear_combination_with_constant(
+        [(COL_ST_IS_LAYER_256, F::NEG_ONE)],
+        F::ONE,
+    ));
+    res
+}
+pub fn ctl_data_with_poseidon_bit0_pre<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles(COL_ST_PRE_PATH_RANGE.chain(COL_ST_SIB_RANGE)).collect_vec();
+    res.push(Column::single(COL_ST_HASH_TYPE));
+    res.extend([Column::zero(), Column::zero(), Column::zero()]);
+    res.extend(Column::singles(COL_ST_PRE_HASH_RANGE));
+    res.push(Column::single(COL_ST_IS_LAYER_256));
+    res.push(Column::linear_combination_with_constant(
+        [(COL_ST_IS_LAYER_256, F::NEG_ONE)],
+        F::ONE,
+    ));
+    res
+}
+pub fn ctl_filter_with_poseidon_bit0<F: Field>() -> Column<F> {
+    Column::single(COL_ST_FILTER_IS_HASH_BIT_0)
+}
+
+pub fn ctl_data_with_poseidon_bit1<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles(COL_ST_SIB_RANGE.chain(COL_ST_PATH_RANGE)).collect_vec();
+    res.push(Column::single(COL_ST_HASH_TYPE));
+    res.extend([Column::zero(), Column::zero(), Column::zero()]);
+    res.extend(Column::singles(COL_ST_HASH_RANGE));
+    res.push(Column::single(COL_ST_IS_LAYER_256));
+    res.push(Column::linear_combination_with_constant(
+        [(COL_ST_IS_LAYER_256, F::NEG_ONE)],
+        F::ONE,
+    ));
+    res
+}
+pub fn ctl_data_with_poseidon_bit1_pre<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles(COL_ST_SIB_RANGE.chain(COL_ST_PRE_PATH_RANGE)).collect_vec();
+    res.push(Column::single(COL_ST_HASH_TYPE));
+    res.extend([Column::zero(), Column::zero(), Column::zero()]);
+    res.extend(Column::singles(COL_ST_PRE_HASH_RANGE));
+    res.push(Column::single(COL_ST_IS_LAYER_256));
+    res.push(Column::linear_combination_with_constant(
+        [(COL_ST_IS_LAYER_256, F::NEG_ONE)],
+        F::ONE,
+    ));
+    res
+}
+
+pub fn ctl_filter_with_poseidon_bit1<F: Field>() -> Column<F> {
+    Column::single(COL_ST_FILTER_IS_HASH_BIT_1)
+}
 #[derive(Copy, Clone, Default)]
 pub struct StorageAccessStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,

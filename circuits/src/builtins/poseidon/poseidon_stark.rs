@@ -152,44 +152,12 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
     }
 }
 
-pub fn ctl_data_with_cpu_tree_key<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        // COL_POSEIDON_TX_IDX,
-        // COL_POSEIDON_ENV_IDX,
-        // COL_POSEIDON_CLK,
-        // COL_POSEIDON_OPCODE,
-        COL_POSEIDON_INPUT_RANGE.start + 4,
-        COL_POSEIDON_INPUT_RANGE.start + 5,
-        COL_POSEIDON_INPUT_RANGE.start + 6,
-        COL_POSEIDON_INPUT_RANGE.start + 7,
-        COL_POSEIDON_INPUT_RANGE.start + 8,
-        COL_POSEIDON_INPUT_RANGE.start + 9,
-        COL_POSEIDON_INPUT_RANGE.start + 10,
-        COL_POSEIDON_INPUT_RANGE.start + 11,
-    ])
-    .collect_vec()
+pub fn ctl_data_cpu_tree_key<F: Field>() -> Vec<Column<F>> {
+    Column::singles(COL_POSEIDON_INPUT_RANGE.chain(COL_POSEIDON_OUTPUT_RANGE.take(4))).collect_vec()
 }
 
-pub fn ctl_filter_with_cpu_tree_key<F: Field>() -> Column<F> {
-    Column::single(FILTER_LOOKED_STORAGE_LEAF)
-}
-
-pub fn ctl_data_with_storage_tree_key<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        // COL_POSEIDON_TX_IDX,
-        // COL_POSEIDON_ENV_IDX,
-        // COL_POSEIDON_CLK,
-        // COL_POSEIDON_OPCODE,
-        COL_POSEIDON_OUTPUT_RANGE.start,
-        COL_POSEIDON_OUTPUT_RANGE.start + 1,
-        COL_POSEIDON_OUTPUT_RANGE.start + 2,
-        COL_POSEIDON_OUTPUT_RANGE.start + 3,
-    ])
-    .collect_vec()
-}
-
-pub fn ctl_filter_with_storage_tree_key<F: Field>() -> Column<F> {
-    Column::single(FILTER_LOOKED_STORAGE_LEAF)
+pub fn ctl_filter_cpu_tree_key<F: Field>() -> Column<F> {
+    Column::single(FILTER_LOOKED_TREEKEY)
 }
 
 pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
@@ -198,6 +166,19 @@ pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
     Column::single(FILTER_LOOKED_NORMAL)
+}
+
+pub fn ctl_data_with_storage<F: Field>() -> Vec<Column<F>> {
+    Column::singles(
+        COL_POSEIDON_INPUT_RANGE
+            .chain(COL_POSEIDON_OUTPUT_RANGE.take(4))
+            .chain([FILTER_LOOKED_STORAGE_LEAF, FILTER_LOOKED_STORAGE_BRANCH]),
+    )
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_storage<F: Field>() -> Column<F> {
+    Column::sum([FILTER_LOOKED_STORAGE_LEAF, FILTER_LOOKED_STORAGE_BRANCH])
 }
 
 mod test {

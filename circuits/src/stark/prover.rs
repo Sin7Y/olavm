@@ -26,8 +26,7 @@ use crate::builtins::poseidon::poseidon_chunk_stark::PoseidonChunkStark;
 use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::sccall::sccall_stark::SCCallStark;
-use crate::builtins::storage::storage_hash::StorageHashStark;
-use crate::builtins::storage::storage_stark::StorageStark;
+use crate::builtins::storage::storage_access_stark::StorageAccessStark;
 use crate::builtins::tape::tape_stark::TapeStark;
 //use crate::columns::NUM_CPU_COLS;
 use super::config::StarkConfig;
@@ -64,8 +63,7 @@ where
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
-    [(); StorageStark::<F, D>::COLUMNS]:,
-    [(); StorageHashStark::<F, D>::COLUMNS]:,
+    [(); StorageAccessStark::<F, D>::COLUMNS]:,
     // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
 {
@@ -92,8 +90,7 @@ where
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
-    [(); StorageStark::<F, D>::COLUMNS]:,
-    [(); StorageHashStark::<F, D>::COLUMNS]:,
+    [(); StorageAccessStark::<F, D>::COLUMNS]:,
     // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
 {
@@ -201,7 +198,7 @@ where
         &mut twiddle_map,
     )?;
     let poseidon_chunk_proof = prove_single_table(
-    &ola_stark.poseidon_chunk_stark,
+        &ola_stark.poseidon_chunk_stark,
         config,
         &trace_poly_values[Table::PoseidonChunk as usize],
         &trace_commitments[Table::PoseidonChunk as usize],
@@ -210,22 +207,12 @@ where
         timing,
         &mut twiddle_map,
     )?;
-    let storage_proof = prove_single_table(
-        &ola_stark.storage_stark,
+    let storage_access_proof = prove_single_table(
+        &ola_stark.storage_access_stark,
         config,
-        &trace_poly_values[Table::Storage as usize],
-        &trace_commitments[Table::Storage as usize],
-        &ctl_data_per_table[Table::Storage as usize],
-        &mut challenger,
-        timing,
-        &mut twiddle_map,
-    )?;
-    let storage_hash_proof = prove_single_table(
-        &ola_stark.storage_hash_stark,
-        config,
-        &trace_poly_values[Table::StorageHash as usize],
-        &trace_commitments[Table::StorageHash as usize],
-        &ctl_data_per_table[Table::StorageHash as usize],
+        &trace_poly_values[Table::StorageAccess as usize],
+        &trace_commitments[Table::StorageAccess as usize],
+        &ctl_data_per_table[Table::StorageAccess as usize],
         &mut challenger,
         timing,
         &mut twiddle_map,
@@ -259,8 +246,7 @@ where
         rangecheck_proof,
         poseidon_proof,
         poseidon_chunk_proof,
-        storage_proof,
-        storage_hash_proof,
+        storage_access_proof,
         tape_proof,
         sccall_proof,
     ];
@@ -269,7 +255,6 @@ where
         F::ZERO,
         F::ZERO,
         ola_stark.bitwise_stark.get_compress_challenge().unwrap(),
-        F::ZERO,
         F::ZERO,
         F::ZERO,
         F::ZERO,
