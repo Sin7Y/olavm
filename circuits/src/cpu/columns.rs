@@ -131,7 +131,8 @@ pub(crate) const COL_IS_NEXT_LINE_SAME_TX: usize = COL_IS_NEXT_LINE_DIFF_INST + 
 
 pub(crate) const COL_FILTER_TAPE_LOOKING: usize = COL_IS_NEXT_LINE_SAME_TX + 1;
 pub(crate) const IS_SCCALL_EXT_LINE: usize = COL_FILTER_TAPE_LOOKING + 1;
-pub(crate) const COL_FILTER_SCCALL_END: usize = IS_SCCALL_EXT_LINE + 1;
+pub(crate) const COL_IS_STORAGE_EXT_LINE: usize = IS_SCCALL_EXT_LINE + 1;
+pub(crate) const COL_FILTER_SCCALL_END: usize = COL_IS_STORAGE_EXT_LINE + 1;
 pub(crate) const COL_IS_PADDING: usize = COL_FILTER_SCCALL_END + 1;
 
 pub(crate) const NUM_CPU_COLS: usize = COL_IS_PADDING + 1;
@@ -213,6 +214,7 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_IS_NEXT_LINE_SAME_TX, "is_next_line_same_tx".to_string());
     m.insert(COL_FILTER_TAPE_LOOKING, "filter_tape_looking".to_string());
     m.insert(IS_SCCALL_EXT_LINE, "is_sccall_ext_line".to_string());
+    m.insert(COL_IS_STORAGE_EXT_LINE, "is_storage_ext_line".to_string());
     m.insert(COL_FILTER_SCCALL_END, "filter_sccall_end".to_string());
     m.insert(COL_IS_PADDING, "is_padding".to_string());
     m

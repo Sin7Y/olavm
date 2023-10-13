@@ -143,80 +143,21 @@ pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
     Column::single(COL_S_RC)
 }
 
-// get the data source for poseidon in Cpu table
-pub fn ctl_data_with_poseidon<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        COL_START_REG + 1,
-        COL_START_REG + 2,
-        COL_START_REG + 3,
-        COL_START_REG + 4,
-        COL_START_REG + 5,
-        COL_START_REG + 6,
-        COL_START_REG + 7,
-        COL_START_REG + 8,
-        COL_OP0,
-        COL_OP1,
-        COL_DST,
-        COL_AUX0,
-    ])
-    .collect_vec()
-}
-pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
-    Column::single(COL_S_PSDN)
-}
-
-pub fn ctl_data_with_poseidon_tree_key<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
     Column::singles([
         COL_TX_IDX,
         COL_ENV_IDX,
         COL_CLK,
         COL_OPCODE,
-        COL_ADDR_STORAGE_RANGE.start,
-        COL_ADDR_STORAGE_RANGE.start + 1,
-        COL_ADDR_STORAGE_RANGE.start + 2,
-        COL_ADDR_STORAGE_RANGE.start + 3,
-        COL_START_REG + 1,
-        COL_START_REG + 2,
-        COL_START_REG + 3,
-        COL_START_REG + 4,
-    ])
-    .collect_vec()
-}
-pub fn ctl_filter_with_poseidon_tree_key<F: Field>() -> Column<F> {
-    Column::sum([COL_S_SLOAD, COL_S_SSTORE])
-}
-
-// get the data source for storage in Cpu table
-pub fn ctl_data_cpu_sload<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        COL_IDX_STORAGE,
-        COL_OPCODE,
         COL_OP0,
         COL_OP1,
         COL_DST,
-        COL_AUX0,
     ])
     .collect_vec()
 }
 
-pub fn ctl_data_cpu_sstore<F: Field>() -> Vec<Column<F>> {
-    Column::singles([
-        COL_IDX_STORAGE,
-        COL_OPCODE,
-        COL_START_REG + 5,
-        COL_START_REG + 6,
-        COL_START_REG + 7,
-        COL_START_REG + 8,
-    ])
-    .collect_vec()
-}
-
-pub fn ctl_filter_with_sload<F: Field>() -> Column<F> {
-    Column::single(COL_S_SLOAD)
-}
-
-pub fn ctl_filter_with_sstore<F: Field>() -> Column<F> {
-    Column::single(COL_S_SSTORE)
+pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
+    Column::single(COL_S_PSDN)
 }
 
 pub fn ctl_data_cpu_tape_load_store<F: Field>() -> Vec<Column<F>> {
@@ -225,6 +166,70 @@ pub fn ctl_data_cpu_tape_load_store<F: Field>() -> Vec<Column<F>> {
 
 pub fn ctl_filter_cpu_tape_load_store<F: Field>() -> Column<F> {
     Column::single(COL_FILTER_TAPE_LOOKING)
+}
+
+pub fn ctl_data_poseidon_treekey<F: Field>() -> Vec<Column<F>> {
+    let mut res =
+        Column::singles(COL_ADDR_STORAGE_RANGE.chain(COL_S_OP0.skip(4).take(4))).collect_vec();
+    res.extend([
+        Column::zero(),
+        Column::zero(),
+        Column::zero(),
+        Column::zero(),
+    ]);
+    res.extend(Column::singles(COL_S_DST.take(4)).collect_vec());
+    res
+}
+
+pub fn ctl_filter_poseidon_treekey<F: Field>() -> Column<F> {
+    Column::single(COL_IS_STORAGE_EXT_LINE)
+}
+
+pub fn ctl_data_cpu_storage_access<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_IDX_STORAGE,
+        // is_write
+        COL_S_SSTORE,
+        // addr
+        COL_S_DST.start,
+        COL_S_DST.start + 1,
+        COL_S_DST.start + 2,
+        COL_S_DST.start + 3,
+        // path
+        COL_S_OP1.start + 4,
+        COL_S_OP1.start + 5,
+        COL_S_OP1.start + 6,
+        COL_S_OP1.start + 7,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_cpu_storage_access<F: Field>() -> Column<F> {
+    Column::single(COL_IS_STORAGE_EXT_LINE)
+}
+
+pub fn ctl_data_cpu_mem_for_storage_addr<F: Field>(i: usize) -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_S_OP0.start + i,
+        COL_S_OP0.start + 4 + i,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_data_cpu_mem_for_storage_value<F: Field>(i: usize) -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_S_OP1.start + i,
+        COL_S_OP1.start + 4 + i,
+    ])
+    .collect_vec()
 }
 
 pub fn ctl_data_cpu_sccall<F: Field>() -> Vec<Column<F>> {
@@ -803,16 +808,25 @@ impl<
 
         let lv_is_padding = lv[COL_IS_PADDING];
         let nv_is_padding = nv[COL_IS_PADDING];
-        let lv_is_ext_inst =
-            lv[COL_S_TLOAD] + lv[COL_S_SLOAD] + lv[COL_S_CALL_SC] + lv[COL_S_END] + lv[COL_S_PSDN];
-        let nv_is_ext_inst =
-            nv[COL_S_TLOAD] + nv[COL_S_SLOAD] + nv[COL_S_CALL_SC] + nv[COL_S_END] + nv[COL_S_PSDN];
-        let lv_is_entry_sc = lv[COL_IS_ENTRY_SC];
-        let lv_ext_length = lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
+        let lv_is_ext_inst = lv[COL_S_SLOAD]
+            + lv[COL_S_SSTORE]
+            + lv[COL_S_TLOAD]
             + lv[COL_S_TSTORE]
             + lv[COL_S_CALL_SC]
-            + lv[COL_S_END] * (P::ONES - lv_is_entry_sc)
-            + lv[COL_S_PSDN];
+            + lv[COL_S_END];
+        let nv_is_ext_inst = nv[COL_S_SLOAD]
+            + nv[COL_S_SSTORE]
+            + nv[COL_S_TLOAD]
+            + nv[COL_S_TSTORE]
+            + nv[COL_S_CALL_SC]
+            + nv[COL_S_END];
+        let lv_is_entry_sc = lv[COL_IS_ENTRY_SC];
+        let lv_ext_length = lv[COL_S_SLOAD]
+            + lv[COL_S_SSTORE]
+            + lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
+            + lv[COL_S_TSTORE]
+            + lv[COL_S_CALL_SC]
+            + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
         let is_crossing_inst = lv[COL_IS_NEXT_LINE_DIFF_INST];
         let is_in_same_tx = lv[COL_IS_NEXT_LINE_SAME_TX];
         Self {
@@ -889,12 +903,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         Self::constraint_env_unchanged_pc(&wrapper, yield_constr);
         Self::constraint_reg_consistency(&wrapper, yield_constr);
 
-        // idx_storage
-        yield_constr.constraint_first_row(lv[COL_IDX_STORAGE]);
-        yield_constr.constraint_transition(
-            (nv[COL_IDX_STORAGE] - lv[COL_IDX_STORAGE]) - (nv[COL_S_SSTORE] + nv[COL_S_SLOAD]),
-        );
-
         // opcode
         add::eval_packed_generic(lv, nv, yield_constr);
         mul::eval_packed_generic(lv, nv, yield_constr);
@@ -905,8 +913,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         ret::eval_packed_generic(lv, nv, yield_constr);
         mload::eval_packed_generic(lv, nv, yield_constr);
         mstore::eval_packed_generic(lv, nv, yield_constr);
-        poseidon::eval_packed_generic(lv, nv, yield_constr);
-        sload::eval_packed_generic(lv, nv, yield_constr);
+        storage::eval_packed_generic(lv, nv, yield_constr);
         tape::eval_packed_generic(&wrapper, yield_constr);
         call_sc::eval_packed_generic(&wrapper, yield_constr);
     }

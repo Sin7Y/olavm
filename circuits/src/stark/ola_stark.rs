@@ -5,16 +5,16 @@ use super::cross_table_lookup::{CrossTableLookup, TableWithColumns};
 use super::stark::Stark;
 use crate::builtins::bitwise::bitwise_stark::{self, BitwiseStark};
 use crate::builtins::cmp::cmp_stark::{self, CmpStark};
+use crate::builtins::poseidon::poseidon_chunk_stark::{self, PoseidonChunkStark};
 use crate::builtins::poseidon::poseidon_stark::{self, PoseidonStark};
 use crate::builtins::rangecheck::rangecheck_stark::{self, RangeCheckStark};
 use crate::builtins::sccall::sccall_stark::{self, SCCallStark};
-use crate::builtins::storage::storage_hash::{self, StorageHashStark};
-use crate::builtins::storage::storage_stark::{self, StorageStark};
+use crate::builtins::storage::storage_access_stark::{self, StorageAccessStark};
 use crate::builtins::tape::tape_stark::{self, TapeStark};
 use crate::cpu::cpu_stark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::{
-    ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_cond, ctl_data_mem_sort_rc,
+    self, ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_cond, ctl_data_mem_sort_rc,
     ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_cond, ctl_filter_mem_sort_rc, MemoryStark,
 };
 use plonky2::field::extension::Extendable;
@@ -30,8 +30,8 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub cmp_stark: CmpStark<F, D>,
     pub rangecheck_stark: RangeCheckStark<F, D>,
     pub poseidon_stark: PoseidonStark<F, D>,
-    pub storage_stark: StorageStark<F, D>,
-    pub storage_hash_stark: StorageHashStark<F, D>,
+    pub poseidon_chunk_stark: PoseidonChunkStark<F, D>,
+    pub storage_access_stark: StorageAccessStark<F, D>,
     pub tape_stark: TapeStark<F, D>,
     pub sccall_stark: SCCallStark<F, D>,
 
@@ -47,8 +47,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
             cmp_stark: CmpStark::default(),
             rangecheck_stark: RangeCheckStark::default(),
             poseidon_stark: PoseidonStark::default(),
-            storage_stark: StorageStark::default(),
-            storage_hash_stark: StorageHashStark::default(),
+            poseidon_chunk_stark: PoseidonChunkStark::default(),
+            storage_access_stark: StorageAccessStark::default(),
             tape_stark: TapeStark::default(),
             sccall_stark: SCCallStark::default(),
             cross_table_lookups: all_cross_table_lookups(),
@@ -65,8 +65,8 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.cmp_stark.num_permutation_batches(config),
             self.rangecheck_stark.num_permutation_batches(config),
             self.poseidon_stark.num_permutation_batches(config),
-            self.storage_stark.num_permutation_batches(config),
-            self.storage_hash_stark.num_permutation_batches(config),
+            self.poseidon_chunk_stark.num_permutation_batches(config),
+            self.storage_access_stark.num_permutation_batches(config),
             self.tape_stark.num_permutation_batches(config),
             self.sccall_stark.num_permutation_batches(config),
         ]
@@ -80,8 +80,8 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.cmp_stark.permutation_batch_size(),
             self.rangecheck_stark.permutation_batch_size(),
             self.poseidon_stark.permutation_batch_size(),
-            self.storage_stark.permutation_batch_size(),
-            self.storage_hash_stark.permutation_batch_size(),
+            self.poseidon_chunk_stark.permutation_batch_size(),
+            self.storage_access_stark.permutation_batch_size(),
             self.tape_stark.permutation_batch_size(),
             self.sccall_stark.permutation_batch_size(),
         ]
@@ -97,8 +97,8 @@ pub enum Table {
     Cmp = 3,
     RangeCheck = 4,
     Poseidon = 5,
-    Storage = 6,
-    StorageHash = 7,
+    PoseidonChunk = 6,
+    StorageAccess = 7,
     Tape = 8,
     SCCall = 9,
     // program table
@@ -116,12 +116,12 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
         ctl_cmp_cpu(),
         ctl_cmp_rangecheck(),
         ctl_rangecheck_cpu(),
-        ctl_cpu_poseidon(),
+        ctl_cpu_poseidon_chunk(),
+        ctl_poseidon_chunk_mem(),
+        ctl_poseidon_chunk_poseidon(),
         ctl_cpu_poseidon_tree_key(),
-        ctl_cpu_storage_sstore(),
-        ctl_cpu_storage_sload(),
-        ctl_storage_poseidon_tree_key(),
-        ctl_storage_hash(),
+        ctl_cpu_storage_access(),
+        ctl_storage_access_poseidon(),
         ctl_cpu_tape(),
         ctl_cpu_sccall(),
         ctl_cpu_sccall_end(),
@@ -156,6 +156,20 @@ fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
             Some(cpu_stark::ctl_filter_cpu_mem_sccall()),
         )
     });
+    let cpu_storage_addr = (0..4).map(|i: usize| {
+        TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_mem_for_storage_addr(i),
+            Some(cpu_stark::ctl_filter_cpu_storage_access()),
+        )
+    });
+    let cpu_storage_value = (0..4).map(|i: usize| {
+        TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_mem_for_storage_value(i),
+            Some(cpu_stark::ctl_filter_cpu_storage_access()),
+        )
+    });
 
     let mut all_cpu_lookers = vec![
         cpu_mem_store_load,
@@ -164,6 +178,8 @@ fn ctl_cpu_memory<F: Field>() -> CrossTableLookup<F> {
         cpu_mem_tload_tstore,
     ];
     all_cpu_lookers.extend(cpu_sccall_mems);
+    all_cpu_lookers.extend(cpu_storage_addr);
+    all_cpu_lookers.extend(cpu_storage_value);
     let memory_looked =
         TableWithColumns::new(Table::Memory, mem_ctl_data(), Some(mem_ctl_filter()));
     CrossTableLookup::new(all_cpu_lookers, memory_looked)
@@ -291,92 +307,116 @@ fn ctl_rangecheck_cpu<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
-fn ctl_cpu_poseidon<F: Field>() -> CrossTableLookup<F> {
+fn ctl_cpu_poseidon_chunk<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
-            cpu_stark::ctl_data_with_poseidon(),
-            Some(cpu_stark::ctl_filter_with_poseidon()),
+            cpu_stark::ctl_data_with_poseidon_chunk(),
+            Some(cpu_stark::ctl_filter_with_poseidon_chunk()),
+        )],
+        TableWithColumns::new(
+            Table::PoseidonChunk,
+            poseidon_chunk_stark::ctl_data_with_cpu(),
+            Some(poseidon_chunk_stark::ctl_filter_with_cpu()),
+        ),
+    )
+}
+
+fn ctl_poseidon_chunk_mem<F: Field>() -> CrossTableLookup<F> {
+    let looker_src = (0..8).map(|i: usize| {
+        TableWithColumns::new(
+            Table::PoseidonChunk,
+            poseidon_chunk_stark::ctl_data_with_mem_src(i),
+            Some(poseidon_chunk_stark::ctl_filter_with_mem_src(i)),
+        )
+    });
+    let looker_dst = (0..4).map(|i: usize| {
+        TableWithColumns::new(
+            Table::PoseidonChunk,
+            poseidon_chunk_stark::ctl_data_with_mem_dst(i),
+            Some(poseidon_chunk_stark::ctl_filter_with_mem_dst()),
+        )
+    });
+    let all_lookers = looker_src.into_iter().chain(looker_dst).collect();
+    let mem_looked = TableWithColumns::new(
+        Table::Memory,
+        memory_stark::ctl_data_with_poseidon_chunk(),
+        Some(memory_stark::ctl_filter_with_poseidon_chunk()),
+    );
+    CrossTableLookup::new(all_lookers, mem_looked)
+}
+
+fn ctl_poseidon_chunk_poseidon<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::PoseidonChunk,
+            poseidon_chunk_stark::ctl_data_with_poseidon(),
+            Some(poseidon_chunk_stark::ctl_filter_with_poseidon()),
         )],
         TableWithColumns::new(
             Table::Poseidon,
-            poseidon_stark::ctl_data_with_cpu(),
-            Some(poseidon_stark::ctl_filter_with_cpu()),
+            poseidon_stark::ctl_data_with_poseidon_chunk(),
+            Some(poseidon_stark::ctl_filter_with_poseidon_chunk()),
         ),
     )
+}
+
+fn ctl_cpu_storage_access<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_cpu_storage_access(),
+            Some(cpu_stark::ctl_filter_cpu_storage_access()),
+        )],
+        TableWithColumns::new(
+            Table::StorageAccess,
+            storage_access_stark::ctl_data_with_cpu(),
+            Some(storage_access_stark::ctl_filter_with_cpu_sstore()),
+        ),
+    )
+}
+
+fn ctl_storage_access_poseidon<F: Field>() -> CrossTableLookup<F> {
+    let looker_bit0 = TableWithColumns::new(
+        Table::StorageAccess,
+        storage_access_stark::ctl_data_with_poseidon_bit0(),
+        Some(storage_access_stark::ctl_filter_with_poseidon_bit0()),
+    );
+    let looker_bit0_pre = TableWithColumns::new(
+        Table::StorageAccess,
+        storage_access_stark::ctl_data_with_poseidon_bit0_pre(),
+        Some(storage_access_stark::ctl_filter_with_poseidon_bit0()),
+    );
+    let looker_bit1 = TableWithColumns::new(
+        Table::StorageAccess,
+        storage_access_stark::ctl_data_with_poseidon_bit1(),
+        Some(storage_access_stark::ctl_filter_with_poseidon_bit1()),
+    );
+    let looker_bit1_pre = TableWithColumns::new(
+        Table::StorageAccess,
+        storage_access_stark::ctl_data_with_poseidon_bit1_pre(),
+        Some(storage_access_stark::ctl_filter_with_poseidon_bit1()),
+    );
+    let all_lookers = vec![looker_bit0, looker_bit0_pre, looker_bit1, looker_bit1_pre];
+    let looked = TableWithColumns::new(
+        Table::Poseidon,
+        poseidon_stark::ctl_data_with_storage(),
+        Some(poseidon_stark::ctl_filter_with_storage()),
+    );
+    CrossTableLookup::new(all_lookers, looked)
 }
 
 fn ctl_cpu_poseidon_tree_key<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
         vec![TableWithColumns::new(
             Table::Cpu,
-            cpu_stark::ctl_data_with_poseidon_tree_key(),
-            Some(cpu_stark::ctl_filter_with_poseidon_tree_key()),
+            cpu_stark::ctl_data_poseidon_treekey(),
+            Some(cpu_stark::ctl_filter_poseidon_treekey()),
         )],
         TableWithColumns::new(
             Table::Poseidon,
-            poseidon_stark::ctl_data_with_cpu_tree_key(),
-            Some(poseidon_stark::ctl_filter_with_cpu_tree_key()),
-        ),
-    )
-}
-
-fn ctl_cpu_storage_sstore<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::Cpu,
-            cpu_stark::ctl_data_cpu_sstore(),
-            Some(cpu_stark::ctl_filter_with_sstore()),
-        )],
-        TableWithColumns::new(
-            Table::Storage,
-            storage_stark::ctl_data_with_cpu(),
-            Some(storage_stark::ctl_filter_with_cpu_sstore()),
-        ),
-    )
-}
-
-fn ctl_cpu_storage_sload<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::Cpu,
-            cpu_stark::ctl_data_cpu_sload(),
-            Some(cpu_stark::ctl_filter_with_sload()),
-        )],
-        TableWithColumns::new(
-            Table::Storage,
-            storage_stark::ctl_data_with_cpu(),
-            Some(storage_stark::ctl_filter_with_cpu_sload()),
-        ),
-    )
-}
-
-fn ctl_storage_poseidon_tree_key<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::Storage,
-            storage_stark::ctl_data_with_poseidon(),
-            Some(storage_stark::ctl_filter_with_hash()),
-        )],
-        TableWithColumns::new(
-            Table::Poseidon,
-            poseidon_stark::ctl_data_with_storage_tree_key(),
-            Some(poseidon_stark::ctl_filter_with_cpu_tree_key()),
-        ),
-    )
-}
-
-fn ctl_storage_hash<F: Field>() -> CrossTableLookup<F> {
-    CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::Storage,
-            storage_stark::ctl_data_with_hash(),
-            Some(storage_stark::ctl_filter_with_hash()),
-        )],
-        TableWithColumns::new(
-            Table::StorageHash,
-            storage_hash::ctl_data_with_storage(),
-            Some(storage_hash::ctl_filter_with_storage()),
+            poseidon_stark::ctl_data_cpu_tree_key(),
+            Some(poseidon_stark::ctl_filter_cpu_tree_key()),
         ),
     )
 }
