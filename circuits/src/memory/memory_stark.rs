@@ -46,7 +46,18 @@ pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter<F: Field>() -> Column<F> {
-    Column::single(COL_MEM_FILTER_LOOKED_FOR_MAIN)
+    // poseidon data is different, prophet write donnot lookup
+    Column::sum([
+        COL_MEM_S_MLOAD,
+        COL_MEM_S_MSTORE,
+        COL_MEM_S_CALL,
+        COL_MEM_S_RET,
+        COL_MEM_S_TLOAD,
+        COL_MEM_S_TSTORE,
+        COL_MEM_S_SCCALL,
+        COL_MEM_S_SSTORE,
+        COL_MEM_S_SLOAD,
+    ])
 }
 
 pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
@@ -64,7 +75,7 @@ pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
-    Column::single(COL_MEM_FILTER_LOOKED_FOR_POSEIDON_CHUNK)
+    Column::single(COL_MEM_S_POSEIDON)
 }
 
 #[derive(Copy, Clone, Default)]
@@ -109,7 +120,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let nv_region_stack = P::ONES - nv[COL_MEM_REGION_HEAP] - nv[COL_MEM_REGION_PROPHET];
         let is_write = lv[COL_MEM_IS_WRITE];
         let nv_is_write = nv[COL_MEM_IS_WRITE];
-        let filter_looked_for_main = lv[COL_MEM_FILTER_LOOKED_FOR_MAIN];
         let addr = lv[COL_MEM_ADDR];
         let nv_diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
         let nv_addr = nv[COL_MEM_ADDR];
@@ -132,6 +142,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let op_tload = P::Scalar::from_canonical_u64(OlaOpcode::TLOAD.binary_bit_mask());
         let op_tstore = P::Scalar::from_canonical_u64(OlaOpcode::TSTORE.binary_bit_mask());
         let op_sc_call = P::Scalar::from_canonical_u64(OlaOpcode::SCCALL.binary_bit_mask());
+        let op_poseidon = P::Scalar::from_canonical_u64(OlaOpcode::POSEIDON.binary_bit_mask());
+        let op_sstore = P::Scalar::from_canonical_u64(OlaOpcode::SSTORE.binary_bit_mask());
+        let op_sload = P::Scalar::from_canonical_u64(OlaOpcode::SLOAD.binary_bit_mask());
         let op_prophet = P::ZEROS;
 
         // constraint opcode and selector matches, selector is binary and only one is
@@ -143,6 +156,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         yield_constr.constraint((lv[COL_MEM_OP] - op_tload) * lv[COL_MEM_S_TLOAD]);
         yield_constr.constraint((lv[COL_MEM_OP] - op_tstore) * lv[COL_MEM_S_TSTORE]);
         yield_constr.constraint((lv[COL_MEM_OP] - op_sc_call) * lv[COL_MEM_S_SCCALL]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_poseidon) * lv[COL_MEM_S_POSEIDON]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_sstore) * lv[COL_MEM_S_SSTORE]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_sload) * lv[COL_MEM_S_SLOAD]);
         yield_constr.constraint((lv[COL_MEM_OP] - op_prophet) * lv[COL_MEM_S_PROPHET]);
         yield_constr.constraint((P::ONES - lv[COL_MEM_S_MLOAD]) * lv[COL_MEM_S_MLOAD]);
         yield_constr.constraint((P::ONES - lv[COL_MEM_S_MSTORE]) * lv[COL_MEM_S_MSTORE]);
@@ -151,6 +167,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         yield_constr.constraint((P::ONES - lv[COL_MEM_S_TLOAD]) * lv[COL_MEM_S_TLOAD]);
         yield_constr.constraint((P::ONES - lv[COL_MEM_S_TSTORE]) * lv[COL_MEM_S_TSTORE]);
         yield_constr.constraint((P::ONES - lv[COL_MEM_S_SCCALL]) * lv[COL_MEM_S_SCCALL]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_POSEIDON]) * lv[COL_MEM_S_POSEIDON]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_SSTORE]) * lv[COL_MEM_S_SSTORE]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_SLOAD]) * lv[COL_MEM_S_SLOAD]);
         yield_constr.constraint((P::ONES - lv[COL_MEM_S_PROPHET]) * lv[COL_MEM_S_PROPHET]);
         yield_constr.constraint(
             P::ONES
@@ -161,6 +180,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
                 - lv[COL_MEM_S_TLOAD]
                 - lv[COL_MEM_S_TSTORE]
                 - lv[COL_MEM_S_SCCALL]
+                - lv[COL_MEM_S_POSEIDON]
+                - lv[COL_MEM_S_SSTORE]
+                - lv[COL_MEM_S_SLOAD]
                 - lv[COL_MEM_S_PROPHET],
         );
 
@@ -177,6 +199,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
                     - lv[COL_MEM_S_MSTORE]
                     - lv[COL_MEM_S_CALL]
                     - lv[COL_MEM_S_TLOAD]
+                    - lv[COL_MEM_S_POSEIDON]
+                    - lv[COL_MEM_S_SLOAD]
                     - lv[COL_MEM_S_PROPHET]),
         );
         yield_constr.constraint(
@@ -186,7 +210,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
                     - lv[COL_MEM_S_CALL]
                     - lv[COL_MEM_S_RET]
                     - lv[COL_MEM_S_TSTORE]
-                    - lv[COL_MEM_S_SCCALL]),
+                    - lv[COL_MEM_S_SCCALL]
+                    - lv[COL_MEM_S_POSEIDON]
+                    - lv[COL_MEM_S_SSTORE]
+                    - lv[COL_MEM_S_SLOAD]),
         );
 
         // region is one of stack, heap and prophet
@@ -199,8 +226,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         yield_constr.constraint(region_heap * (p - span - addr - diff_addr_cond));
 
         // if not prophet write, must be looked up.
-        yield_constr
-            .constraint((P::ONES - lv[COL_MEM_S_PROPHET]) * (P::ONES - filter_looked_for_main));
+        // yield_constr
+        //     .constraint((P::ONES - lv[COL_MEM_S_PROPHET]) * (P::ONES -
+        // filter_looked_for_main));
 
         // addr'-addr-diff_addr'= 0
         yield_constr.constraint_transition(

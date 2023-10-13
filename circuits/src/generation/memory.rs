@@ -36,6 +36,15 @@ pub fn generate_memory_trace<F: RichField>(
         OlaOpcode::SCCALL.binary_bit_mask(),
         memory::COL_MEM_S_SCCALL,
     );
+    opcode_to_selector.insert(
+        OlaOpcode::POSEIDON.binary_bit_mask(),
+        memory::COL_MEM_S_POSEIDON,
+    );
+    opcode_to_selector.insert(
+        OlaOpcode::SSTORE.binary_bit_mask(),
+        memory::COL_MEM_S_SSTORE,
+    );
+    opcode_to_selector.insert(OlaOpcode::SLOAD.binary_bit_mask(), memory::COL_MEM_S_SLOAD);
     opcode_to_selector.insert(0, memory::COL_MEM_S_PROPHET);
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; memory::NUM_MEM_COLS];
@@ -60,8 +69,6 @@ pub fn generate_memory_trace<F: RichField>(
         trace[memory::COL_MEM_DIFF_CLK][i] = F::from_canonical_u64(c.diff_clk.to_canonical_u64());
         trace[memory::COL_MEM_DIFF_ADDR_COND][i] =
             F::from_canonical_u64(c.diff_addr_cond.to_canonical_u64());
-        trace[memory::COL_MEM_FILTER_LOOKED_FOR_MAIN][i] =
-            F::from_canonical_u64(c.filter_looked_for_main.to_canonical_u64());
         trace[memory::COL_MEM_RW_ADDR_UNCHANGED][i] =
             F::from_canonical_u64(c.rw_addr_unchanged.to_canonical_u64());
         trace[memory::COL_MEM_REGION_PROPHET][i] =
