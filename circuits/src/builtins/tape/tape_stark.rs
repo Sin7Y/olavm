@@ -74,7 +74,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for TapeStark<F, 
         let is_in_same_tx = P::ONES - (nv[COL_TAPE_TX_IDX] - lv[COL_TAPE_TX_IDX]);
         // is_init_seg start from 0, and can change to 1 once
         yield_constr.constraint(lv[COL_TAPE_IS_INIT_SEG] * (P::ONES - lv[COL_TAPE_IS_INIT_SEG]));
-        yield_constr.constraint_first_row(P::ONES - lv[COL_TAPE_IS_INIT_SEG]);
+        // yield_constr.constraint_first_row(P::ONES - lv[COL_TAPE_IS_INIT_SEG]);
         yield_constr.constraint_transition(
             (P::ONES - is_in_same_tx) * (P::ONES - nv[COL_TAPE_IS_INIT_SEG]),
         );
@@ -140,5 +140,78 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for TapeStark<F, 
 
     fn constraint_degree(&self) -> usize {
         5
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::stark::stark::Stark;
+    use core::{
+        trace::trace::{TapeRow, Trace},
+        types::GoldilocksField,
+    };
+    use std::path::PathBuf;
+
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+
+    use crate::{
+        builtins::tape::{
+            columns::{get_tape_col_name_map, NUM_COL_TAPE},
+            tape_stark::TapeStark,
+        },
+        generation::tape::generate_tape_trace,
+        stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars},
+        test_utils::test_stark_with_asm_path,
+    };
+
+    #[test]
+    fn test_tape_with_program() {
+        let program_path = "tape.json";
+        test_tape_with_asm_file_name(program_path.to_string());
+    }
+
+    #[allow(unused)]
+    fn test_tape_with_asm_file_name(file_name: String) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = TapeStark<F, D>;
+        let stark = S::default();
+
+        let get_trace_rows = |trace: Trace| trace.tape;
+        let generate_trace = |rows: &[TapeRow]| generate_tape_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_TAPE>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
+            };
+        let error_hook = |i: usize,
+                          vars: StarkEvaluationVars<
+            GoldilocksField,
+            GoldilocksField,
+            NUM_COL_TAPE,
+        >| {
+            println!("constraint error in line {}", i);
+            let m = get_tape_col_name_map();
+            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+            for col in m.keys() {
+                let name = m.get(col).unwrap();
+                let lv = vars.local_values[*col].0;
+                let nv = vars.next_values[*col].0;
+                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+            }
+        };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+        );
     }
 }
