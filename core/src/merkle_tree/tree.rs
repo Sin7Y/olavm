@@ -85,7 +85,10 @@ impl AccountTree {
     /// be sealed. Returns tree metadata for the corresponding blocks.
     ///
     /// - `storage_logs` - an iterator of storage logs for a given block
-    pub fn process_block<I>(&mut self, storage_logs: I) -> Vec<(PoseidonRow, TreeValue, TreeValue)>
+    pub fn process_block<I>(
+        &mut self,
+        storage_logs: I,
+    ) -> Vec<(PoseidonRow, TreeValue, TreeValue, TreeValue, TreeValue)>
     where
         I: IntoIterator,
         I::Item: Borrow<WitnessStorageLog>,
@@ -93,7 +96,10 @@ impl AccountTree {
         self.process_blocks(once(storage_logs))
     }
 
-    pub fn process_blocks<I>(&mut self, blocks: I) -> Vec<(PoseidonRow, TreeValue, TreeValue)>
+    pub fn process_blocks<I>(
+        &mut self,
+        blocks: I,
+    ) -> Vec<(PoseidonRow, TreeValue, TreeValue, TreeValue, TreeValue)>
     where
         I: IntoIterator,
         I::Item: IntoIterator,
@@ -143,7 +149,7 @@ impl AccountTree {
     fn apply_updates_batch(
         &mut self,
         updates_batch: Vec<Vec<(TreeKey, TreeOperation)>>,
-    ) -> Result<Vec<(PoseidonRow, TreeValue, TreeValue)>, TreeError> {
+    ) -> Result<Vec<(PoseidonRow, TreeValue, TreeValue, TreeValue, TreeValue)>, TreeError> {
         let total_blocks = updates_batch.len();
 
         let storage_logs_with_blocks: Vec<_> = updates_batch
@@ -250,8 +256,26 @@ impl AccountTree {
             .map(|(op_idx, (key, op, index))| ((op_idx, key), (key, op, index)))
             .unzip();
 
+        let pre_map = self
+            .hash_paths_to_leaves(updates.clone().into_iter(), false)
+            .zip(op_idxs.clone().into_iter())
+            .map(|(parent_nodes, (op_idx, key))| (key, Update::new(op_idx, parent_nodes, key)))
+            .fold(HashMap::new(), |mut map: HashMap<_, Vec<_>>, (key, op)| {
+                match map.entry(key) {
+                    Entry::Occupied(mut entry) => entry.get_mut().push(op),
+                    Entry::Vacant(entry) => {
+                        entry.insert(vec![op]);
+                    }
+                }
+                map
+            });
+        let pre_map = pre_map
+            .iter()
+            .map(|e| (tree_key_to_u256(e.0), e.1.clone()))
+            .collect();
+
         let map = self
-            .hash_paths_to_leaves(updates.into_iter())
+            .hash_paths_to_leaves(updates.into_iter(), true)
             .zip(op_idxs.into_iter())
             .map(|(parent_nodes, (op_idx, key))| (key, Update::new(op_idx, parent_nodes, key)))
             .fold(HashMap::new(), |mut map: HashMap<_, Vec<_>>, (key, op)| {
@@ -267,7 +291,7 @@ impl AccountTree {
             .iter()
             .map(|e| (tree_key_to_u256(e.0), e.1.clone()))
             .collect();
-        Ok(UpdatesBatch::new(map))
+        Ok(UpdatesBatch::new(map, pre_map))
     }
 
     /// Accepts updated key-value pair and resolves to an iterator which
@@ -279,6 +303,7 @@ impl AccountTree {
     pub fn hash_paths_to_leaves<'a, 'b: 'a, I>(
         &'a self,
         storage_logs: I,
+        nei_flag: bool,
     ) -> impl Iterator<Item = Vec<TreeKey>> + 'a
     where
         I: Iterator<Item = (TreeKey, TreeOperation, u64)> + Clone + 'b,
@@ -286,7 +311,7 @@ impl AccountTree {
         let hasher = self.hasher().clone();
         let default_leaf = TreeConfig::empty_leaf(&hasher);
 
-        self.get_leaves_paths(storage_logs.clone().map(|(key, _, _)| key))
+        self.get_leaves_paths(storage_logs.clone().map(|(key, _, _)| key), nei_flag)
             .zip(storage_logs)
             .map(move |(current_path, (_, operation, _))| {
                 let hash = match operation {
@@ -308,6 +333,7 @@ impl AccountTree {
     pub fn get_leaves_paths<'a, 'b: 'a, I>(
         &'a self,
         ids_iter: I,
+        nei_flag: bool,
     ) -> impl Iterator<Item = impl DoubleEndedIterator<Item = (TreeKey, TreeKey)> + Clone + 'b> + 'a
     where
         I: Iterator<Item = TreeKey> + Clone + 'a,
@@ -316,7 +342,7 @@ impl AccountTree {
 
         let idxs: HashSet<_> = ids_iter
             .clone()
-            .flat_map(|x| idx_to_merkle_path(tree_key_to_u256(&x)))
+            .flat_map(|x| idx_to_merkle_path(tree_key_to_u256(&x), nei_flag))
             .collect();
 
         let branch_map: Arc<HashMap<_, _>> = Arc::new(
@@ -341,9 +367,9 @@ impl AccountTree {
             (u256_to_tree_key(&lvl_idx.0 .1), value)
         };
 
-        ids_iter
-            .into_iter()
-            .map(move |idx| idx_to_merkle_path(tree_key_to_u256(&idx)).map(hash_by_lvl_idx.clone()))
+        ids_iter.into_iter().map(move |idx| {
+            idx_to_merkle_path(tree_key_to_u256(&idx), nei_flag).map(hash_by_lvl_idx.clone())
+        })
     }
 
     fn make_node(level: usize, key: TreeKey, node: NodeEntry) -> (LevelIndex, TreeKey) {

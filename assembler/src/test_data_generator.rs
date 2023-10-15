@@ -155,6 +155,12 @@ mod tests {
         generate_from_file("storage_u32.json".to_string(), "storage_u32.json".to_string());
     }
 
+    #[test]
+    fn generate_poseidon_hash() {
+        generate_from_file("poseidon_hash.json".to_string(), "poseidon_hash.json".to_string());
+    }
+
+
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin");
         let input_path = format!("test_data/asm/{}", input_file_name);

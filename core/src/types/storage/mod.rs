@@ -40,7 +40,7 @@ impl StorageKey {
         let mut tree_key = tree_key_default();
         let mut input = [GoldilocksField::ZERO; POSEIDON_INPUT_NUM];
         input[0..TREE_VALUE_LEN].clone_from_slice(address);
-        input[TREE_VALUE_LEN..TREE_VALUE_LEN*2].clone_from_slice(key);
+        input[TREE_VALUE_LEN..TREE_VALUE_LEN * 2].clone_from_slice(key);
         let mut hash = calculate_poseidon_and_generate_intermediate_trace(input);
         hash.filter_looked_treekey = true;
         tree_key.clone_from_slice(&hash.output[0..TREE_VALUE_LEN]);

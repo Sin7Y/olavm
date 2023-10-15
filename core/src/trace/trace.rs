@@ -272,30 +272,20 @@ pub struct StorageRow {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct StorageHashRow {
-    // pub tx_idx: GoldilocksField,
-    // pub env_idx: GoldilocksField,
-    pub idx_storage: u64,
+    pub storage_access_idx: u64,
+    pub pre_root: [GoldilocksField; 4],
+    pub root: [GoldilocksField; 4],
+    pub is_write: GoldilocksField,
     pub layer: u64,
     pub layer_bit: u64,
     pub addr_acc: GoldilocksField,
-    pub is_layer64: bool,
-    pub is_layer128: bool,
-    pub is_layer192: bool,
-    pub is_layer256: bool,
     pub addr: [GoldilocksField; 4],
-    pub caps: [GoldilocksField; 4],
-    pub paths: [GoldilocksField; 4],
-    pub siblings: [GoldilocksField; 4],
-    pub deltas: [GoldilocksField; 4],
-    pub full_0_1: [GoldilocksField; 12],
-    pub full_0_2: [GoldilocksField; 12],
-    pub full_0_3: [GoldilocksField; 12],
-    pub partial: [GoldilocksField; 22],
-    pub full_1_0: [GoldilocksField; 12],
-    pub full_1_1: [GoldilocksField; 12],
-    pub full_1_2: [GoldilocksField; 12],
-    pub full_1_3: [GoldilocksField; 12],
-    pub output: [GoldilocksField; 12],
+    pub pre_path: [GoldilocksField; 4],
+    pub path: [GoldilocksField; 4],
+    pub hash_type: GoldilocksField,
+    pub pre_hash: [GoldilocksField; 4],
+    pub hash: [GoldilocksField; 4],
+    pub sibling: [GoldilocksField; 4],
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -519,19 +509,20 @@ impl Trace {
         });
     }
 
-    pub fn insert_poseidon_chunk( &mut self,
-                                  tx_idx: GoldilocksField,
-                                  env_idx: GoldilocksField,
-                                  clk: u32,
-                                    opcode: GoldilocksField,
-                                  dst: GoldilocksField,
-                                  op0: GoldilocksField,
-                                  op1: GoldilocksField,
-                                  acc_cnt: GoldilocksField,
-                                  value: [GoldilocksField; 8],
-                                  cap: [GoldilocksField; 4],
-                                  hash: [GoldilocksField; 12],
-                                  is_ext_line: GoldilocksField,
+    pub fn insert_poseidon_chunk(
+        &mut self,
+        tx_idx: GoldilocksField,
+        env_idx: GoldilocksField,
+        clk: u32,
+        opcode: GoldilocksField,
+        dst: GoldilocksField,
+        op0: GoldilocksField,
+        op1: GoldilocksField,
+        acc_cnt: GoldilocksField,
+        value: [GoldilocksField; 8],
+        cap: [GoldilocksField; 4],
+        hash: [GoldilocksField; 12],
+        is_ext_line: GoldilocksField,
     ) {
         self.builtin_poseidon_chunk.push(PoseidonChunkRow {
             tx_idx,
@@ -545,8 +536,7 @@ impl Trace {
             value,
             cap,
             hash,
-            is_ext_line
+            is_ext_line,
         });
     }
-
 }

@@ -24,19 +24,12 @@ use std::io::{BufReader, Write};
 use std::ops::Not;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use ola_core::mutex_data;
 
 mod config;
 
 #[cfg(test)]
 pub mod test;
-
-#[macro_export]
-macro_rules! mutex_data {
-    ($mutex: expr) => {
-        $mutex.lock().unwrap()
-    };
-}
-
 #[derive(Debug)]
 pub struct OlaNode {
     pub ola_state: NodeState<ZkHasher>,

@@ -1620,11 +1620,9 @@ impl Process {
 
                     //aux
                     let mut register_selector_regs: RegisterSelector = Default::default();
-                    register_selector_regs
-                        .op0_reg_sel
+                    register_selector_regs.op0_reg_sel[0..TREE_VALUE_LEN]
                         .clone_from_slice(&ctx_regs_status);
-                    register_selector_regs
-                        .op1_reg_sel
+                    register_selector_regs.op0_reg_sel[TREE_VALUE_LEN..TREE_VALUE_LEN * 2]
                         .clone_from_slice(&ctx_code_regs_status);
                     program.trace.insert_step(
                         self.clk,

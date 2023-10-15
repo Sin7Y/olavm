@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 
+const LEAF_LAYER: usize = 255;
 pub fn gen_memory_table(
     process: &mut Process,
     program: &mut Program,
@@ -200,74 +201,62 @@ pub fn gen_storage_hash_table(
     account_tree: &mut AccountTree,
 ) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
     let trace = std::mem::replace(&mut process.storage_log, Vec::new());
-
+    let mut pre_root = account_tree.root_hash();
     let hash_traces = account_tree.process_block(trace.iter());
     let _ = account_tree.save();
 
     let mut root_hashes = Vec::new();
 
     for (chunk, log) in hash_traces.chunks(ROOT_TREE_DEPTH).enumerate().zip(trace) {
+        let is_write = GoldilocksField::from_canonical_u64(log.storage_log.kind as u64);
         let mut root_hash = [GoldilocksField::ZERO; TREE_VALUE_LEN];
         root_hash.clone_from_slice(&chunk.1.last().unwrap().0.output[0..4]);
         root_hashes.push(root_hash);
         let mut acc = GoldilocksField::ZERO;
         let key = tree_key_to_u256(&log.storage_log.key);
-
+        let mut hash_type = GoldilocksField::ZERO;
         let rows: Vec<_> = chunk
             .1
             .iter()
             .rev()
             .enumerate()
             .map(|item| {
-                let layer_bit = ((key >> (255 - item.0)) & TreeKeyU256::one()).as_u64();
+                let layer_bit = ((key >> (LEAF_LAYER - item.0)) & TreeKeyU256::one()).as_u64();
                 let layer = (item.0 + 1) as u64;
+
+                if item.0 == LEAF_LAYER {
+                    hash_type = GoldilocksField::ONE;
+                }
 
                 acc = acc * GoldilocksField::from_canonical_u64(2)
                     + GoldilocksField::from_canonical_u64(layer_bit);
-                let mut deltas = [GoldilocksField::ZERO; TREE_VALUE_LEN];
-                if layer_bit == 1 {
-                    for i in 0..TREE_VALUE_LEN {
-                        deltas[i] = item.1 .2[i] - item.1 .1[i]
-                    }
-                } else if layer_bit == 0 {
-                } else {
-                    panic!("layer_bit is 0 or 1");
-                }
+
+                let mut hash = [GoldilocksField::ZERO; 4];
+                hash.clone_from_slice(&item.1 .0.output[0..4]);
                 let row = StorageHashRow {
-                    idx_storage: (chunk.0 + 1) as u64,
+                    storage_access_idx: (chunk.0 + 1) as u64,
+                    pre_root,
+                    root: root_hash,
+                    is_write,
+                    hash_type,
+                    pre_hash: item.1 .3,
+                    hash,
                     layer,
                     layer_bit,
                     addr_acc: acc,
-                    is_layer64: (layer == 64),
-                    is_layer128: (layer == 128),
-                    is_layer192: (layer == 192),
-                    is_layer256: (layer == 256),
                     addr: log.storage_log.key,
-                    caps: [
-                        GoldilocksField::ONE,
-                        GoldilocksField::ZERO,
-                        GoldilocksField::ZERO,
-                        GoldilocksField::ZERO,
-                    ],
-                    paths: item.1 .1,
-                    siblings: item.1 .2,
-                    deltas,
-                    full_0_1: item.1 .0.full_0_1,
-                    full_0_2: item.1 .0.full_0_2,
-                    full_0_3: item.1 .0.full_0_3,
-                    partial: item.1 .0.partial,
-                    full_1_0: item.1 .0.full_1_0,
-                    full_1_1: item.1 .0.full_1_1,
-                    full_1_2: item.1 .0.full_1_2,
-                    full_1_3: item.1 .0.full_1_3,
-                    output: item.1 .0.output,
+                    pre_path: item.1 .4,
+                    path: item.1 .1,
+                    sibling: item.1 .2,
                 };
                 if layer % 64 == 0 {
                     acc = GoldilocksField::ZERO;
                 }
+
                 row
             })
             .collect();
+        pre_root = root_hash;
         program.trace.builtin_storage_hash.extend(rows);
     }
     root_hashes

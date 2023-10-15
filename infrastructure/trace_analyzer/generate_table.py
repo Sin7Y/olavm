@@ -242,28 +242,22 @@ class StorageTraceColumnType(Enum):
     VALUE = 'value'
 
 class StorageHashTraceColumnType(Enum):
-    IDX_STORAGE = 'idx_storage'
+    STORAGE_ACCESS_IDX = 'storage_access_idx'
     LAYER = 'layer'
     LAYER_BIT = 'layer_bit'
     ADDR_ACC = 'addr_acc'
-    IS_LAYER64 = 'is_layer64'
-    IS_LAYER128 = 'is_layer128'
-    IS_LAYER192 = 'is_layer192'
-    IS_LAYER256 = 'is_layer256'
+    # IS_LAYER64 = 'is_layer64'
+    # IS_LAYER128 = 'is_layer128'
+    # IS_LAYER192 = 'is_layer192'
+    # IS_LAYER256 = 'is_layer256'
     ADDR = 'addr'
-    CAPS = 'caps'
-    PATHS = 'paths'
-    SIBLINGS = 'siblings'
-    DELTAS = 'deltas'
-    FULL_0_1 = 'full_0_1'
-    FULL_0_2 = 'full_0_2'
-    FULL_0_3 = 'full_0_3'
-    PARTIAL = 'partial'
-    FULL_1_0 = 'full_1_0'
-    FULL_1_1 = 'full_1_1'
-    FULL_1_2 = 'full_1_2'
-    FULL_1_3 = 'full_1_3'
-    OUTPUT = 'output'
+    PRE_ROOT = 'pre_root'
+    ROOT = 'root'
+    PRE_PATH = 'pre_path'
+    PATH = 'path'
+    SIBLING = 'sibling'
+    PRE_HASH = 'pre_hash'
+    HASH = 'hash'
 
 class PoseidonHashTraceColumnType(Enum):
     FULL_0_1 = 'full_0_1'
@@ -548,18 +542,16 @@ def main():
     for row in trace_json["builtin_storage_hash"]:
         col = 0
         for data in StorageHashTraceColumnType:
-            if data.value == "addr" or data.value == "caps" or  data.value == "paths" or \
-               data.value == "siblings" or data.value == "deltas" or  data.value == "full_0_1" or\
-               data.value == "full_0_2" or data.value == "full_0_3" or  data.value == "partial" or\
-               data.value == "full_1_0" or data.value == "full_1_1" or  data.value == "full_1_2" or \
-               data.value == "full_1_3" or  data.value == "output" or data.value == "addr_acc":
+            if data.value == "addr" or data.value == "pre_root" or  data.value == "root" or \
+               data.value == "sibling" or data.value == "pre_path" or  data.value == "path" or\
+               data.value == "pre_hash" or data.value == "hash" :
                 worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "layer" or data.value == 'storage_access_idx':
+                worksheet.write(row_index, col, row[data.value])
             elif args.format == 'hex':
                 worksheet.write(row_index, col,
                                 '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                                     row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
-            else:
-                worksheet.write(row_index, col, row[data.value])
             col += 1
         row_index += 1
 

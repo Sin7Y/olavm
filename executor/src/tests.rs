@@ -17,7 +17,12 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 
-fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace: bool) {
+fn executor_run_test_program(
+    bin_file_path: &str,
+    trace_name: &str,
+    print_trace: bool,
+    call_data: Option<Vec<GoldilocksField>>,
+) {
     let _ = env_logger::builder()
         .filter_level(LevelFilter::Debug)
         .try_init();
@@ -46,22 +51,10 @@ fn executor_run_test_program(bin_file_path: &str, trace_name: &str, print_trace:
     process.addr_storage = Address::default();
 
     let mut tp_start = 0;
-    if trace_name.eq("tape_trace.txt")
-        || trace_name.eq("sc_input_trace.txt")
-        || trace_name.eq("call_trace.txt")
-        || trace_name.eq("storage_u32.txt")
-    {
+
+    if let Some(calldata) = call_data {
         process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
-        // let mut calldata = vec![
-        //     GoldilocksField::from_canonical_u64(10),
-        //     GoldilocksField::from_canonical_u64(20),
-        //     GoldilocksField::from_canonical_u64(2),
-        //     GoldilocksField::from_canonical_u64(1494608717),
-        // ];
-        let mut calldata = vec![
-            GoldilocksField::from_canonical_u64(0),
-            GoldilocksField::from_canonical_u64(2364819430),
-        ];
+
         init_tape(&mut process, calldata, Address::default());
     }
 
@@ -91,6 +84,7 @@ fn memory_test() {
         "../assembler/test_data/bin/memory.json",
         "memory_trace.txt",
         true,
+        None,
     );
 }
 
@@ -100,6 +94,7 @@ fn range_check_test() {
         "../assembler/test_data/bin/range_check.json",
         "range_check_trace.txt",
         true,
+        None,
     );
 }
 
@@ -109,6 +104,7 @@ fn bitwise_test() {
         "../assembler/test_data/bin/bitwise.json",
         "bitwise_trace.txt",
         true,
+        None,
     );
 }
 
@@ -118,6 +114,7 @@ fn comparison_test() {
         "../assembler/test_data/bin/comparison.json",
         "comparison_trace.txt",
         true,
+        None,
     );
 }
 
@@ -127,6 +124,7 @@ fn call_test() {
         "../assembler/test_data/bin/call.json",
         "call_trace.txt",
         false,
+        None,
     );
 }
 
@@ -136,6 +134,7 @@ fn fibo_use_loop_decode() {
         "../assembler/test_data/bin/fibo_loop.json",
         "fib_loop_trace.txt",
         true,
+        None,
     );
 }
 
@@ -145,6 +144,7 @@ fn fibo_recursive() {
         "../assembler/test_data/bin/fibo_recursive.json",
         "fibo_recursive_trace.txt",
         true,
+        None,
     );
 }
 
@@ -154,6 +154,7 @@ fn prophet_sqrt_test() {
         "../assembler/test_data/bin/prophet_sqrt.json",
         "prophet_sqrt_trace.txt",
         true,
+        None,
     );
 }
 
@@ -163,6 +164,7 @@ fn sqrt_newton_iteration_test() {
         "../assembler/test_data/bin/sqrt.json",
         "sqrt_trace.txt",
         true,
+        None,
     );
 }
 
@@ -172,6 +174,7 @@ fn storage_test() {
         "../assembler/test_data/bin/storage.json",
         "storage_trace.txt",
         false,
+        None,
     );
 }
 
@@ -181,6 +184,7 @@ fn storage_multi_keys_test() {
         "../assembler/test_data/bin/storage_multi_keys.json",
         "storage_multi_keys_trace.txt",
         false,
+        None,
     );
 }
 
@@ -190,6 +194,7 @@ fn poseidon_test() {
         "../assembler/test_data/bin/poseidon.json",
         "poseidon_trace.txt",
         false,
+        None,
     );
 }
 
@@ -199,6 +204,7 @@ fn malloc_test() {
         "../assembler/test_data/bin/malloc.json",
         "malloc_trace.txt",
         false,
+        None,
     );
 }
 
@@ -208,6 +214,7 @@ fn vote_test() {
         "../assembler/test_data/bin/vote.json",
         "vote_trace.txt",
         false,
+        None,
     );
 }
 
@@ -217,6 +224,7 @@ fn mem_gep_test() {
         "../assembler/test_data/bin/mem_gep.json",
         "mem_gep_trace.txt",
         false,
+        None,
     );
 }
 
@@ -226,6 +234,7 @@ fn mem_gep_vecotr_test() {
         "../assembler/test_data/bin/mem_gep_vector.json",
         "mem_gep_vector_trace.txt",
         false,
+        None,
     );
 }
 
@@ -235,6 +244,7 @@ fn string_assert_test() {
         "../assembler/test_data/bin/string_assert.json",
         "string_assert_trace.txt",
         false,
+        None,
     );
 }
 
@@ -244,24 +254,52 @@ fn tape_test() {
         "../assembler/test_data/bin/tape.json",
         "tape_trace.txt",
         false,
+        Some(Vec::new()),
     );
 }
 
 #[test]
 fn sc_input_test() {
+    let mut calldata = vec![
+        GoldilocksField::from_canonical_u64(10),
+        GoldilocksField::from_canonical_u64(20),
+        GoldilocksField::from_canonical_u64(2),
+        GoldilocksField::from_canonical_u64(253268590),
+    ];
+
     executor_run_test_program(
         "../assembler/test_data/bin/sc_input.json",
         "sc_input_trace.txt",
         false,
+        Some(calldata),
     );
 }
 
 #[test]
 fn storage_u32_test() {
+    let mut calldata = vec![
+        GoldilocksField::from_canonical_u64(0),
+        GoldilocksField::from_canonical_u64(2364819430),
+    ];
     executor_run_test_program(
         "../assembler/test_data/bin/storage_u32.json",
         "storage_u32_trace.txt",
         false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn poseidon_hash_test() {
+    let mut calldata = vec![
+        GoldilocksField::from_canonical_u64(0),
+        GoldilocksField::from_canonical_u64(1239976900),
+    ];
+    executor_run_test_program(
+        "../assembler/test_data/bin/poseidon_hash.json",
+        "poseidon_hash_trace.txt",
+        false,
+        Some(calldata),
     );
 }
 
