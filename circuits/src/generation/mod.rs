@@ -104,7 +104,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let tape_rows = generate_tape_trace(&program.trace.tape);
     let tape_trace = trace_to_poly_values(tape_rows);
 
-    let sccall_rows = generate_sccall_trace();
+    let sccall_rows = generate_sccall_trace(&program.trace.sc_call);
     let sccall_trace = trace_to_poly_values(sccall_rows);
 
     ola_stark

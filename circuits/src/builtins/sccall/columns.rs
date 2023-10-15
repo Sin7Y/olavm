@@ -17,6 +17,7 @@ pub(crate) const COL_SCCALL_CLK_CALLEE_END: usize = COL_SCCALL_CALLEE_ENV_IDX + 
 pub(crate) const COL_SCCALL_IS_PADDING: usize = COL_SCCALL_CLK_CALLEE_END + 1;
 pub(crate) const NUM_COL_SCCALL: usize = COL_SCCALL_IS_PADDING + 1;
 
+#[allow(unused)]
 pub(crate) fn get_sccall_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     m.insert(COL_SCCALL_TX_IDX, "tx_idx".to_string());
