@@ -4,14 +4,14 @@ use maybe_rayon::*;
 
 use crate::{types::Field, goldilocks_field::GoldilocksField};
 
-#[allow(improper_ctypes)]
-#[cfg(feature = "cuda")]
-extern "C" {
-    fn evaluate_poly(vec: *mut u64, N: u64);
-    fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64,result: *mut u64, result_len: u64);
-    fn interpolate_poly(vec: *mut u64, N: u64);
-    fn interpolate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64);
-}
+// #[allow(improper_ctypes)]
+// #[cfg(feature = "cuda")]
+// extern "C" {
+//     fn evaluate_poly(vec: *mut u64, N: u64);
+//     fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64,result: *mut u64, result_len: u64);
+//     fn interpolate_poly(vec: *mut u64, N: u64);
+//     fn interpolate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64);
+// }
 
 #[cfg(feature = "cuda")]
 lazy_static! {
@@ -45,7 +45,7 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
             let start = Instant::now();
     
             // #[cfg(feature = "cuda")]
-            evaluate_poly(p2.as_mut_ptr(), p2.len() as u64);
+            // evaluate_poly(p2.as_mut_ptr(), p2.len() as u64);
 
             println!("[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
     
@@ -87,7 +87,7 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
 
             let start = Instant::now();
 
-            evaluate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset, blowup_factor,result.as_mut_ptr(),result_len);
+            // evaluate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset, blowup_factor,result.as_mut_ptr(),result_len);
 
             println!("[cuda](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
 
@@ -126,7 +126,7 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
 
             let start = Instant::now();
 
-            interpolate_poly(p2.as_mut_ptr(), p2.len() as u64);
+            // interpolate_poly(p2.as_mut_ptr(), p2.len() as u64);
 
             println!("[cuda](run_interpolate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
 
@@ -165,7 +165,7 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
 
             let start = Instant::now();
 
-            interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset);
+            // interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset);
 
             println!("[cuda](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
         }
