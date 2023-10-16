@@ -1,24 +1,35 @@
-//Edit by Malone and Longson
-//creat data:2023.2.15
+#pragma once
 
+#define TILE_DIM_2D					16
+#define BLOCK_ROWS_2D					8
 
-#define CPURUAN                   0
-#define BATCHSIZE                 1
-#define THREDS_PER_BLOCK          64
-#define MAX_GRID                  128
-#define LENTH_TYPE                0  
+//#define TILE_DIM_3D					8
+//#define BLOCK_ROWS_3D					4
+
+#define NUM_STREAMS				  (1)
+
+#define THREDS_PER_BLOCK          16
+#define MAX_GRID                  (4096*16)
+#define LENTH_TYPE                0  //1为4096测试数据  0为生产的其他长度数据
 #define NTT_SIZE                  4096
 #define LOG_NTT_SIZE              12
-#define NTT_SIZE2                 512*16384
-#define LOG_NTT_SIZE2             24
-#define NTT_SIZE3                 1048576
-#define LOG_NTT_SIZE3             20
+//#define NTT_SIZE2                 1024*16384//1024*1024//94194304
+#define NTT_SIZE2                 (4096*4096/2)
+#define LOG_NTT_SIZE2             23//94194304
+#define NTT_SIZE3                 1048576//4096*16*4//4096*16//4096*4//1048576
+#define LOG_NTT_SIZE3             20//18//16//14//20
 
-#define N_INVERSE_LOG_20          18446726477228544001
-#define NUM_STREAMS				  4
-#define KENEL_FUNCTION			  1
+#define NTT_SIZE_USED			  NTT_SIZE2
 
-#define GPU_KENEL_TEST			  1
-#define PRINT_TEST			      0
+//#define NTTLEN_1D				  1024
+////#define NTTLEN_2D				  ( NTT_SIZE_USED/NTTLEN_1D )
+//#define NTTLEN_2D				  ( NTTLEN_1D )
+//#define NTTLEN_3D				  ( NTT_SIZE_USED/NTTLEN_1D/NTTLEN_2D )
 
-#define LEN_BOUNDARY			  4096
+#define MAX_THREADBLK				  1024
+#define TRANS_TIMES				  1
+
+#define BDIMX 16
+#define BDIMY 16
+#define IPAD 2
+#define LEN_BOUNDARY			  NTTLEN_1D
