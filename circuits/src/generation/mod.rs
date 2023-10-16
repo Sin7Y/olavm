@@ -22,9 +22,7 @@ use self::memory::generate_memory_trace;
 use self::poseidon::generate_poseidon_trace;
 use self::poseidon_chunk::generate_poseidon_chunk_trace;
 use self::sccall::generate_sccall_trace;
-use self::storage::{
-    generate_storage_access_trace, generate_storage_hash_trace, generate_storage_trace,
-};
+use self::storage::generate_storage_access_trace;
 use self::tape::generate_tape_trace;
 
 pub mod builtin;
