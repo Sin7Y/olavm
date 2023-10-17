@@ -1034,6 +1034,7 @@ mod tests {
             generate_trace,
             eval_packed_generic,
             Some(error_hook),
+            None,
         );
     }
 }

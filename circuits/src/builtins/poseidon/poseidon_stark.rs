@@ -183,6 +183,7 @@ pub fn ctl_filter_with_storage<F: Field>() -> Column<F> {
 
 mod test {
     use core::trace::trace::{PoseidonRow, Trace};
+    use core::types::Field;
     use std::path::PathBuf;
 
     use crate::stark::stark::Stark;
@@ -202,17 +203,25 @@ mod test {
 
     #[test]
     fn test_poseidon() {
-        let file_name = "poseidon.json".to_string();
-        test_poseidon_with_asm_file_name(file_name);
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(1239976900),
+        ];
+        let file_name = "poseidon_hash.json".to_string();
+        test_poseidon_with_asm_file_name(file_name, Some(call_data));
     }
 
     #[test]
     fn test_storage() {
         let file_name = "storage.json".to_string();
-        test_poseidon_with_asm_file_name(file_name);
+        test_poseidon_with_asm_file_name(file_name, None);
     }
 
-    fn test_poseidon_with_asm_file_name(file_name: String) {
+    #[allow(unused)]
+    fn test_poseidon_with_asm_file_name(
+        file_name: String,
+        call_data: Option<Vec<GoldilocksField>>,
+    ) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
         path.push(file_name);
@@ -253,6 +262,7 @@ mod test {
             generate_trace,
             eval_packed_generic,
             Some(error_hook),
+            call_data,
         );
     }
 }

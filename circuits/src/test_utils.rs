@@ -2,7 +2,7 @@ use core::{program::Program, trace::trace::Trace, types::account::Address};
 use std::collections::HashMap;
 
 use assembler::encoder::encode_asm_from_json_file;
-use executor::Process;
+use executor::{load_tx::init_tape, Process};
 use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 use plonky2_util::log2_strict;
 
@@ -14,6 +14,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     generate_trace: fn(&[Row]) -> [Vec<GoldilocksField>; COL_NUM],
     eval_packed_generic: E,
     error_hook: Option<H>,
+    call_data: Option<Vec<GoldilocksField>>,
 ) where
     E: Fn(
         StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_NUM>,
@@ -40,6 +41,12 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
 
     let mut process = Process::new();
     process.addr_storage = Address::default();
+
+    if let Some(calldata) = call_data {
+        process.tp = GoldilocksField::ZERO;
+        init_tape(&mut process, calldata, Address::default());
+    }
+
     let _ = process.execute(
         &mut program,
         &mut Some(prophets),
