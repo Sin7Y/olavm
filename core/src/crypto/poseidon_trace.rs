@@ -1,9 +1,11 @@
+use std::cmp::min;
+
 use crate::{
     trace::trace::PoseidonRow,
     util::poseidon_utils::{
         constant_layer_field, mds_layer_field, mds_partial_layer_fast_field,
         mds_partial_layer_init, partial_first_constant_layer, sbox_layer_field, sbox_monomial,
-        POSEIDON_INPUT_NUM,
+        POSEIDON_INPUT_NUM, POSEIDON_STATE_WIDTH,
     },
 };
 
@@ -110,11 +112,59 @@ pub fn calculate_poseidon_and_generate_intermediate_trace(
     cell
 }
 
-#[test]
-fn test_poseidon_trace() {
-    let mut input: [GoldilocksField; 12] = [GoldilocksField::default(); 12];
-    input[0] = GoldilocksField::ONE;
-    let row = calculate_poseidon_and_generate_intermediate_trace(input);
+pub fn calculate_arbitrary_poseidon_and_generate_intermediate_trace(
+    inputs: &[GoldilocksField],
+) -> ([GoldilocksField; 4], Vec<PoseidonRow>) {
+    let mut rows: Vec<PoseidonRow> = vec![];
+    let mut state: [GoldilocksField; POSEIDON_STATE_WIDTH] =
+        [GoldilocksField::ZERO; POSEIDON_STATE_WIDTH];
 
-    println!("{:?}", row.output);
+    for input_chunk in inputs.chunks(8) {
+        let end = min(input_chunk.len(), 8);
+        state[0..end].copy_from_slice(&input_chunk[0..end]);
+        let row = calculate_poseidon_and_generate_intermediate_trace(state);
+        state = row.output;
+        rows.push(row);
+    }
+    return (
+        state[0..4].try_into().expect("slice with incorrect length"),
+        rows,
+    );
+}
+mod test {
+    use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
+
+    use crate::crypto::poseidon_trace::{
+        calculate_arbitrary_poseidon_and_generate_intermediate_trace,
+        calculate_poseidon_and_generate_intermediate_trace,
+    };
+
+    #[test]
+    fn test_poseidon_trace() {
+        let mut input: [GoldilocksField; 12] = [GoldilocksField::default(); 12];
+        input[0] = GoldilocksField::ONE;
+        let row = calculate_poseidon_and_generate_intermediate_trace(input);
+
+        println!("{:?}", row.output);
+    }
+
+    #[test]
+    fn test_arbitrary_poseidon_trace() {
+        let inputs = [
+            GoldilocksField::from_canonical_u64(104),
+            GoldilocksField::from_canonical_u64(101),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(111),
+            GoldilocksField::from_canonical_u64(119),
+            GoldilocksField::from_canonical_u64(111),
+            GoldilocksField::from_canonical_u64(114),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(100),
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(0),
+        ];
+        let res = calculate_arbitrary_poseidon_and_generate_intermediate_trace(&inputs);
+        println!("{:?}", res.0);
+    }
 }

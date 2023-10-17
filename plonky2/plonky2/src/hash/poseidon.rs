@@ -685,10 +685,13 @@ impl<F: RichField> AlgebraicHasher<F> for PoseidonHash {
 
 #[cfg(test)]
 pub(crate) mod test_helpers {
+    use plonky2_field::goldilocks_field::GoldilocksField;
     use plonky2_field::types::Field;
 
-    use crate::hash::hashing::SPONGE_WIDTH;
     use crate::hash::poseidon::Poseidon;
+    use crate::{hash::hashing::SPONGE_WIDTH, plonk::config::Hasher};
+
+    use super::{PoseidonHash, PoseidonPermutation};
 
     pub(crate) fn check_test_vectors<F: Field>(
         test_vectors: Vec<([u64; SPONGE_WIDTH], [u64; SPONGE_WIDTH])>,
@@ -721,5 +724,25 @@ pub(crate) mod test_helpers {
         for i in 0..SPONGE_WIDTH {
             assert_eq!(output[i], output_naive[i]);
         }
+    }
+
+    #[test]
+    fn test_perm() {
+        let inputs = [
+            GoldilocksField::from_canonical_u64(104),
+            GoldilocksField::from_canonical_u64(101),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(111),
+            GoldilocksField::from_canonical_u64(119),
+            GoldilocksField::from_canonical_u64(111),
+            GoldilocksField::from_canonical_u64(114),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(100),
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(0),
+        ];
+        let res = PoseidonHash::hash_no_pad(&inputs);
+        println!("{:?}", res);
     }
 }
