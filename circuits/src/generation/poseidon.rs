@@ -16,25 +16,26 @@ pub fn generate_poseidon_trace<F: RichField>(cells: &[PoseidonRow]) -> [Vec<F>; 
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_POSEIDON_COLS];
     for (i, c) in cells.iter().enumerate() {
-        // trace[COL_POSEIDON_TX_IDX][i] = F::from_canonical_u32(c.tx_idx);
-        // trace[COL_POSEIDON_ENV_IDX][i] = F::from_canonical_u32(c.env_idx);
-        // trace[COL_POSEIDON_CLK][i] = F::from_canonical_u32(c.clk);
-        // trace[COL_POSEIDON_OPCODE][i] = F::from_canonical_u64(c.opcode);
-
-        // trace[COL_POSEIDON_FILTER_LOOKED_FOR_POSEIDON][i] =
-        //     if c.opcode == OlaOpcode::POSEIDON.binary_bit_mask() {
-        //         F::ONE
-        //     } else {
-        //         F::ZERO
-        //     };
-        // trace[COL_POSEIDON_FILTER_LOOKED_FOR_TREE_KEY][i] = if c.opcode
-        //     == OlaOpcode::SSTORE.binary_bit_mask()
-        //     || c.opcode == OlaOpcode::SLOAD.binary_bit_mask()
-        // {
-        //     F::ONE
-        // } else {
-        //     F::ZERO
-        // };
+        trace[FILTER_LOOKED_NORMAL][i] = if c.filter_looked_normal {
+            F::ONE
+        } else {
+            F::ZERO
+        };
+        trace[FILTER_LOOKED_TREEKEY][i] = if c.filter_looked_treekey {
+            F::ONE
+        } else {
+            F::ZERO
+        };
+        trace[FILTER_LOOKED_STORAGE_LEAF][i] = if c.filter_looked_storage {
+            F::ONE
+        } else {
+            F::ZERO
+        };
+        trace[FILTER_LOOKED_STORAGE_BRANCH][i] = if c.filter_looked_storage_branch {
+            F::ONE
+        } else {
+            F::ZERO
+        };
 
         for j in 0..12 {
             trace[COL_POSEIDON_INPUT_RANGE.start + j][i] =
