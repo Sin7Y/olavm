@@ -135,14 +135,20 @@ pub fn init_tape(process: &mut Process, calldata: Vec<GoldilocksField>, callee_a
     process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
     load_tx_calldata(process, &calldata);
     let eoa_addr = [
-        GoldilocksField::from_canonical_u64(5),
-        GoldilocksField::from_canonical_u64(55),
-        GoldilocksField::from_canonical_u64(555),
-        GoldilocksField::from_canonical_u64(5555),
+        GoldilocksField::from_canonical_u64(17),
+        GoldilocksField::from_canonical_u64(18),
+        GoldilocksField::from_canonical_u64(19),
+        GoldilocksField::from_canonical_u64(20),
+    ];
+    let callee_exe_addr = [
+        GoldilocksField::from_canonical_u64(13),
+        GoldilocksField::from_canonical_u64(14),
+        GoldilocksField::from_canonical_u64(15),
+        GoldilocksField::from_canonical_u64(16),
     ];
     let ctx_addr_len = load_ctx_addr_info(
         process,
-        &init_ctx_addr_info(eoa_addr, callee_addr.clone(), callee_addr),
+        &init_ctx_addr_info(eoa_addr, callee_addr.clone(), callee_exe_addr),
     );
     process.tp += GoldilocksField::from_canonical_u64(ctx_addr_len as u64);
 }

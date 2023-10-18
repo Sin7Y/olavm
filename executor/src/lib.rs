@@ -1419,6 +1419,8 @@ impl Process {
                     self.register_selector.aux1 = self.registers[op0_index];
                     self.register_selector.op1 = op1_value.0;
 
+                    self.register_selector.dst_reg_sel[dst_index] =
+                        GoldilocksField::from_canonical_u64(1);
                     self.register_selector.op0_reg_sel[op0_index] =
                         GoldilocksField::from_canonical_u64(1);
                     if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {

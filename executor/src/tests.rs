@@ -54,8 +54,13 @@ fn executor_run_test_program(
 
     if let Some(calldata) = call_data {
         process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
-
-        init_tape(&mut process, calldata, Address::default());
+        let callee: Address =  [
+            GoldilocksField::from_canonical_u64(9),
+            GoldilocksField::from_canonical_u64(10),
+            GoldilocksField::from_canonical_u64(11),
+            GoldilocksField::from_canonical_u64(12),
+        ];
+        init_tape(&mut process, calldata, callee);
     }
 
     let res = process.execute(
