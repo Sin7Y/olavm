@@ -1,8 +1,8 @@
 {
-  "program": "main:\n.LBL7_0:\n  add r9 r9 5\n  mov r0 0\n  mstore [r9,-5] r0\n  mov r0 11\n  mstore [r9,-1] r0\n  mload r1 [r9,-1]\n.PROPHET7_0:\n  mov r0 psp\n  mload r0 [r0]\n  mstore [r9,-3] r0\n  mload r0 [r9,-3]\n  mload r1 [r9,-1]\n  mov r2 0\n  not r1 r1\n  add r1 r1 1\n  add r1 r2 r1\n  add r0 r0 r1\n  mstore [r9,-2] r0\n  mload r0 [r9,-2]\n  mov r1 1\n  mstore [r0,+0] r1\n  mload r0 [r9,-2]\n  mov r1 2\n  mstore [r0,+1] r1\n  mload r0 [r9,-2]\n  mov r1 3\n  mstore [r0,+2] r1\n  mload r0 [r9,-2]\n  mov r1 4\n  mstore [r0,+3] r1\n  mload r0 [r9,-2]\n  mov r1 5\n  mstore [r0,+4] r1\n  mload r0 [r9,-2]\n  mov r1 6\n  mstore [r0,+5] r1\n  mload r0 [r9,-2]\n  mov r1 7\n  mstore [r0,+6] r1\n  mload r0 [r9,-2]\n  mov r1 8\n  mstore [r0,+7] r1\n  mload r0 [r9,-2]\n  mov r1 9\n  mstore [r0,+8] r1\n  mload r0 [r9,-2]\n  mov r1 10\n  mstore [r0,+9] r1\n  mload r0 [r9,-2]\n  mov r1 11\n  mstore [r0,+10] r1\n  mov r1 4\n.PROPHET7_1:\n  mov r0 psp\n  mload r0 [r0]\n  mstore [r9,-4] r0\n  mload r0 [r9,-4]\n  add r0 r0 -4\n  mstore [r9,-4] r0\n  mload r0 [r9,-4]\n  mload r1 [r9,-2]\n  mload r2 [r9,-1]\n  poseidon r0 r1 r2\n  mload r0 [r9,-4]\n  mload r0 [r0,+1]\n  add r9 r9 -5\n  end\n",
+  "program": "main:\n.LBL2_0:\n  mov r1 11\n.PROPHET2_0:\n  mov r0 psp\n  mload r0 [r0]\n  mov r2 r0\n  mov r0 1\n  mstore [r2,-11] r0\n  mov r0 2\n  mstore [r2,-10] r0\n  mov r0 3\n  mstore [r2,-9] r0\n  mov r0 4\n  mstore [r2,-8] r0\n  mov r0 5\n  mstore [r2,-7] r0\n  mov r0 6\n  mstore [r2,-6] r0\n  mov r0 7\n  mstore [r2,-5] r0\n  mov r0 8\n  mstore [r2,-4] r0\n  mov r0 9\n  mstore [r2,-3] r0\n  mov r0 10\n  mstore [r2,-2] r0\n  mov r0 11\n  mstore [r2,-1] r0\n  mov r1 4\n.PROPHET2_1:\n  mov r0 psp\n  mload r0 [r0]\n  add r1 r0 -4\n  add r2 r2 -11\n  poseidon r1 r2 11\n  mload r0 [r0,-3]\n  end\n",
   "prophets": [
     {
-      "label": ".PROPHET7_0",
+      "label": ".PROPHET2_0",
       "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
       "inputs": [
         {
@@ -22,7 +22,7 @@
       ]
     },
     {
-      "label": ".PROPHET7_1",
+      "label": ".PROPHET2_1",
       "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
       "inputs": [
         {

@@ -309,6 +309,20 @@ fn poseidon_hash_test() {
 }
 
 #[test]
+fn context_fetch_test() {
+    let mut calldata = vec![
+        GoldilocksField::from_canonical_u64(0),
+        GoldilocksField::from_canonical_u64(3458276513),
+    ];
+    executor_run_test_program(
+        "../assembler/test_data/bin/context_fetch.json",
+        "context_fetch_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
 fn gen_storage_table_test() {
     let mut program: Program = Program {
         instructions: Vec::new(),
