@@ -48,23 +48,23 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     let mut idx_storage = 0u64;
     for (i, s) in steps.iter().enumerate() {
         // env related columns.
-        // trace[cpu::COL_TX_IDX][i] = F::from_canonical_u32(s.tx_idx);
-        // trace[cpu::COL_ENV_IDX][i] = F::from_canonical_u32(s.env_idx);
-        // trace[cpu::COL_CALL_SC_CNT][i] = F::from_canonical_u32(s.call_sc_cnt);
+        trace[cpu::COL_TX_IDX][i] = F::from_canonical_u64(s.tx_idx.0);
+        trace[cpu::COL_ENV_IDX][i] = F::from_canonical_u64(s.env_idx.0);
+        trace[cpu::COL_CALL_SC_CNT][i] = F::from_canonical_u64(s.call_sc_cnt.0);
 
         // Context related columns.
         for j in 0..CTX_REGISTER_NUM {
-            trace[cpu::COL_ADDR_STORAGE_RANGE.start + j][i] = F::from_canonical_u64(s.addr_storage[j].0);
+            trace[cpu::COL_ADDR_STORAGE_RANGE.start + j][i] =
+                F::from_canonical_u64(s.addr_storage[j].0);
         }
-        // for j in 0..CTX_REGISTER_NUM {
-        //     trace[cpu::COL_CODE_CTX_REG_RANGE.start + j][i] =
-        //         F::from_canonical_u64(s.code_ctx_regs[j].0);
-        // }
-        // trace[cpu::COL_TP][i] = F::from_canonical_u32(s.tp);
+        for j in 0..CTX_REGISTER_NUM {
+            trace[cpu::COL_ADDR_CODE_RANGE.start + j][i] = F::from_canonical_u64(s.addr_code[j].0);
+        }
+        trace[cpu::COL_TP][i] = F::from_canonical_u64(s.tp.0);
         trace[cpu::COL_CLK][i] = F::from_canonical_u32(s.clk);
         trace[cpu::COL_PC][i] = F::from_canonical_u64(s.pc);
-        // trace[cpu::COL_IS_EXT_LINE][i] = F::from_canonical_u32(s.is_ext_line);
-        // trace[cpu::COL_EXT_CNT][i] = F::from_canonical_u32(s.ext_cnt);
+        trace[cpu::COL_IS_EXT_LINE][i] = F::from_canonical_u64(s.is_ext_line.0);
+        trace[cpu::COL_EXT_CNT][i] = F::from_canonical_u64(s.ext_cnt.0);
         for j in 0..REGISTER_NUM {
             trace[cpu::COL_START_REG + j][i] = F::from_canonical_u64(s.regs[j].0);
         }
@@ -108,27 +108,25 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
             F::ZERO
         };
 
-        // let a = OlaOpcode::TLOAD.binary_bit_mask();
-        let ext_length = if s.opcode.0 == OlaOpcode::TLOAD.binary_bit_mask() {
-            s.register_selector.op0.0 * s.register_selector.op1.0 + (1 - s.register_selector.op0.0)
-        } else if s.opcode.0 == OlaOpcode::TSTORE.binary_bit_mask() {
-            1
-        } else if s.opcode.0 == OlaOpcode::SCCALL.binary_bit_mask() {
-            4
-        } else if s.opcode.0 == OlaOpcode::END.binary_bit_mask()
-            && !trace[cpu::COL_ENV_IDX][i].is_zero()
+        let ext_length = if s.opcode.0 == OlaOpcode::SLOAD.binary_bit_mask()
+            || s.opcode.0 == OlaOpcode::SSTORE.binary_bit_mask()
+            || s.opcode.0 == OlaOpcode::TSTORE.binary_bit_mask()
+            || s.opcode.0 == OlaOpcode::SCCALL.binary_bit_mask()
+            || (s.opcode.0 == OlaOpcode::END.binary_bit_mask()
+                && !trace[cpu::COL_ENV_IDX][i].is_zero())
         {
             1
+        } else if s.opcode.0 == OlaOpcode::TLOAD.binary_bit_mask() {
+            s.register_selector.op0.0 * s.register_selector.op1.0 + (1 - s.register_selector.op0.0)
         } else {
             0
         };
 
-        trace[cpu::COL_IS_NEXT_LINE_DIFF_INST][i] = F::ONE; // todo
-                                                            // trace[cpu::COL_IS_NEXT_LINE_DIFF_INST][i] = if ext_length == s.ext_cnt {
-                                                            //     F::ONE
-                                                            // } else {
-                                                            //     F::ZERO
-                                                            // }
+        trace[cpu::COL_IS_NEXT_LINE_DIFF_INST][i] = if ext_length == s.ext_cnt.0 {
+            F::ONE
+        } else {
+            F::ZERO
+        };
         trace[cpu::COL_IS_NEXT_LINE_SAME_TX][i] = if trace[cpu::COL_ENV_IDX][i].is_zero()
             && s.opcode.0 == OlaOpcode::END.binary_bit_mask()
         {
@@ -153,8 +151,9 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
 
     // fill in padding.
     let inst_end = trace[cpu::COL_INST][trace_len - 1];
+    let last_tx_id = trace[cpu::COL_TX_IDX][trace_len - 1];
     if trace_len != ext_trace_len {
-        trace[cpu::COL_TX_IDX][trace_len..].fill(F::NEG_ONE);
+        trace[cpu::COL_TX_IDX][trace_len..].fill(last_tx_id);
         trace[cpu::COL_INST][trace_len..].fill(inst_end);
         trace[cpu::COL_OPCODE][trace_len..]
             .fill(F::from_canonical_u64(OlaOpcode::END.binary_bit_mask()));

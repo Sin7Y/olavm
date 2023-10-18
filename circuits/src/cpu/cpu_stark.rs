@@ -376,7 +376,6 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         yield_constr.constraint_first_row(lv[COL_ENV_IDX]);
         yield_constr.constraint_first_row(lv[COL_CALL_SC_CNT]);
         // todo exe and code context should be entry system contract?
-        yield_constr.constraint_first_row(lv[COL_TP]);
         yield_constr.constraint_first_row(lv[COL_CLK]);
         yield_constr.constraint_first_row(lv[COL_PC]);
         COL_REGS.for_each(|col_reg| {
@@ -642,7 +641,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         yield_constr.constraint(
             wrapper.lv_is_ext_inst
                 * (wrapper.lv_ext_length - wrapper.lv[COL_EXT_CNT])
-                * (P::ONES - wrapper.lv[COL_IS_EXT_LINE]),
+                * (P::ONES - wrapper.nv[COL_IS_EXT_LINE]),
         );
         // constraint ext_cnt
         yield_constr.constraint(
@@ -947,53 +946,57 @@ mod tests {
     #[test]
     fn test_cpu_fibo_loop() {
         let file_name = "fibo_loop.json".to_string();
-        test_cpu_with_asm_file_name(file_name);
+        test_cpu_with_asm_file_name(file_name, None);
     }
 
     #[test]
     fn test_memory() {
         let program_path = "memory.json";
-        test_cpu_with_asm_file_name(program_path.to_string());
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_call() {
         let program_path = "call.json";
-        test_cpu_with_asm_file_name(program_path.to_string());
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_sqrt() {
         let program_path = "sqrt.json";
-        test_cpu_with_asm_file_name(program_path.to_string());
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_poseidon() {
-        let program_path = "poseidon.json";
-        test_cpu_with_asm_file_name(program_path.to_string());
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(1239976900),
+        ];
+        let program_path = "poseidon_hash.json";
+        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data));
     }
 
     #[test]
     fn test_storage() {
         let program_path = "storage.json";
-        test_cpu_with_asm_file_name(program_path.to_string());
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_malloc() {
         let program_path = "malloc.json";
-        test_cpu_with_asm_file_name(program_path.to_string());
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_vote() {
         let program_path = "vote.json";
-        test_cpu_with_asm_file_name(program_path.to_string());
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[allow(unused)]
-    fn test_cpu_with_asm_file_name(file_name: String) {
+    fn test_cpu_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
         path.push(file_name);
@@ -1034,7 +1037,7 @@ mod tests {
             generate_trace,
             eval_packed_generic,
             Some(error_hook),
-            None,
+            call_data,
         );
     }
 }

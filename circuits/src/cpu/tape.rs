@@ -49,7 +49,7 @@ pub(crate) fn eval_packed_generic<F, FE, P, const D: usize, const D2: usize>(
     yield_constr.constraint(
         wrapper.lv[COL_S_TLOAD]
             * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
-            * (wrapper.nv[COL_DST] - wrapper.lv[COL_AUX0]),
+            * (wrapper.lv[COL_DST] - wrapper.nv[COL_AUX0]),
     );
 
     // tp only changes when tstore and sccall next line
