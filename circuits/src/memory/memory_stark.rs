@@ -325,6 +325,8 @@ mod tests {
     use crate::stark::vars::StarkEvaluationVars;
     use crate::test_utils::test_stark_with_asm_path;
     use core::trace::trace::{MemoryTraceCell, Trace};
+    use core::types::Field;
+
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
@@ -334,35 +336,45 @@ mod tests {
     #[test]
     fn test_memory_with_program() {
         let program_path = "memory.json";
-        test_memory_with_asm_file_name(program_path.to_string());
+        test_memory_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_memory_fib_loop() {
         let program_path = "fibo_loop.json";
-        test_memory_with_asm_file_name(program_path.to_string());
+        test_memory_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_memory_sqrt() {
         let program_path = "sqrt.json";
-        test_memory_with_asm_file_name(program_path.to_string());
+        test_memory_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_memory_malloc() {
         let program_path = "malloc.json";
-        test_memory_with_asm_file_name(program_path.to_string());
+        test_memory_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_memory_vote() {
         let program_path = "vote.json";
-        test_memory_with_asm_file_name(program_path.to_string());
+        test_memory_with_asm_file_name(program_path.to_string(), None);
+    }
+
+    #[test]
+    fn test_memory_poseidon() {
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(1239976900),
+        ];
+        let program_path = "poseidon_hash.json";
+        test_memory_with_asm_file_name(program_path.to_string(), Some(call_data));
     }
 
     #[allow(unused)]
-    fn test_memory_with_asm_file_name(file_name: String) {
+    fn test_memory_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
         path.push(file_name);
@@ -403,7 +415,7 @@ mod tests {
             generate_trace,
             eval_packed_generic,
             Some(error_hook),
-            None,
+            call_data,
         );
     }
 }
