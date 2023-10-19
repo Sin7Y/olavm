@@ -1113,6 +1113,8 @@ impl Process {
                         self.register_selector.op1_reg_sel[op1_index] =
                             GoldilocksField::from_canonical_u64(1);
                     }
+                    register_selector_regs.op0 = self.register_selector.op0;
+                    register_selector_regs.op1 = self.register_selector.op1;
 
                     let key_mem_addr = self.registers[op0_index].to_canonical_u64();
                     let mut value_mem_addr = value.0.to_canonical_u64();
@@ -1186,6 +1188,8 @@ impl Process {
                         self.register_selector.op1_reg_sel[op1_index] =
                             GoldilocksField::from_canonical_u64(1);
                     }
+                    register_selector_regs.op0 = self.register_selector.op0;
+                    register_selector_regs.op1 = self.register_selector.op1;
 
                     let key_mem_addr = self.registers[op0_index].to_canonical_u64();
                     let mut value_mem_addr = value.0.to_canonical_u64();
