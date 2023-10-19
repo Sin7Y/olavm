@@ -45,7 +45,6 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     opcode_to_selector.insert(OlaOpcode::TSTORE.binary_bit_mask(), cpu::COL_S_TSTORE);
     opcode_to_selector.insert(OlaOpcode::SCCALL.binary_bit_mask(), cpu::COL_S_CALL_SC);
 
-    let mut idx_storage = 0u64;
     for (i, s) in steps.iter().enumerate() {
         // env related columns.
         trace[cpu::COL_TX_IDX][i] = F::from_canonical_u64(s.tx_idx.0);
@@ -80,12 +79,7 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
         trace[cpu::COL_DST][i] = F::from_canonical_u64(s.register_selector.dst.0);
         trace[cpu::COL_AUX0][i] = F::from_canonical_u64(s.register_selector.aux0.0);
         trace[cpu::COL_AUX1][i] = F::from_canonical_u64(s.register_selector.aux1.0);
-        if s.opcode.0 == OlaOpcode::SLOAD.binary_bit_mask()
-            || s.opcode.0 == OlaOpcode::SSTORE.binary_bit_mask()
-        {
-            idx_storage += 1;
-        }
-        trace[cpu::COL_IDX_STORAGE][i] = F::from_canonical_u64(idx_storage);
+        trace[cpu::COL_IDX_STORAGE][i] = F::from_canonical_u64(s.storage_access_idx.0);
 
         for j in 0..REGISTER_NUM {
             trace[cpu::COL_S_OP0_START + j][i] =
@@ -141,6 +135,15 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
             } else {
                 F::ZERO
             };
+        trace[cpu::COL_IS_STORAGE_EXT_LINE][i] = if (s.opcode.0
+            == OlaOpcode::SLOAD.binary_bit_mask()
+            || s.opcode.0 == OlaOpcode::SSTORE.binary_bit_mask())
+            && s.is_ext_line.0 == 1
+        {
+            F::ONE
+        } else {
+            F::ZERO
+        };
         trace[cpu::COL_FILTER_SCCALL_END][i] =
             if s.opcode.0 == OlaOpcode::END.binary_bit_mask() && s.is_ext_line.0 == 1 {
                 F::ONE
@@ -150,14 +153,28 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     }
 
     // fill in padding.
-    let inst_end = trace[cpu::COL_INST][trace_len - 1];
-    let last_tx_id = trace[cpu::COL_TX_IDX][trace_len - 1];
+    let inst_end = if trace_len == 0 {
+        F::from_canonical_u64(1048576)
+    } else {
+        trace[cpu::COL_INST][trace_len - 1]
+    };
+    let last_tx_id = if trace_len == 0 {
+        F::ZERO
+    } else {
+        trace[cpu::COL_TX_IDX][trace_len - 1]
+    };
+    let last_idx_storage = if trace_len == 0 {
+        F::ZERO
+    } else {
+        trace[cpu::COL_IDX_STORAGE][trace_len - 1]
+    };
+
     if trace_len != ext_trace_len {
         trace[cpu::COL_TX_IDX][trace_len..].fill(last_tx_id);
         trace[cpu::COL_INST][trace_len..].fill(inst_end);
         trace[cpu::COL_OPCODE][trace_len..]
             .fill(F::from_canonical_u64(OlaOpcode::END.binary_bit_mask()));
-        trace[cpu::COL_IDX_STORAGE][trace_len..].fill(F::from_canonical_u64(idx_storage));
+        trace[cpu::COL_IDX_STORAGE][trace_len..].fill(last_idx_storage);
         trace[cpu::COL_S_END][trace_len..].fill(F::ONE);
         trace[cpu::COL_IS_ENTRY_SC][trace_len..].fill(F::ONE);
         trace[cpu::COL_IS_NEXT_LINE_DIFF_INST][trace_len..].fill(F::ONE);

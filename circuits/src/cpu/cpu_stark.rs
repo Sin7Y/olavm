@@ -979,8 +979,12 @@ mod tests {
 
     #[test]
     fn test_storage() {
-        let program_path = "storage.json";
-        test_cpu_with_asm_file_name(program_path.to_string(), None);
+        let call_data = vec![
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(2364819430),
+        ];
+        let program_path = "storage_u32.json";
+        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data));
     }
 
     #[test]

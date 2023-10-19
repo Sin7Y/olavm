@@ -24,39 +24,39 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     );
     // in ext line, op0_sel[0~3] is mem addr which stores storageKey
     yield_constr
-        .constraint(lv_is_storage_op * lv[COL_IS_EXT_LINE] * (nv[COL_S_OP0.start] - lv[COL_OP0]));
+        .constraint(lv_is_storage_op * lv[COL_IS_EXT_LINE] * (lv[COL_S_OP0.start] - lv[COL_OP0]));
     yield_constr.constraint(
         lv_is_storage_op
             * lv[COL_IS_EXT_LINE]
-            * (nv[COL_S_OP0.start + 1] - nv[COL_S_OP0.start] - P::ONES),
+            * (lv[COL_S_OP0.start + 1] - lv[COL_S_OP0.start] - P::ONES),
     );
     yield_constr.constraint(
         lv_is_storage_op
             * lv[COL_IS_EXT_LINE]
-            * (nv[COL_S_OP0.start + 2] - nv[COL_S_OP0.start + 1] - P::ONES),
+            * (lv[COL_S_OP0.start + 2] - lv[COL_S_OP0.start + 1] - P::ONES),
     );
     yield_constr.constraint(
         lv_is_storage_op
             * lv[COL_IS_EXT_LINE]
-            * (nv[COL_S_OP0.start + 3] - nv[COL_S_OP0.start + 2] - P::ONES),
+            * (lv[COL_S_OP0.start + 3] - lv[COL_S_OP0.start + 2] - P::ONES),
     );
     // in ext line, op1_sel[0~3] is mem addr which stores value
     yield_constr
-        .constraint(lv_is_storage_op * lv[COL_IS_EXT_LINE] * (nv[COL_S_OP1.start] - lv[COL_OP1]));
+        .constraint(lv_is_storage_op * lv[COL_IS_EXT_LINE] * (lv[COL_S_OP1.start] - lv[COL_OP1]));
     yield_constr.constraint(
         lv_is_storage_op
             * lv[COL_IS_EXT_LINE]
-            * (nv[COL_S_OP1.start + 1] - nv[COL_S_OP1.start] - P::ONES),
+            * (lv[COL_S_OP1.start + 1] - lv[COL_S_OP1.start] - P::ONES),
     );
     yield_constr.constraint(
         lv_is_storage_op
             * lv[COL_IS_EXT_LINE]
-            * (nv[COL_S_OP1.start + 2] - nv[COL_S_OP1.start + 1] - P::ONES),
+            * (lv[COL_S_OP1.start + 2] - lv[COL_S_OP1.start + 1] - P::ONES),
     );
     yield_constr.constraint(
         lv_is_storage_op
             * lv[COL_IS_EXT_LINE]
-            * (nv[COL_S_OP1.start + 3] - nv[COL_S_OP1.start + 2] - P::ONES),
+            * (lv[COL_S_OP1.start + 3] - lv[COL_S_OP1.start + 2] - P::ONES),
     );
     // is_storage_ext constraints:
     yield_constr.constraint(

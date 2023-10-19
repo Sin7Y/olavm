@@ -137,6 +137,7 @@ pub(crate) const COL_IS_PADDING: usize = COL_FILTER_SCCALL_END + 1;
 
 pub(crate) const NUM_CPU_COLS: usize = COL_IS_PADDING + 1;
 
+#[allow(unused)]
 pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     m.insert(COL_TX_IDX, "tx_idx".to_string());
