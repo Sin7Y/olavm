@@ -93,7 +93,8 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let poseidon_rows = generate_poseidon_trace(&program.trace.builtin_poseidon);
     let poseidon_trace = trace_to_poly_values(poseidon_rows);
 
-    let poseidon_chunk_rows: [Vec<F>; 53] = generate_poseidon_chunk_trace();
+    let poseidon_chunk_rows: [Vec<F>; 53] =
+        generate_poseidon_chunk_trace(&program.trace.builtin_poseidon_chunk);
     let poseidon_chunk_trace = trace_to_poly_values(poseidon_chunk_rows);
 
     let storage_access_rows = generate_storage_access_trace(&program.trace.builtin_storage_hash);
