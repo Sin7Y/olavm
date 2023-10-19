@@ -662,7 +662,7 @@ mod tests {
 
     #[test]
     fn test_ola_poseidon() {
-        test_by_asm_json("poseidon.json".to_string());
+        test_by_asm_json("poseidon_hash.json".to_string());
     }
 
     #[test]
