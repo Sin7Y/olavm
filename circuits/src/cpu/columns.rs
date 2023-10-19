@@ -26,7 +26,7 @@ pub(crate) const COL_CALL_SC_CNT: usize = COL_ENV_IDX + 1;
 pub(crate) const COL_ADDR_STORAGE_RANGE: Range<usize> =
     COL_CALL_SC_CNT + 1..COL_CALL_SC_CNT + 1 + CTX_REGISTER_NUM;
 pub(crate) const COL_ADDR_CODE_RANGE: Range<usize> =
-    COL_ADDR_STORAGE_RANGE.end..COL_ADDR_STORAGE_RANGE.end + 1 + CTX_REGISTER_NUM;
+    COL_ADDR_STORAGE_RANGE.end..COL_ADDR_STORAGE_RANGE.end + CTX_REGISTER_NUM;
 pub(crate) const COL_TP: usize = COL_ADDR_CODE_RANGE.end;
 pub(crate) const COL_CLK: usize = COL_TP + 1;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
