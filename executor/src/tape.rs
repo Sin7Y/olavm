@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct TapeCell {
+    pub tx_idx: GoldilocksField,
     pub clk: u32,
     pub is_init: GoldilocksField,
     pub op: GoldilocksField,
@@ -23,6 +24,7 @@ pub struct TapeTree {
 impl TapeTree {
     pub fn read(
         &mut self,
+        tx_idx: GoldilocksField,
         addr: u64,
         clk: u32,
         op: GoldilocksField,
@@ -37,6 +39,7 @@ impl TapeTree {
         if let Some(tape_data) = read_res {
             let last_value = tape_data.last().expect("empty address trace").value;
             let new_value = TapeCell {
+                tx_idx,
                 clk,
                 op,
                 is_init,
@@ -52,6 +55,7 @@ impl TapeTree {
 
     pub fn write(
         &mut self,
+        tx_idx: GoldilocksField,
         addr: u64,
         clk: u32,
         op: GoldilocksField,
@@ -62,6 +66,7 @@ impl TapeTree {
         // add a memory access to the appropriate address trace; if this is the first
         // time we access this address, initialize address trace.
         let new_cell = TapeCell {
+            tx_idx,
             clk,
             op,
             is_init,

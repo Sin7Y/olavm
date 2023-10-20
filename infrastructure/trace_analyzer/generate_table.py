@@ -292,6 +292,7 @@ class PoseidonChunkTraceColumnType(Enum):
     IS_EXT_LINE = 'is_ext_line'
 
 class TapeTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
     IS_INIT = "is_init"
     OPCODE = "opcode"
     ADDR = "addr"

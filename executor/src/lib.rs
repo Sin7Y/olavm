@@ -1455,6 +1455,7 @@ impl Process {
                     let mut tape_addr;
                     tape_copy!(self,
                         let value = self.tape.read(
+                            self.tx_idx,
                             tape_addr,
                             self.clk,
                             GoldilocksField::from_canonical_u64(1 << Opcode::TLOAD as u64),
@@ -1523,8 +1524,9 @@ impl Process {
                             self.env_idx
                         )?,
                             self.tape.write(
+                            self.tx_idx,
                             tape_addr,
-                             self.clk,
+                            self.clk,
                             GoldilocksField::from_canonical_u64(1 << Opcode::TSTORE as u64),
                             GoldilocksField::ZERO,
                             GoldilocksField::ONE,

@@ -311,6 +311,7 @@ pub fn gen_tape_table(process: &mut Process, program: &mut Program) -> Result<()
     for (addr, cells) in process.tape.trace.iter() {
         for tape_row in cells {
             program.trace.tape.push(TapeRow {
+                tx_idx: tape_row.tx_idx,
                 is_init: tape_row.is_init.is_one(),
                 opcode: tape_row.op,
                 addr: GoldilocksField::from_canonical_u64(*addr),

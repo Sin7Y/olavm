@@ -290,6 +290,7 @@ pub struct StorageHashRow {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct TapeRow {
+    pub tx_idx: GoldilocksField,
     pub is_init: bool,
     pub opcode: GoldilocksField,
     pub addr: GoldilocksField,
