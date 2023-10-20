@@ -163,6 +163,7 @@ macro_rules! tape_copy {
             assert!($tape_addr < GoldilocksField::ORDER, "tape_addr is big than ORDER");
             memory_zone_detect!($mem_addr, $is_rw,  $region_prophet, $region_heap, panic!("tstore in prophet"));
             register_selector.aux0 = GoldilocksField::from_canonical_u64($mem_addr);
+            register_selector.op0_reg_sel[0] = GoldilocksField::from_canonical_u64($tape_addr);
 
             $read_proc
 
