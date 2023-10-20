@@ -590,6 +590,8 @@ mod tests {
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
     use core::types::account::Address;
+    use core::types::{Field, GoldilocksField};
+    use executor::load_tx::init_tape;
     use executor::Process;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -612,91 +614,95 @@ mod tests {
 
     #[test]
     fn fibo_loop_test() {
-        test_by_asm_json("fibo_loop.json".to_string())
+        test_by_asm_json("fibo_loop.json".to_string(), None)
     }
 
     #[test]
     fn fibo_recursive_decode() {
-        test_by_asm_json("fibo_recursive.json".to_string())
+        test_by_asm_json("fibo_recursive.json".to_string(), None)
     }
 
     #[test]
     fn memory_test() {
-        test_by_asm_json("memory.json".to_string())
+        test_by_asm_json("memory.json".to_string(), None)
     }
 
     #[test]
     fn call_test() {
-        test_by_asm_json("call.json".to_string())
+        test_by_asm_json("call.json".to_string(), None)
     }
 
     #[test]
     fn range_check_test() {
-        test_by_asm_json("range_check.json".to_string())
+        test_by_asm_json("range_check.json".to_string(), None)
     }
 
     #[test]
     fn bitwise_test() {
-        test_by_asm_json("bitwise.json".to_string())
+        test_by_asm_json("bitwise.json".to_string(), None)
     }
 
     #[test]
     fn comparison_test() {
-        test_by_asm_json("comparison.json".to_string())
+        test_by_asm_json("comparison.json".to_string(), None)
     }
 
     #[test]
     fn test_ola_prophet_hand_write() {
-        test_by_asm_json("hand_write_prophet.json".to_string());
+        test_by_asm_json("hand_write_prophet.json".to_string(), None);
     }
 
     #[test]
     fn test_ola_prophet_sqrt() {
-        test_by_asm_json("prophet_sqrt.json".to_string());
+        test_by_asm_json("prophet_sqrt.json".to_string(), None);
     }
 
     #[test]
     fn test_ola_sqrt() {
-        test_by_asm_json("sqrt.json".to_string());
+        test_by_asm_json("sqrt.json".to_string(), None);
     }
 
     #[test]
     fn test_ola_poseidon() {
-        test_by_asm_json("poseidon_hash.json".to_string());
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(1239976900),
+        ];
+        test_by_asm_json("poseidon_hash.json".to_string(), Some(call_data));
     }
 
     #[test]
     fn test_ola_storage() {
-        test_by_asm_json("storage.json".to_string());
+        test_by_asm_json("storage.json".to_string(), None);
     }
 
     #[test]
     fn test_ola_malloc() {
-        test_by_asm_json("malloc.json".to_string());
+        test_by_asm_json("malloc.json".to_string(), None);
     }
 
     #[test]
     fn test_ola_vote() {
-        test_by_asm_json("vote.json".to_string());
+        test_by_asm_json("vote.json".to_string(), None);
     }
 
     #[test]
     fn test_ola_mem_gep() {
-        test_by_asm_json("mem_gep.json".to_string());
+        test_by_asm_json("mem_gep.json".to_string(), None);
     }
 
     #[test]
     fn test_ola_mem_gep_vector() {
-        test_by_asm_json("mem_gep_vector.json".to_string());
+        test_by_asm_json("mem_gep_vector.json".to_string(), None);
     }
 
     #[test]
     fn test_ola_string_assert() {
-        test_by_asm_json("string_assert.json".to_string());
+        test_by_asm_json("string_assert.json".to_string(), None);
     }
 
     #[allow(unused)]
-    pub fn test_by_asm_json(file_name: String) {
+    pub fn test_by_asm_json(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
         path.push(file_name);
@@ -721,6 +727,10 @@ mod tests {
 
         let mut process = Process::new();
         process.addr_storage = Address::default();
+        if let Some(calldata) = call_data {
+            process.tp = GoldilocksField::ZERO;
+            init_tape(&mut process, calldata, Address::default());
+        }
         let _ = process.execute(
             &mut program,
             &mut Some(prophets),

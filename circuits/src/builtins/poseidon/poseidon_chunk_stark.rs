@@ -69,7 +69,7 @@ pub fn ctl_data_with_mem_dst<F: Field>(i: usize) -> Vec<Column<F>> {
         F::from_canonical_usize(i),
     ));
     res.push(Column::single(COL_POSEIDON_CHUNK_HASH_RANGE.start + i));
-    res.push(Column::zero());
+    res.push(Column::one());
     res
 }
 
