@@ -161,7 +161,7 @@ pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
 }
 
 pub fn ctl_data_cpu_tape_load_store<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_TX_IDX, COL_TP, COL_OPCODE, COL_AUX1]).collect_vec()
+    Column::singles([COL_TX_IDX, COL_OPCODE, COL_S_OP0.start, COL_AUX1]).collect_vec()
 }
 
 pub fn ctl_filter_cpu_tape_load_store<F: Field>() -> Column<F> {

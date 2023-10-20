@@ -394,7 +394,7 @@ mod tests {
             "looking tload tstore",
             get_cpu_col_name_map(),
             &cpu_rows,
-            vec![COL_TX_IDX, COL_TP, COL_OPCODE, COL_AUX1],
+            vec![COL_TX_IDX, COL_OPCODE, COL_S_OP0.start, COL_AUX1],
             |row: &[GoldilocksField], _| row[COL_FILTER_TAPE_LOOKING].is_one(),
             0,
             None,
@@ -536,9 +536,7 @@ mod tests {
                     COL_POSEIDON_CHUNK_HASH_RANGE.start + i,
                     COL_POSEIDON_CHUNK_OP0,
                 ],
-                |row: &[GoldilocksField], _| {
-                    row[COL_POSEIDON_CHUNK_IS_RESULT_LINE].is_one()
-                },
+                |row: &[GoldilocksField], _| row[COL_POSEIDON_CHUNK_IS_RESULT_LINE].is_one(),
                 i,
                 Some(|col, value, offset| {
                     if col == COL_POSEIDON_CHUNK_DST {
