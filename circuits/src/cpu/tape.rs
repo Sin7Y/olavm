@@ -7,7 +7,7 @@ use crate::stark::constraint_consumer::ConstraintConsumer;
 use super::{
     columns::{
         COL_AUX0, COL_DST, COL_FILTER_TAPE_LOOKING, COL_IS_EXT_LINE, COL_OP0, COL_OP1,
-        COL_S_CALL_SC, COL_S_TLOAD, COL_S_TSTORE, COL_TP,
+        COL_S_CALL_SC, COL_S_OP0, COL_S_TLOAD, COL_S_TSTORE, COL_TP,
     },
     cpu_stark::CpuAdjacentRowWrapper,
 };
@@ -39,6 +39,35 @@ pub(crate) fn eval_packed_generic<F, FE, P, const D: usize, const D2: usize>(
             * wrapper.nv[COL_IS_EXT_LINE]
             * (wrapper.nv[COL_AUX0] - wrapper.lv[COL_AUX0] - P::ONES),
     );
+
+    // COL_S_OP0[0] is tape-addr in ext lines, and increase by one
+    // main and first ext for tstore
+    yield_constr.constraint(
+        wrapper.lv[COL_S_TSTORE]
+            * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
+            * (wrapper.nv[COL_S_OP0.start] - wrapper.lv[COL_TP] - P::ONES),
+    );
+    // main and first ext for tload (flag == 1)
+    yield_constr.constraint(
+        wrapper.lv[COL_S_TLOAD]
+            * wrapper.lv[COL_OP0]
+            * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
+            * (wrapper.nv[COL_S_OP0.start] + wrapper.lv[COL_OP1] - wrapper.lv[COL_TP]),
+    );
+    // main and first ext for tload (flag == 0)
+    yield_constr.constraint(
+        wrapper.lv[COL_S_TLOAD]
+            * (P::ONES - wrapper.lv[COL_OP0])
+            * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
+            * (wrapper.nv[COL_S_OP0.start] - wrapper.lv[COL_OP1]),
+    );
+    yield_constr.constraint(
+        (wrapper.lv[COL_S_TSTORE] + wrapper.lv[COL_S_TLOAD])
+            * wrapper.lv[COL_IS_EXT_LINE]
+            * wrapper.nv[COL_IS_EXT_LINE]
+            * (wrapper.nv[COL_S_OP0.start] - wrapper.lv[COL_S_OP0.start] - P::ONES),
+    );
+
     // for tstore, main op0 equals first ext line's aux0
     yield_constr.constraint(
         wrapper.lv[COL_S_TSTORE]
