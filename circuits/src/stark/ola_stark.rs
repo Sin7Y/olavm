@@ -673,7 +673,11 @@ mod tests {
 
     #[test]
     fn test_ola_storage() {
-        test_by_asm_json("storage.json".to_string(), None);
+        let call_data = vec![
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(2364819430),
+        ];
+        test_by_asm_json("storage_u32.json".to_string(), Some(call_data));
     }
 
     #[test]
