@@ -902,7 +902,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         Self::constraint_env_unchanged_pc(&wrapper, yield_constr);
         Self::constraint_reg_consistency(&wrapper, yield_constr);
 
-        // opcode
+        // // opcode
         add::eval_packed_generic(lv, nv, yield_constr);
         mul::eval_packed_generic(lv, nv, yield_constr);
         cmp::eval_packed_generic(lv, nv, yield_constr);
@@ -926,7 +926,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     }
 
     fn constraint_degree(&self) -> usize {
-        6
+        5
     }
 }
 
