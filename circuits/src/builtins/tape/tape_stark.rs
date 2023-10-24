@@ -81,7 +81,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for TapeStark<F, 
         yield_constr.constraint_transition(
             is_in_same_tx
                 * (nv[COL_TAPE_IS_INIT_SEG] - lv[COL_TAPE_IS_INIT_SEG])
-                * (nv[COL_TAPE_IS_INIT_SEG] - lv[COL_TAPE_IS_INIT_SEG] - P::ONES),
+                * (lv[COL_TAPE_IS_INIT_SEG] - nv[COL_TAPE_IS_INIT_SEG] - P::ONES),
         );
         // in init segment opcode can be 0 and tload
         yield_constr.constraint(
@@ -148,7 +148,7 @@ mod tests {
     use crate::stark::stark::Stark;
     use core::{
         trace::trace::{TapeRow, Trace},
-        types::GoldilocksField,
+        types::{Field, GoldilocksField},
     };
     use std::path::PathBuf;
 
@@ -167,11 +167,21 @@ mod tests {
     #[test]
     fn test_tape_with_program() {
         let program_path = "tape.json";
-        test_tape_with_asm_file_name(program_path.to_string());
+        test_tape_with_asm_file_name(program_path.to_string(), None);
+    }
+
+    #[test]
+    fn test_tape_poseidon_with_program() {
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(1239976900),
+        ];
+        let program_path = "poseidon_hash.json";
+        test_tape_with_asm_file_name(program_path.to_string(), Some(call_data));
     }
 
     #[allow(unused)]
-    fn test_tape_with_asm_file_name(file_name: String) {
+    fn test_tape_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
         path.push(file_name);
@@ -212,7 +222,7 @@ mod tests {
             generate_trace,
             eval_packed_generic,
             Some(error_hook),
-            None,
+            call_data,
         );
     }
 }
