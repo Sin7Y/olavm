@@ -1341,7 +1341,7 @@ impl Process {
                             self.clk,
                             self.opcode,
                             self.register_selector.dst,
-                            GoldilocksField::from_canonical_u64(src_mem_addr + read_ptr -8),
+                            GoldilocksField::from_canonical_u64(src_mem_addr + read_ptr - 8),
                             GoldilocksField::from_canonical_u64(input_len),
                             GoldilocksField::from_canonical_u64(read_ptr),
                             hash_input_value,

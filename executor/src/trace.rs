@@ -252,7 +252,8 @@ pub fn gen_storage_hash_table(
                 if layer % 64 == 0 {
                     acc = GoldilocksField::ZERO;
                 }
-
+                program.trace.builtin_poseidon.push(item.1 .0);
+                program.trace.builtin_poseidon.push(item.1 .5);
                 row
             })
             .collect();

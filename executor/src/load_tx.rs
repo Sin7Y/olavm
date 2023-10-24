@@ -39,12 +39,17 @@ pub fn init_tx_context() -> TxCtxInfo {
         ],
         nonce: GoldilocksField::from_canonical_u64(25),
         signature: [
-            GoldilocksField::from_canonical_u64(rand::random()),
-            GoldilocksField::from_canonical_u64(rand::random()),
-            GoldilocksField::from_canonical_u64(rand::random()),
-            GoldilocksField::from_canonical_u64(rand::random()),
+            GoldilocksField::from_canonical_u64(129),
+            GoldilocksField::from_canonical_u64(130),
+            GoldilocksField::from_canonical_u64(131),
+            GoldilocksField::from_canonical_u64(132),
         ],
-        tx_hash: [GoldilocksField::from_canonical_u64(rand::random()); 4],
+        tx_hash: [
+            GoldilocksField::from_canonical_u64(133),
+            GoldilocksField::from_canonical_u64(134),
+            GoldilocksField::from_canonical_u64(135),
+            GoldilocksField::from_canonical_u64(136),
+        ],
     }
 }
 

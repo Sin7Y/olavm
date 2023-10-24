@@ -18,6 +18,30 @@ use crate::mutex_data;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+#[macro_export]
+macro_rules! compress_node {
+    ($hasher: tt, $nei: expr, $current: expr, $odd: tt, $depth: tt) => {{
+        let (left_hash, right_hash) = if $odd {
+            ($nei, $current)
+        } else {
+            ($current, $nei)
+        };
+
+        let hash = if $depth == 0 {
+            $hasher.compress(left_hash, right_hash, PoseidonType::Leaf)
+        } else {
+            $hasher.compress(left_hash, right_hash, PoseidonType::Branch)
+        };
+
+        let branch = NodeEntry::Branch {
+            hash: hash.0,
+            left_hash: left_hash.clone(),
+            right_hash: right_hash.clone(),
+        };
+        (hash, branch)
+    }};
+}
+
 /// Represents set of prepared updates to be applied to the given tree in batch.
 /// To calculate actual patch, use [crate::UpdatesMap::calculate].
 pub struct UpdatesBatch {
@@ -94,7 +118,14 @@ impl UpdatesBatch {
                 Mutex<
                     Vec<(
                         usize,
-                        (PoseidonRow, TreeValue, TreeValue, TreeValue, TreeValue),
+                        (
+                            PoseidonRow,
+                            TreeValue,
+                            TreeValue,
+                            TreeValue,
+                            TreeValue,
+                            PoseidonRow,
+                        ),
                     )>,
                 >,
             >,
@@ -204,44 +235,11 @@ impl UpdatesBatch {
                                     cur_change.get(update_index - 1).unwrap().clone()
                                 };
 
-                                // Hash current node with its neighbor
-                                let (left_hash, right_hash) = if odd {
-                                    (&nei_hash, &current_hash)
-                                } else {
-                                    (&current_hash, &nei_hash)
-                                };
+                                let (hash, branch) =
+                                    compress_node!(hasher, &nei_hash, &current_hash, odd, depth);
+                                let (pre_hash, _) =
+                                    compress_node!(hasher, &nei_hash, &pre_path, odd, depth);
 
-                                let (pre_left_hash, pre_right_hash) = if odd {
-                                    (&nei_hash, &pre_path)
-                                } else {
-                                    (&pre_path, &nei_hash)
-                                };
-
-                                let hash = if depth == 0 {
-                                    hasher.compress(left_hash, right_hash, PoseidonType::Leaf)
-                                } else {
-                                    hasher.compress(left_hash, right_hash, PoseidonType::Branch)
-                                };
-
-                                let pre_hash = if depth == 0 {
-                                    hasher.compress(
-                                        pre_left_hash,
-                                        pre_right_hash,
-                                        PoseidonType::Leaf,
-                                    )
-                                } else {
-                                    hasher.compress(
-                                        pre_left_hash,
-                                        pre_right_hash,
-                                        PoseidonType::Branch,
-                                    )
-                                };
-
-                                let branch = NodeEntry::Branch {
-                                    hash: hash.0,
-                                    left_hash: left_hash.clone(),
-                                    right_hash: right_hash.clone(),
-                                };
                                 changes.push((u256_to_tree_key(&next_idx), branch.clone()));
                                 mutex_data!(cur_path_map)
                                     .get_mut(&cur_key)
@@ -259,6 +257,7 @@ impl UpdatesBatch {
                                         nei_hash.clone(),
                                         pre_hash.0,
                                         pre_path,
+                                        pre_hash.1,
                                     ),
                                 ));
                                 update
