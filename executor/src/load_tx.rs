@@ -39,34 +39,19 @@ pub fn init_tx_context() -> TxCtxInfo {
         ],
         nonce: GoldilocksField::from_canonical_u64(25),
         signature: [
-            GoldilocksField::from_canonical_u64(rand::random()),
-            GoldilocksField::from_canonical_u64(rand::random()),
-            GoldilocksField::from_canonical_u64(rand::random()),
-            GoldilocksField::from_canonical_u64(rand::random()),
+            GoldilocksField::from_canonical_u64(129),
+            GoldilocksField::from_canonical_u64(130),
+            GoldilocksField::from_canonical_u64(131),
+            GoldilocksField::from_canonical_u64(132),
         ],
-        tx_hash: [GoldilocksField::from_canonical_u64(rand::random()); 4],
+        tx_hash: [
+            GoldilocksField::from_canonical_u64(133),
+            GoldilocksField::from_canonical_u64(134),
+            GoldilocksField::from_canonical_u64(135),
+            GoldilocksField::from_canonical_u64(136),
+        ],
     }
 }
-
-// pub fn load_tx_context(process: &mut Process, tx_ctx: &TxCtxInfo) -> usize {
-//     let mut serd = bincode::serialize(tx_ctx).expect("Serialization failed");
-//
-//     serd.chunks(8).enumerate().for_each(|(addr, mut e)| {
-//         let value = e
-//             .read_u64::<LittleEndian>()
-//             .expect("failed to deserialize value");
-//         process.tape.write(
-//             addr as u64,
-//             0,
-//             GoldilocksField::from_canonical_u64(0),
-//             GoldilocksField::ONE,
-//             GoldilocksField::ZERO,
-//             GoldilocksField::from_canonical_u64(value),
-//         );
-//     });
-//
-//     serd.len() / 8
-// }
 
 pub fn load_tx_calldata(process: &mut Process, calldate: &Vec<GoldilocksField>) {
     for data in calldate {

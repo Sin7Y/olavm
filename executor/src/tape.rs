@@ -28,7 +28,6 @@ impl TapeTree {
         addr: u64,
         clk: u32,
         op: GoldilocksField,
-        is_init: GoldilocksField,
         filter_looked: GoldilocksField,
     ) -> Result<GoldilocksField, ProcessorError> {
         // look up the previous value in the appropriate address trace and add (clk,
@@ -42,7 +41,7 @@ impl TapeTree {
                 tx_idx,
                 clk,
                 op,
-                is_init,
+                is_init: tape_data.last().expect("empty address trace").is_init,
                 filter_looked,
                 value: last_value,
             };

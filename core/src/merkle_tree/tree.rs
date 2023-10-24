@@ -88,7 +88,14 @@ impl AccountTree {
     pub fn process_block<I>(
         &mut self,
         storage_logs: I,
-    ) -> Vec<(PoseidonRow, TreeValue, TreeValue, TreeValue, TreeValue)>
+    ) -> Vec<(
+        PoseidonRow,
+        TreeValue,
+        TreeValue,
+        TreeValue,
+        TreeValue,
+        PoseidonRow,
+    )>
     where
         I: IntoIterator,
         I::Item: Borrow<WitnessStorageLog>,
@@ -99,7 +106,14 @@ impl AccountTree {
     pub fn process_blocks<I>(
         &mut self,
         blocks: I,
-    ) -> Vec<(PoseidonRow, TreeValue, TreeValue, TreeValue, TreeValue)>
+    ) -> Vec<(
+        PoseidonRow,
+        TreeValue,
+        TreeValue,
+        TreeValue,
+        TreeValue,
+        PoseidonRow,
+    )>
     where
         I: IntoIterator,
         I::Item: IntoIterator,
@@ -149,7 +163,17 @@ impl AccountTree {
     fn apply_updates_batch(
         &mut self,
         updates_batch: Vec<Vec<(TreeKey, TreeOperation)>>,
-    ) -> Result<Vec<(PoseidonRow, TreeValue, TreeValue, TreeValue, TreeValue)>, TreeError> {
+    ) -> Result<
+        Vec<(
+            PoseidonRow,
+            TreeValue,
+            TreeValue,
+            TreeValue,
+            TreeValue,
+            PoseidonRow,
+        )>,
+        TreeError,
+    > {
         let total_blocks = updates_batch.len();
 
         let storage_logs_with_blocks: Vec<_> = updates_batch
