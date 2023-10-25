@@ -220,3 +220,11 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_IS_PADDING, "is_padding".to_string());
     m
 }
+
+#[test]
+fn print_cpu_cols() {
+    let m = get_cpu_col_name_map();
+    for (col, name) in m {
+        println!("{}: {}", col, name);
+    }
+}
