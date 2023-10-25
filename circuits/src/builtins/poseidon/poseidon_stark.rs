@@ -69,7 +69,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
         P: PackedField<Scalar = FE>,
     {
         COL_POSEIDON_INPUT_RANGE
-            .skip(1)
+            .skip(13)
             .take(3)
             .map(|col| vars.local_values[col])
             .for_each(|cap| {
@@ -79,7 +79,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
             });
         yield_constr.constraint(
             vars.local_values[FILTER_LOOKED_STORAGE_LEAF]
-                * (P::ONES - vars.local_values[COL_POSEIDON_INPUT_RANGE.start]),
+                * (P::ONES - vars.local_values[COL_POSEIDON_INPUT_RANGE.start + 8]),
         );
 
         let mut state: [P; POSEIDON_STATE_WIDTH] = vars.local_values[COL_POSEIDON_INPUT_RANGE]
@@ -213,8 +213,11 @@ mod test {
 
     #[test]
     fn test_storage() {
-        let file_name = "storage.json".to_string();
-        test_poseidon_with_asm_file_name(file_name, None);
+        let call_data = vec![
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(2364819430),
+        ];
+        test_poseidon_with_asm_file_name("storage_u32.json".to_string(), Some(call_data));
     }
 
     #[allow(unused)]
