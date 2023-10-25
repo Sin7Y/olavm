@@ -351,7 +351,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
                 * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX]),
         );
         // if not same tx, diff of tx_idx should be 1
-        yield_constr.constraint(
+        yield_constr.constraint_transition(
             (P::ONES - wrapper.nv_is_padding)
                 * (P::ONES - wrapper.is_in_same_tx)
                 * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX] - P::ONES),
