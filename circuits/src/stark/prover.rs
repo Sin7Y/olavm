@@ -640,6 +640,7 @@ fn check_constraints<'a, F, C, S, const D: usize>(
     // Last element of the subgroup.
     let last = F::primitive_root_of_unity(degree_bits).inverse();
 
+    let mut check_failed = false;
     let constraint_values = (0..size)
         .map(|i| {
             let i_next = (i + step) % size;
@@ -687,7 +688,8 @@ fn check_constraints<'a, F, C, S, const D: usize>(
                 &ctl_vars,
                 &mut consumer,
             );
-            if consumer.constraint_accs[0].is_nonzero() {
+            if !check_failed && consumer.constraint_accs[0].is_nonzero() {
+                check_failed = true;
                 println!("{} constraint failed in line: {}", type_name::<S>(), i);
             }
             consumer.accumulators()
