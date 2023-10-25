@@ -1,3 +1,5 @@
+use std::any::type_name;
+
 use anyhow::{ensure, Result};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::types::Field;
@@ -159,14 +161,14 @@ where
     )?;
 
     // TODO:
-    let public_values = all_proof.public_values;
-    let mut extra_looking_products = vec![vec![F::ONE; config.num_challenges]; NUM_TABLES - 1];
-    extra_looking_products.push(Vec::new());
-    for c in 0..config.num_challenges {
-        extra_looking_products[Table::StorageAccess as usize].push(
-            get_storagehash_extra_looking_products(&public_values, ctl_challenges.challenges[c]),
-        );
-    }
+    // let public_values = all_proof.public_values;
+    let mut extra_looking_products = vec![vec![F::ONE; config.num_challenges]; NUM_TABLES];
+    // extra_looking_products.push(Vec::new());
+    // for c in 0..config.num_challenges {
+    //     extra_looking_products[Table::StorageAccess as usize].push(
+    //         get_storagehash_extra_looking_products(&public_values, ctl_challenges.challenges[c]),
+    //     );
+    // }
 
     verify_cross_table_lookups::<F, C, D>(
         cross_table_lookups,
@@ -264,7 +266,8 @@ where
     {
         ensure!(
             vanishing_polys_zeta[i] == z_h_zeta * reduce_with_powers(chunk, zeta_pow_deg),
-            "Mismatch between evaluation and opening of quotient polynomial"
+            "Mismatch between evaluation and opening of quotient polynomial in {}",
+            type_name::<S>()
         );
     }
 
