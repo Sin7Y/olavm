@@ -69,7 +69,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonStark
         P: PackedField<Scalar = FE>,
     {
         COL_POSEIDON_INPUT_RANGE
-            .skip(13)
+            .skip(9)
             .take(3)
             .map(|col| vars.local_values[col])
             .for_each(|cap| {
