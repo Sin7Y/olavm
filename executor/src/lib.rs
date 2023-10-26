@@ -402,6 +402,8 @@ impl Process {
         prophets: &mut Option<HashMap<u64, OlaProphet>>,
         account_tree: &mut AccountTree,
     ) -> Result<VMState, ProcessorError> {
+        let print_vm_state = true;
+
         let instrs_len = program.instructions.len() as u64;
         // program.trace.raw_binary_instructions.clear();
         let start = Instant::now();
@@ -504,6 +506,77 @@ impl Process {
             } else {
                 return Err(ProcessorError::PcVistInv(self.pc));
             }
+
+            if print_vm_state {
+                println!(
+                "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ tp:{}, clk: {}, pc: {}, instruction: {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
+                self.tp, self.clk, self.pc, instruction.0);
+                println!("--------------- registers ---------------");
+                println!(
+                "r0({}), r1({}), r2({}), r3({}), r4({}), r5({}), r6({}), r7({}), r8({}), r9({})",
+                self.registers[0],
+                self.registers[1],
+                self.registers[2],
+                self.registers[3],
+                self.registers[4],
+                self.registers[5],
+                self.registers[6],
+                self.registers[7],
+                self.registers[8],
+                self.registers[9]);
+                println!("--------------- memory ---------------");
+                let mut tmp_cnt = 0;
+                self.memory.trace.iter().for_each(|(k, v)| {
+                    tmp_cnt += 1;
+                    print!("{:<22}\t: {:<22}\t", k, v.last().unwrap().value);
+                    if tmp_cnt % 3 == 0 {
+                        println!("\n");
+                    }
+                });
+                if tmp_cnt % 3 != 0 {
+                    println!("\n");
+                }
+                println!("--------------- tape ---------------");
+                tmp_cnt = 0;
+                self.tape.trace.iter().for_each(|(k, v)| {
+                    tmp_cnt += 1;
+                    print!("{}: {:<22}\t", k, v.last().unwrap().value);
+                    if tmp_cnt % 5 == 0 {
+                        println!("\n");
+                    }
+                });
+                if tmp_cnt % 5 != 0 {
+                    println!("\n");
+                }
+                println!("--------------- storage ---------------");
+                tmp_cnt = 0;
+                self.storage.trace.iter().for_each(|(_, v)| {
+                    tmp_cnt += 1;
+                    let cell = v.last().unwrap();
+                    let tree_key = cell.addr;
+                    let value = cell.value;
+                    println!(
+                    "[{:<22}\t,{:<22}\t,{:<22}\t,{:<22}\t]: [{:<22}\t,{:<22}\t,{:<22}\t,{:<22}\t]",
+                    tree_key[0],
+                    tree_key[1],
+                    tree_key[2],
+                    tree_key[3],
+                    value[0],
+                    value[1],
+                    value[2],
+                    value[3]
+                );
+                    // if tmp_cnt % 5 == 0 {
+                    //     println!("\n");
+                    // }
+                });
+                if tmp_cnt % 5 != 0 {
+                    println!("\n");
+                }
+                println!("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ end step ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑");
+                println!("\n");
+            }
+
             let ops: Vec<&str> = instruction.0.split_whitespace().collect();
             let opcode = ops.first().unwrap().to_lowercase();
             self.op1_imm = GoldilocksField::from_canonical_u64(instruction.1 as u64);

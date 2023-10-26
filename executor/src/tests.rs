@@ -22,9 +22,9 @@ fn executor_run_test_program(
     print_trace: bool,
     call_data: Option<Vec<GoldilocksField>>,
 ) {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
-        .try_init();
+    // let _ = env_logger::builder()
+    //     .filter_level(LevelFilter::Debug)
+    //     .try_init();
     let file = File::open(bin_file_path).unwrap();
 
     let reader = BufReader::new(file);
