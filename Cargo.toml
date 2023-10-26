@@ -10,7 +10,7 @@ members = [
     "plonky2/maybe_rayon",
     "assembler",
     "interpreter",
-    "node"
+    "zk-vm"
 ]
 
 [profile.release]

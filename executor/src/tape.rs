@@ -1,5 +1,5 @@
-use crate::error::ProcessorError;
-use log::debug;
+use core::vm::error::ProcessorError;
+
 use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

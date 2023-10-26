@@ -107,7 +107,7 @@ where
         loop {
             let data = self.txs_trace.pop_first();
             match data {
-                Some((env_id, item)) => {
+                Some((_env_id, item)) => {
                     trace.exec.extend(item.exec);
                     trace.memory.extend(item.memory);
                     trace

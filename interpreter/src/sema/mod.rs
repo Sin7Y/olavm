@@ -1,12 +1,7 @@
 use crate::dispatch_travel;
 use crate::lexer::token::Token;
 use crate::lexer::token::Token::{Array, ArrayId, Cid, Felt, Id};
-use crate::parser::node::{
-    ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode,
-    CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode,
-    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode,
-    MultiAssignNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
-};
+use crate::parser::node::{ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode, CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode, IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode, MultiAssignNode, PrintfNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode};
 use crate::parser::traversal::Traversal;
 use crate::sema::symbol::Symbol::{BuiltInSymbol, FuncSymbol, IdentSymbol};
 use crate::sema::symbol::{BuiltIn, SymbolTable};
@@ -429,5 +424,11 @@ impl Traversal for SymTableGen {
 
     fn travel_malloc(&mut self, node: &MallocNode) -> NumberResult {
         self.travel(&node.num_bytes)
+    }
+
+    fn travel_printf(&mut self, node: &PrintfNode) -> NumberResult {
+        let ret = self.travel(&node.flag);
+        let ret = self.travel(&node.val_addr);
+        ret
     }
 }

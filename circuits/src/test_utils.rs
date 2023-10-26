@@ -44,7 +44,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
 
     if let Some(calldata) = call_data {
         process.tp = GoldilocksField::ZERO;
-        init_tape(&mut process, calldata, Address::default());
+        init_tape(&mut process, calldata, Address::default(), Address::default(), Address::default());
     }
 
     let _ = process.execute(

@@ -1,10 +1,10 @@
-use executor::error::ProcessorError;
 use executor::load_tx::init_tape;
-use executor::trace::{gen_dump_file, gen_memory_table, gen_tape_table};
+use executor::trace::{gen_dump_file};
 use executor::Process;
 use log::debug;
 use ola_core::crypto::ZkHasher;
 use ola_core::merkle_tree::tree::AccountTree;
+use ola_core::mutex_data;
 use ola_core::program::binary_program::{BinaryProgram, OlaProphet};
 use ola_core::program::Program;
 use ola_core::state::contracts::Contracts;
@@ -17,14 +17,14 @@ use ola_core::types::account::Address;
 use ola_core::types::merkle_tree::TreeValue;
 use ola_core::types::GoldilocksField;
 use ola_core::types::{Field, PrimeField64};
+use ola_core::vm::error::ProcessorError;
 use ola_core::vm::vm_state::{SCCallType, VMState};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
-use std::io::{BufReader, Write};
+use std::io::{BufReader};
 use std::ops::Not;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use ola_core::mutex_data;
 
 mod config;
 
@@ -130,7 +130,7 @@ impl OlaNode {
         &mut self,
         process: &mut Process,
         program: &mut Program,
-        caller_addr: Address,
+        _caller_addr: Address,
         exe_code_addr: Address,
         get_code: bool,
     ) -> Result<VMState, StateError> {
@@ -207,7 +207,13 @@ impl OlaNode {
         mutex_data!(process).call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);
         mutex_data!(process).addr_storage = caller_addr;
         mutex_data!(process).addr_code = code_exe_addr;
-        init_tape(&mut mutex_data!(process), calldata, code_exe_addr);
+        init_tape(
+            &mut mutex_data!(process),
+            calldata,
+            caller_addr,
+            code_exe_addr,
+            caller_addr,
+        );
         let mut program = Arc::new(Mutex::new(Program {
             instructions: Vec::new(),
             trace: Default::default(),
@@ -216,7 +222,7 @@ impl OlaNode {
 
         let mut caller_addr = caller_addr;
         let mut code_exe_addr = code_exe_addr;
-        let mut res = self.contract_run(
+        let res = self.contract_run(
             &mut mutex_data!(process),
             &mut mutex_data!(program),
             caller_addr,
@@ -306,7 +312,7 @@ impl OlaNode {
                         step.addr_code = mutex_data!(process).addr_code;
                         trace.exec.push(step);
                         {
-                            let mut sccall_rows = &mut mutex_data!(program).trace.sc_call;
+                            let sccall_rows = &mut mutex_data!(program).trace.sc_call;
                             let len = sccall_rows.len() - 1;
                             sccall_rows.get_mut(len).unwrap().clk_callee_end =
                                 GoldilocksField::from_canonical_u64(clk as u64);

@@ -1,5 +1,5 @@
 use crate::crypto::poseidon_trace::{
-    calculate_poseidon_and_generate_intermediate_trace, PoseidonType, POSEIDON_INPUT_VALUE_LEN,
+    calculate_poseidon_and_generate_intermediate_trace,
 };
 use crate::trace::trace::PoseidonRow;
 use crate::types::account::{AccountTreeId, Address};

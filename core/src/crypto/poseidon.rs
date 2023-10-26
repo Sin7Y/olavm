@@ -2,7 +2,6 @@ use crate::crypto::hash::Hasher;
 use crate::crypto::poseidon_trace::{
     calculate_poseidon_and_generate_intermediate_trace, PoseidonType,
     PoseidonType::{Branch, Leaf},
-    POSEIDON_INPUT_VALUE_LEN,
 };
 use crate::trace::trace::PoseidonRow;
 use crate::types::merkle_tree::{tree_key_default, TreeKey, TreeValue, TREE_VALUE_LEN};

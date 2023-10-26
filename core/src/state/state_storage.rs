@@ -1,6 +1,6 @@
 use crate::state::error::StateError;
 use crate::storage::db::{RocksDB, StateKeeperColumnFamily};
-use crate::types::merkle_tree::{tree_key_to_u8_arr, u8_arr_to_tree_key, TreeKey, TreeValue};
+use crate::types::merkle_tree::{tree_key_to_u8_arr, u8_arr_to_tree_key, TreeValue};
 use crate::types::storage::{field_arr_to_u8_arr, u8_arr_to_field_arr};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use rocksdb::WriteBatch;

@@ -1,5 +1,5 @@
-use crate::error::ProcessorError;
 use core::program::instruction::{Opcode, *};
+use core::vm::error::ProcessorError;
 use log::debug;
 
 pub(crate) const REG_NOT_USED: u8 = 0xff;

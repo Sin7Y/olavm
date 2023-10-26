@@ -418,3 +418,15 @@ impl MallocNode {
         MallocNode { num_bytes }
     }
 }
+
+#[derive(Clone, Node)]
+pub struct PrintfNode {
+    pub flag: Arc<RwLock<dyn Node>>,
+    pub val_addr: Arc<RwLock<dyn Node>>,
+}
+
+impl PrintfNode {
+    pub fn new(val_addr: Arc<RwLock<dyn Node>>, flag: Arc<RwLock<dyn Node>>) -> Self {
+        PrintfNode { val_addr,  flag}
+    }
+}

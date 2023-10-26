@@ -1,21 +1,20 @@
 use crate::trace::{gen_dump_file, gen_storage_table};
 use crate::Process;
 
-use crate::load_tx::{init_tape, init_tx_context, load_tx_calldata, load_tx_context};
+use crate::load_tx::{init_tape};
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
-use core::program::instruction::{ImmediateOrRegName, Opcode};
+use core::program::instruction::{Opcode};
 use core::program::Program;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
-use log::Level::Debug;
-use log::{debug, LevelFilter};
+use log::{LevelFilter};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::time::Instant;
+
 
 fn executor_run_test_program(
     bin_file_path: &str,
@@ -50,7 +49,7 @@ fn executor_run_test_program(
     let mut process = Process::new();
     process.addr_storage = Address::default();
 
-    let mut tp_start = 0;
+    let tp_start = 0;
 
     if let Some(calldata) = call_data {
         process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
@@ -60,7 +59,19 @@ fn executor_run_test_program(
             GoldilocksField::from_canonical_u64(11),
             GoldilocksField::from_canonical_u64(12),
         ];
-        init_tape(&mut process, calldata, callee);
+        let caller_addr = [
+            GoldilocksField::from_canonical_u64(17),
+            GoldilocksField::from_canonical_u64(18),
+            GoldilocksField::from_canonical_u64(19),
+            GoldilocksField::from_canonical_u64(20),
+        ];
+        let callee_exe_addr = [
+            GoldilocksField::from_canonical_u64(13),
+            GoldilocksField::from_canonical_u64(14),
+            GoldilocksField::from_canonical_u64(15),
+            GoldilocksField::from_canonical_u64(16),
+        ];
+        init_tape(&mut process, calldata, caller_addr, callee, callee_exe_addr);
     }
 
     let res = process.execute(
@@ -265,7 +276,7 @@ fn tape_test() {
 
 #[test]
 fn sc_input_test() {
-    let mut calldata = vec![
+    let calldata = vec![
         GoldilocksField::from_canonical_u64(10),
         GoldilocksField::from_canonical_u64(20),
         GoldilocksField::from_canonical_u64(2),
@@ -282,7 +293,7 @@ fn sc_input_test() {
 
 #[test]
 fn storage_u32_test() {
-    let mut calldata = vec![
+    let calldata = vec![
         GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(2364819430),
     ];
@@ -296,7 +307,7 @@ fn storage_u32_test() {
 
 #[test]
 fn poseidon_hash_test() {
-    let mut calldata = vec![
+    let calldata = vec![
         GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(1239976900),
     ];
@@ -310,13 +321,29 @@ fn poseidon_hash_test() {
 
 #[test]
 fn context_fetch_test() {
-    let mut calldata = vec![
+    let calldata = vec![
         GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(3458276513),
     ];
     executor_run_test_program(
         "../assembler/test_data/bin/context_fetch.json",
         "context_fetch_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn printf_test() {
+    let call_data = [5, 111, 108, 97, 118, 109, 11, 12, 8, 3238128773];
+
+    let calldata = call_data
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/printf.json",
+        "printf_trace.txt",
         false,
         Some(calldata),
     );

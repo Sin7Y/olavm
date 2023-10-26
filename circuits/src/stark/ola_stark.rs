@@ -733,7 +733,7 @@ mod tests {
         process.addr_storage = Address::default();
         if let Some(calldata) = call_data {
             process.tp = GoldilocksField::ZERO;
-            init_tape(&mut process, calldata, Address::default());
+            init_tape(&mut process, calldata, Address::default(), Address::default(), Address::default());
         }
         let _ = process.execute(
             &mut program,

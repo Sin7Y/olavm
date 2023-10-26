@@ -5,7 +5,7 @@ use crate::crypto::hash::Hasher;
 use crate::trace::trace::PoseidonRow;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use crate::types::merkle_tree::{
-    tree_key_default, tree_key_to_u256, u256_to_tree_key, NodeEntry, TreeKey, TreeKeyU256,
+    tree_key_to_u256, u256_to_tree_key, NodeEntry, TreeKey, TreeKeyU256,
     TreeValue,
 };
 use core::iter;
@@ -139,12 +139,12 @@ impl UpdatesBatch {
         let pre_updates = Arc::new(Mutex::new(self.pre_updates));
         let res_map = (0..ROOT_TREE_DEPTH).fold(
             (self.updates, pre_updates),
-            |(cur_lvl_updates_map, mut cur_path_map), depth| {
+            |(cur_lvl_updates_map, cur_path_map), depth| {
                 // Calculate next level map based on current in parallel
-                let mut cur_changes: HashMap<_, _> = mutex_data!(cur_path_map)
+                let cur_changes: HashMap<_, _> = mutex_data!(cur_path_map)
                     .iter()
                     .map(|(key, updates)| {
-                        let mut changes: Vec<_> = updates
+                        let changes: Vec<_> = updates
                             .iter()
                             .map(|e| e.changes.last().unwrap().1.hash().clone())
                             .collect();
@@ -221,7 +221,7 @@ impl UpdatesBatch {
                                     .collect::<Vec<_>>()[0];
 
                                 let cur_change = cur_changes.get(&cur_key).unwrap();
-                                let mut pre_path = if update_index == 0 {
+                                let pre_path = if update_index == 0 {
                                     mutex_data!(cur_path_map)
                                         .get_mut(&cur_key)
                                         .unwrap()

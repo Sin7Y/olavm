@@ -1,9 +1,9 @@
 #![feature(const_trait_impl)]
 
 use crate::decode::{decode_raw_instruction, REG_NOT_USED};
-use crate::error::ProcessorError;
-use crate::memory::{MemoryTree, HP_START_ADDR, PSP_START_ADDR};
 use crate::storage::StorageTree;
+use core::vm::error::ProcessorError;
+use core::vm::memory::{MemoryTree, HP_START_ADDR, PSP_START_ADDR};
 
 use core::merkle_tree::log::StorageLog;
 use core::merkle_tree::log::WitnessStorageLog;
@@ -41,6 +41,7 @@ use std::collections::{BTreeMap, HashMap};
 use crate::load_tx::{init_ctx_addr_info, load_ctx_addr_info};
 use crate::tape::TapeTree;
 use crate::trace::{gen_memory_table, gen_storage_hash_table, gen_storage_table, gen_tape_table};
+use core::memory_zone_process;
 use core::trace::trace::Step;
 use core::vm::vm_state::SCCallType;
 use core::vm::vm_state::VMState;
@@ -48,8 +49,6 @@ use core::vm::vm_state::VMState::ExeEnd;
 use std::time::Instant;
 
 mod decode;
-pub mod error;
-pub mod memory;
 
 pub mod load_tx;
 pub mod storage;
@@ -365,7 +364,7 @@ impl Process {
         }
 
         prophet.ctx.push((HEAP_PTR.to_string(), self.hp.0));
-        let res = interpreter.run(prophet, values);
+        let res = interpreter.run(prophet, values, &self.memory);
         debug!("interpreter:{:?}", res);
 
         if let Ok(out) = res {
@@ -1118,7 +1117,7 @@ impl Process {
                     register_selector_regs.op1 = self.register_selector.op1;
 
                     let key_mem_addr = self.registers[op0_index].to_canonical_u64();
-                    let mut value_mem_addr = value.0.to_canonical_u64();
+                    let value_mem_addr = value.0.to_canonical_u64();
 
                     for index in 0..TREE_VALUE_LEN {
                         let mut mem_addr = key_mem_addr + index as u64;
@@ -1138,7 +1137,7 @@ impl Process {
 
                     let storage_key =
                         StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
-                    let (tree_key, mut hash_row) = storage_key.hashed_key();
+                    let (tree_key, hash_row) = storage_key.hashed_key();
                     register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN]
                         .clone_from_slice(&tree_key);
                     self.storage_log.push(WitnessStorageLog {
@@ -1193,10 +1192,10 @@ impl Process {
                     register_selector_regs.op1 = self.register_selector.op1;
 
                     let key_mem_addr = self.registers[op0_index].to_canonical_u64();
-                    let mut value_mem_addr = value.0.to_canonical_u64();
+                    let value_mem_addr = value.0.to_canonical_u64();
 
                     for index in 0..TREE_VALUE_LEN {
-                        let mut mem_addr = key_mem_addr + index as u64;
+                        let mem_addr = key_mem_addr + index as u64;
                         memory_op!(self, mem_addr, slot_key[index], Opcode::SLOAD);
                         register_selector_regs.op0_reg_sel[index] =
                             GoldilocksField::from_canonical_u64(mem_addr);
@@ -1206,7 +1205,7 @@ impl Process {
 
                     let storage_key =
                         StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
-                    let (tree_key, mut hash_row) = storage_key.hashed_key();
+                    let (tree_key, hash_row) = storage_key.hashed_key();
                     let path = tree_key_to_leaf_index(&tree_key);
                     register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN]
                         .clone_from_slice(&tree_key);
@@ -1225,7 +1224,7 @@ impl Process {
                     }
 
                     for index in 0..TREE_VALUE_LEN {
-                        let mut mem_addr = value_mem_addr + index as u64;
+                        let mem_addr = value_mem_addr + index as u64;
                         memory_op!(
                             self,
                             mem_addr,
@@ -1293,7 +1292,7 @@ impl Process {
                         GoldilocksField::from_canonical_u64(1);
 
                     let dst_mem_addr = self.registers[dst_index].to_canonical_u64();
-                    let mut src_mem_addr = self.registers[op0_index].to_canonical_u64();
+                    let src_mem_addr = self.registers[op0_index].to_canonical_u64();
                     let input_len = op1_value.0.to_canonical_u64();
                     let mut read_ptr = 0;
                     assert_ne!(input_len, 0, "poseidon hash input len should not equal 0");

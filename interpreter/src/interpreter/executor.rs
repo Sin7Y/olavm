@@ -5,18 +5,15 @@ use std::ops::Deref;
 use crate::dispatch_travel;
 use crate::lexer::token::Token;
 use crate::lexer::token::Token::{Array, ArrayId, Cid, Id, IndexId};
-use crate::parser::node::{
-    ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode,
-    CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode,
-    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode,
-    MultiAssignNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
-};
+use crate::parser::node::{ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode, CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode, IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode, MultiAssignNode, PrintfNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode};
 use crate::parser::traversal::Traversal;
 use crate::sema::symbol::Symbol::FuncSymbol;
 use crate::utils::number::Number::{Bool, Nil};
 use crate::utils::number::NumberRet::{Multiple, Single};
 use crate::utils::number::{Number, NumberResult, NumberRet};
 use log::debug;
+use core::vm::memory::{MemoryTree};
+use core::types::PrimeField64;
 
 #[macro_export]
 macro_rules! ident_lookup {
@@ -96,19 +93,21 @@ impl CallStack {
     }
 }
 
-pub struct Executor {
+pub struct Executor<'a> {
     call_stack: CallStack,
     context: Vec<String>,
     outputs: Vec<String>,
+    pub vm_mem:  &'a MemoryTree,
     stack_depth: usize,
 }
 
-impl Executor {
-    pub fn new(prophet: &OlaProphet, values: Vec<u64>) -> Self {
+impl <'a>Executor<'a> {
+    pub fn new(prophet: &OlaProphet, values: Vec<u64>, vm_mem: & 'a MemoryTree) -> Self {
         let mut executor = Executor {
             call_stack: CallStack::new(),
             context: Vec::new(),
             outputs: Vec::new(),
+            vm_mem,
             stack_depth: GLOBAL_LEVEL,
         };
         executor.call_stack.records.push(RuntimeRecord::new(
@@ -286,7 +285,7 @@ impl Executor {
     }
 }
 
-impl Traversal for Executor {
+impl <'a> Traversal for Executor<'a> {
     fn travel_entry(&mut self, node: &EntryNode) -> NumberResult {
         for declaration in node.global_declarations.iter() {
             self.travel(declaration)?;
@@ -664,5 +663,37 @@ impl Traversal for Executor {
         } else {
             panic!("can not get sqrt value")
         }
+    }
+
+    fn travel_printf(&mut self, node: &PrintfNode) -> NumberResult {
+        let  flag_ret = self.travel(&node.flag)?.get_single().get_number();
+        if flag_ret == 3 {
+            println!("print value={}", self.travel(&node.val_addr)?.get_single().get_number());
+        } else if flag_ret == 2 {
+            let addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
+            println!("print addr:={},{},{},{}", self.vm_mem.trace.get(&addr).unwrap().last().unwrap().value,
+                     self.vm_mem.trace.get(&(addr+1)).unwrap().last().unwrap().value,
+                     self.vm_mem.trace.get(&(addr+2)).unwrap().last().unwrap().value,
+                     self.vm_mem.trace.get(&(addr+3)).unwrap().last().unwrap().value,
+            );
+        } else if flag_ret == 1 {
+            let mut addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
+            let len = self.vm_mem.trace.get(&addr).unwrap().last().unwrap().value.to_canonical_u64();
+            addr += 1;
+            let mut str = Vec::new();
+            for i in 0..len {
+                str.push(self.vm_mem.trace.get(&(addr+i)).unwrap().last().unwrap().value.to_canonical_u64() as u8);
+            }
+            println!("print str={}", String::from_utf8(str).unwrap());
+        } else if flag_ret == 0 {
+            let mut addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
+            let len = self.vm_mem.trace.get(&addr).unwrap().last().unwrap().value.to_canonical_u64();
+            addr += 1;
+            for i in 0..len {
+                let value = self.vm_mem.trace.get(&(addr+i)).unwrap().last().unwrap().value.to_canonical_u64();
+                println!("print mem:{},value:{}",addr+i, value);
+            }
+        }
+        Ok(Single(Nil))
     }
 }

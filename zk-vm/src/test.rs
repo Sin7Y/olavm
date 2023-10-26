@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod tests {
-    use crate::{mutex_data, OlaNode};
-    use log::{debug, LevelFilter};
+    use crate::{OlaNode};
+    
     use ola_core::types::merkle_tree::TreeValue;
     use ola_core::types::Field;
     use ola_core::types::GoldilocksField;
@@ -45,13 +45,13 @@ pub mod tests {
                 .expect("failed get temporary directory for RocksDB")
                 .path(),
         );
-        let code_hash = node
+        let _code_hash = node
             .manual_deploy(
                 "../assembler/test_data/bin/sccall/sccall_caller.json",
                 &caller_exe_address,
             )
             .unwrap();
-        let code_hash = node
+        let _code_hash = node
             .manual_deploy(
                 "../assembler/test_data/bin/sccall/sccall_callee.json",
                 &callee_exe_address,

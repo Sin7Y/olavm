@@ -1,5 +1,3 @@
-use crate::error::ProcessorError;
-use crate::memory::MEM_SPAN_SIZE;
 use crate::{GoldilocksField, MemRangeType, Process};
 use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
@@ -7,9 +5,11 @@ use core::trace::dump::{DumpMemoryRow, DumpStep, DumpTapeRow, DumpTrace};
 use core::trace::trace::{MemoryTraceCell, StorageHashRow, TapeRow};
 use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use core::types::merkle_tree::{tree_key_to_u256, TreeKeyU256, TREE_VALUE_LEN};
+use core::vm::error::ProcessorError;
+use core::vm::memory::MEM_SPAN_SIZE;
 use log::debug;
 use plonky2::field::types::{Field, Field64, PrimeField64};
-use rocksdb::MemtableFactory::Vector;
+
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
