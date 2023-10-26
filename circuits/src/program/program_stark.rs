@@ -1,57 +1,96 @@
-// use crate::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-// use crate::cross_table_lookup::Column;
-// use crate::program::columns::*;
-// use crate::stark::Stark;
-// use crate::vars::{StarkEvaluationTargets, StarkEvaluationVars};
-// use itertools::Itertools;
-// use plonky2::field::extension::{Extendable, FieldExtension};
-// use plonky2::field::packed::PackedField;
-// use plonky2::field::types::Field;
-// use plonky2::hash::hash_types::RichField;
-// use plonky2::plonk::circuit_builder::CircuitBuilder;
-// use std::marker::PhantomData;
+use std::{marker::PhantomData, vec};
 
-// #[derive(Copy, Clone, Default)]
-// pub struct ProgramStark<F, const D: usize> {
-//     pub _phantom: PhantomData<F>,
-// }
+use plonky2::{
+    field::{
+        extension::{Extendable, FieldExtension},
+        packed::PackedField,
+    },
+    hash::hash_types::RichField,
+    plonk::circuit_builder::CircuitBuilder,
+};
 
-// impl<F: RichField, const D: usize> ProgramStark<F, D> {
-//     const BASE: usize = 1 << 8;
-// }
+use super::columns::*;
+use crate::stark::{
+    constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    lookup::eval_lookups,
+    permutation::PermutationPair,
+    stark::Stark,
+    vars::{StarkEvaluationTargets, StarkEvaluationVars},
+};
+use anyhow::Result;
 
-// impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ProgramStark<F, D> {
-//     const COLUMNS: usize = COL_NUM;
+#[derive(Copy, Clone, Default)]
+pub struct ProgramStark<F, const D: usize> {
+    compress_challenge: Option<F>,
+    pub _phantom: PhantomData<F>,
+}
 
-//     fn eval_packed_generic<FE, P, const D2: usize>(
-//         &self,
-//         _vars: StarkEvaluationVars<FE, P, { COL_NUM }>,
-//         _yield_constr: &mut ConstraintConsumer<P>,
-//     ) where
-//         FE: FieldExtension<D2, BaseField = F>,
-//         P: PackedField<Scalar = FE>,
-//     {
-//     }
+impl<F: RichField, const D: usize> ProgramStark<F, D> {
+    pub fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
+        assert!(self.compress_challenge.is_none(), "already set?");
+        self.compress_challenge = Some(challenge);
+        Ok(())
+    }
 
-//     fn eval_ext_circuit(
-//         &self,
-//         _builder: &mut CircuitBuilder<F, D>,
-//         _vars: StarkEvaluationTargets<D, { COL_NUM }>,
-//         _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-//     ) {
-//     }
+    pub fn get_compress_challenge(&self) -> Option<F> {
+        self.compress_challenge
+    }
+}
 
-//     fn constraint_degree(&self) -> usize {
-//         1
-//     }
-// }
+impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ProgramStark<F, D> {
+    const COLUMNS: usize = NUM_PROG_COLS;
 
-// // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
-// pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
-//     let res = Column::singles([PC, INS, IMM]).collect_vec();
-//     res
-// }
+    fn eval_packed_generic<FE, P, const D2: usize>(
+        &self,
+        vars: StarkEvaluationVars<FE, P, { Self::COLUMNS }>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        let beta = FE::from_basefield(self.get_compress_challenge().unwrap());
+        yield_constr.constraint(
+            vars.local_values[COL_PROG_CODE_ADDR_RANGE.start]
+                + vars.local_values[COL_PROG_CODE_ADDR_RANGE.start + 1] * beta
+                + vars.local_values[COL_PROG_CODE_ADDR_RANGE.start + 2] * beta.square()
+                + vars.local_values[COL_PROG_CODE_ADDR_RANGE.start + 3] * beta.cube()
+                + vars.local_values[COL_PROG_PC] * beta.square() * beta.square()
+                + vars.local_values[COL_PROG_INST] * beta.square() * beta.cube()
+                - vars.local_values[COL_PROG_COMP_PROG],
+        );
+        yield_constr.constraint(
+            vars.local_values[COL_PROG_EXEC_CODE_ADDR_RANGE.start]
+                + vars.local_values[COL_PROG_EXEC_CODE_ADDR_RANGE.start + 1] * beta
+                + vars.local_values[COL_PROG_EXEC_CODE_ADDR_RANGE.start + 2] * beta.square()
+                + vars.local_values[COL_PROG_EXEC_CODE_ADDR_RANGE.start + 3] * beta.cube()
+                + vars.local_values[COL_PROG_EXEC_PC] * beta.square() * beta.square()
+                + vars.local_values[COL_PROG_EXEC_INST] * beta.square() * beta.cube()
+                - vars.local_values[COL_PROG_EXEC_COMP_PROG],
+        );
+        eval_lookups(
+            vars,
+            yield_constr,
+            COL_PROG_EXEC_COMP_PROG_PERM,
+            COL_PROG_COMP_PROG_PERM,
+        );
+    }
 
-// pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
-//     Column::one()
-// }
+    fn eval_ext_circuit(
+        &self,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, { Self::COLUMNS }>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+    ) {
+    }
+
+    fn constraint_degree(&self) -> usize {
+        2
+    }
+
+    fn permutation_pairs(&self) -> Vec<PermutationPair> {
+        vec![
+            PermutationPair::singletons(COL_PROG_COMP_PROG, COL_PROG_COMP_PROG_PERM),
+            PermutationPair::singletons(COL_PROG_EXEC_COMP_PROG, COL_PROG_EXEC_COMP_PROG_PERM),
+        ]
+    }
+}

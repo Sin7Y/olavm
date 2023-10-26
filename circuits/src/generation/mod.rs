@@ -27,13 +27,14 @@ use self::tape::generate_tape_trace;
 
 pub mod builtin;
 pub mod cpu;
+mod ctl_test;
 pub mod memory;
 pub mod poseidon;
 pub mod poseidon_chunk;
+mod prog;
 pub mod sccall;
 pub mod storage;
 pub mod tape;
-mod ctl_test;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 /// Inputs needed for trace generation.
