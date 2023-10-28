@@ -5,7 +5,7 @@ use crate::{
     util::poseidon_utils::{
         constant_layer_field, mds_layer_field, mds_partial_layer_fast_field,
         mds_partial_layer_init, partial_first_constant_layer, sbox_layer_field, sbox_monomial,
-        POSEIDON_INPUT_NUM, POSEIDON_STATE_WIDTH,
+        POSEIDON_INPUT_NUM, POSEIDON_OUTPUT_NUM, POSEIDON_STATE_WIDTH,
     },
 };
 
@@ -22,6 +22,46 @@ pub enum PoseidonType {
     Normal,
     Branch,
     Leaf,
+}
+
+pub fn calculate_poseidon(
+    full_input: [GoldilocksField; POSEIDON_INPUT_NUM],
+) -> [GoldilocksField; POSEIDON_OUTPUT_NUM] {
+    let mut state = full_input;
+    let mut round_ctr = 0;
+
+    // First set of full rounds.
+    (0..poseidon::HALF_N_FULL_ROUNDS).for_each(|_| {
+        constant_layer_field(&mut state, round_ctr);
+        sbox_layer_field(&mut state);
+        state = mds_layer_field(&state);
+        round_ctr += 1;
+    });
+
+    // Partial rounds.
+    partial_first_constant_layer(&mut state);
+    state = mds_partial_layer_init(&state);
+    for r in 0..(poseidon::N_PARTIAL_ROUNDS - 1) {
+        let sbox_in = state[0];
+        state[0] = sbox_monomial(sbox_in);
+        state[0] +=
+            GoldilocksField::from_canonical_u64(GoldilocksField::FAST_PARTIAL_ROUND_CONSTANTS[r]);
+        state = mds_partial_layer_fast_field(&state, r);
+    }
+    let sbox_in = state[0];
+    state[0] = sbox_monomial(sbox_in);
+    state = mds_partial_layer_fast_field(&state, poseidon::N_PARTIAL_ROUNDS - 1);
+    round_ctr += poseidon::N_PARTIAL_ROUNDS;
+
+    // Second set of full rounds.
+    for _ in 0..poseidon::HALF_N_FULL_ROUNDS {
+        constant_layer_field(&mut state, round_ctr);
+        sbox_layer_field(&mut state);
+        state = mds_layer_field(&state);
+        round_ctr += 1;
+    }
+
+    state
 }
 
 pub fn calculate_poseidon_and_generate_intermediate_trace(
@@ -132,9 +172,21 @@ pub fn calculate_arbitrary_poseidon_and_generate_intermediate_trace(
     );
 }
 mod test {
-    
+    use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 
-    
+    use crate::crypto::poseidon_trace::{
+        calculate_arbitrary_poseidon_and_generate_intermediate_trace, calculate_poseidon,
+        calculate_poseidon_and_generate_intermediate_trace,
+    };
+
+    #[test]
+    fn test_poseidon() {
+        let mut input: [GoldilocksField; 12] = [GoldilocksField::default(); 12];
+        input[0] = GoldilocksField::ONE;
+        let output = calculate_poseidon(input);
+
+        println!("{:?}", output);
+    }
 
     #[test]
     fn test_poseidon_trace() {
@@ -158,8 +210,6 @@ mod test {
             GoldilocksField::from_canonical_u64(114),
             GoldilocksField::from_canonical_u64(108),
             GoldilocksField::from_canonical_u64(100),
-            GoldilocksField::from_canonical_u64(0),
-            GoldilocksField::from_canonical_u64(0),
         ];
         let res = calculate_arbitrary_poseidon_and_generate_intermediate_trace(&inputs);
         println!("{:?}", res.0);
