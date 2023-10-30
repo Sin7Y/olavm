@@ -1,10 +1,11 @@
 #[cfg(test)]
 pub mod tests {
-    use crate::{OlaNode};
-    
+    use crate::OlaVM;
+
     use ola_core::types::merkle_tree::TreeValue;
     use ola_core::types::Field;
     use ola_core::types::GoldilocksField;
+    use ola_core::vm::transaction::init_tx_context;
     use std::fs::File;
     use std::io::Write;
     use tempfile::TempDir;
@@ -35,15 +36,16 @@ pub mod tests {
         GoldilocksField::ZERO,
     ];
 
-    #[tokio::test]
-    async fn sccall_run_test() {
-        let mut node = OlaNode::new(
+    #[test]
+    fn sccall_run_test() {
+        let mut node = OlaVM::new(
             TempDir::new()
                 .expect("failed get temporary directory for RocksDB")
                 .path(),
             TempDir::new()
                 .expect("failed get temporary directory for RocksDB")
                 .path(),
+            init_tx_context(),
         );
         let _code_hash = node
             .manual_deploy(
@@ -75,8 +77,7 @@ pub mod tests {
                 caller_address,
                 caller_exe_address,
                 calldata,
-            )
-            .await;
+            );
 
         if res.is_ok() {
             println!("run tx success:{:?}", res);

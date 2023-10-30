@@ -591,7 +591,8 @@ mod tests {
     use core::program::Program;
     use core::types::account::Address;
     use core::types::{Field, GoldilocksField};
-    use executor::load_tx::init_tape;
+    use core::vm::transaction::init_tx_context;
+    use executor::load_tx::{init_tape};
     use executor::Process;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -733,7 +734,7 @@ mod tests {
         process.addr_storage = Address::default();
         if let Some(calldata) = call_data {
             process.tp = GoldilocksField::ZERO;
-            init_tape(&mut process, calldata, Address::default(), Address::default(), Address::default());
+            init_tape(&mut process, calldata, Address::default(), Address::default(), Address::default(), &init_tx_context());
         }
         let _ = process.execute(
             &mut program,

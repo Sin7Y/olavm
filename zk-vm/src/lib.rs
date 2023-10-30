@@ -1,5 +1,5 @@
 use executor::load_tx::init_tape;
-use executor::trace::{gen_dump_file};
+use executor::trace::gen_dump_file;
 use executor::Process;
 use log::debug;
 use ola_core::crypto::ZkHasher;
@@ -18,10 +18,12 @@ use ola_core::types::merkle_tree::TreeValue;
 use ola_core::types::GoldilocksField;
 use ola_core::types::{Field, PrimeField64};
 use ola_core::vm::error::ProcessorError;
+use ola_core::vm::transaction::{init_tx_context, TxCtxInfo};
 use ola_core::vm::vm_state::{SCCallType, VMState};
+
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
-use std::io::{BufReader};
+use std::io::BufReader;
 use std::ops::Not;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -31,15 +33,16 @@ mod config;
 #[cfg(test)]
 pub mod test;
 #[derive(Debug)]
-pub struct OlaNode {
+pub struct OlaVM {
     pub ola_state: NodeState<ZkHasher>,
     pub account_tree: AccountTree,
     // process, caller address, code address
     pub process_ctx: Vec<(Arc<Mutex<Process>>, Arc<Mutex<Program>>, Address, Address)>,
+    pub ctx_info: TxCtxInfo,
 }
 
-impl OlaNode {
-    pub fn new(tree_db_path: &Path, state_db_path: &Path) -> Self {
+impl OlaVM {
+    pub fn new(tree_db_path: &Path, state_db_path: &Path, ctx_info: TxCtxInfo) -> Self {
         let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
         let account_tree = AccountTree::new(acc_db);
         let state_db = RocksDB::new(Database::StateKeeper, state_db_path, false);
@@ -51,10 +54,11 @@ impl OlaNode {
             ZkHasher::default(),
         );
 
-        OlaNode {
+        OlaVM {
             ola_state,
             account_tree,
             process_ctx: Vec::new(),
+            ctx_info,
         }
     }
 
@@ -126,7 +130,7 @@ impl OlaNode {
         process.execute(program, prophets, &mut self.account_tree)
     }
 
-    fn contract_run(
+    pub fn contract_run(
         &mut self,
         process: &mut Process,
         program: &mut Program,
@@ -169,7 +173,7 @@ impl OlaNode {
         }
     }
 
-    fn manual_deploy(&mut self, contract: &str, addr: &TreeValue) -> Result<TreeValue, StateError> {
+    pub fn manual_deploy(&mut self, contract: &str, addr: &TreeValue) -> Result<TreeValue, StateError> {
         let file = File::open(contract).unwrap();
         let reader = BufReader::new(file);
         let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
@@ -192,7 +196,7 @@ impl OlaNode {
         Ok(code_hash)
     }
 
-    async fn execute_tx(
+    pub fn execute_tx(
         &mut self,
         tx_idx: GoldilocksField,
         caller_addr: TreeValue,
@@ -213,6 +217,7 @@ impl OlaNode {
             caller_addr,
             code_exe_addr,
             caller_addr,
+            &self.ctx_info,
         );
         let mut program = Arc::new(Mutex::new(Program {
             instructions: Vec::new(),
