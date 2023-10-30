@@ -7,15 +7,27 @@ use core::{
 use std::cmp::max;
 
 use itertools::Itertools;
-use plonky2::hash::hash_types::RichField;
+use plonky2::{
+    hash::hash_types::RichField,
+    iop::challenger::Challenger,
+    plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+};
 
 use crate::{program::columns::*, stark::lookup::permuted_cols};
 
 pub fn generate_prog_trace<F: RichField>(
     execs: &[Step],
     progs: Vec<([GoldilocksField; 4], Vec<GoldilocksField>)>,
-    compress_challenger: F,
-) -> [Vec<F>; NUM_PROG_COLS] {
+    start_end_roots: ([GoldilocksField; 4], [GoldilocksField; 4]),
+) -> ([Vec<F>; NUM_PROG_COLS], F) {
+    let mut challenger =
+        Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
+    for limb_idx in 0..4 {
+        challenger.observe_element(F::from_canonical_u64(start_end_roots.0[limb_idx].0));
+        challenger.observe_element(F::from_canonical_u64(start_end_roots.1[limb_idx].0))
+    }
+    let beta = challenger.get_challenge();
+
     let main_lines: Vec<&Step> = execs.iter().filter(|e| e.is_ext_line.0 == 0).collect();
     let exec_len: usize = main_lines
         .iter()
@@ -61,7 +73,7 @@ pub fn generate_prog_trace<F: RichField>(
                 trace[COL_PROG_EXEC_PC][exec_index],
                 trace[COL_PROG_EXEC_INST][exec_index],
             ],
-            compress_challenger,
+            beta,
         );
         exec_index += 1;
 
@@ -86,7 +98,7 @@ pub fn generate_prog_trace<F: RichField>(
                     trace[COL_PROG_EXEC_PC][exec_index],
                     trace[COL_PROG_EXEC_INST][exec_index],
                 ],
-                compress_challenger,
+                beta,
             );
             exec_index += 1;
         }
@@ -111,7 +123,7 @@ pub fn generate_prog_trace<F: RichField>(
                     trace[COL_PROG_PC][prog_index],
                     trace[COL_PROG_INST][prog_index],
                 ],
-                compress_challenger,
+                beta,
             );
         }
         prog_index += 1;
@@ -121,31 +133,23 @@ pub fn generate_prog_trace<F: RichField>(
     trace[COL_PROG_EXEC_COMP_PROG_PERM] = permuted_inputs;
     trace[COL_PROG_COMP_PROG_PERM] = permuted_table;
 
-    trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
+    let trace_row_vecs = trace.try_into().unwrap_or_else(|v: Vec<Vec<F>>| {
         panic!(
             "Expected a Vec of length {} but it was {}",
             NUM_PROG_COLS,
             v.len()
         )
-    })
+    });
+    (trace_row_vecs, beta)
 }
 
-fn compress<F: RichField>(values: [F; 6], compress_challenger: F) -> F {
+fn compress<F: RichField>(values: [F; 6], beta: F) -> F {
     values[0]
-        + values[1] * compress_challenger
-        + values[2] * compress_challenger * compress_challenger
-        + values[3] * compress_challenger * compress_challenger * compress_challenger
-        + values[4]
-            * compress_challenger
-            * compress_challenger
-            * compress_challenger
-            * compress_challenger
-        + values[5]
-            * compress_challenger
-            * compress_challenger
-            * compress_challenger
-            * compress_challenger
-            * compress_challenger
+        + values[1] * beta
+        + values[2] * beta * beta
+        + values[3] * beta * beta * beta
+        + values[4] * beta * beta * beta * beta
+        + values[5] * beta * beta * beta * beta * beta
 }
 
 pub fn generate_prog_chunk_trace<F: RichField>(
@@ -215,7 +219,9 @@ pub fn generate_prog_chunk_trace<F: RichField>(
         }
         let hash = calculate_poseidon(hash_input);
         for j in 0..12 {
-            trace[COL_PROG_CHUNK_HASH_RANGE.start + j][i] = F::from_canonical_u64(hash[j].0);
+            let limb = F::from_canonical_u64(hash[j].0);
+            trace[COL_PROG_CHUNK_HASH_RANGE.start + j][i] = limb;
+            pre_hash[j] = limb;
         }
         trace[COL_PROG_CHUNK_IS_FIRST_LINE][i] = if *is_first_line { F::ONE } else { F::ZERO };
         trace[COL_PROG_CHUNK_IS_RESULT_LINE][i] = if *is_result_line { F::ONE } else { F::ZERO };
