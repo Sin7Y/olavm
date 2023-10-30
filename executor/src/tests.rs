@@ -1,20 +1,20 @@
 use crate::trace::{gen_dump_file, gen_storage_table};
 use crate::Process;
 
-use crate::load_tx::{init_tape};
+use crate::load_tx::init_tape;
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
-use core::program::instruction::{Opcode};
+use core::program::instruction::Opcode;
 use core::program::Program;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
-use log::{LevelFilter};
+use core::vm::transaction::init_tx_context;
+use log::LevelFilter;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-
 
 fn executor_run_test_program(
     bin_file_path: &str,
@@ -71,7 +71,14 @@ fn executor_run_test_program(
             GoldilocksField::from_canonical_u64(15),
             GoldilocksField::from_canonical_u64(16),
         ];
-        init_tape(&mut process, calldata, caller_addr, callee, callee_exe_addr);
+        init_tape(
+            &mut process,
+            calldata,
+            caller_addr,
+            callee,
+            callee_exe_addr,
+            &init_tx_context(),
+        );
     }
 
     let res = process.execute(

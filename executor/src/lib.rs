@@ -365,6 +365,7 @@ impl Process {
 
         prophet.ctx.push((HEAP_PTR.to_string(), self.hp.0));
         let res = interpreter.run(prophet, values, &self.memory);
+        // todo: need process error!
         debug!("interpreter:{:?}", res);
 
         if let Ok(out) = res {
@@ -402,7 +403,7 @@ impl Process {
         prophets: &mut Option<HashMap<u64, OlaProphet>>,
         account_tree: &mut AccountTree,
     ) -> Result<VMState, ProcessorError> {
-        let print_vm_state = true;
+        let print_vm_state = false;
 
         let instrs_len = program.instructions.len() as u64;
         // program.trace.raw_binary_instructions.clear();
