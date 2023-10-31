@@ -63,6 +63,20 @@ impl AccountTree {
         }
     }
 
+    pub fn new_db_test(db_path: String) -> Self {
+        let db = RocksDB::new(Database::MerkleTree, db_path, true);
+        let storage = Storage::new(db);
+        let config = TreeConfig::new(ZkHasher::default());
+        let (root_hash, block_number) = storage.fetch_metadata();
+        let root_hash = root_hash.unwrap_or_else(|| config.default_root_hash());
+        Self {
+            storage,
+            config,
+            root_hash,
+            block_number,
+        }
+    }
+
     pub fn root_hash(&self) -> ZkHash {
         self.root_hash.clone()
     }
