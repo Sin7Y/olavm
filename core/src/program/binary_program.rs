@@ -2,6 +2,7 @@
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::num::ParseIntError;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -46,6 +47,11 @@ impl BinaryProgram {
             prophets,
             debug_info,
         })
+    }
+
+    pub fn bytecode_u64_array(&self) -> Result<Vec<u64>, ParseIntError> {
+        let bytecodes: Vec<&str> = self.bytecode.split('\n').collect();
+        bytecodes.iter().map(|&c| c.parse::<u64>()).collect()
     }
 }
 
