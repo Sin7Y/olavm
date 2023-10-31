@@ -64,6 +64,18 @@ pub fn calculate_poseidon(
     state
 }
 
+pub fn calculate_arbitrary_poseidon(inputs: &[GoldilocksField]) -> [GoldilocksField; 4] {
+    let mut state: [GoldilocksField; POSEIDON_STATE_WIDTH] =
+        [GoldilocksField::ZERO; POSEIDON_STATE_WIDTH];
+
+    for input_chunk in inputs.chunks(8) {
+        let end = min(input_chunk.len(), 8);
+        state[0..end].copy_from_slice(&input_chunk[0..end]);
+        state = calculate_poseidon(state);
+    }
+    state[0..4].try_into().expect("slice with incorrect length")
+}
+
 pub fn calculate_poseidon_and_generate_intermediate_trace(
     full_input: [GoldilocksField; POSEIDON_INPUT_NUM],
 ) -> PoseidonRow {
@@ -175,8 +187,8 @@ mod test {
     use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 
     use crate::crypto::poseidon_trace::{
-        calculate_arbitrary_poseidon_and_generate_intermediate_trace, calculate_poseidon,
-        calculate_poseidon_and_generate_intermediate_trace,
+        calculate_arbitrary_poseidon, calculate_arbitrary_poseidon_and_generate_intermediate_trace,
+        calculate_poseidon, calculate_poseidon_and_generate_intermediate_trace,
     };
 
     #[test]
@@ -195,6 +207,24 @@ mod test {
         let row = calculate_poseidon_and_generate_intermediate_trace(input);
 
         println!("{:?}", row.output);
+    }
+
+    #[test]
+    fn test_arbitrary_poseidon() {
+        let inputs = [
+            GoldilocksField::from_canonical_u64(104),
+            GoldilocksField::from_canonical_u64(101),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(111),
+            GoldilocksField::from_canonical_u64(119),
+            GoldilocksField::from_canonical_u64(111),
+            GoldilocksField::from_canonical_u64(114),
+            GoldilocksField::from_canonical_u64(108),
+            GoldilocksField::from_canonical_u64(100),
+        ];
+        let res = calculate_arbitrary_poseidon(&inputs);
+        println!("{:?}", res);
     }
 
     #[test]
