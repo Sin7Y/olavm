@@ -180,6 +180,6 @@ mod tests {
         let output_path = format!("test_data/bin/{}", output_file_name);
         let pretty = serde_json::to_string_pretty(&program).unwrap();
         fs::write(output_path, pretty).unwrap();
-        println!("{}", json_str);
+        println!("{}", program.bytecode);
     }
 }

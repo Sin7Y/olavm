@@ -125,8 +125,8 @@ pub fn generate_prog_trace<F: RichField>(
                 ],
                 beta,
             );
+            prog_index += 1;
         }
-        prog_index += 1;
     }
     let (permuted_inputs, permuted_table) =
         permuted_cols(&trace[COL_PROG_EXEC_COMP_PROG], &trace[COL_PROG_COMP_PROG]);

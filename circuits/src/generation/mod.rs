@@ -31,7 +31,7 @@ mod ctl_test;
 pub mod memory;
 pub mod poseidon;
 pub mod poseidon_chunk;
-mod prog;
+pub mod prog;
 pub mod sccall;
 pub mod storage;
 pub mod tape;

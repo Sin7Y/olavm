@@ -94,3 +94,155 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ProgramStark<
         ]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::generation::prog::generate_prog_trace;
+    use crate::program::columns::NUM_PROG_COLS;
+    use crate::{program::program_stark::ProgramStark, stark::stark::Stark};
+    use assembler::encoder::encode_asm_from_json_file;
+    use core::vm::transaction::init_tx_context;
+    use core::{
+        merkle_tree::tree::AccountTree,
+        program::Program,
+        types::{Field, GoldilocksField},
+        vm::vm_state::Address,
+    };
+    use executor::{load_tx::init_tape, Process};
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2_util::log2_strict;
+    use std::{collections::HashMap, path::PathBuf};
+
+    use crate::stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars};
+
+    #[test]
+    fn test_program_storage() {
+        let call_data = vec![
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(2364819430),
+        ];
+        test_program_with_asm_file_name("storage_u32.json".to_string(), Some(call_data));
+    }
+
+    #[allow(unused)]
+    fn test_program_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = ProgramStark<F, D>;
+        let mut stark = S::default();
+
+        let program = encode_asm_from_json_file(program_path).unwrap();
+        let instructions = program.bytecode.split("\n");
+        let mut prophets = HashMap::new();
+        for item in program.prophets {
+            prophets.insert(item.host as u64, item);
+        }
+
+        let mut program: Program = Program {
+            instructions: Vec::new(),
+            trace: Default::default(),
+            debug_info: program.debug_info,
+        };
+
+        for inst in instructions {
+            program.instructions.push(inst.to_string());
+        }
+
+        let mut process = Process::new();
+        process.addr_storage = Address::default();
+
+        if let Some(calldata) = call_data {
+            process.tp = GoldilocksField::ZERO;
+            init_tape(
+                &mut process,
+                calldata,
+                Address::default(),
+                Address::default(),
+                Address::default(),
+                &init_tx_context(),
+            );
+        }
+
+        let _ = process.execute(
+            &mut program,
+            &mut Some(prophets),
+            &mut AccountTree::new_test(),
+        );
+        let insts = program
+            .instructions
+            .iter()
+            .map(|inst| {
+                let instruction_without_prefix = inst.trim_start_matches("0x");
+                GoldilocksField::from_canonical_u64(
+                    u64::from_str_radix(instruction_without_prefix, 16).unwrap(),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        let (rows, beta) = generate_prog_trace::<F>(
+            &program.trace.exec,
+            vec![(process.addr_storage, insts)],
+            ([GoldilocksField::ZERO; 4], [GoldilocksField::ZERO; 4]),
+        );
+        let len = rows[0].len();
+        println!(
+            "raw trace len:{}, extended len: {}",
+            program.trace.builtin_bitwise_combined.len(),
+            len
+        );
+        stark.set_compress_challenge(beta);
+        let last = GoldilocksField::primitive_root_of_unity(log2_strict(len)).inverse();
+        let subgroup = GoldilocksField::cyclic_subgroup_known_order(
+            GoldilocksField::primitive_root_of_unity(log2_strict(len)),
+            len,
+        );
+
+        for i in 0..len - 1 {
+            let local_values: [GoldilocksField; NUM_PROG_COLS] = rows
+                .iter()
+                .map(|row| row[i % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
+            let next_values: [GoldilocksField; NUM_PROG_COLS] = rows
+                .iter()
+                .map(|row| row[(i + 1) % len])
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
+            let vars = StarkEvaluationVars {
+                local_values: &local_values,
+                next_values: &next_values,
+            };
+
+            let mut constraint_consumer = ConstraintConsumer::new(
+                vec![GoldilocksField::rand()],
+                subgroup[i] - last,
+                if i == 0 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+                if i == len - 1 {
+                    GoldilocksField::ONE
+                } else {
+                    GoldilocksField::ZERO
+                },
+            );
+            stark.eval_packed_generic(vars, &mut constraint_consumer);
+
+            for &acc in &constraint_consumer.constraint_accs {
+                if !acc.eq(&GoldilocksField::ZERO) {
+                    println!("constraint err in line: {}", i);
+                }
+                assert_eq!(acc, GoldilocksField::ZERO);
+            }
+        }
+    }
+}
