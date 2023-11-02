@@ -67,7 +67,7 @@ impl OlaOpcode {
             OlaOpcode::SSTORE => "sstore".to_string(),
             OlaOpcode::TLOAD => "tload".to_string(),
             OlaOpcode::TSTORE => "tstore".to_string(),
-            OlaOpcode::SCCALL => "sc_call".to_string(),
+            OlaOpcode::SCCALL => "sccall".to_string(),
         }
     }
 
