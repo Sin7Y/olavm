@@ -574,8 +574,6 @@ impl Process {
                 if tmp_cnt % 5 != 0 {
                     println!("\n");
                 }
-                println!("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ end step ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑");
-                println!("\n");
             }
 
             let ops: Vec<&str> = instruction.0.split_whitespace().collect();
@@ -1245,6 +1243,28 @@ impl Process {
                         filter_tape_looking
                     );
                     self.pc += step;
+                    if print_vm_state {
+                        println!("******************** sstore ********************");
+                        println!(
+                            "scaddr: {}, {}, {}, {}",
+                            self.addr_storage[0],
+                            self.addr_storage[1],
+                            self.addr_storage[2],
+                            self.addr_storage[3]
+                        );
+                        println!(
+                            "storage_key: {}, {}, {}, {}",
+                            slot_key[0], slot_key[1], slot_key[2], slot_key[3]
+                        );
+                        println!(
+                            "tree_key: {}, {}, {}, {}",
+                            tree_key[0], tree_key[1], tree_key[2], tree_key[3]
+                        );
+                        println!(
+                            "value: {}, {}, {}, {}",
+                            store_value[0], store_value[1], store_value[2], store_value[3]
+                        );
+                    }
                 }
                 "sload" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u8);
@@ -1342,6 +1362,29 @@ impl Process {
                         filter_tape_looking
                     );
                     self.pc += step;
+
+                    if print_vm_state {
+                        println!("******************** sload ********************");
+                        println!(
+                            "scaddr: {}, {}, {}, {}",
+                            self.addr_storage[0],
+                            self.addr_storage[1],
+                            self.addr_storage[2],
+                            self.addr_storage[3]
+                        );
+                        println!(
+                            "storage_key: {}, {}, {}, {}",
+                            slot_key[0], slot_key[1], slot_key[2], slot_key[3]
+                        );
+                        println!(
+                            "tree_key: {}, {}, {}, {}",
+                            tree_key[0], tree_key[1], tree_key[2], tree_key[3]
+                        );
+                        println!(
+                            "value: {}, {}, {}, {}",
+                            read_value[0], read_value[1], read_value[2], read_value[3]
+                        );
+                    }
                 }
                 "poseidon" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::POSEIDON as u64);
@@ -1740,6 +1783,11 @@ impl Process {
 
             if prophets_insert.get(&pc_status).is_some() {
                 self.prophet(&mut prophets_insert[&pc_status].clone())?
+            }
+
+            if print_vm_state {
+                println!("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ end step ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑");
+                println!("\n");
             }
 
             debug!(
