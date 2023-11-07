@@ -1,16 +1,21 @@
-use crate::trace::{gen_dump_file, gen_storage_table};
+use crate::trace::{gen_dump_file, gen_storage_hash_table, gen_storage_table};
 use crate::Process;
 
 use crate::load_tx::init_tape;
+use core::crypto::hash::Hasher;
+use core::crypto::ZkHasher;
+use core::merkle_tree::log::StorageLog;
+use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::instruction::Opcode;
 use core::program::Program;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
+use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context;
 use itertools::Itertools;
-use log::LevelFilter;
+use log::{debug, LevelFilter};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
@@ -32,7 +37,14 @@ fn executor_run_test_program(
 
     let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
 
+    let hash = ZkHasher::default();
+
     let instructions = program.bytecode.split("\n");
+    let code: Vec<_> = instructions
+        .clone()
+        .map(|e| GoldilocksField::from_canonical_u64(u64::from_str_radix(&e[2..], 16).unwrap()))
+        .collect();
+    let code_hash = hash.hash_bytes(code);
     let mut prophets = HashMap::new();
     for item in program.prophets {
         prophets.insert(item.host as u64, item);
@@ -52,26 +64,28 @@ fn executor_run_test_program(
 
     let tp_start = 0;
 
+    let callee: Address = [
+        GoldilocksField::from_canonical_u64(9),
+        GoldilocksField::from_canonical_u64(10),
+        GoldilocksField::from_canonical_u64(11),
+        GoldilocksField::from_canonical_u64(12),
+    ];
+    let caller_addr = [
+        GoldilocksField::from_canonical_u64(17),
+        GoldilocksField::from_canonical_u64(18),
+        GoldilocksField::from_canonical_u64(19),
+        GoldilocksField::from_canonical_u64(20),
+    ];
+    let callee_exe_addr = [
+        GoldilocksField::from_canonical_u64(13),
+        GoldilocksField::from_canonical_u64(14),
+        GoldilocksField::from_canonical_u64(15),
+        GoldilocksField::from_canonical_u64(16),
+    ];
+
     if let Some(calldata) = call_data {
         process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
-        let callee: Address = [
-            GoldilocksField::from_canonical_u64(9),
-            GoldilocksField::from_canonical_u64(10),
-            GoldilocksField::from_canonical_u64(11),
-            GoldilocksField::from_canonical_u64(12),
-        ];
-        let caller_addr = [
-            GoldilocksField::from_canonical_u64(17),
-            GoldilocksField::from_canonical_u64(18),
-            GoldilocksField::from_canonical_u64(19),
-            GoldilocksField::from_canonical_u64(20),
-        ];
-        let callee_exe_addr = [
-            GoldilocksField::from_canonical_u64(13),
-            GoldilocksField::from_canonical_u64(14),
-            GoldilocksField::from_canonical_u64(15),
-            GoldilocksField::from_canonical_u64(16),
-        ];
+
         init_tape(
             &mut process,
             calldata,
@@ -82,12 +96,29 @@ fn executor_run_test_program(
         );
     }
 
-    let res = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_db_test("./db_test/vote_test".to_string()),
-        // &mut AccountTree::new_test(),
-    );
+    process.addr_code = callee_exe_addr;
+    process.addr_storage = callee;
+    program
+        .trace
+        .addr_program_hash
+        .insert(encode_addr(&callee_exe_addr), code_hash);
+    let mut account_tree = AccountTree::new_test();
+    //let mut account_tree =AccountTree::new_db_test("./".to_string()),
+
+    account_tree.process_block(vec![WitnessStorageLog {
+        storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+        previous_value: tree_key_default(),
+    }]);
+    let _ = account_tree.save();
+
+    let start = account_tree.root_hash();
+
+    process.program_log.push(WitnessStorageLog {
+        storage_log: StorageLog::new_read_log(callee_exe_addr, code_hash),
+        previous_value: tree_key_default(),
+    });
+
+    let res = process.execute(&mut program, &mut Some(prophets), &mut account_tree);
 
     if res.is_err() {
         gen_dump_file(&mut process, &mut program);
@@ -97,6 +128,10 @@ fn executor_run_test_program(
     if print_trace {
         println!("vm trace: {:?}", program.trace);
     }
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut account_tree);
+    gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
+    program.trace.start_end_roots = (start, account_tree.root_hash());
+
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
     println!(

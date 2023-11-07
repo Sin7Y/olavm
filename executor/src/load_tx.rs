@@ -1,5 +1,5 @@
 use crate::Process;
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 use core::vm::transaction::TxCtxInfo;
 use core::vm::vm_state::Address;
 
