@@ -311,7 +311,7 @@ impl Traversal for SymTableGen {
 
                 let ident = (
                     param.ident_node.identifier.to_string(),
-                    BuiltIn(param.clone().type_node.token.clone()),
+                    BuiltIn(param.type_node.token.clone()),
                 );
                 param_symbols.push(ident);
                 let symbol = IdentSymbol(name.clone(), ident_type, token_len);
@@ -427,7 +427,7 @@ impl Traversal for SymTableGen {
     }
 
     fn travel_printf(&mut self, node: &PrintfNode) -> NumberResult {
-        let ret = self.travel(&node.flag);
+        self.travel(&node.flag)?;
         let ret = self.travel(&node.val_addr);
         ret
     }
