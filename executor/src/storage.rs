@@ -21,7 +21,17 @@ pub struct StorageCell {
 
 impl Ord for StorageCell {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.clk.cmp(&other.clk)
+        let mut order = self.tx_idx.0.cmp(&other.tx_idx.0);
+        if order.is_ne() {
+            return order;
+        } else {
+            order = self.env_idx.0.cmp(&other.env_idx.0);
+            if order.is_ne() {
+                return order;
+            }
+            order = self.clk.cmp(&other.clk);
+        }
+        return order;
     }
 
     fn max(self, _other: Self) -> Self

@@ -238,8 +238,9 @@ class ComparisonTraceColumnType(Enum):
     FILTER_LOOKING_FOR_RANGE_CHECK = 'filter_looking_rc'
 
 class StorageTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
     CLK = 'clk'
-    DIFF_CLK = 'diff_clk'
     OP = 'opcode'
     ROOT = 'root'
     ADD = 'addr'
@@ -263,6 +264,23 @@ class StorageHashTraceColumnType(Enum):
     PRE_HASH = 'pre_hash'
     HASH = 'hash'
 
+class ProgramHashTraceColumnType(Enum):
+    STORAGE_ACCESS_IDX = 'storage_access_idx'
+    LAYER = 'layer'
+    LAYER_BIT = 'layer_bit'
+    ADDR_ACC = 'addr_acc'
+    # IS_LAYER64 = 'is_layer64'
+    # IS_LAYER128 = 'is_layer128'
+    # IS_LAYER192 = 'is_layer192'
+    # IS_LAYER256 = 'is_layer256'
+    ADDR = 'addr'
+    PRE_ROOT = 'pre_root'
+    ROOT = 'root'
+    PRE_PATH = 'pre_path'
+    PATH = 'path'
+    SIBLING = 'sibling'
+    PRE_HASH = 'pre_hash'
+    HASH = 'hash'
 class PoseidonHashTraceColumnType(Enum):
     FULL_0_1 = 'full_0_1'
     FULL_0_2 = 'full_0_2'
@@ -550,6 +568,27 @@ def main():
             if data.value == "addr" or data.value == "pre_root" or  data.value == "root" or \
                data.value == "sibling" or data.value == "pre_path" or  data.value == "path" or\
                data.value == "pre_hash" or data.value == "hash" :
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "layer" or data.value == 'storage_access_idx':
+                worksheet.write(row_index, col, row[data.value])
+            elif args.format == 'hex':
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            col += 1
+        row_index += 1
+
+    worksheet = workbook.add_worksheet("ProgramHashTrace")
+    generate_columns_of_title(worksheet, StorageHashTraceColumnType)
+
+    # generate program hash trace table
+    row_index = 1
+    for row in trace_json["builtin_program_hash"]:
+        col = 0
+        for data in StorageHashTraceColumnType:
+            if data.value == "addr" or data.value == "pre_root" or  data.value == "root" or \
+                    data.value == "sibling" or data.value == "pre_path" or  data.value == "path" or \
+                    data.value == "pre_hash" or data.value == "hash" :
                 worksheet.write(row_index, col, '{0}'.format(row[data.value]))
             elif data.value == "layer" or data.value == 'storage_access_idx':
                 worksheet.write(row_index, col, row[data.value])

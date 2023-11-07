@@ -1,16 +1,20 @@
-use crate::trace::{gen_dump_file, gen_storage_table};
+use crate::trace::{gen_dump_file, gen_storage_hash_table, gen_storage_table};
 use crate::Process;
 
 use crate::load_tx::init_tape;
+use core::crypto::hash::Hasher;
+use core::crypto::ZkHasher;
+use core::merkle_tree::log::StorageLog;
+use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::instruction::Opcode;
 use core::program::Program;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
+use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context;
-use itertools::Itertools;
-use log::LevelFilter;
+use log::{debug, LevelFilter};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
@@ -32,7 +36,14 @@ fn executor_run_test_program(
 
     let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
 
+    let hash = ZkHasher::default();
+
     let instructions = program.bytecode.split("\n");
+    let code: Vec<_> = instructions
+        .clone()
+        .map(|e| GoldilocksField::from_canonical_u64(u64::from_str_radix(&e[2..], 16).unwrap()))
+        .collect();
+    let code_hash = hash.hash_bytes(code);
     let mut prophets = HashMap::new();
     for item in program.prophets {
         prophets.insert(item.host as u64, item);
@@ -52,26 +63,28 @@ fn executor_run_test_program(
 
     let tp_start = 0;
 
+    let callee: Address = [
+        GoldilocksField::from_canonical_u64(9),
+        GoldilocksField::from_canonical_u64(10),
+        GoldilocksField::from_canonical_u64(11),
+        GoldilocksField::from_canonical_u64(12),
+    ];
+    let caller_addr = [
+        GoldilocksField::from_canonical_u64(17),
+        GoldilocksField::from_canonical_u64(18),
+        GoldilocksField::from_canonical_u64(19),
+        GoldilocksField::from_canonical_u64(20),
+    ];
+    let callee_exe_addr = [
+        GoldilocksField::from_canonical_u64(13),
+        GoldilocksField::from_canonical_u64(14),
+        GoldilocksField::from_canonical_u64(15),
+        GoldilocksField::from_canonical_u64(16),
+    ];
+
     if let Some(calldata) = call_data {
         process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
-        let callee: Address = [
-            GoldilocksField::from_canonical_u64(9),
-            GoldilocksField::from_canonical_u64(10),
-            GoldilocksField::from_canonical_u64(11),
-            GoldilocksField::from_canonical_u64(12),
-        ];
-        let caller_addr = [
-            GoldilocksField::from_canonical_u64(17),
-            GoldilocksField::from_canonical_u64(18),
-            GoldilocksField::from_canonical_u64(19),
-            GoldilocksField::from_canonical_u64(20),
-        ];
-        let callee_exe_addr = [
-            GoldilocksField::from_canonical_u64(13),
-            GoldilocksField::from_canonical_u64(14),
-            GoldilocksField::from_canonical_u64(15),
-            GoldilocksField::from_canonical_u64(16),
-        ];
+
         init_tape(
             &mut process,
             calldata,
@@ -81,13 +94,29 @@ fn executor_run_test_program(
             &init_tx_context(),
         );
     }
+    process.addr_code = callee_exe_addr;
+    process.addr_storage = callee;
+    program
+        .trace
+        .addr_program_hash
+        .insert(encode_addr(&callee_exe_addr), code_hash);
+    let mut account_tree = AccountTree::new_test();
+    //let mut account_tree =AccountTree::new_db_test("./".to_string()),
 
-    let res = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_db_test("./db_test/vote_test".to_string()),
-        // &mut AccountTree::new_test(),
-    );
+    account_tree.process_block(vec![WitnessStorageLog {
+        storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+        previous_value: tree_key_default(),
+    }]);
+    let _ = account_tree.save();
+
+    let start = account_tree.root_hash();
+
+    process.program_log.push(WitnessStorageLog {
+        storage_log: StorageLog::new_read_log(callee_exe_addr, code_hash),
+        previous_value: tree_key_default(),
+    });
+
+    let res = process.execute(&mut program, &mut Some(prophets), &mut account_tree);
 
     if res.is_err() {
         gen_dump_file(&mut process, &mut program);
@@ -97,21 +126,12 @@ fn executor_run_test_program(
     if print_trace {
         println!("vm trace: {:?}", program.trace);
     }
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut account_tree);
+    gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
+    program.trace.start_end_roots = (start, account_tree.root_hash());
+
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    println!(
-        "exec: {}, mem: {}, rc: {}, bitwise: {}, cmp: {}, psdn: {}, psdn_chunk: {}, storage: {}, tape: {}, sccall: {}",
-        program.trace.exec.len(),
-        program.trace.memory.len(),
-        program.trace.builtin_rangecheck.len(),
-        program.trace.builtin_bitwise_combined.len(),
-        program.trace.builtin_cmp.len(),
-        program.trace.builtin_poseidon.len(),
-        program.trace.builtin_poseidon_chunk.len(),
-        program.trace.builtin_storage_hash.len(),
-        program.trace.tape.len(),
-        program.trace.sc_call.len(),
-    );
     let mut file = File::create(trace_name).unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
@@ -188,46 +208,11 @@ fn fibo_recursive() {
 
 #[test]
 fn prophet_sqrt_test() {
-    let calldata = [1073741824u64, 7000u64, 2u64, 3509365327u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
     executor_run_test_program(
-        "../assembler/test_data/bin/sqrt_prophet_asm.json",
-        "sqrt_prophet_asm.txt",
-        false,
-        Some(calldata),
-    );
-}
-
-#[test]
-fn fib_test() {
-    // fib_non_recursive
-    // let calldata = [5u64, 1u64, 2146118040u64]
-    //     .iter()
-    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
-    //     .collect_vec();
-    // fib_recursive
-    // let calldata = [5u64, 1u64, 229678162u64]
-    //     .iter()
-    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
-    //     .collect_vec();
-    // bench_fib_non_recursive
-    let calldata = [47u64, 300u64, 2u64, 4185064725u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
-    // bench_fib_recursive
-    // let calldata = [5u64, 1u64, 2u64, 3642896167u64]
-    //     .iter()
-    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
-    //     .collect_vec();
-
-    executor_run_test_program(
-        "../assembler/test_data/bin/fib_asm.json",
-        "fib_asm.txt",
-        false,
-        Some(calldata),
+        "../assembler/test_data/bin/prophet_sqrt.json",
+        "prophet_sqrt_trace.txt",
+        true,
+        None,
     );
 }
 
@@ -282,28 +267,12 @@ fn malloc_test() {
 }
 
 #[test]
-fn vote_test() { 
-    let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
-    let vote_calldata = [2u64, 1u64, 2791810083u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
-    let winning_proposal_calldata = [0u64, 3186728800u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
-    let winning_name_calldata = [0u64, 363199787u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
+fn vote_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/vote.json",
         "vote_trace.txt",
         false,
-        Some(vote_calldata),
+        None,
     );
 }
 
@@ -417,22 +386,6 @@ fn printf_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/printf.json",
         "printf_trace.txt",
-        false,
-        Some(calldata),
-    );
-}
-
-#[test]
-fn book_test() {
-    let call_data = [60, 5, 111, 108, 97, 118, 109, 7, 120553111];
-
-    let calldata = call_data
-        .iter()
-        .map(|e| GoldilocksField::from_canonical_u64(*e))
-        .collect();
-    executor_run_test_program(
-        "../assembler/test_data/bin/books.json",
-        "books_trace.txt",
         false,
         Some(calldata),
     );

@@ -103,12 +103,27 @@ where
 
     pub fn gen_tx_trace(&mut self) -> Trace {
         let mut trace = Trace::default();
-        trace.tape.extend(&self.txs_trace.get(&0).unwrap().tape);
+        trace.tape.extend(std::mem::replace(
+            &mut self.txs_trace.get_mut(&0).unwrap().tape,
+            Vec::new(),
+        ));
+        trace.exec.extend(std::mem::replace(
+            &mut self.txs_trace.get_mut(&0).unwrap().exec,
+            Vec::new(),
+        ));
+        trace.builtin_storage_hash.extend(std::mem::replace(
+            &mut self.txs_trace.get_mut(&0).unwrap().builtin_storage_hash,
+            Vec::new(),
+        ));
+        trace.builtin_program_hash.extend(std::mem::replace(
+            &mut self.txs_trace.get_mut(&0).unwrap().builtin_program_hash,
+            Vec::new(),
+        ));
+
         loop {
             let data = self.txs_trace.pop_first();
             match data {
                 Some((_env_id, item)) => {
-                    trace.exec.extend(item.exec);
                     trace.memory.extend(item.memory);
                     trace
                         .builtin_bitwise_combined
@@ -117,7 +132,7 @@ where
                     trace.builtin_rangecheck.extend(item.builtin_rangecheck);
                     trace.builtin_poseidon.extend(item.builtin_poseidon);
                     trace.builtin_storage.extend(item.builtin_storage);
-                    trace.builtin_storage_hash.extend(item.builtin_storage_hash);
+                    trace.addr_program_hash.extend(item.addr_program_hash);
                     trace.sc_call.extend(item.sc_call);
                 }
                 None => break,

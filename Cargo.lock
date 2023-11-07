@@ -479,6 +479,7 @@ dependencies = [
  "enum-iterator",
  "env_logger 0.10.0",
  "futures",
+ "hex",
  "itertools",
  "log",
  "num_cpus",

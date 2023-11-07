@@ -2,6 +2,7 @@
 pub mod tests {
     use crate::OlaVM;
 
+    use executor::trace::gen_storage_hash_table;
     use ola_core::types::merkle_tree::TreeValue;
     use ola_core::types::Field;
     use ola_core::types::GoldilocksField;
@@ -68,16 +69,15 @@ pub mod tests {
             GoldilocksField::from_canonical_u64(4),
             //dlegate: 3965482278
             //call: 1607480800
-            GoldilocksField::from_canonical_u64(1607480800),
+            GoldilocksField::from_canonical_u64(3965482278),
         ];
 
-        let res = node
-            .execute_tx(
-                GoldilocksField::from_canonical_u64(5),
-                caller_address,
-                caller_exe_address,
-                calldata,
-            );
+        let res = node.execute_tx(
+            GoldilocksField::from_canonical_u64(5),
+            caller_address,
+            caller_exe_address,
+            calldata,
+        );
 
         if res.is_ok() {
             println!("run tx success:{:?}", res);

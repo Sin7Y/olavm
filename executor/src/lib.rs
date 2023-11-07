@@ -40,7 +40,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use crate::load_tx::{init_ctx_addr_info, load_ctx_addr_info};
 use crate::tape::TapeTree;
-use crate::trace::{gen_memory_table, gen_storage_hash_table, gen_storage_table, gen_tape_table};
+use crate::trace::{gen_memory_table, gen_tape_table};
 use core::memory_zone_process;
 use core::trace::trace::Step;
 use core::vm::vm_state::SCCallType;
@@ -80,9 +80,9 @@ macro_rules! memory_zone_detect {
 #[macro_export]
 macro_rules! memory_op {
     ($v: expr, $mem_addr: tt, $read_addr: expr,  $opcode: expr) => {
-        let mut is_rw = MemoryType::ReadWrite;
-        let mut region_prophet = GoldilocksField::ZERO;
-        let mut region_heap = GoldilocksField::ZERO;
+        let is_rw;
+        let region_prophet;
+        let region_heap;
 
         memory_zone_detect!($mem_addr, is_rw, region_prophet, region_heap, {
             is_rw = MemoryType::WriteOnce;
@@ -103,18 +103,18 @@ macro_rules! memory_op {
         )?;
     };
     ($v: expr, $mem_addr: tt, $value: expr,  $opcode: expr,$panic: expr) => {
-        let mut is_rw = MemoryType::ReadWrite;
-        let mut region_prophet = GoldilocksField::ZERO;
-        let mut region_heap = GoldilocksField::ZERO;
+        let is_rw;
+        let region_prophet;
+        let region_heap;
         memory_zone_detect!($mem_addr, is_rw, region_prophet, region_heap, $panic);
         $v.memory.write(
             $mem_addr,
             $v.clk,
             GoldilocksField::from_canonical_u64(1 << $opcode as u64),
-            GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+            GoldilocksField::from_canonical_u64(is_rw as u64),
             GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
             GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
-            GoldilocksField::ZERO,
+            region_prophet,
             region_heap,
             $value,
             $v.tx_idx,
@@ -211,6 +211,7 @@ pub struct Process {
     pub hp: GoldilocksField,
     pub storage: StorageTree,
     pub storage_log: Vec<WitnessStorageLog>,
+    pub program_log: Vec<WitnessStorageLog>,
     pub tp: GoldilocksField,
     pub tape: TapeTree,
     pub storage_access_idx: GoldilocksField,
@@ -239,6 +240,7 @@ impl Process {
             psp_start: GoldilocksField(PSP_START_ADDR),
             hp: GoldilocksField(HP_START_ADDR),
             storage_log: Vec::new(),
+            program_log: Vec::new(),
             storage: StorageTree {
                 trace: HashMap::new(),
             },
@@ -1831,8 +1833,6 @@ impl Process {
             }
         }
 
-        let hash_roots = gen_storage_hash_table(self, program, account_tree);
-        gen_storage_table(self, program, hash_roots)?;
         gen_memory_table(self, program)?;
         gen_tape_table(self, program)?;
         Ok(ExeEnd(end_step))

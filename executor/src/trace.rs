@@ -200,7 +200,9 @@ pub fn gen_storage_hash_table(
     program: &mut Program,
     account_tree: &mut AccountTree,
 ) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
-    let trace = std::mem::replace(&mut process.storage_log, Vec::new());
+    let storage_log_len = process.storage_log.len();
+    let mut trace = std::mem::replace(&mut process.storage_log, Vec::new());
+    trace.extend(std::mem::replace(&mut process.program_log, Vec::new()));
     let mut pre_root = account_tree.root_hash();
     let hash_traces = account_tree.process_block(trace.iter());
     let _ = account_tree.save();
@@ -260,6 +262,11 @@ pub fn gen_storage_hash_table(
         pre_root = root_hash;
         program.trace.builtin_storage_hash.extend(rows);
     }
+    program.trace.builtin_program_hash = program
+        .trace
+        .builtin_storage_hash
+        .drain(storage_log_len * ROOT_TREE_DEPTH..)
+        .collect();
     root_hashes
 }
 
@@ -276,12 +283,8 @@ pub fn gen_storage_table(
 
     let mut traces: Vec<_> = trace.into_iter().flat_map(|e| e.1).collect();
     traces.sort_by(|a, b| a.cmp(b));
-    let mut pre_clk = 0;
     for (item, root) in traces.iter().enumerate().zip(hash_roots) {
-        let mut diff_clk = 0;
-        if item.0 != 0 {
-            diff_clk = item.1.clk - pre_clk;
-        }
+        let diff_clk = 0;
         program.trace.insert_storage(
             item.1.clk,
             diff_clk,
@@ -303,7 +306,6 @@ pub fn gen_storage_table(
                 GoldilocksField::ZERO,
             ),
         );
-        pre_clk = item.1.clk;
     }
     Ok(())
 }
