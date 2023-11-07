@@ -1,6 +1,7 @@
 pub mod constant;
 use crate::impl_from_wrapper;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
+use crate::vm::vm_state::Address;
 use itertools::Itertools;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
@@ -144,6 +145,14 @@ pub fn tree_key_to_u8_arr(value: &TreeKey) -> Vec<u8> {
         key_vec.extend(item.0.to_le_bytes().to_vec());
         key_vec
     })
+}
+
+pub fn encode_addr(addr: &Address) -> String {
+    hex::encode(tree_key_to_u8_arr(addr))
+}
+
+pub fn decode_addr(addr: String) -> TreeKey {
+    u8_arr_to_tree_key(&hex::decode(addr).unwrap())
 }
 
 pub fn tree_key_to_leaf_index(value: &TreeKey) -> LevelIndex {

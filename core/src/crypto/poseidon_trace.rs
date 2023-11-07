@@ -184,12 +184,9 @@ pub fn calculate_arbitrary_poseidon_and_generate_intermediate_trace(
     );
 }
 mod test {
-    use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
+    
 
-    use crate::crypto::poseidon_trace::{
-        calculate_arbitrary_poseidon, calculate_arbitrary_poseidon_and_generate_intermediate_trace,
-        calculate_poseidon, calculate_poseidon_and_generate_intermediate_trace,
-    };
+    
 
     #[test]
     fn test_poseidon() {
