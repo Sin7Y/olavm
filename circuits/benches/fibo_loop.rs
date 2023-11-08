@@ -94,7 +94,7 @@ pub fn test_by_asm_json(path: String) {
 
 fn sqrt_prophet_benchmark(c: &mut Criterion) {
     let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
+    .filter_level(LevelFilter::Info)
         .try_init();
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("benches/asm/fib_asm.json");
