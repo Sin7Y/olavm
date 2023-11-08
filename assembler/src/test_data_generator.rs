@@ -152,17 +152,26 @@ mod tests {
 
     #[test]
     fn generate_store_u32() {
-        generate_from_file("storage_u32.json".to_string(), "storage_u32.json".to_string());
+        generate_from_file(
+            "storage_u32.json".to_string(),
+            "storage_u32.json".to_string(),
+        );
     }
 
     #[test]
     fn generate_poseidon_hash() {
-        generate_from_file("poseidon_hash.json".to_string(), "poseidon_hash.json".to_string());
+        generate_from_file(
+            "poseidon_hash.json".to_string(),
+            "poseidon_hash.json".to_string(),
+        );
     }
 
     #[test]
     fn generate_context_fetch() {
-        generate_from_file("context_fetch.json".to_string(), "context_fetch.json".to_string());
+        generate_from_file(
+            "context_fetch.json".to_string(),
+            "context_fetch.json".to_string(),
+        );
     }
 
     #[test]

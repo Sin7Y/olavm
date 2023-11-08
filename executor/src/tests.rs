@@ -99,7 +99,7 @@ fn executor_run_test_program(
     }
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-println!("exec len: {}", program.trace.exec.len());
+    println!("exec len: {}", program.trace.exec.len());
     let mut file = File::create(trace_name).unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
@@ -176,18 +176,14 @@ fn fibo_recursive() {
 
 #[test]
 fn prophet_sqrt_test() {
-    // let calldata = [1336552657u64, 2u64, 144u64, 2u64]
-    //     .iter()
-    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
-    //     .collect_vec();
-    let calldata = [2u64, 144u64, 2u64, 1336552657u64]
+    let calldata = [144u64, 100000u64, 2u64, 3509365327u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();
     executor_run_test_program(
         "../assembler/test_data/bin/sqrt_prophet_asm.json",
         "sqrt_prophet_asm.txt",
-        true,
+        false,
         Some(calldata),
     );
 }
