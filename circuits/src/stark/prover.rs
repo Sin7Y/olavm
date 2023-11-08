@@ -27,7 +27,7 @@ use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::sccall::sccall_stark::SCCallStark;
 use crate::builtins::storage::storage_access_stark::StorageAccessStark;
-use crate::builtins::tape::tape_stark::TapeStark;
+// use crate::builtins::tape::tape_stark::TapeStark;
 //use crate::columns::NUM_CPU_COLS;
 use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;

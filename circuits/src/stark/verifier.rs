@@ -26,7 +26,7 @@ use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::sccall::sccall_stark::SCCallStark;
 use crate::builtins::storage::storage_access_stark::StorageAccessStark;
-use crate::builtins::tape::tape_stark::TapeStark;
+// use crate::builtins::tape::tape_stark::TapeStark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::MemoryStark;
 
@@ -56,7 +56,7 @@ where
     let nums_permutation_zs = ola_stark.nums_permutation_zs(config);
 
     let OlaStark {
-        mut cpu_stark,
+        cpu_stark,
         memory_stark,
         mut bitwise_stark,
         cmp_stark,
@@ -162,12 +162,12 @@ where
 
     // TODO:
     // let public_values = all_proof.public_values;
-    let mut extra_looking_products = vec![vec![F::ONE; config.num_challenges]; NUM_TABLES];
+    let extra_looking_products = vec![vec![F::ONE; config.num_challenges]; NUM_TABLES];
     // extra_looking_products.push(Vec::new());
     // for c in 0..config.num_challenges {
     //     extra_looking_products[Table::StorageAccess as usize].push(
-    //         get_storagehash_extra_looking_products(&public_values, ctl_challenges.challenges[c]),
-    //     );
+    //         get_storagehash_extra_looking_products(&public_values,
+    // ctl_challenges.challenges[c]),     );
     // }
 
     verify_cross_table_lookups::<F, C, D>(
@@ -179,13 +179,13 @@ where
 }
 
 pub(crate) fn get_storagehash_extra_looking_products<F, const D: usize>(
-    public_values: &PublicValues,
-    challenge: GrandProductChallenge<F>,
+    _public_values: &PublicValues,
+    _challenge: GrandProductChallenge<F>,
 ) -> F
 where
     F: RichField + Extendable<D>,
 {
-    let mut prod = F::ONE;
+    let prod = F::ONE;
     prod
 }
 

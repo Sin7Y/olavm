@@ -1,11 +1,11 @@
 #[allow(unused_imports)]
-use core::types::{Field, GoldilocksField};
-#[allow(unused_imports)]
 use crate::{
     builtins::tape::columns::*,
     cpu::columns::*,
     generation::{cpu::generate_cpu_trace, tape::generate_tape_trace},
 };
+#[allow(unused_imports)]
+use core::types::{Field, GoldilocksField};
 
 use super::debug_trace_print::{get_exec_trace, get_rows_vec_from_trace, print_title_data};
 
