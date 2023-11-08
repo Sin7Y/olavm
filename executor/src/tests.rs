@@ -176,7 +176,7 @@ fn fibo_recursive() {
 
 #[test]
 fn prophet_sqrt_test() {
-    let calldata = [144u64, 100000u64, 2u64, 3509365327u64]
+    let calldata = [144u64, 3000u64, 2u64, 3509365327u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();
