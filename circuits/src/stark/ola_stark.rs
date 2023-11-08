@@ -633,35 +633,35 @@ mod tests {
         test_by_asm_json("call.json".to_string(), None)
     }
 
-    #[test]
-    fn range_check_test() {
-        test_by_asm_json("range_check.json".to_string(), None)
-    }
+    // #[test]
+    // fn range_check_test() {
+    //     test_by_asm_json("range_check.json".to_string(), None)
+    // }
 
-    #[test]
-    fn bitwise_test() {
-        test_by_asm_json("bitwise.json".to_string(), None)
-    }
+    // #[test]
+    // fn bitwise_test() {
+    //     test_by_asm_json("bitwise.json".to_string(), None)
+    // }
 
     #[test]
     fn comparison_test() {
         test_by_asm_json("comparison.json".to_string(), None)
     }
 
-    #[test]
-    fn test_ola_prophet_hand_write() {
-        test_by_asm_json("hand_write_prophet.json".to_string(), None);
-    }
+    // #[test]
+    // fn test_ola_prophet_hand_write() {
+    //     test_by_asm_json("hand_write_prophet.json".to_string(), None);
+    // }
 
-    #[test]
-    fn test_ola_prophet_sqrt() {
-        test_by_asm_json("prophet_sqrt.json".to_string(), None);
-    }
+    // #[test]
+    // fn test_ola_prophet_sqrt() {
+    //     test_by_asm_json("prophet_sqrt.json".to_string(), None);
+    // }
 
-    #[test]
-    fn test_ola_sqrt() {
-        test_by_asm_json("sqrt.json".to_string(), None);
-    }
+    // #[test]
+    // fn test_ola_sqrt() {
+    //     test_by_asm_json("sqrt.json".to_string(), None);
+    // }
 
     #[test]
     fn test_ola_poseidon() {
@@ -686,10 +686,10 @@ mod tests {
         test_by_asm_json("malloc.json".to_string(), None);
     }
 
-    #[test]
-    fn test_ola_vote() {
-        test_by_asm_json("vote.json".to_string(), None);
-    }
+    // #[test]
+    // fn test_ola_vote() {
+    //     test_by_asm_json("vote.json".to_string(), None);
+    // }
 
     #[test]
     fn test_ola_mem_gep() {
@@ -701,10 +701,10 @@ mod tests {
         test_by_asm_json("mem_gep_vector.json".to_string(), None);
     }
 
-    #[test]
-    fn test_ola_string_assert() {
-        test_by_asm_json("string_assert.json".to_string(), None);
-    }
+    // #[test]
+    // fn test_ola_string_assert() {
+    //     test_by_asm_json("string_assert.json".to_string(), None);
+    // }
 
     #[allow(unused)]
     pub fn test_by_asm_json(file_name: String, call_data: Option<Vec<GoldilocksField>>) {

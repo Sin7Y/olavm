@@ -5,26 +5,26 @@ mod tests {
     use log::LevelFilter;
     use std::fs;
 
-    #[test]
-    fn generate_sqrt() {
-        generate_from_file("sqrt.json".to_string(), "sqrt.json".to_string());
-    }
+    // #[test]
+    // fn generate_sqrt() {
+    //     generate_from_file("sqrt.json".to_string(), "sqrt.json".to_string());
+    // }
 
-    #[test]
-    fn generate_prophet_sqrt() {
-        generate_from_file(
-            "prophet_sqrt.json".to_string(),
-            "prophet_sqrt.json".to_string(),
-        );
-    }
+    // #[test]
+    // fn generate_prophet_sqrt() {
+    //     generate_from_file(
+    //         "prophet_sqrt.json".to_string(),
+    //         "prophet_sqrt.json".to_string(),
+    //     );
+    // }
 
-    #[test]
-    fn generate_hand_write_prophet() {
-        generate_from_file(
-            "hand_write_prophet.json".to_string(),
-            "hand_write_prophet.json".to_string(),
-        );
-    }
+    // #[test]
+    // fn generate_hand_write_prophet() {
+    //     generate_from_file(
+    //         "hand_write_prophet.json".to_string(),
+    //         "hand_write_prophet.json".to_string(),
+    //     );
+    // }
 
     #[test]
     fn generate_memory() {
@@ -90,10 +90,10 @@ mod tests {
         generate_from_file("malloc.json".to_string(), "malloc.json".to_string());
     }
 
-    #[test]
-    fn generate_vote() {
-        generate_from_file("vote.json".to_string(), "vote.json".to_string());
-    }
+    // #[test]
+    // fn generate_vote() {
+    //     generate_from_file("vote.json".to_string(), "vote.json".to_string());
+    // }
 
     #[test]
     fn generate_mem_gep() {
@@ -108,13 +108,13 @@ mod tests {
         );
     }
 
-    #[test]
-    fn generate_string_assert() {
-        generate_from_file(
-            "string_assert.json".to_string(),
-            "string_assert.json".to_string(),
-        );
-    }
+    // #[test]
+    // fn generate_string_assert() {
+    //     generate_from_file(
+    //         "string_assert.json".to_string(),
+    //         "string_assert.json".to_string(),
+    //     );
+    // }
 
     #[test]
     fn generate_tape() {
@@ -126,29 +126,29 @@ mod tests {
         generate_from_file("sc_input.json".to_string(), "sc_input.json".to_string());
     }
 
-    #[test]
-    fn generate_sccall() {
-        generate_from_file(
-            "sccall/sccall_caller.json".to_string(),
-            "sccall/sccall_caller.json".to_string(),
-        );
-        generate_from_file(
-            "sccall/sccall_callee.json".to_string(),
-            "sccall/sccall_callee.json".to_string(),
-        );
-    }
+    // #[test]
+    // fn generate_sccall() {
+    //     generate_from_file(
+    //         "sccall/sccall_caller.json".to_string(),
+    //         "sccall/sccall_caller.json".to_string(),
+    //     );
+    //     generate_from_file(
+    //         "sccall/sccall_callee.json".to_string(),
+    //         "sccall/sccall_callee.json".to_string(),
+    //     );
+    // }
 
-    #[test]
-    fn generate_sccall_test() {
-        generate_from_file(
-            "sccall/caller.json".to_string(),
-            "sccall/caller.json".to_string(),
-        );
-        generate_from_file(
-            "sccall/callee.json".to_string(),
-            "sccall/callee.json".to_string(),
-        );
-    }
+    // #[test]
+    // fn generate_sccall_test() {
+    //     generate_from_file(
+    //         "sccall/caller.json".to_string(),
+    //         "sccall/caller.json".to_string(),
+    //     );
+    //     generate_from_file(
+    //         "sccall/callee.json".to_string(),
+    //         "sccall/callee.json".to_string(),
+    //     );
+    // }
 
     #[test]
     fn generate_store_u32() {

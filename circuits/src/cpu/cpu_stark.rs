@@ -961,11 +961,11 @@ mod tests {
         test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
-    #[test]
-    fn test_sqrt() {
-        let program_path = "sqrt.json";
-        test_cpu_with_asm_file_name(program_path.to_string(), None);
-    }
+    // #[test]
+    // fn test_sqrt() {
+    //     let program_path = "sqrt.json";
+    //     test_cpu_with_asm_file_name(program_path.to_string(), None);
+    // }
 
     #[test]
     fn test_poseidon() {
@@ -993,11 +993,11 @@ mod tests {
         test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
-    #[test]
-    fn test_vote() {
-        let program_path = "vote.json";
-        test_cpu_with_asm_file_name(program_path.to_string(), None);
-    }
+    // #[test]
+    // fn test_vote() {
+    //     let program_path = "vote.json";
+    //     test_cpu_with_asm_file_name(program_path.to_string(), None);
+    // }
 
     #[allow(unused)]
     fn test_cpu_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {

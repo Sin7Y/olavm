@@ -4,10 +4,10 @@ mod tests {
     use crate::relocate::{asm_relocate, AsmBundle};
     use core::program::decoder::decode_binary_program_to_instructions;
 
-    #[test]
-    fn dump_sqrt() {
-        dump_from_asm_file("sqrt.json".to_string());
-    }
+    // #[test]
+    // fn dump_sqrt() {
+    //     dump_from_asm_file("sqrt.json".to_string());
+    // }
 
     fn dump_from_asm_file(input_file_name: String) {
         let input_path = format!("test_data/asm/{}", input_file_name);

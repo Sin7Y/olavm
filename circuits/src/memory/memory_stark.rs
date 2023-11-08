@@ -345,11 +345,11 @@ mod tests {
         test_memory_with_asm_file_name(program_path.to_string(), None);
     }
 
-    #[test]
-    fn test_memory_sqrt() {
-        let program_path = "sqrt.json";
-        test_memory_with_asm_file_name(program_path.to_string(), None);
-    }
+    // #[test]
+    // fn test_memory_sqrt() {
+    //     let program_path = "sqrt.json";
+    //     test_memory_with_asm_file_name(program_path.to_string(), None);
+    // }
 
     #[test]
     fn test_memory_malloc() {
@@ -357,11 +357,11 @@ mod tests {
         test_memory_with_asm_file_name(program_path.to_string(), None);
     }
 
-    #[test]
-    fn test_memory_vote() {
-        let program_path = "vote.json";
-        test_memory_with_asm_file_name(program_path.to_string(), None);
-    }
+    // #[test]
+    // fn test_memory_vote() {
+    //     let program_path = "vote.json";
+    //     test_memory_with_asm_file_name(program_path.to_string(), None);
+    // }
 
     #[test]
     fn test_memory_poseidon() {

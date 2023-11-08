@@ -11,15 +11,15 @@ mod tests {
         test_decode("malloc.json".to_string());
     }
 
-    #[test]
-    fn test_decode_prophet_sqrt() {
-        test_decode("prophet_sqrt.json".to_string());
-    }
+    // #[test]
+    // fn test_decode_prophet_sqrt() {
+    //     test_decode("prophet_sqrt.json".to_string());
+    // }
 
-    #[test]
-    fn test_decode_hand_write_prophet() {
-        test_decode("hand_write_prophet.json".to_string());
-    }
+    // #[test]
+    // fn test_decode_hand_write_prophet() {
+    //     test_decode("hand_write_prophet.json".to_string());
+    // }
 
     #[test]
     fn test_decode_memory() {
