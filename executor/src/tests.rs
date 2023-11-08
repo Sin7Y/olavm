@@ -189,6 +189,20 @@ fn prophet_sqrt_test() {
 }
 
 #[test]
+fn prophet_fib_test() {
+    let calldata = [50u64, 1u64, 2146118040u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    executor_run_test_program(
+        "../assembler/test_data/bin/fib_asm.json",
+        "fib_asm.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
 fn sqrt_newton_iteration_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/sqrt.json",
