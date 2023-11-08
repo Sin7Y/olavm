@@ -1,3 +1,4 @@
+use core::vm::opcodes::OlaOpcode;
 use std::ops::Sub;
 
 use plonky2::field::types::Field;
@@ -20,47 +21,61 @@ pub fn ctl_data_mem_rc_diff_cond<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_mem_rc_diff_cond<F: Field>() -> Column<F> {
-    Column::sum([
-        COL_MEM_REGION_PROPHET,
-        COL_MEM_REGION_POSEIDON,
-        COL_MEM_REGION_ECDSA,
-    ])
+    Column::single(COL_MEM_FILTER_LOOKING_RC_COND)
 }
 
-pub fn ctl_data_mem_rc<F: Field>() -> Vec<Column<F>> {
+pub fn ctl_data_mem_sort_rc<F: Field>() -> Vec<Column<F>> {
     vec![Column::single(COL_MEM_RC_VALUE)]
 }
 
-pub fn ctl_filter_mem_rc<F: Field>() -> Column<F> {
+pub fn ctl_filter_mem_sort_rc<F: Field>() -> Column<F> {
     Column::single(COL_MEM_FILTER_LOOKING_RC)
 }
 
-pub fn ctl_data_mem_rc_diff_addr<F: Field>() -> Vec<Column<F>> {
-    vec![Column::single(COL_MEM_DIFF_ADDR)]
-}
-
-pub fn ctl_filter_mem_rc_diff_addr<F: Field>() -> Column<F> {
-    Column::single(COL_MEM_IS_RW)
-}
-
-pub fn ctl_data_mem_rc_diff_clk<F: Field>() -> Vec<Column<F>> {
-    vec![Column::single(COL_MEM_DIFF_CLK)]
-}
-
-pub fn ctl_filter_mem_rc_diff_clk<F: Field>() -> Column<F> {
-    Column::single(COL_MEM_RW_ADDR_UNCHANGED)
-}
-
-// todo ctl for poseidon and ecdsa
-
 pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
-    let cols: Vec<_> =
-        Column::singles([COL_MEM_CLK, COL_MEM_OP, COL_MEM_ADDR, COL_MEM_VALUE]).collect();
+    let cols: Vec<_> = Column::singles([
+        COL_MEM_TX_IDX,
+        COL_MEM_ENV_IDX,
+        COL_MEM_CLK,
+        COL_MEM_OP,
+        COL_MEM_ADDR,
+        COL_MEM_VALUE,
+    ])
+    .collect();
     cols
 }
 
 pub fn ctl_filter<F: Field>() -> Column<F> {
-    Column::single(COL_MEM_FILTER_LOOKED_FOR_MAIN)
+    // poseidon data is different, prophet write donnot lookup
+    Column::sum([
+        COL_MEM_S_MLOAD,
+        COL_MEM_S_MSTORE,
+        COL_MEM_S_CALL,
+        COL_MEM_S_RET,
+        COL_MEM_S_TLOAD,
+        COL_MEM_S_TSTORE,
+        COL_MEM_S_SCCALL,
+        COL_MEM_S_SSTORE,
+        COL_MEM_S_SLOAD,
+    ])
+}
+
+pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
+    let cols: Vec<_> = Column::singles([
+        COL_MEM_TX_IDX,
+        COL_MEM_ENV_IDX,
+        COL_MEM_CLK,
+        COL_MEM_OP,
+        COL_MEM_ADDR,
+        COL_MEM_VALUE,
+        COL_MEM_IS_WRITE,
+    ])
+    .collect();
+    cols
+}
+
+pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
+    Column::single(COL_MEM_S_POSEIDON)
 }
 
 #[derive(Copy, Clone, Default)]
@@ -81,20 +96,30 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
     {
         let lv = vars.local_values;
         let nv = vars.next_values;
+        // tx_idx not change or increase by one
+        yield_constr.constraint_transition(
+            (nv[COL_MEM_TX_IDX] - lv[COL_MEM_TX_IDX])
+                * (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX]),
+        );
+        // in same tx, env_idx not change or increase by one
+        yield_constr.constraint_transition(
+            (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX])
+                * (nv[COL_MEM_ENV_IDX] - lv[COL_MEM_ENV_IDX])
+                * (P::ONES - nv[COL_MEM_ENV_IDX] + lv[COL_MEM_ENV_IDX]),
+        );
 
-        let p = P::ZEROS - P::ONES;
+        let p = P::ZEROS;
         let span = P::Scalar::from_canonical_u64(2_u64.pow(32).sub(1));
 
-        let op = lv[COL_MEM_OP];
         let is_rw = lv[COL_MEM_IS_RW];
         let region_prophet = lv[COL_MEM_REGION_PROPHET];
-        let region_poseidon = lv[COL_MEM_REGION_POSEIDON];
-        let region_ecdsa = lv[COL_MEM_REGION_ECDSA];
         let nv_region_prophet = nv[COL_MEM_REGION_PROPHET];
-        let nv_region_poseidon = nv[COL_MEM_REGION_POSEIDON];
+        let region_heap = lv[COL_MEM_REGION_HEAP];
+        let nv_region_heap = nv[COL_MEM_REGION_HEAP];
+        let region_stack = P::ONES - lv[COL_MEM_REGION_HEAP] - lv[COL_MEM_REGION_PROPHET];
+        let nv_region_stack = P::ONES - nv[COL_MEM_REGION_HEAP] - nv[COL_MEM_REGION_PROPHET];
         let is_write = lv[COL_MEM_IS_WRITE];
         let nv_is_write = nv[COL_MEM_IS_WRITE];
-        let filter_looked_for_main = lv[COL_MEM_FILTER_LOOKED_FOR_MAIN];
         let addr = lv[COL_MEM_ADDR];
         let nv_diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
         let nv_addr = nv[COL_MEM_ADDR];
@@ -108,359 +133,289 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let diff_clk = lv[COL_MEM_DIFF_CLK];
         let rc_value = lv[COL_MEM_RC_VALUE];
         let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
+        let lv_filter_looking_rc_cond = lv[COL_MEM_FILTER_LOOKING_RC_COND];
 
-        let op_mload = P::Scalar::from_canonical_u64(2_u64.pow(25));
-        let op_mstore = P::Scalar::from_canonical_u64(2_u64.pow(24));
-        let op_call = P::Scalar::from_canonical_u64(2_u64.pow(27));
-        let op_ret = P::Scalar::from_canonical_u64(2_u64.pow(26));
-        // op is one of mload, mstore, call, ret or prophet write 0.
-        yield_constr
-            .constraint(op * (op - op_mload) * (op - op_mstore) * (op - op_call) * (op - op_ret));
-        // when op is 0, is_rw must be zero.
+        let op_mload = P::Scalar::from_canonical_u64(OlaOpcode::MLOAD.binary_bit_mask());
+        let op_mstore = P::Scalar::from_canonical_u64(OlaOpcode::MSTORE.binary_bit_mask());
+        let op_call = P::Scalar::from_canonical_u64(OlaOpcode::CALL.binary_bit_mask());
+        let op_ret = P::Scalar::from_canonical_u64(OlaOpcode::RET.binary_bit_mask());
+        let op_tload = P::Scalar::from_canonical_u64(OlaOpcode::TLOAD.binary_bit_mask());
+        let op_tstore = P::Scalar::from_canonical_u64(OlaOpcode::TSTORE.binary_bit_mask());
+        let op_sc_call = P::Scalar::from_canonical_u64(OlaOpcode::SCCALL.binary_bit_mask());
+        let op_poseidon = P::Scalar::from_canonical_u64(OlaOpcode::POSEIDON.binary_bit_mask());
+        let op_sstore = P::Scalar::from_canonical_u64(OlaOpcode::SSTORE.binary_bit_mask());
+        let op_sload = P::Scalar::from_canonical_u64(OlaOpcode::SLOAD.binary_bit_mask());
+        let op_prophet = P::ZEROS;
+
+        // constraint opcode and selector matches, selector is binary and only one is
+        // selected.
+        yield_constr.constraint((lv[COL_MEM_OP] - op_mload) * lv[COL_MEM_S_MLOAD]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_mstore) * lv[COL_MEM_S_MSTORE]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_call) * lv[COL_MEM_S_CALL]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_ret) * lv[COL_MEM_S_RET]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_tload) * lv[COL_MEM_S_TLOAD]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_tstore) * lv[COL_MEM_S_TSTORE]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_sc_call) * lv[COL_MEM_S_SCCALL]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_poseidon) * lv[COL_MEM_S_POSEIDON]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_sstore) * lv[COL_MEM_S_SSTORE]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_sload) * lv[COL_MEM_S_SLOAD]);
+        yield_constr.constraint((lv[COL_MEM_OP] - op_prophet) * lv[COL_MEM_S_PROPHET]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_MLOAD]) * lv[COL_MEM_S_MLOAD]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_MSTORE]) * lv[COL_MEM_S_MSTORE]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_CALL]) * lv[COL_MEM_S_CALL]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_RET]) * lv[COL_MEM_S_RET]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_TLOAD]) * lv[COL_MEM_S_TLOAD]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_TSTORE]) * lv[COL_MEM_S_TSTORE]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_SCCALL]) * lv[COL_MEM_S_SCCALL]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_POSEIDON]) * lv[COL_MEM_S_POSEIDON]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_SSTORE]) * lv[COL_MEM_S_SSTORE]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_SLOAD]) * lv[COL_MEM_S_SLOAD]);
+        yield_constr.constraint((P::ONES - lv[COL_MEM_S_PROPHET]) * lv[COL_MEM_S_PROPHET]);
         yield_constr.constraint(
-            (op - op_mload) * (op - op_mstore) * (op - op_call) * (op - op_ret) * is_rw,
+            P::ONES
+                - lv[COL_MEM_S_MLOAD]
+                - lv[COL_MEM_S_MSTORE]
+                - lv[COL_MEM_S_CALL]
+                - lv[COL_MEM_S_RET]
+                - lv[COL_MEM_S_TLOAD]
+                - lv[COL_MEM_S_TSTORE]
+                - lv[COL_MEM_S_SCCALL]
+                - lv[COL_MEM_S_POSEIDON]
+                - lv[COL_MEM_S_SSTORE]
+                - lv[COL_MEM_S_SLOAD]
+                - lv[COL_MEM_S_PROPHET],
         );
 
-        // constraint is_write and op. When write, op can be mstore, call and 0; When
-        // read, op can be mload, call, ret. call can both write and read, does
-        // not need a constraint rule.
-        yield_constr
-            .constraint((op - op_mload) * (op - op_call) * (op - op_ret) * (P::ONES - is_write));
-        yield_constr.constraint(op * (op - op_mstore) * (op - op_call) * is_write);
+        // constraint is_rw region
+        yield_constr.constraint(is_rw * (P::ONES - is_rw));
+        yield_constr.constraint(lv[COL_MEM_IS_RW] * lv[COL_MEM_S_PROPHET]);
+        yield_constr.constraint(
+            (P::ONES - lv[COL_MEM_IS_RW]) * (P::ONES - lv[COL_MEM_S_PROPHET] - lv[COL_MEM_S_MLOAD]),
+        );
+        // constraint is_write
+        yield_constr.constraint(
+            lv[COL_MEM_IS_WRITE]
+                * (P::ONES
+                    - lv[COL_MEM_S_MSTORE]
+                    - lv[COL_MEM_S_CALL]
+                    - lv[COL_MEM_S_TLOAD]
+                    - lv[COL_MEM_S_POSEIDON]
+                    - lv[COL_MEM_S_SLOAD]
+                    - lv[COL_MEM_S_PROPHET]),
+        );
+        yield_constr.constraint(
+            (P::ONES - lv[COL_MEM_IS_WRITE])
+                * (P::ONES
+                    - lv[COL_MEM_S_MLOAD]
+                    - lv[COL_MEM_S_CALL]
+                    - lv[COL_MEM_S_RET]
+                    - lv[COL_MEM_S_TSTORE]
+                    - lv[COL_MEM_S_SCCALL]
+                    - lv[COL_MEM_S_POSEIDON]
+                    - lv[COL_MEM_S_SSTORE]
+                    - lv[COL_MEM_S_SLOAD]),
+        );
 
-        // when op is not 0, filter_looked_for_main need to be enabled.
-        yield_constr.constraint(op * (P::ONES - filter_looked_for_main));
+        // region is one of stack, heap and prophet
+        yield_constr.constraint(P::ONES - region_stack - region_heap - region_prophet);
+        yield_constr.constraint(region_stack * (P::ONES - region_stack));
+        yield_constr.constraint(region_heap * (P::ONES - region_heap));
+        yield_constr.constraint(region_prophet * (P::ONES - region_prophet));
+        // make sure region addr is right
+        yield_constr.constraint(region_prophet * (p - addr - diff_addr_cond));
+        yield_constr.constraint(region_heap * (p - span - addr - diff_addr_cond));
+
+        // if not prophet write, must be looked up.
+        // yield_constr
+        //     .constraint((P::ONES - lv[COL_MEM_S_PROPHET]) * (P::ONES -
+        // filter_looked_for_main));
 
         // addr'-addr-diff_addr'= 0
-        yield_constr.constraint_transition(nv_addr - addr - nv_diff_addr);
-        // for rw_addr_unchanged
-        yield_constr.constraint_first_row(rw_addr_unchanged);
         yield_constr.constraint_transition(
-            is_rw * (P::ONES - nv_rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
+            (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX])
+                * (P::ONES - nv[COL_MEM_ENV_IDX] + lv[COL_MEM_ENV_IDX])
+                * (nv_region_heap - region_heap - P::ONES)
+                * (nv_addr - addr - nv_diff_addr),
         );
-
-        // for region division: 1. one of four region is selected; 2. binary
-        // constraints; 3. diff_addr_cond in different region.
-        yield_constr.constraint(is_rw + region_prophet + region_poseidon + region_ecdsa - P::ONES);
-        yield_constr.constraint(is_rw * (P::ONES - is_rw));
-        yield_constr.constraint(region_prophet * (P::ONES - region_prophet));
-        yield_constr.constraint(region_poseidon * (P::ONES - region_poseidon));
-        yield_constr.constraint(region_ecdsa * (P::ONES - region_ecdsa));
-        yield_constr.constraint(region_prophet * (p - addr - diff_addr_cond));
-        yield_constr.constraint(region_poseidon * (p - span - addr - diff_addr_cond));
-        yield_constr.constraint(
-            region_ecdsa * (p - span.mul(P::Scalar::from_canonical_u64(2)) - addr - diff_addr_cond),
+        // constaint rw_addr_unchanged, for stack and heap
+        yield_constr.constraint_transition(
+            (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX])
+                * (P::ONES - nv[COL_MEM_ENV_IDX] + lv[COL_MEM_ENV_IDX])
+                * region_stack
+                * nv_region_stack
+                * (P::ONES - nv_rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
+        );
+        yield_constr.constraint_transition(
+            (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX])
+                * (P::ONES - nv[COL_MEM_ENV_IDX] + lv[COL_MEM_ENV_IDX])
+                * region_heap
+                * nv_region_heap
+                * (P::ONES - nv_rw_addr_unchanged - nv_diff_addr * nv_diff_addr_inv),
         );
 
         // for write once:
-        // 1. addr doesn't change or increase by 1 when not cross region;
+        // 1. addr doesn't change or increase by 1 in prophet region;
         // 2. when addr not increase, must be read.
-        yield_constr.constraint_transition(
-            (P::ONES - is_rw)
-                * (P::ONES - nv_region_prophet + region_prophet)
-                * (P::ONES - nv_region_poseidon + region_poseidon)
-                * (nv_addr - addr)
-                * (nv_addr - addr - P::ONES),
+        yield_constr.constraint(
+            region_prophet * nv_region_prophet * (nv_addr - addr) * (nv_addr - addr - P::ONES),
         );
-        yield_constr.constraint_transition(
-            (P::ONES - is_rw)
-                * (P::ONES - nv_region_prophet + region_prophet)
-                * (P::ONES - nv_region_poseidon + region_poseidon)
-                * (nv_addr - addr - P::ONES)
-                * nv_is_write,
+        yield_constr.constraint(
+            region_prophet * nv_region_prophet * (nv_addr - addr - P::ONES) * nv_is_write,
         );
+
+        // (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX])
+        // * (nv[COL_MEM_ENV_IDX] - lv[COL_MEM_ENV_IDX]
 
         // read/write constraint:
         // 1. first operation for each addr must be write;
         // 2. next value does not change if it is read.
         yield_constr.constraint_first_row(P::ONES - is_write);
-        yield_constr.constraint_transition((nv_addr - addr) * (P::ONES - nv_is_write));
-        yield_constr.constraint_transition((P::ONES - nv_is_write) * (nv_value - value));
+        yield_constr.constraint(
+            (nv[COL_MEM_TX_IDX] - lv[COL_MEM_TX_IDX])
+                * (nv[COL_MEM_ENV_IDX] - lv[COL_MEM_ENV_IDX])
+                * (P::ONES - nv_is_write),
+        );
+        yield_constr.constraint((nv_addr - addr) * (P::ONES - nv_is_write));
+        yield_constr.constraint((P::ONES - nv_is_write) * (nv_value - value));
 
         // rc_value constraint:
-        yield_constr.constraint(is_rw * (diff_addr + diff_clk - rc_value));
-        yield_constr.constraint((P::ONES - is_rw) * (diff_addr_cond - rc_value));
-        // filter_looking_rc constraints:
-        // 1. read write segment filter_looking_rc must be 1.
-        // 2. in write once segment, when reading filter_looking_rc must be 1.
-        yield_constr.constraint(is_rw * (P::ONES - filter_looking_rc));
-        yield_constr
-            .constraint((P::ONES - is_rw) * (P::ONES - is_write) * (P::ONES - filter_looking_rc));
+        yield_constr.constraint_transition(
+            (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX])
+                * (P::ONES - nv[COL_MEM_ENV_IDX] + lv[COL_MEM_ENV_IDX])
+                * is_rw
+                * (nv_region_heap - region_heap - P::ONES)
+                * (rc_value - rw_addr_unchanged * diff_clk)
+                * (rc_value - (P::ONES - rw_addr_unchanged) * diff_addr),
+        );
+        yield_constr.constraint_transition(
+            (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX])
+                * (P::ONES - nv[COL_MEM_ENV_IDX] + lv[COL_MEM_ENV_IDX])
+                * is_rw
+                * rc_value
+                * (nv_region_heap - region_heap - P::ONES)
+                * (P::ONES - filter_looking_rc),
+        );
+
+        // heap and prophet read, diff_cond must rc
+        yield_constr.constraint((P::ONES - lv_filter_looking_rc_cond) * region_heap);
+        yield_constr.constraint(
+            (P::ONES - lv_filter_looking_rc_cond) * region_prophet * (P::ONES - is_write),
+        );
     }
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, NUM_MEM_COLS>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, NUM_MEM_COLS>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
-        let one = builder.one_extension();
-
-        let lv = vars.local_values;
-        let nv = vars.next_values;
-
-        let p = builder.constant_extension(
-            F::Extension::from_canonical_u64(0).sub(F::Extension::from_canonical_u64(1)),
-        );
-        let span =
-            builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(32).sub(1)));
-
-        let op = lv[COL_MEM_OP];
-        let is_rw = lv[COL_MEM_IS_RW];
-        let region_prophet = lv[COL_MEM_REGION_PROPHET];
-        let region_poseidon = lv[COL_MEM_REGION_POSEIDON];
-        let region_ecdsa = lv[COL_MEM_REGION_ECDSA];
-        let nv_region_prophet = nv[COL_MEM_REGION_PROPHET];
-        let nv_region_poseidon = nv[COL_MEM_REGION_POSEIDON];
-        let is_write = lv[COL_MEM_IS_WRITE];
-        let nv_is_write = nv[COL_MEM_IS_WRITE];
-        let filter_looked_for_main = lv[COL_MEM_FILTER_LOOKED_FOR_MAIN];
-        let addr = lv[COL_MEM_ADDR];
-        let nv_diff_addr_inv = nv[COL_MEM_DIFF_ADDR_INV];
-        let nv_addr = nv[COL_MEM_ADDR];
-        let diff_addr = lv[COL_MEM_DIFF_ADDR];
-        let nv_diff_addr = nv[COL_MEM_DIFF_ADDR];
-        let rw_addr_unchanged = lv[COL_MEM_RW_ADDR_UNCHANGED];
-        let nv_rw_addr_unchanged = nv[COL_MEM_RW_ADDR_UNCHANGED];
-        let diff_addr_cond = lv[COL_MEM_DIFF_ADDR_COND];
-        let value = lv[COL_MEM_VALUE];
-        let nv_value = lv[COL_MEM_VALUE];
-        let diff_clk = lv[COL_MEM_DIFF_CLK];
-        let rc_value = lv[COL_MEM_RC_VALUE];
-        let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
-
-        let op_mload =
-            builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(25)));
-        let op_mstore =
-            builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(24)));
-        let op_call =
-            builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(27)));
-        let op_ret =
-            builder.constant_extension(F::Extension::from_canonical_usize(2_usize.pow(26)));
-        // op is one of mload, mstore, call, ret or prophet write 0.
-        let d_op_mload = builder.sub_extension(op, op_mload);
-        let d_op_mstore = builder.sub_extension(op, op_mstore);
-        let d_op_call = builder.sub_extension(op, op_call);
-        let d_op_ret = builder.sub_extension(op, op_ret);
-        let one_m_is_write = builder.sub_extension(one, is_write);
-        let op_inter_1 = builder.mul_extension(d_op_mload, d_op_mstore);
-        let op_inter_2 = builder.mul_extension(op_inter_1, d_op_call);
-        let op_inter_3 = builder.mul_extension(op_inter_2, d_op_ret);
-        let op_inter_4 = builder.mul_extension(op_inter_3, op);
-        yield_constr.constraint(builder, op_inter_4);
-        // when op is 0, is_rw must be zero.
-        let op_inter_rw = builder.mul_extension(op_inter_3, is_rw);
-        yield_constr.constraint(builder, op_inter_rw);
-
-        // constraint is_write and op. When write, op can be mstore, call and 0; When
-        // read, op can be mload, call, ret. call can both write and read, does
-        // not need a constraint rule.
-        let is_write_inter_1 = builder.mul_extension(d_op_mload, d_op_call);
-        let is_write_inter_2 = builder.mul_extension(is_write_inter_1, d_op_ret);
-        let is_write_inter_3 = builder.mul_extension(is_write_inter_2, one_m_is_write);
-        yield_constr.constraint(builder, is_write_inter_3);
-        let is_write_inter_2_1 = builder.mul_extension(op, d_op_mstore);
-        let is_write_inter_2_2 = builder.mul_extension(is_write_inter_2_1, d_op_call);
-        let is_write_inter_2_3 = builder.mul_extension(is_write_inter_2_2, is_write);
-        yield_constr.constraint(builder, is_write_inter_2_3);
-
-        // when op is not 0, filter_looked_for_main need to be enabled.
-        let one_m_filter_looked_for_main = builder.sub_extension(one, filter_looked_for_main);
-        let constraint_filter_main = builder.mul_extension(op, one_m_filter_looked_for_main);
-        yield_constr.constraint(builder, constraint_filter_main);
-
-        // addr'-addr-diff_addr'= 0
-        let calculated_diff_addr = builder.sub_extension(nv_addr, addr);
-        let constraint_diff_addr = builder.sub_extension(calculated_diff_addr, nv_diff_addr);
-        yield_constr.constraint_transition(builder, constraint_diff_addr);
-        // for rw_addr_unchanged
-        yield_constr.constraint_first_row(builder, rw_addr_unchanged);
-        let nv_diff_mul_inv = builder.mul_extension(nv_diff_addr, nv_diff_addr_inv);
-        let one_m_unchanged = builder.sub_extension(one, nv_rw_addr_unchanged);
-        let constraint_unchanged = builder.sub_extension(one_m_unchanged, nv_diff_mul_inv);
-        yield_constr.constraint_transition(builder, constraint_unchanged);
-
-        // for region division: 1. one of four region is selected; 2. binary
-        // constraints; 3. diff_addr_cond in different region.
-        let sum_rw_prophet = builder.add_extension(is_rw, region_prophet);
-        let sum_rw_prophet_poseidon = builder.add_extension(sum_rw_prophet, region_poseidon);
-        let sum_rw_prophet_poseidon_ecdsa =
-            builder.add_extension(sum_rw_prophet_poseidon, region_ecdsa);
-        let constraint_region = builder.sub_extension(sum_rw_prophet_poseidon_ecdsa, one);
-        yield_constr.constraint(builder, constraint_region);
-        let one_m_rw = builder.sub_extension(one, is_rw);
-        let one_m_prophet = builder.sub_extension(one, region_prophet);
-        let one_m_poseidon = builder.sub_extension(one, region_poseidon);
-        let one_m_ecdsa = builder.sub_extension(one, region_ecdsa);
-        let binary_rw = builder.mul_extension(is_rw, one_m_rw);
-        let binary_prophet = builder.mul_extension(region_prophet, one_m_prophet);
-        let binary_poseidon = builder.mul_extension(region_poseidon, one_m_poseidon);
-        let binary_ecdsa = builder.mul_extension(region_ecdsa, one_m_ecdsa);
-        yield_constr.constraint(builder, binary_rw);
-        yield_constr.constraint(builder, binary_prophet);
-        yield_constr.constraint(builder, binary_poseidon);
-        yield_constr.constraint(builder, binary_ecdsa);
-        let calculated_diff_prophet = builder.sub_extension(p, addr);
-        let d_diff_prophet = builder.sub_extension(calculated_diff_prophet, diff_addr_cond);
-        let constraint_prophet_cond = builder.mul_extension(region_prophet, d_diff_prophet);
-        yield_constr.constraint(builder, constraint_prophet_cond);
-        let cell_poseidon = builder.sub_extension(p, span);
-        let calculated_diff_poseidon = builder.sub_extension(cell_poseidon, addr);
-        let d_diff_poseidon = builder.sub_extension(calculated_diff_poseidon, diff_addr_cond);
-        let constraint_poseidon_cond = builder.mul_extension(region_poseidon, d_diff_poseidon);
-        yield_constr.constraint(builder, constraint_poseidon_cond);
-        let cell_ecdsa = builder.sub_extension(cell_poseidon, span);
-        let calculated_diff_ecdsa = builder.sub_extension(cell_ecdsa, addr);
-        let d_diff_ecdsa = builder.sub_extension(calculated_diff_ecdsa, diff_addr_cond);
-        let constraint_ecdsa_cond = builder.mul_extension(region_ecdsa, d_diff_ecdsa);
-        yield_constr.constraint(builder, constraint_ecdsa_cond);
-
-        // for write once:
-        // 1. addr doesn't change or increase by 1 when not cross region;
-        // 2. when addr not increase, must be read.
-        let inc_prophet = builder.sub_extension(nv_region_prophet, region_prophet);
-        let one_m_inc_prophet = builder.sub_extension(one, inc_prophet);
-        let inc_poseidon = builder.sub_extension(nv_region_poseidon, region_poseidon);
-        let one_m_inc_poseidon = builder.sub_extension(one, inc_poseidon);
-        let inc_addr = builder.sub_extension(nv_addr, addr);
-        let one_m_inc_addr = builder.sub_extension(inc_addr, one);
-        let write_once_inter_1 = builder.mul_extension(one_m_rw, one_m_inc_prophet);
-        let write_once_inter_2 = builder.mul_extension(write_once_inter_1, one_m_inc_poseidon);
-        let write_once_inter_3 = builder.mul_extension(write_once_inter_2, one_m_inc_addr);
-        let constraint_write_once_addr_change = builder.mul_extension(write_once_inter_3, inc_addr);
-        yield_constr.constraint_transition(builder, constraint_write_once_addr_change);
-        let constraint_write_once = builder.mul_extension(write_once_inter_3, nv_is_write);
-        yield_constr.constraint_transition(builder, constraint_write_once);
-
-        // read/write constraint:
-        // 1. first operation for each addr must be write;
-        // 2. next value does not change if it is read.
-        yield_constr.constraint_first_row(builder, one_m_is_write);
-        let one_m_nv_is_write = builder.sub_extension(one, nv_is_write);
-        let constraint_addr_write_for_first = builder.mul_extension(inc_addr, one_m_nv_is_write);
-        yield_constr.constraint_transition(builder, constraint_addr_write_for_first);
-        let inc_value = builder.sub_extension(nv_value, value);
-        let constraint_value_read = builder.mul_extension(one_m_nv_is_write, inc_value);
-        yield_constr.constraint_transition(builder, constraint_value_read);
-
-        // rc_value constraint:
-        let rc_inter_1 = builder.add_extension(diff_addr, diff_clk);
-        let rc_inter_2 = builder.sub_extension(rc_inter_1, rc_value);
-        let constraint_rc_rw = builder.mul_extension(is_rw, rc_inter_2);
-        yield_constr.constraint(builder, constraint_rc_rw);
-        let rc_inter_2_1 = builder.sub_extension(diff_addr_cond, rc_value);
-        let constraint_rc_write_once = builder.mul_extension(one_m_rw, rc_inter_2_1);
-        yield_constr.constraint(builder, constraint_rc_write_once);
-
-        // filter_looking_rc constraints:
-        // 1. read write segment filter_looking_rc must be 1.
-        // 2. in write once segment, when reading filter_looking_rc must be 1.
-        let one_m_filter_rc = builder.sub_extension(one, filter_looking_rc);
-        let constraint_filter_rw = builder.mul_extension(is_rw, one_m_filter_rc);
-        yield_constr.constraint(builder, constraint_filter_rw);
-        let filter_inter_1 = builder.mul_extension(one_m_rw, one_m_is_write);
-        let constraint_filter_write_once = builder.mul_extension(filter_inter_1, one_m_filter_rc);
-        yield_constr.constraint(builder, constraint_filter_write_once);
     }
 
     fn constraint_degree(&self) -> usize {
-        5
+        9
     }
 }
-
+#[cfg(test)]
 mod tests {
     use crate::generation::memory::generate_memory_trace;
-    use crate::memory::columns::NUM_MEM_COLS;
+    use crate::memory::columns::{get_memory_col_name_map, NUM_MEM_COLS};
     use crate::memory::memory_stark::MemoryStark;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
-    use core::program::Program;
-    use executor::Process;
-    use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::field::types::Field;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use plonky2_util::log2_strict;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
+    use crate::test_utils::test_stark_with_asm_path;
+    use core::trace::trace::{MemoryTraceCell, Trace};
+    use core::types::Field;
+
+    use plonky2::{
+        field::goldilocks_field::GoldilocksField,
+        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    };
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_memory_with_program() {
+        let program_path = "memory.json";
+        test_memory_with_asm_file_name(program_path.to_string(), None);
+    }
+
+    #[test]
+    fn test_memory_fib_loop() {
+        let program_path = "fibo_loop.json";
+        test_memory_with_asm_file_name(program_path.to_string(), None);
+    }
+
+    // #[test]
+    // fn test_memory_sqrt() {
+    //     let program_path = "sqrt.json";
+    //     test_memory_with_asm_file_name(program_path.to_string(), None);
+    // }
+
+    #[test]
+    fn test_memory_malloc() {
+        let program_path = "malloc.json";
+        test_memory_with_asm_file_name(program_path.to_string(), None);
+    }
+
+    // #[test]
+    // fn test_memory_vote() {
+    //     let program_path = "vote.json";
+    //     test_memory_with_asm_file_name(program_path.to_string(), None);
+    // }
+
+    #[test]
+    fn test_memory_poseidon() {
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(1239976900),
+        ];
+        let program_path = "poseidon_hash.json";
+        test_memory_with_asm_file_name(program_path.to_string(), Some(call_data));
+    }
 
     #[allow(unused)]
-    fn test_memory_stark(program_path: &str) {
+    fn test_memory_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = MemoryStark<F, D>;
         let stark = S::default();
 
-        let file = File::open(program_path).unwrap();
-        let mut instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-
-        for inst in instructions {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let rows = generate_memory_trace(&program.trace.memory);
-        let len = rows[0].len();
-        println!(
-            "raw trace len:{}, extended len: {}",
-            program.trace.memory.len(),
-            len
-        );
-        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
-        let subgroup =
-            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
-
-        for i in 0..len - 1 {
-            let local_values: [F; NUM_MEM_COLS] = rows
-                .iter()
-                .map(|row| row[i % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let next_values: [F; NUM_MEM_COLS] = rows
-                .iter()
-                .map(|row| row[(i + 1) % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let vars = StarkEvaluationVars {
-                local_values: &local_values,
-                next_values: &next_values,
+        let get_trace_rows = |trace: Trace| trace.memory;
+        let generate_trace = |rows: &[MemoryTraceCell]| generate_memory_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_MEM_COLS>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
             };
-
-            let mut constraint_consumer = ConstraintConsumer::new(
-                vec![F::rand()],
-                subgroup[i] - last,
-                if i == 0 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-                if i == len - 1 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-            );
-            stark.eval_packed_generic(vars, &mut constraint_consumer);
-
-            for &acc in &constraint_consumer.constraint_accs {
-                assert_eq!(acc, GoldilocksField::ZERO);
+        let error_hook = |i: usize,
+                          vars: StarkEvaluationVars<
+            GoldilocksField,
+            GoldilocksField,
+            NUM_MEM_COLS,
+        >| {
+            println!("constraint error in line {}", i);
+            let m = get_memory_col_name_map();
+            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+            for col in m.keys() {
+                let name = m.get(col).unwrap();
+                let lv = vars.local_values[*col].0;
+                let nv = vars.next_values[*col].0;
+                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
             }
-        }
-    }
-
-    #[test]
-    fn test_memory_with_program() {
-        let program_path = "../assembler/testdata/memory.bin";
-        test_memory_stark(program_path);
+        };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+            call_data,
+        );
     }
 }

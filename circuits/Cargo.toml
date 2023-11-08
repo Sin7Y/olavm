@@ -14,6 +14,8 @@ benchmark = []
 [dependencies]
 core = { package = "core", path = "../core", version = "0.1.0", default-features = false }
 executor = { package = "executor", path = "../executor", version = "0.1.0", default-features = false }
+assembler = { package = "assembler", path = "../assembler", version = "0.1.0", default-features = false }
+
 plonky2 = { package = "plonky2", path = "../plonky2/plonky2" }
 anyhow = "1.0.40"
 itertools = "0.10.3"
@@ -22,7 +24,7 @@ plonky2_util = {  path = "../plonky2/util" }
 serde = { version = "1.0.144", features = ["derive"] }
 ethereum-types = "0.14.0"
 log = "0.4.14"
-eth_trie_utils = "0.2.1"
+eth_trie_utils = "0.6.0"
 env_logger = "0.9.0"
 hex = { version = "0.4.3", optional = true }
 hex-literal = "0.3.4"
@@ -39,11 +41,20 @@ rlp-derive = "0.1.0"
 sha2 = "0.10.2"
 tiny-keccak = "2.0.2"
 criterion = "0.4"
+serde_json = "1"
 
 [[bench]]
 name = "fibo_loop"
 harness = false
 
+# [[bench]]
+# name = "fibo_loop_prover"
+# harness = false
+
+# [[bench]]
+# name = "sqrt_iteration"
+# harness = false
+
 [[bench]]
-name = "fibo_loop_prover"
+name = "sqrt_prophet"
 harness = false

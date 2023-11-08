@@ -25,8 +25,9 @@ Constraints as follows:
 //pub(crate) const TAG: usize = 0;
 
 pub(crate) const CPU_FILTER: usize = 0;
-pub(crate) const MEMORY_FILTER: usize = CPU_FILTER + 1;
-pub(crate) const CMP_FILTER: usize = MEMORY_FILTER + 1;
+pub(crate) const MEMORY_SORT_FILTER: usize = CPU_FILTER + 1;
+pub(crate) const MEMORY_REGION_FILTER: usize = MEMORY_SORT_FILTER + 1;
+pub(crate) const CMP_FILTER: usize = MEMORY_REGION_FILTER + 1;
 //pub(crate) const FILTER: usize = 0;
 pub(crate) const VAL: usize = CMP_FILTER + 1;
 pub(crate) const LIMB_LO: usize = VAL + 1;

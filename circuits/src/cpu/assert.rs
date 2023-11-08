@@ -12,7 +12,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     _nv: &[P; NUM_CPU_COLS],
     yield_constr: &mut ConstraintConsumer<P>,
 ) {
-    yield_constr.constraint(lv[COL_S_ASSERT] * (lv[COL_OP0] - lv[COL_OP1]));
+    yield_constr.constraint(lv[COL_S_ASSERT] * (P::ONES - lv[COL_OP1]));
 }
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(

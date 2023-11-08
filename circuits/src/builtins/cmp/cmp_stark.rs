@@ -96,100 +96,65 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
     Column::single(COL_CMP_FILTER_LOOKING_RC)
 }
-
+#[cfg(test)]
 mod tests {
     use crate::builtins::cmp::cmp_stark::CmpStark;
     use crate::builtins::cmp::columns::*;
     use crate::generation::builtin::generate_cmp_trace;
+    use crate::builtins::cmp::columns::*;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
-    use core::program::Program;
-    use executor::Process;
+    use crate::test_utils::test_stark_with_asm_path;
+    use core::trace::trace::{CmpRow, Trace};
     use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use plonky2_util::log2_strict;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
+    use std::path::PathBuf;
 
-    #[allow(unused)]
-    fn test_cmp_stark(program_path: &str) {
+    #[test]
+    fn test_cmp_with_program() {
+        let program_path = "comparison.json";
+        test_cmp_with_asm_file_name(program_path.to_string());
+    }
+
+    fn test_cmp_with_asm_file_name(file_name: String) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = CmpStark<F, D>;
         let stark = S::default();
 
-        let file = File::open(program_path).unwrap();
-        let instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-
-        for inst in instructions {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let rows = generate_cmp_trace(&program.trace.builtin_cmp);
-        let len = rows[0].len();
-        println!(
-            "raw trace len:{}, extended len: {}",
-            program.trace.builtin_cmp.len(),
-            len
-        );
-        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
-        let subgroup =
-            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
-
-        for i in 0..len - 1 {
-            let local_values: [F; COL_NUM_CMP] = rows
-                .iter()
-                .map(|row| row[i % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let next_values: [F; COL_NUM_CMP] = rows
-                .iter()
-                .map(|row| row[(i + 1) % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let vars = StarkEvaluationVars {
-                local_values: &local_values,
-                next_values: &next_values,
+        let get_trace_rows = |trace: Trace| trace.builtin_cmp;
+        let generate_trace = |rows: &[CmpRow]| generate_cmp_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_NUM_CMP>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
             };
-
-            let mut constraint_consumer = ConstraintConsumer::new(
-                vec![F::rand()],
-                subgroup[i] - last,
-                if i == 0 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-                if i == len - 1 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-            );
-            stark.eval_packed_generic(vars, &mut constraint_consumer);
-
-            for &acc in &constraint_consumer.constraint_accs {
-                assert_eq!(acc, GoldilocksField::ZERO);
-            }
-        }
-    }
-
-    #[test]
-    fn test_cmp_with_program() {
-        let program_path = "../assembler/testdata/comparison.bin";
-        test_cmp_stark(program_path);
+        let error_hook =
+            |i: usize, vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_NUM_CMP>| {
+                println!("constraint error in line {}", i);
+                let m = get_cmp_col_name_map();
+                println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+                for col in m.keys() {
+                    let name = m.get(col).unwrap();
+                    let lv = vars.local_values[*col].0;
+                    let nv = vars.next_values[*col].0;
+                    println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+                }
+            };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+            None,
+        );
     }
 }

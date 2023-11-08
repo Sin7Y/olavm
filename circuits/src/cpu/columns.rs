@@ -1,5 +1,5 @@
-use core::program::REGISTER_NUM;
-use std::ops::Range;
+use core::program::{CTX_REGISTER_NUM, REGISTER_NUM};
+use std::{collections::BTreeMap, ops::Range};
 
 // The Olavm trace for AIR:
 // There are 3 kinds of traces, one for cpu trace, one for memory trace, one for
@@ -20,9 +20,19 @@ use std::ops::Range;
 // ┼───────┼───────┼───────┼───────┼───────|
 // │   0   │   0   │   0   |   0   │   0   │
 // ┴───────┴───────┴───────┴───────┴───────┘
-pub(crate) const COL_CLK: usize = 0;
+pub(crate) const COL_TX_IDX: usize = 0;
+pub(crate) const COL_ENV_IDX: usize = COL_TX_IDX + 1;
+pub(crate) const COL_CALL_SC_CNT: usize = COL_ENV_IDX + 1;
+pub(crate) const COL_ADDR_STORAGE_RANGE: Range<usize> =
+    COL_CALL_SC_CNT + 1..COL_CALL_SC_CNT + 1 + CTX_REGISTER_NUM;
+pub(crate) const COL_ADDR_CODE_RANGE: Range<usize> =
+    COL_ADDR_STORAGE_RANGE.end..COL_ADDR_STORAGE_RANGE.end + CTX_REGISTER_NUM;
+pub(crate) const COL_TP: usize = COL_ADDR_CODE_RANGE.end;
+pub(crate) const COL_CLK: usize = COL_TP + 1;
 pub(crate) const COL_PC: usize = COL_CLK + 1;
-pub(crate) const COL_START_REG: usize = COL_PC + 1;
+pub(crate) const COL_IS_EXT_LINE: usize = COL_PC + 1;
+pub(crate) const COL_EXT_CNT: usize = COL_IS_EXT_LINE + 1;
+pub(crate) const COL_START_REG: usize = COL_EXT_CNT + 1;
 pub(crate) const COL_REGS: Range<usize> = COL_START_REG..COL_START_REG + REGISTER_NUM;
 
 // Instruction related columns(5):
@@ -57,7 +67,8 @@ pub(crate) const COL_OP1: usize = COL_OP0 + 1;
 pub(crate) const COL_DST: usize = COL_OP1 + 1;
 pub(crate) const COL_AUX0: usize = COL_DST + 1;
 pub(crate) const COL_AUX1: usize = COL_AUX0 + 1;
-pub(crate) const COL_S_OP0_START: usize = COL_AUX1 + 1;
+pub(crate) const COL_IDX_STORAGE: usize = COL_AUX1 + 1;
+pub(crate) const COL_S_OP0_START: usize = COL_IDX_STORAGE + 1;
 pub(crate) const COL_S_OP0: Range<usize> = COL_S_OP0_START..COL_S_OP0_START + REGISTER_NUM;
 pub(crate) const COL_S_OP1_START: usize = COL_S_OP0.end;
 pub(crate) const COL_S_OP1: Range<usize> = COL_S_OP1_START..COL_S_OP1_START + REGISTER_NUM;
@@ -94,11 +105,11 @@ pub(crate) const COL_S_END: usize = COL_S_MSTORE + 1;
 // ┼───────┼───────┼───────┼───────┼───────┼
 // │   0   │   1   │   0   │   0   │   0   │
 // ┴───────┴───────┴───────┴───────┴───────┴
-// ┬───────┬───────┬────────────┬─────────┬
-// │ s_neq │ s_gte │ s_poseidon │ s_ecdsa │
-// ┼───────┼───────┼────────────┼─────────┼
-// │   0   │   0   │      0     │    0    │
-// ┴───────┴───────┴────────────┴─────────┴
+// ┬───────┬───────┬────────────┬───────┬───────┬
+// │ s_neq │ s_gte │ s_poseidon │ sload │ sstore|
+// ┼───────┼───────┼────────────┼───────┼───────|
+// │   0   │   0   │      0     │    0  │   0   |
+// ┴───────┴───────┴────────────┴───────┴───────┴
 pub(crate) const COL_S_RC: usize = COL_S_END + 1;
 pub(crate) const COL_S_AND: usize = COL_S_RC + 1;
 pub(crate) const COL_S_OR: usize = COL_S_AND + 1;
@@ -107,73 +118,113 @@ pub(crate) const COL_S_NOT: usize = COL_S_XOR + 1;
 pub(crate) const COL_S_NEQ: usize = COL_S_NOT + 1;
 pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
-pub(crate) const COL_S_ECDSA: usize = COL_S_PSDN + 1;
+pub(crate) const COL_S_SLOAD: usize = COL_S_PSDN + 1;
+pub(crate) const COL_S_SSTORE: usize = COL_S_SLOAD + 1;
+pub(crate) const COL_S_TLOAD: usize = COL_S_SSTORE + 1;
+pub(crate) const COL_S_TSTORE: usize = COL_S_TLOAD + 1;
+pub(crate) const COL_S_CALL_SC: usize = COL_S_TSTORE + 1;
+pub(crate) const NUM_OP_SELECTOR: usize = COL_S_CALL_SC - COL_S_ADD + 1;
 
-// Program consistence relate columns(6):
-// ┬──────────┬────────┬──────────┬──────────┬─────────────┬──────────────┐
-// │ raw_inst │ raw_pc │ zip_raw  │ zip_exed │ per_zip_raw │ pre_zip_exed |
-// ┼──────────┼────────┼──────────┼──────────┼─────────────┼──────────────|
-// │     0    │    1   │     0    │     0    │       1     │       0      |
-// ┴──────────┴────────┴──────────┴──────────┴─────────────┴──────────────┘
-pub(crate) const COL_RAW_INST: usize = COL_S_ECDSA + 1;
-pub(crate) const COL_RAW_PC: usize = COL_RAW_INST + 1;
-pub(crate) const COL_ZIP_RAW: usize = COL_RAW_PC + 1;
-pub(crate) const COL_ZIP_EXED: usize = COL_ZIP_RAW + 1;
-pub(crate) const COL_PER_ZIP_RAW: usize = COL_ZIP_EXED + 1;
-pub(crate) const COL_PER_ZIP_EXED: usize = COL_PER_ZIP_RAW + 1;
-pub(crate) const NUM_CPU_COLS: usize = COL_PER_ZIP_EXED + 1;
+pub(crate) const COL_IS_ENTRY_SC: usize = COL_S_CALL_SC + 1;
+pub(crate) const COL_IS_NEXT_LINE_DIFF_INST: usize = COL_IS_ENTRY_SC + 1;
+pub(crate) const COL_IS_NEXT_LINE_SAME_TX: usize = COL_IS_NEXT_LINE_DIFF_INST + 1;
+
+pub(crate) const COL_FILTER_TAPE_LOOKING: usize = COL_IS_NEXT_LINE_SAME_TX + 1;
+pub(crate) const IS_SCCALL_EXT_LINE: usize = COL_FILTER_TAPE_LOOKING + 1;
+pub(crate) const COL_IS_STORAGE_EXT_LINE: usize = IS_SCCALL_EXT_LINE + 1;
+pub(crate) const COL_FILTER_SCCALL_END: usize = COL_IS_STORAGE_EXT_LINE + 1;
+pub(crate) const COL_IS_PADDING: usize = COL_FILTER_SCCALL_END + 1;
+
+pub(crate) const NUM_CPU_COLS: usize = COL_IS_PADDING + 1;
+
+#[allow(unused)]
+pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
+    let mut m: BTreeMap<usize, String> = BTreeMap::new();
+    m.insert(COL_TX_IDX, "tx_idx".to_string());
+    m.insert(COL_ENV_IDX, "env_idx".to_string());
+    m.insert(COL_CALL_SC_CNT, "call_sc_cnt".to_string());
+    for (index, col) in COL_ADDR_STORAGE_RANGE.into_iter().enumerate() {
+        let name = format!("addr_storage_{}", index);
+        m.insert(col, name);
+    }
+    for (index, col) in COL_ADDR_CODE_RANGE.into_iter().enumerate() {
+        let name = format!("addr_code_{}", index);
+        m.insert(col, name);
+    }
+    m.insert(COL_TP, "tp".to_string());
+    m.insert(COL_CLK, "clk".to_string());
+    m.insert(COL_PC, "pc".to_string());
+    m.insert(COL_IS_EXT_LINE, "is_ext_line".to_string());
+    m.insert(COL_EXT_CNT, "ext_cnt".to_string());
+    for (index, col) in COL_REGS.into_iter().enumerate() {
+        let name = format!("r{}", index);
+        m.insert(col, name);
+    }
+    m.insert(COL_INST, "inst".to_string());
+    m.insert(COL_OP1_IMM, "op1_imm".to_string());
+    m.insert(COL_OPCODE, "opcode".to_string());
+    m.insert(COL_IMM_VAL, "imm_val".to_string());
+    m.insert(COL_OP0, "op0".to_string());
+    m.insert(COL_OP1, "op1".to_string());
+    m.insert(COL_DST, "dst".to_string());
+    m.insert(COL_AUX0, "aux0".to_string());
+    m.insert(COL_AUX1, "aux1".to_string());
+    m.insert(COL_IDX_STORAGE, "idx_storage".to_string());
+    for (index, col) in COL_S_OP0.into_iter().enumerate() {
+        let name = format!("sel_op0_r{}", index);
+        m.insert(col, name);
+    }
+    for (index, col) in COL_S_OP1.into_iter().enumerate() {
+        let name = format!("sel_op1_r{}", index);
+        m.insert(col, name);
+    }
+    for (index, col) in COL_S_DST.into_iter().enumerate() {
+        let name = format!("sel_dst_r{}", index);
+        m.insert(col, name);
+    }
+    m.insert(COL_S_ADD, "s_add".to_string());
+    m.insert(COL_S_MUL, "s_mul".to_string());
+    m.insert(COL_S_EQ, "s_eq".to_string());
+    m.insert(COL_S_ASSERT, "s_assert".to_string());
+    m.insert(COL_S_MOV, "s_mov".to_string());
+    m.insert(COL_S_JMP, "s_jmp".to_string());
+    m.insert(COL_S_CJMP, "s_cjmp".to_string());
+    m.insert(COL_S_CALL, "s_call".to_string());
+    m.insert(COL_S_RET, "s_ret".to_string());
+    m.insert(COL_S_MLOAD, "s_mload".to_string());
+    m.insert(COL_S_MSTORE, "s_mstore".to_string());
+    m.insert(COL_S_END, "s_end".to_string());
+    m.insert(COL_S_RC, "s_rc".to_string());
+    m.insert(COL_S_AND, "s_and".to_string());
+    m.insert(COL_S_OR, "s_or".to_string());
+    m.insert(COL_S_XOR, "s_xor".to_string());
+    m.insert(COL_S_NOT, "s_not".to_string());
+    m.insert(COL_S_NEQ, "s_neq".to_string());
+    m.insert(COL_S_GTE, "s_gte".to_string());
+    m.insert(COL_S_PSDN, "s_psdn".to_string());
+    m.insert(COL_S_SLOAD, "s_sload".to_string());
+    m.insert(COL_S_SSTORE, "s_sstore".to_string());
+    m.insert(COL_S_TLOAD, "s_tload".to_string());
+    m.insert(COL_S_TSTORE, "s_tstore".to_string());
+    m.insert(COL_S_CALL_SC, "s_call_sc".to_string());
+    m.insert(COL_IS_ENTRY_SC, "is_entry_sc".to_string());
+    m.insert(
+        COL_IS_NEXT_LINE_DIFF_INST,
+        "is_next_line_diff_inst".to_string(),
+    );
+    m.insert(COL_IS_NEXT_LINE_SAME_TX, "is_next_line_same_tx".to_string());
+    m.insert(COL_FILTER_TAPE_LOOKING, "filter_tape_looking".to_string());
+    m.insert(IS_SCCALL_EXT_LINE, "is_sccall_ext_line".to_string());
+    m.insert(COL_IS_STORAGE_EXT_LINE, "is_storage_ext_line".to_string());
+    m.insert(COL_FILTER_SCCALL_END, "filter_sccall_end".to_string());
+    m.insert(COL_IS_PADDING, "is_padding".to_string());
+    m
+}
 
 #[test]
 fn print_cpu_cols() {
-    println!("COL_CLK: {}", COL_CLK);
-    println!("COL_PC: {}", COL_PC);
-    for (index, col) in COL_REGS.into_iter().enumerate() {
-        println!("r{}: {}", index, col);
+    let m = get_cpu_col_name_map();
+    for (col, name) in m {
+        println!("{}: {}", col, name);
     }
-    println!("COL_INST: {}", COL_INST);
-    println!("COL_OP1_IMM: {}", COL_OP1_IMM);
-    println!("COL_OPCODE: {}", COL_OPCODE);
-    println!("COL_IMM_VAL: {}", COL_IMM_VAL);
-    println!("COL_OP0: {}", COL_OP0);
-    println!("COL_OP1: {}", COL_OP1);
-    println!("COL_DST: {}", COL_DST);
-    println!("COL_AUX0: {}", COL_AUX0);
-    println!("COL_AUX1: {}", COL_AUX1);
-    for (index, col) in COL_S_OP0.into_iter().enumerate() {
-        println!("sel_op0_r{}: {}", index, col);
-    }
-    for (index, col) in COL_S_OP1.into_iter().enumerate() {
-        println!("sel_op1_r{}: {}", index, col);
-    }
-    for (index, col) in COL_S_DST.into_iter().enumerate() {
-        println!("sel_dst_r{}: {}", index, col);
-    }
-    println!("COL_S_ADD: {}", COL_S_ADD);
-    println!("COL_S_MUL: {}", COL_S_MUL);
-    println!("COL_S_EQ: {}", COL_S_EQ);
-    println!("COL_S_ASSERT: {}", COL_S_ASSERT);
-    println!("COL_S_MOV: {}", COL_S_MOV);
-    println!("COL_S_JMP: {}", COL_S_JMP);
-    println!("COL_S_CJMP: {}", COL_S_CJMP);
-    println!("COL_S_CALL: {}", COL_S_CALL);
-    println!("COL_S_RET: {}", COL_S_RET);
-    println!("COL_S_MLOAD: {}", COL_S_MLOAD);
-    println!("COL_S_MSTORE: {}", COL_S_MSTORE);
-    println!("COL_S_END: {}", COL_S_END);
-    println!("COL_S_RC: {}", COL_S_RC);
-    println!("COL_S_AND: {}", COL_S_AND);
-    println!("COL_S_OR: {}", COL_S_OR);
-    println!("COL_S_XOR: {}", COL_S_XOR);
-    println!("COL_S_NOT: {}", COL_S_NOT);
-    println!("COL_S_NEQ: {}", COL_S_NEQ);
-    println!("COL_S_GTE: {}", COL_S_GTE);
-    println!("COL_S_PSDN: {}", COL_S_PSDN);
-    println!("COL_S_ECDSA: {}", COL_S_ECDSA);
-    println!("COL_RAW_INST: {}", COL_RAW_INST);
-    println!("COL_RAW_PC: {}", COL_RAW_PC);
-    println!("COL_ZIP_RAW: {}", COL_ZIP_RAW);
-    println!("COL_ZIP_EXED: {}", COL_ZIP_EXED);
-    println!("COL_PER_ZIP_RAW: {}", COL_PER_ZIP_RAW);
-    println!("COL_PER_ZIP_EXED: {}", COL_PER_ZIP_EXED);
-    println!("NUM_CPU_COLS: {}", NUM_CPU_COLS);
 }

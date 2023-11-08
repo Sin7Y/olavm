@@ -1,0 +1,105 @@
+{
+  "program": "foo:\n.LBL6_0:\n  add r9 r9 2\n  mov r8 r1\n  mov r7 r2\n  mstore [r9,-2] r8\n  mstore [r9,-1] r7\n  mload r8 [r9,-2]\n  mload r7 [r9,-1]\n  add r0 r8 r7\n  range r0\n  add r9 r9 -2\n  ret\nbar:\n.LBL7_0:\n  add r9 r9 2\n  mov r8 r1\n  mov r7 r2\n  mstore [r9,-2] r8\n  mstore [r9,-1] r7\n  mload r8 [r9,-2]\n  mload r7 [r9,-1]\n  mul r0 r8 r7\n  range r0\n  add r9 r9 -2\n  ret\nfunction_dispatch:\n.LBL8_0:\n  add r9 r9 4\n  mstore [r9,-2] r9\n  mov r8 r1\n  mov r7 r2\n  mov r6 r3\n  eq r1 r8 253268590\n  cjmp r1 .LBL8_2\n  eq r1 r8 1503968193\n  cjmp r1 .LBL8_7\n  jmp .LBL8_1\n.LBL8_1:\n  ret\n.LBL8_2:\n  mov r8 2\n  gte r8 r7 r8\n  cjmp r8 .LBL8_3\n  jmp .LBL8_4\n.LBL8_3:\n  mload r1 [r6]\n  mload r2 [r6,+1]\n  mov r8 2\n  gte r6 r7 r8\n  neq r8 r8 r7\n  and r6 r6 r8\n  cjmp r6 .LBL8_5\n  jmp .LBL8_6\n.LBL8_4:\n  ret\n.LBL8_5:\n  ret\n.LBL8_6:\n  call foo\n  mov r8 r0\n  mov r1 2\n.PROPHET8_0:\n  mov r0 psp\n  mload r0 [r0]\n  mov r6 r0\n  not r7 2\n  add r7 r7 1\n  add r7 r6 r7\n  mstore [r9,-3] r7\n  mload r7 [r9,-3]\n  mstore [r7] r8\n  mov r8 1\n  mstore [r7,+1] r8\n  mload r8 [r9,-3]\n  tstore r8 2\n  add r9 r9 -4\n  ret\n.LBL8_7:\n  mov r8 2\n  gte r8 r7 r8\n  cjmp r8 .LBL8_8\n  jmp .LBL8_9\n.LBL8_8:\n  mload r1 [r6]\n  mload r2 [r6,+1]\n  mov r8 2\n  gte r6 r7 r8\n  neq r8 r8 r7\n  and r6 r6 r8\n  cjmp r6 .LBL8_10\n  jmp .LBL8_11\n.LBL8_9:\n  ret\n.LBL8_10:\n  ret\n.LBL8_11:\n  call bar\n  mov r8 r0\n  mov r1 2\n.PROPHET8_1:\n  mov r0 psp\n  mload r0 [r0]\n  mov r6 r0\n  not r7 2\n  add r7 r7 1\n  add r7 r6 r7\n  mstore [r9,-4] r7\n  mload r7 [r9,-4]\n  mstore [r7] r8\n  mov r8 1\n  mstore [r7,+1] r8\n  mload r8 [r9,-4]\n  tstore r8 2\n  add r9 r9 -4\n  ret\nmain:\n.LBL9_0:\n  add r9 r9 2\n  mstore [r9,-2] r9\n  mov r1 1\n.PROPHET9_0:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 r0\n  not r7 1\n  add r7 r7 1\n  add r8 r1 r7\n  mov r7 1\n  tload r8 r7 1\n  mload r8 [r8]\n  mov r1 2\n.PROPHET9_1:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 r0\n  not r7 2\n  add r7 r7 1\n  add r6 r1 r7\n  mov r7 1\n  tload r6 r7 2\n  mov r7 r6\n  mload r2 [r7]\n  add r5 r2 2\n  mov r1 r5\n.PROPHET9_2:\n  mov r0 psp\n  mload r0 [r0]\n  mov r6 r0\n  not r7 r5\n  add r7 r7 1\n  add r3 r6 r7\n  mov r7 1\n  tload r3 r7 r5\n  mov r1 r8\n  call function_dispatch\n  add r9 r9 -2\n  end\n",
+  "prophets": [
+    {
+      "label": ".PROPHET8_0",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET8_1",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET9_0",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET9_1",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET9_2",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    }
+  ]
+}

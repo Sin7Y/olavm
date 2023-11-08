@@ -4,8 +4,7 @@ use std::collections::BTreeMap;
 use itertools::Itertools;
 use maybe_rayon::*;
 use plonky2_field::cfft::get_twiddles;
-use plonky2_field::extension::{Extendable, FieldExtension};
-use plonky2_field::fft::FftRootTable;
+use plonky2_field::extension::Extendable;
 use plonky2_field::packed::PackedField;
 use plonky2_field::polynomial::{PolynomialCoeffs, PolynomialValues};
 use plonky2_field::types::Field;
@@ -20,7 +19,6 @@ use crate::hash::merkle_tree::MerkleTree;
 use crate::iop::challenger::Challenger;
 use crate::plonk::config::{GenericConfig, Hasher};
 use crate::timed;
-use crate::util::reducing::ReducingFactor;
 use crate::util::reverse_bits;
 use crate::util::timing::TimingTree;
 use crate::util::transpose;
@@ -172,6 +170,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         challenger: &mut Challenger<F, C::Hasher>,
         fri_params: &FriParams,
         timing: &mut TimingTree,
+        twiddle_map: &mut BTreeMap<usize, Vec<F>>,
     ) -> FriProof<F, C::Hasher, D>
     where
         [(); C::Hasher::HASH_SIZE]:,
@@ -235,6 +234,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             challenger,
             fri_params,
             timing,
+            twiddle_map,
         );
 
         fri_proof

@@ -1,0 +1,4 @@
+{
+  "program": "main:\n.LBL0_0:\n  add r9 r9 4\n  mstore [r9,-2] r9\n  mov r5 2\n  mstore [r9,-4] r5\n  mload r1 [r9,-4]\n  call array_index\n  mov r5 r0\n  mstore [r9,-3] r5\n  add r9 r9 -4\n  end\narray_index:\n.LBL1_0:\n  add r9 r9 4\n  mov r6 r1\n  mstore [r9,-4] r6\n  mov r6 1\n  mstore [r9,-3] r6\n  mov r6 2\n  mstore [r9,-2] r6\n  mov r6 3\n  mstore [r9,-1] r6\n  mload r6 [r9,-4]\n  mov r8 2\n  not r7 r6\n  add r7 r7 1\n  add r5 r8 r7\n  range r5\n  add r6 r6 -3\n  mload r0 [r9,r6]\n  add r6 r6 3\n  add r9 r9 -4\n  ret\n",
+  "prophets": []
+}

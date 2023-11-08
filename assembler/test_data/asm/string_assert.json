@@ -1,0 +1,125 @@
+{
+  "program": "main:\n.LBL13_0:\n  add r9 r9 14\n  mov r1 4\n.PROPHET13_0:\n  mov r0 psp\n  mload r0 [r0]\n  mov r8 r0\n  not r7 4\n  add r7 r7 1\n  add r5 r8 r7\n  mov r7 3\n  mstore [r5] r7\n  mov r7 r5\n  add r6 r7 1\n  mov r7 0\n  mstore [r9,-3] r7\n  jmp .LBL13_1\n.LBL13_1:\n  mload r7 [r9,-3]\n  mov r8 3\n  gte r8 r8 r7\n  neq r1 r7 3\n  and r8 r8 r1\n  cjmp r8 .LBL13_2\n  jmp .LBL13_3\n.LBL13_2:\n  mov r1 0\n  mstore [r6,r7] r1\n  add r8 r7 1\n  mstore [r9,-3] r8\n  jmp .LBL13_1\n.LBL13_3:\n  mov r1 4\n.PROPHET13_1:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 r0\n  not r7 4\n  add r7 r7 1\n  add r6 r1 r7\n  mov r7 3\n  mstore [r6] r7\n  mov r1 2\n.PROPHET13_2:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 r0\n  not r7 2\n  add r7 r7 1\n  add r8 r1 r7\n  mov r7 r8\n  mov r8 1\n  mstore [r7] r8\n  mov r8 r7\n  add r2 r8 1\n  mov r8 r2\n  mov r1 65\n  mstore [r8] r1\n  mov r8 r6\n  add r3 r8 1\n  mov r8 r3\n  mstore [r8] r7\n  mov r1 2\n.PROPHET13_3:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 r0\n  not r7 2\n  add r7 r7 1\n  add r7 r1 r7\n  mstore [r9,-4] r7\n  mload r7 [r9,-4]\n  mov r1 1\n  mstore [r7] r1\n  mov r1 r7\n  add r1 r1 1\n  mstore [r9,-5] r1\n  mload r1 [r9,-5]\n  mov r2 66\n  mstore [r1] r2\n  mstore [r8,+1] r7\n  mov r1 2\n.PROPHET13_4:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 r0\n  not r7 2\n  add r7 r7 1\n  add r7 r1 r7\n  mstore [r9,-6] r7\n  mload r7 [r9,-6]\n  mov r1 1\n  mstore [r7] r1\n  mov r1 r7\n  add r1 r1 1\n  mstore [r9,-7] r1\n  mload r1 [r9,-7]\n  mov r2 67\n  mstore [r1] r2\n  mstore [r8,+2] r7\n  mov r7 0\n  mstore [r9,-2] r7\n  jmp .LBL13_4\n.LBL13_4:\n  mload r7 [r9,-2]\n  mov r8 3\n  gte r8 r8 r7\n  neq r7 r7 3\n  and r8 r8 r7\n  cjmp r8 .LBL13_5\n  jmp .LBL13_7\n.LBL13_5:\n  mload r7 [r9,-2]\n  mstore [r9,-10] r7\n  mload r7 [r5]\n  mstore [r9,-11] r7\n  not r7 1\n  add r7 r7 1\n  mload r7 [r9,-11]\n  add r8 r7 r7\n  mload r7 [r9,-10]\n  not r7 r7\n  add r7 r7 1\n  add r1 r8 r7\n  range r1\n  mload r8 [r9,-2]\n  mload r1 [r6]\n  not r7 1\n  add r7 r7 1\n  add r2 r1 r7\n  not r7 r8\n  add r7 r7 1\n  add r3 r2 r7\n  range r3\n  mov r7 r6\n  add r7 r7 1\n  mstore [r9,-8] r7\n  mload r7 [r9,-8]\n  mload r7 [r7,r8]\n  mov r8 r5\n  add r8 r8 1\n  mstore [r9,-9] r8\n  mload r8 [r9,-9]\n  mload r1 [r9,-10]\n  mstore [r8,r1] r7\n  jmp .LBL13_6\n.LBL13_6:\n  mload r8 [r9,-2]\n  add r7 r8 1\n  mstore [r9,-2] r7\n  jmp .LBL13_4\n.LBL13_7:\n  mload r7 [r5]\n  mstore [r9,-14] r7\n  not r7 1\n  add r7 r7 1\n  mload r7 [r9,-14]\n  add r6 r7 r7\n  not r7 1\n  add r7 r7 1\n  add r8 r6 r7\n  range r8\n  add r1 r5 1\n  mov r5 r1\n  mload r5 [r5,+1]\n  mov r6 r5\n  add r2 r6 1\n  mov r6 r2\n  mload r5 [r5]\n  mov r1 2\n.PROPHET13_5:\n  mov r0 psp\n  mload r0 [r0]\n  mov r8 r0\n  not r7 2\n  add r7 r7 1\n  add r3 r8 r7\n  mov r7 r3\n  mov r8 1\n  mstore [r7] r8\n  mov r8 r7\n  add r8 r8 1\n  mstore [r9,-12] r8\n  mload r8 [r9,-12]\n  mov r1 66\n  mstore [r8] r1\n  mov r8 r7\n  add r8 r8 1\n  mstore [r9,-13] r8\n  mload r8 [r9,-13]\n  mload r7 [r7]\n  assert r5 r7\n  mov r7 0\n  mstore [r9,-1] r7\n  jmp .LBL13_8\n.LBL13_8:\n  mload r7 [r9,-1]\n  gte r1 r5 r7\n  neq r2 r7 r5\n  and r1 r1 r2\n  cjmp r1 .LBL13_9\n  jmp .LBL13_10\n.LBL13_9:\n  mload r2 [r6,r7]\n  mload r3 [r8,r7]\n  assert r2 r3\n  add r1 r7 1\n  mstore [r9,-1] r1\n  jmp .LBL13_8\n.LBL13_10:\n  add r9 r9 -14\n  end\n",
+  "prophets": [
+    {
+      "label": ".PROPHET13_0",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET13_1",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET13_2",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET13_3",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET13_4",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET13_5",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    }
+  ]
+}

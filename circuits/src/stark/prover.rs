@@ -23,7 +23,12 @@ use plonky2_util::{log2_ceil, log2_strict};
 use super::ola_stark::{OlaStark, Table, NUM_TABLES};
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
+use crate::builtins::poseidon::poseidon_chunk_stark::PoseidonChunkStark;
+use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
+use crate::builtins::sccall::sccall_stark::SCCallStark;
+use crate::builtins::storage::storage_access_stark::StorageAccessStark;
+// use crate::builtins::tape::tape_stark::TapeStark;
 //use crate::columns::NUM_CPU_COLS;
 use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;
@@ -37,13 +42,14 @@ use super::stark::Stark;
 use super::vanishing_poly::eval_vanishing_poly;
 use super::vars::StarkEvaluationVars;
 use crate::cpu::cpu_stark::CpuStark;
-use crate::generation::generate_traces;
+use crate::generation::{generate_traces, GenerationInputs};
 use crate::memory::memory_stark::MemoryStark;
 
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(
     program: &Program,
     ola_stark: &mut OlaStark<F, D>,
+    inputs: GenerationInputs,
     config: &StarkConfig,
     timing: &mut TimingTree,
 ) -> Result<AllProof<F, C, D>>
@@ -56,8 +62,13 @@ where
     [(); BitwiseStark::<F, D>::COLUMNS]:,
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
+    [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
+    [(); StorageAccessStark::<F, D>::COLUMNS]:,
+    // [(); TapeStark::<F, D>::COLUMNS]:,
+    [(); SCCallStark::<F, D>::COLUMNS]:,
 {
-    let (traces, public_values) = generate_traces::<F, C, D>(program, ola_stark);
+    let (traces, public_values) = generate_traces(program, ola_stark, inputs);
     prove_with_traces(ola_stark, config, traces, public_values, timing)
 }
 
@@ -78,6 +89,11 @@ where
     [(); BitwiseStark::<F, D>::COLUMNS]:,
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
+    [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
+    [(); StorageAccessStark::<F, D>::COLUMNS]:,
+    // [(); TapeStark::<F, D>::COLUMNS]:,
+    [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let rate_bits = config.fri_config.rate_bits;
     let cap_height = config.fri_config.cap_height;
@@ -194,9 +210,56 @@ where
         timing,
         &mut twiddle_map,
     )?;
-
-    #[cfg(feature = "benchmark")]
-    println!("prove_other_tables total time: {:?}", start.elapsed());
+    let poseidon_proof = prove_single_table(
+        &ola_stark.poseidon_stark,
+        config,
+        &trace_poly_values[Table::Poseidon as usize],
+        &trace_commitments[Table::Poseidon as usize],
+        &ctl_data_per_table[Table::Poseidon as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    let poseidon_chunk_proof = prove_single_table(
+        &ola_stark.poseidon_chunk_stark,
+        config,
+        &trace_poly_values[Table::PoseidonChunk as usize],
+        &trace_commitments[Table::PoseidonChunk as usize],
+        &ctl_data_per_table[Table::PoseidonChunk as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    let storage_access_proof = prove_single_table(
+        &ola_stark.storage_access_stark,
+        config,
+        &trace_poly_values[Table::StorageAccess as usize],
+        &trace_commitments[Table::StorageAccess as usize],
+        &ctl_data_per_table[Table::StorageAccess as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    let tape_proof = prove_single_table(
+        &ola_stark.tape_stark,
+        config,
+        &trace_poly_values[Table::Tape as usize],
+        &trace_commitments[Table::Tape as usize],
+        &ctl_data_per_table[Table::Tape as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    let sccall_proof = prove_single_table(
+        &ola_stark.sccall_stark,
+        config,
+        &trace_poly_values[Table::SCCall as usize],
+        &trace_commitments[Table::SCCall as usize],
+        &ctl_data_per_table[Table::SCCall as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
 
     let stark_proofs = [
         cpu_proof,
@@ -204,12 +267,22 @@ where
         bitwise_proof,
         cmp_proof,
         rangecheck_proof,
+        poseidon_proof,
+        poseidon_chunk_proof,
+        storage_access_proof,
+        tape_proof,
+        sccall_proof,
     ];
 
     let compress_challenges = [
-        ola_stark.cpu_stark.get_compress_challenge().unwrap(),
+        F::ZERO,
         F::ZERO,
         ola_stark.bitwise_stark.get_compress_challenge().unwrap(),
+        F::ZERO,
+        F::ZERO,
+        F::ZERO,
+        F::ZERO,
+        F::ZERO,
         F::ZERO,
         F::ZERO,
     ];
@@ -312,23 +385,19 @@ where
     challenger.observe_cap(&permutation_ctl_zs_cap);
 
     let alphas = challenger.get_n_challenges(config.num_challenges);
-    // if cfg!(test) {
-    //     check_constraints(
-    //         stark,
-    //         trace_commitment,
-    //         &permutation_ctl_zs_commitment,
-    //         permutation_challenges.as_ref(),
-    //         ctl_data,
-    //         alphas.clone(),
-    //         degree_bits,
-    //         num_permutation_zs,
-    //         config,
-    //     );
-    // }
-
-    #[cfg(feature = "benchmark")]
-    let start = Instant::now();
-
+    if cfg!(test) {
+        check_constraints(
+            stark,
+            trace_commitment,
+            &permutation_ctl_zs_commitment,
+            permutation_challenges.as_ref(),
+            ctl_data,
+            alphas.clone(),
+            degree_bits,
+            num_permutation_zs,
+            config,
+        );
+    }
     let quotient_polys = timed!(
         timing,
         "compute quotient polys",
@@ -438,6 +507,7 @@ where
             challenger,
             &fri_params,
             timing,
+            twiddle_map,
         )
     );
 
@@ -642,6 +712,7 @@ fn check_constraints<'a, F, C, S, const D: usize>(
     // Last element of the subgroup.
     let last = F::primitive_root_of_unity(degree_bits).inverse();
 
+    let mut check_failed = false;
     let constraint_values = (0..size)
         .map(|i| {
             let i_next = (i + step) % size;
@@ -689,6 +760,10 @@ fn check_constraints<'a, F, C, S, const D: usize>(
                 &ctl_vars,
                 &mut consumer,
             );
+            if !check_failed && consumer.constraint_accs[0].is_nonzero() {
+                check_failed = true;
+                println!("{} constraint failed in line: {}", type_name::<S>(), i);
+            }
             consumer.accumulators()
         })
         .collect::<Vec<_>>();

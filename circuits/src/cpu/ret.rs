@@ -21,6 +21,9 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     let aux0_cs = lv[COL_AUX0] + P::ONES + P::ONES - fp;
 
     yield_constr.constraint(lv[COL_S_RET] * (op0_cs + dst_cs + aux0_cs));
+
+    // fp
+    yield_constr.constraint_transition(lv[COL_S_RET] * (nv[COL_REGS.end - 1] - lv[COL_AUX1]));
 }
 
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(

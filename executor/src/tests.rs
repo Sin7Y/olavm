@@ -1,378 +1,519 @@
+use crate::trace::{gen_dump_file, gen_storage_table};
 use crate::Process;
+
+use crate::load_tx::init_tape;
+use core::merkle_tree::tree::AccountTree;
+use core::program::binary_program::BinaryProgram;
+use core::program::instruction::Opcode;
 use core::program::Program;
-use log::{debug, LevelFilter};
+use core::types::account::Address;
+use core::types::merkle_tree::tree_key_default;
+use core::vm::transaction::init_tx_context;
+use itertools::Itertools;
+use log::LevelFilter;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::Field;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::time::Instant;
 
-#[test]
-fn memory_test() {
-    // main:
-    // .LBL_0_0:
-    // add r8 r8 4
-    // mov r4 100
-    // mstore [r8,-3] r4
-    // mov r4 1
-    // mstore [r8,-2] r4
-    // mov r4 2
-    // mstore [r8,-1] r4
-    // mload r4 [r8,-3]
-    // mload r1 [r8,-2]
-    // mload r0 [r8,-1]
-    // add r4 r4 r1
-    // mul r4 r4 r0
-    // mstore [r5] r4
-    // mload r0 [r5]
-    // add r8 r8 -4
-    // end
+fn executor_run_test_program(
+    bin_file_path: &str,
+    trace_name: &str,
+    print_trace: bool,
+    call_data: Option<Vec<GoldilocksField>>,
+) {
+    // let _ = env_logger::builder()
+    //     .filter_level(LevelFilter::Debug)
+    //     .try_init();
+    let file = File::open(bin_file_path).unwrap();
 
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
-        .try_init();
-    let file = File::open("../assembler/testdata/memory.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    let reader = BufReader::new(file);
+
+    let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
+
+    let instructions = program.bytecode.split("\n");
+    let mut prophets = HashMap::new();
+    for item in program.prophets {
+        prophets.insert(item.host as u64, item);
+    }
+
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
+        debug_info: program.debug_info,
     };
-    debug!("instructions:{:?}", program.instructions);
 
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.unwrap());
+    for inst in instructions {
+        program.instructions.push(inst.to_string());
+    }
+    let mut process = Process::new();
+    process.addr_storage = Address::default();
+
+    let tp_start = 0;
+
+    if let Some(calldata) = call_data {
+        process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
+        let callee: Address = [
+            GoldilocksField::from_canonical_u64(9),
+            GoldilocksField::from_canonical_u64(10),
+            GoldilocksField::from_canonical_u64(11),
+            GoldilocksField::from_canonical_u64(12),
+        ];
+        let caller_addr = [
+            GoldilocksField::from_canonical_u64(17),
+            GoldilocksField::from_canonical_u64(18),
+            GoldilocksField::from_canonical_u64(19),
+            GoldilocksField::from_canonical_u64(20),
+        ];
+        let callee_exe_addr = [
+            GoldilocksField::from_canonical_u64(13),
+            GoldilocksField::from_canonical_u64(14),
+            GoldilocksField::from_canonical_u64(15),
+            GoldilocksField::from_canonical_u64(16),
+        ];
+        init_tape(
+            &mut process,
+            calldata,
+            caller_addr,
+            callee,
+            callee_exe_addr,
+            &init_tx_context(),
+        );
     }
 
-    let mut process = Process::new();
-    process.execute(&mut program).unwrap();
+    let res = process.execute(
+        &mut program,
+        &mut Some(prophets),
+        &mut AccountTree::new_db_test("./db_test/vote_test".to_string()),
+        // &mut AccountTree::new_test(),
+    );
 
-    println!("vm trace: {:?}", program.trace);
+    if res.is_err() {
+        gen_dump_file(&mut process, &mut program);
+        println!("err tp:{}", process.tp);
+    }
+    println!("execute res:{:?}", res);
+    if print_trace {
+        println!("vm trace: {:?}", program.trace);
+    }
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    let mut file = File::create("memory_trace.txt").unwrap();
+    println!("exec len: {}", program.trace.exec.len());
+    let mut file = File::create(trace_name).unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
+}
+
+#[test]
+fn memory_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/memory.json",
+        "memory_trace.txt",
+        true,
+        None,
+    );
 }
 
 #[test]
 fn range_check_test() {
-    //mov r0 8
-    //mov r1 2
-    //mov r2 3
-    //add r3 r0 r1
-    //mul r4 r3 r2
-    //range_check r4
-    //end
-
-    let file = File::open("../assembler/testdata/range_check.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-    debug!("instructions:{:?}", program.instructions);
-
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.unwrap());
-    }
-
-    let mut process = Process::new();
-    process.execute(&mut program).unwrap();
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("range_check_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/range_check.json",
+        "range_check_trace.txt",
+        true,
+        None,
+    );
 }
 
 #[test]
 fn bitwise_test() {
-    //mov r0 8
-    //mov r1 2
-    //mov r2 3
-    //add r3 r0 r1
-    //mul r4 r3 r2
-    //and r5 r4 r3
-    //or r6 r1 r4
-    //xor r7 r5 r2
-    //or r3 r2 r3
-    //and r4 r4 r3
-    //end
-
-    let file = File::open("../assembler/testdata/bitwise.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-    debug!("instructions:{:?}", program.instructions);
-
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.unwrap());
-    }
-
-    let mut process = Process::new();
-    process.execute(&mut program).unwrap();
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("bitwise_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/bitwise.json",
+        "bitwise_trace.txt",
+        true,
+        None,
+    );
 }
 
 #[test]
 fn comparison_test() {
-    //"main:
-    //  .LBL0_0:
-    //    add r8 r8 4
-    //    mstore [r8,-2] r8
-    //    mov r1 1
-    //    call le
-    //    add r8 r8 -4
-    //    end
-    //  le:
-    //  .LBL1_0:
-    //    mov r0 r1
-    //    mov r7 1
-    //    gte r0 r7 r0
-    //    cjmp r0 .LBL1_1
-    //    jmp .LBL1_2
-    //  .LBL1_1:
-    //    mov r0 2
-    //    ret
-    //  .LBL1_2:
-    //    mov r0 3
-    //    ret"
-
-    let file = File::open("../assembler/testdata/comparison.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-    debug!("instructions:{:?}", program.instructions);
-
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.unwrap());
-    }
-
-    let mut process = Process::new();
-    process.execute(&mut program).unwrap();
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("comparison_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/comparison.json",
+        "comparison_trace.txt",
+        true,
+        None,
+    );
 }
 
 #[test]
 fn call_test() {
-    //main:
-    // .LBL0_0:
-    //   add r8 r8 5
-    //   mstore [r8,-2] r8
-    //   mov r0 10
-    //   mstore [r8,-5] r0
-    //   mov r0 20
-    //   mstore [r8,-4] r0
-    //   mov r0 100
-    //   mstore [r8,-3] r0
-    //   mload r1 [r8,-5]
-    //   mload r2 [r8,-4]
-    //   call bar
-    //   mstore [r8,-3] r0
-    //   mload r0 [r8,-3]
-    //   add r8 r8 -5
-    //   end
-    // bar:
-    // .LBL1_0:
-    //   add r8 r8 5
-    //   mstore [r8,-3] r1
-    //   mstore [r8,-4] r2
-    //   mov r1 200
-    //   mstore [r8,-5] r1
-    //   mload r1 [r8,-3]
-    //   mload r2 [r8,-4]
-    //   add r0 r1 r2
-    //   mstore [r8,-5] r0
-    //   mload r0 [r8,-5]
-    //   add r8 r8 -5
-    //   ret
-
-    let file = File::open("../assembler/testdata/call.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-    debug!("instructions:{:?}", program.instructions);
-
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.unwrap());
-    }
-
-    let mut process = Process::new();
-    process.execute(&mut program).unwrap();
-
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
-
-    let mut file = File::create("call_trace.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    executor_run_test_program(
+        "../assembler/test_data/bin/call.json",
+        "call_trace.txt",
+        false,
+        None,
+    );
 }
 
 #[test]
 fn fibo_use_loop_decode() {
-    // main:
-    //    .LBL0_0:
-    //    add r8 r8 4
-    //    mstore [r8,-2] r8
-    //    mov r1 10
-    //    call fib_non_recursive
-    //    add r8 r8 -4
-    //    end
-    //    fib_non_recursive:
-    //    .LBL2_0:
-    //    add r8 r8 5
-    //    mov r0 r1
-    //    mstore [r8,-1] r0
-    //    mov r0 0
-    //    mstore [r8,-2] r0
-    //    mov r0 1
-    //    mstore [r8,-3] r0
-    //    mov r0 1
-    //    mstore [r8,-4] r0
-    //    mov r0 2
-    //    mstore [r8,-5] r0
-    //    jmp .LBL2_1
-    //    .LBL2_1:
-    //    mload r0 [r8,-5]
-    //    mload r1 [r8,-1]
-    //    gte r0 r1 r0
-    //    cjmp r0 .LBL2_2
-    //    jmp .LBL2_4
-    //    .LBL2_2:
-    //    mload r1 [r8,-2]
-    //    mload r2 [r8,-3]
-    //    add r0 r1 r2
-    //    mstore [r8,-4] r0
-    //    mload r0 [r8,-3]
-    //    mstore [r8,-2] r0
-    //    mload r0 [r8,-4]
-    //    mstore [r8,-3] r0
-    //    jmp .LBL2_3
-    //    .LBL2_3:
-    //    mload r1 [r8,-5]
-    //    add r0 r1 1
-    //    mstore [r8,-5] r0
-    //    jmp .LBL2_1
-    //    .LBL2_4:
-    //    mload r0 [r8,-4]
-    //    add r8 r8 -5
-    //   ret
-
-    let file = File::open("../assembler/testdata/fib_loop.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
-
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-    debug!("instructions:{:?}", program.instructions);
-
-    for inst in instructions {
-        program.instructions.push(inst.unwrap());
-    }
-
-    let mut process = Process::new();
-    let start = Instant::now();
-    process.execute(&mut program).unwrap();
-    let exec_time = start.elapsed();
-    println!(
-        "exec_time: {}, exec steps: {}",
-        exec_time.as_secs(),
-        program.trace.exec.len()
+    executor_run_test_program(
+        "../assembler/test_data/bin/fibo_loop.json",
+        "fib_loop_trace.txt",
+        true,
+        None,
     );
-    let file = File::create("fib_loop.txt").unwrap();
-
-    serde_json::to_writer(file, &program.trace).unwrap();
 }
 
 #[test]
 fn fibo_recursive() {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
-        .try_init();
-    //  main:
-    //  LBL0_0:
-    //   add r8 r8 4
-    //   mstore [r8,-2] r8
-    //   mov r1 10
-    //   call fib_recursive
-    //   add r8 r8 -4
-    //   end
-    //  ib_recursive:
-    //  LBL1_0:
-    //   add r8 r8 9
-    //   mstore [r8,-2] r8
-    //   mov r0 r1
-    //   mstore [r8,-7] r0
-    //   mload r0 [r8,-7]
-    //   eq r6 r0 1
-    //   cjmp r6 .LBL1_1
-    //   jmp .LBL1_2
-    //  LBL1_1:
-    //   mov r0 1
-    //   add r8 r8 -9
-    //   ret
-    //  LBL1_2:
-    //   mload r0 [r8,-7]
-    //   eq r6 r0 2
-    //   cjmp r6 .LBL1_3
-    //   jmp .LBL1_4
-    //  LBL1_3:
-    //   mov r0 1
-    //   add r8 r8 -9
-    //   ret
-    //  LBL1_4:
-    //   mload r0 [r8,-7]
-    //   add r1 r0 -1
-    //   call fib_recursive
-    //   mstore [r8,-3] r0
-    //   mload r0 [r8,-7]
-    //   add r0 r0 -2
-    //   mstore [r8,-5] r0
-    //   mload r1 [r8,-5]
-    //   call fib_recursive
-    //   mload r1 [r8,-3]
-    //   add r0 r1 r0
-    //   mstore [r8,-6] r0
-    //   mload r0 [r8,-6]
-    //   add r8 r8 -9
-    //   ret
-    let file = File::open("../assembler/testdata/fib_recursive.bin").unwrap();
-    let mut instructions = BufReader::new(file).lines();
+    executor_run_test_program(
+        "../assembler/test_data/bin/fibo_recursive.json",
+        "fibo_recursive_trace.txt",
+        true,
+        None,
+    );
+}
 
+#[test]
+fn prophet_sqrt_test() {
+    let calldata = [1073741824u64, 7000u64, 2u64, 3509365327u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    executor_run_test_program(
+        "../assembler/test_data/bin/sqrt_prophet_asm.json",
+        "sqrt_prophet_asm.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test] 
+fn fib_test() {
+    // fib_non_recursive
+    // let calldata = [5u64, 1u64, 2146118040u64]
+    //     .iter()
+    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //     .collect_vec();
+    // fib_recursive
+    // let calldata = [5u64, 1u64, 229678162u64]
+    //     .iter()
+    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //     .collect_vec();
+    // bench_fib_non_recursive
+    let calldata = [47u64, 300u64, 2u64, 4185064725u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    // bench_fib_recursive
+    // let calldata = [5u64, 1u64, 2u64, 3642896167u64]
+    //     .iter()
+    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //     .collect_vec();
+
+    executor_run_test_program(
+        "../assembler/test_data/bin/fib_asm.json",
+        "fib_asm.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn sqrt_newton_iteration_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/sqrt.json",
+        "sqrt_trace.txt",
+        true,
+        None,
+    );
+}
+
+#[test]
+fn storage_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/storage.json",
+        "storage_trace.txt",
+        false,
+        None,
+    );
+}
+
+#[test]
+fn storage_multi_keys_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/storage_multi_keys.json",
+        "storage_multi_keys_trace.txt",
+        false,
+        None,
+    );
+}
+
+#[test]
+fn poseidon_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/poseidon.json",
+        "poseidon_trace.txt",
+        false,
+        None,
+    );
+}
+
+#[test]
+fn malloc_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/malloc.json",
+        "malloc_trace.txt",
+        false,
+        None,
+    );
+}
+
+#[test]
+fn vote_test() {
+    let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    let vote_calldata = [2u64, 1u64, 2791810083u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    let winning_proposal_calldata = [0u64, 3186728800u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    let winning_name_calldata = [0u64, 363199787u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    executor_run_test_program(
+        "../assembler/test_data/bin/vote.json",
+        "vote_trace.txt",
+        false,
+        Some(init_calldata),
+    );
+}
+
+#[test]
+fn mem_gep_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/mem_gep.json",
+        "mem_gep_trace.txt",
+        false,
+        None,
+    );
+}
+
+#[test]
+fn mem_gep_vecotr_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/mem_gep_vector.json",
+        "mem_gep_vector_trace.txt",
+        false,
+        None,
+    );
+}
+
+#[test]
+fn string_assert_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/string_assert.json",
+        "string_assert_trace.txt",
+        false,
+        None,
+    );
+}
+
+#[test]
+fn tape_test() {
+    executor_run_test_program(
+        "../assembler/test_data/bin/tape.json",
+        "tape_trace.txt",
+        false,
+        Some(Vec::new()),
+    );
+}
+
+#[test]
+fn sc_input_test() {
+    let calldata = vec![
+        GoldilocksField::from_canonical_u64(10),
+        GoldilocksField::from_canonical_u64(20),
+        GoldilocksField::from_canonical_u64(2),
+        GoldilocksField::from_canonical_u64(253268590),
+    ];
+
+    executor_run_test_program(
+        "../assembler/test_data/bin/sc_input.json",
+        "sc_input_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn storage_u32_test() {
+    let calldata = vec![
+        GoldilocksField::from_canonical_u64(0),
+        GoldilocksField::from_canonical_u64(2364819430),
+    ];
+    executor_run_test_program(
+        "../assembler/test_data/bin/storage_u32.json",
+        "storage_u32_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn poseidon_hash_test() {
+    let calldata = vec![
+        GoldilocksField::from_canonical_u64(0),
+        GoldilocksField::from_canonical_u64(1239976900),
+    ];
+    executor_run_test_program(
+        "../assembler/test_data/bin/poseidon_hash.json",
+        "poseidon_hash_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn context_fetch_test() {
+    let calldata = vec![
+        GoldilocksField::from_canonical_u64(0),
+        GoldilocksField::from_canonical_u64(3458276513),
+    ];
+    executor_run_test_program(
+        "../assembler/test_data/bin/context_fetch.json",
+        "context_fetch_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn printf_test() {
+    let call_data = [5, 111, 108, 97, 118, 109, 11, 12, 8, 3238128773];
+
+    let calldata = call_data
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/printf.json",
+        "printf_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn gen_storage_table_test() {
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
+        debug_info: Default::default(),
     };
-    debug!("instructions:{:?}", program.instructions);
-
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.unwrap());
-    }
-
+    let mut hash = Vec::new();
     let mut process = Process::new();
-    let res = process.execute(&mut program);
-    if res.is_err() {
-        panic!("execute err:{:?}", res);
-    }
 
-    println!("vm trace: {:?}", program.trace);
-    let trace_json_format = serde_json::to_string(&program.trace).unwrap();
+    let mut store_addr = [
+        GoldilocksField::from_canonical_u64(8),
+        GoldilocksField::from_canonical_u64(9),
+        GoldilocksField::from_canonical_u64(10),
+        GoldilocksField::from_canonical_u64(11),
+    ];
 
-    let mut file = File::create("fibo_recursive.txt").unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    let mut store_val = [
+        GoldilocksField::from_canonical_u64(1),
+        GoldilocksField::from_canonical_u64(2),
+        GoldilocksField::from_canonical_u64(3),
+        GoldilocksField::from_canonical_u64(4),
+    ];
+
+    process.storage.write(
+        1,
+        GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
+        store_addr,
+        store_val,
+        tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
+    );
+    hash.push(tree_key_default());
+    store_val[3] = GoldilocksField::from_canonical_u64(5);
+    process.storage.write(
+        3,
+        GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
+        store_addr,
+        store_val,
+        tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
+    );
+    hash.push(tree_key_default());
+
+    process.storage.read(
+        7,
+        GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
+        store_addr,
+        tree_key_default(),
+        tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
+    );
+    hash.push(tree_key_default());
+
+    process.storage.read(
+        6,
+        GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
+        store_addr,
+        tree_key_default(),
+        tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
+    );
+    hash.push(tree_key_default());
+
+    store_val[3] = GoldilocksField::from_canonical_u64(8);
+    store_addr[3] = GoldilocksField::from_canonical_u64(6);
+
+    process.storage.write(
+        5,
+        GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
+        store_addr,
+        store_val,
+        tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
+    );
+    hash.push(tree_key_default());
+
+    store_val[3] = GoldilocksField::from_canonical_u64(9);
+    process.storage.write(
+        2,
+        GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u64),
+        store_addr,
+        store_val,
+        tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
+    );
+    hash.push(tree_key_default());
+
+    process.storage.read(
+        9,
+        GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
+        store_addr,
+        tree_key_default(),
+        tree_key_default(),
+        GoldilocksField::ZERO,
+        GoldilocksField::ZERO,
+    );
+    hash.push(tree_key_default());
+
+    gen_storage_table(&mut process, &mut program, hash);
 }

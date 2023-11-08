@@ -247,8 +247,7 @@ impl Sum for Avx2GoldilocksField {
 }
 
 // Resources:
-// 1. Intel Intrinsics Guide for explanation of each intrinsic:
-//    https://software.intel.com/sites/landingpage/IntrinsicsGuide/
+// 1. Intel Intrinsics Guide for explanation of each intrinsic: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 // 2. uops.info lists micro-ops for each instruction: https://uops.info/table.html
 // 3. Intel optimization manual for introduction to x86 vector extensions and
 // best practices:    https://software.intel.com/content/www/us/en/develop/download/intel-64-and-ia-32-architectures-optimization-reference-manual.html
@@ -261,10 +260,9 @@ impl Sum for Avx2GoldilocksField {
 //
 // 2. AVX does not support addition with carry but 128-bit (2-word) addition can
 // be easily    emulated. The method recognizes that for a + b overflowed iff (a
-// + b) < a:        i. res_lo = a_lo + b_lo
-//       ii. carry_mask = res_lo < a_lo
-//      iii. res_hi = a_hi + b_hi - carry_mask
-//    Notice that carry_mask is subtracted, not added. This is because AVX
+// + b) < a:        i. res_lo = a_lo + b_lo ii. carry_mask = res_lo < a_lo iii.
+//   res_hi = a_hi + b_hi - carry_mask Notice that carry_mask is subtracted, not
+//   added. This is because AVX
 // comparison instructions    return -1 (all bits 1) for true and 0 for false.
 //
 // 3. AVX does not have unsigned 64-bit comparisons. Those can be emulated with

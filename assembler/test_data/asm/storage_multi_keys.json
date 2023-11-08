@@ -1,0 +1,45 @@
+{
+  "program": "main:\n.LBL3_0:\n  mov r1 4\n.PROPHET3_0:\n  mov r0 psp\n  mload r0 [r0]\n  mov r2 r0\n  mov r0 2\n  mstore [r2,-4] r0\n  mov r0 2\n  mstore [r2,-3] r0\n  mov r0 3\n  mstore [r2,-2] r0\n  mov r0 4\n  mstore [r2,-1] r0\n  mov r1 4\n.PROPHET3_1:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 4\n  mstore [r0,-4] r1\n  mov r1 5\n  mstore [r0,-3] r1\n  mov r1 6\n  mstore [r0,-2] r1\n  mov r1 7\n  mstore [r0,-1] r1\n  add r1 r2 -4\n  add r2 r0 -4\n  sstore r1 r2\n  mov r3 1\n  mstore [r1] r3\n  mov r3 1\n  mstore [r2] r3\n  sstore r1 r2\n  mov r3 2\n  mstore [r1] r3\n  mov r3 9\n  mstore [r2] r3\n  sstore r1 r2\n  mov r3 1\n  mstore [r1] r3\n  sload r1 r2\n  mov r3 2\n  mstore [r1] r3\n  sload r1 r2\n  mov r3 1\n  mstore [r1] r3\n  mov r3 3\n  mstore [r2] r3\n  sstore r1 r2\n  mov r3 1\n  mstore [r1] r3\n  sload r1 r2\n  mload r0 [r0,-3]\n  end\n",
+  "prophets": [
+    {
+      "label": ".PROPHET3_0",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET3_1",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,9 @@
 /target
 /.idea
 *.txt
-Cargo.lock
 *.xlsx
 /**/.DS_Store
 /.vscode
+/assembler/test_data/bin/*
+executor/*.json
+db_test/*

@@ -8,3 +8,4 @@ pub mod generation;
 pub mod memory;
 pub mod program;
 pub mod stark;
+pub mod test_utils;

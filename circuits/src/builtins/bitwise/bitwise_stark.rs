@@ -409,49 +409,61 @@ pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
     Column::one()
 }*/
-
+#[cfg(test)]
 mod tests {
     use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
     use crate::builtins::bitwise::columns::get_bitwise_col_name_map;
-    use crate::generation::builtin::{generate_bitwise_trace, generate_cmp_trace};
+    use crate::generation::builtin::generate_bitwise_trace;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
+    use assembler::encoder::encode_asm_from_json_file;
+    use core::merkle_tree::tree::AccountTree;
     use core::program::Program;
+    use core::types::account::Address;
     use executor::Process;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
-    use std::borrow::Borrow;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
+    use std::collections::HashMap;
+    use std::path::PathBuf;
 
     #[allow(unused)]
-    fn test_bitwise_stark(program_path: &str) {
+    fn test_bitwise_stark(program_path: String) {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         type S = BitwiseStark<F, D>;
         let mut stark = S::default();
 
-        let file = File::open(program_path).unwrap();
-        let mut instructions = BufReader::new(file).lines();
+        let program = encode_asm_from_json_file(program_path).unwrap();
+        let instructions = program.bytecode.split("\n");
+        let mut prophets = HashMap::new();
+        for item in program.prophets {
+            prophets.insert(item.host as u64, item);
+        }
 
         let mut program: Program = Program {
             instructions: Vec::new(),
             trace: Default::default(),
+            debug_info: Default::default(),
         };
 
         for inst in instructions {
-            program.instructions.push(inst.unwrap());
+            program.instructions.push(inst.to_string());
         }
 
         let mut process = Process::new();
-        let _ = process.execute(&mut program);
+        process.addr_storage = Address::default();
+        let _ = process.execute(
+            &mut program,
+            &mut Some(prophets),
+            &mut AccountTree::new_test(),
+        );
 
         let (rows, bitwise_beta) =
-            generate_bitwise_trace::<F, C, D>(&program.trace.builtin_bitwise_combined);
+            generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
         let len = rows[0].len();
         println!(
             "raw trace len:{}, extended len: {}",
@@ -517,7 +529,11 @@ mod tests {
 
     #[test]
     fn test_bitwise_with_program() {
-        let program_path = "../assembler/testdata/bitwise.bin";
-        test_bitwise_stark(&program_path);
+        let file_name = "bitwise.json";
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+        test_bitwise_stark(program_path);
     }
 }

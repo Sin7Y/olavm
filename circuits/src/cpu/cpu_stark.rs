@@ -1,11 +1,11 @@
+use core::program::CTX_REGISTER_NUM;
+
 use {
     super::{columns::*, *},
     crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
     crate::stark::cross_table_lookup::Column,
-    crate::stark::lookup::{eval_lookups, eval_lookups_circuit},
     crate::stark::stark::Stark,
     crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars},
-    anyhow::Result,
     core::program::REGISTER_NUM,
     itertools::izip,
     itertools::Itertools,
@@ -13,38 +13,99 @@ use {
     plonky2::field::packed::PackedField,
     plonky2::field::types::Field,
     plonky2::hash::hash_types::RichField,
-    plonky2::iop::ext_target::ExtensionTarget,
     plonky2::plonk::circuit_builder::CircuitBuilder,
     std::marker::PhantomData,
     std::ops::Range,
 };
 
-pub fn ctl_data_cpu_mem_mstore<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_AUX1, COL_OP0]).collect_vec()
+pub fn ctl_data_cpu_mem_store_load<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_AUX1,
+        COL_DST,
+    ])
+    .collect_vec()
 }
 
-pub fn ctl_filter_cpu_mem_mstore<F: Field>() -> Column<F> {
-    Column::single(COL_S_MSTORE)
-}
-
-pub fn ctl_data_cpu_mem_mload<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_AUX1, COL_DST]).collect_vec()
-}
-
-pub fn ctl_filter_cpu_mem_mload<F: Field>() -> Column<F> {
-    Column::single(COL_S_MLOAD)
+pub fn ctl_filter_cpu_mem_store_load<F: Field>() -> Column<F> {
+    Column::sum([COL_S_MSTORE, COL_S_MLOAD])
 }
 
 pub fn ctl_data_cpu_mem_call_ret_pc<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_OP0, COL_DST]).collect_vec()
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_OP0,
+        COL_DST,
+    ])
+    .collect_vec()
 }
 
 pub fn ctl_data_cpu_mem_call_ret_fp<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_CLK, COL_OPCODE, COL_AUX0, COL_AUX1]).collect_vec()
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_AUX0,
+        COL_AUX1,
+    ])
+    .collect_vec()
 }
 
 pub fn ctl_filter_cpu_mem_call_ret<F: Field>() -> Column<F> {
     Column::sum([COL_S_CALL, COL_S_RET])
+}
+
+pub fn ctl_data_cpu_mem_tload_tstore<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_AUX0,
+        COL_AUX1,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_cpu_mem_tload_tstore<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_TAPE_LOOKING)
+}
+
+pub(crate) fn ctl_data_cpu_mem_sccall<F: Field>(i: usize) -> Vec<Column<F>> {
+    let col_addr = match i {
+        0 => COL_OP0,
+        1 => COL_DST,
+        2 => COL_AUX0,
+        3 => COL_AUX1,
+        _ => panic!("invalid cpu-mem sccall idx"),
+    };
+    let col_value = match i {
+        0 => COL_ADDR_CODE_RANGE.start,
+        1 => COL_ADDR_CODE_RANGE.start + 1,
+        2 => COL_ADDR_CODE_RANGE.start + 2,
+        3 => COL_ADDR_CODE_RANGE.start + 3,
+        _ => panic!("invalid cpu-mem sccall idx"),
+    };
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        col_addr,
+        col_value,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_cpu_mem_sccall<F: Field>() -> Column<F> {
+    Column::single(IS_SCCALL_EXT_LINE)
 }
 
 // get the data source for bitwise in Cpu table
@@ -82,6 +143,139 @@ pub fn ctl_filter_with_rangecheck<F: Field>() -> Column<F> {
     Column::single(COL_S_RC)
 }
 
+pub fn ctl_data_with_poseidon_chunk<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_OP0,
+        COL_OP1,
+        COL_DST,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
+    Column::single(COL_S_PSDN)
+}
+
+pub fn ctl_data_cpu_tape_load_store<F: Field>() -> Vec<Column<F>> {
+    Column::singles([COL_TX_IDX, COL_OPCODE, COL_S_OP0.start, COL_AUX1]).collect_vec()
+}
+
+pub fn ctl_filter_cpu_tape_load_store<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_TAPE_LOOKING)
+}
+
+pub fn ctl_data_poseidon_treekey<F: Field>() -> Vec<Column<F>> {
+    let mut res =
+        Column::singles(COL_ADDR_STORAGE_RANGE.chain(COL_S_OP0.skip(4).take(4))).collect_vec();
+    res.extend([
+        Column::zero(),
+        Column::zero(),
+        Column::zero(),
+        Column::zero(),
+    ]);
+    res.extend(Column::singles(COL_S_DST.take(4)).collect_vec());
+    res
+}
+
+pub fn ctl_filter_poseidon_treekey<F: Field>() -> Column<F> {
+    Column::single(COL_IS_STORAGE_EXT_LINE)
+}
+
+pub fn ctl_data_cpu_storage_access<F: Field>() -> Vec<Column<F>> {
+    Column::singles([
+        COL_IDX_STORAGE,
+        // is_write
+        COL_S_SSTORE,
+        // addr
+        COL_S_DST.start,
+        COL_S_DST.start + 1,
+        COL_S_DST.start + 2,
+        COL_S_DST.start + 3,
+        // path
+        COL_S_OP1.start + 4,
+        COL_S_OP1.start + 5,
+        COL_S_OP1.start + 6,
+        COL_S_OP1.start + 7,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_filter_cpu_storage_access<F: Field>() -> Column<F> {
+    Column::single(COL_IS_STORAGE_EXT_LINE)
+}
+
+pub fn ctl_data_cpu_mem_for_storage_addr<F: Field>(i: usize) -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_S_OP0.start + i,
+        COL_S_OP0.start + 4 + i,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_data_cpu_mem_for_storage_value<F: Field>(i: usize) -> Vec<Column<F>> {
+    Column::singles([
+        COL_TX_IDX,
+        COL_ENV_IDX,
+        COL_CLK,
+        COL_OPCODE,
+        COL_S_OP1.start + i,
+        COL_S_OP1.start + 4 + i,
+    ])
+    .collect_vec()
+}
+
+pub fn ctl_data_cpu_sccall<F: Field>() -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![Column::single(COL_TX_IDX), Column::single(COL_ENV_IDX)];
+    for limb_addr_storage_col in COL_S_OP0.start..COL_S_OP0.start + 4 {
+        res.push(Column::single(limb_addr_storage_col));
+    }
+    for limb_addr_code_col in COL_S_OP0.start + 4..COL_S_OP0.start + 8 {
+        res.push(Column::single(limb_addr_code_col));
+    }
+    res.extend(Column::singles([COL_CLK, COL_OP1_IMM]));
+    for reg_col in COL_REGS {
+        res.push(Column::single(reg_col));
+    }
+    // callee env_idx
+    res.push(Column::linear_combination_with_constant(
+        [(COL_ENV_IDX, F::ONE)],
+        F::ONE,
+    ));
+    res
+}
+
+pub fn ctl_filter_cpu_sccall<F: Field>() -> Column<F> {
+    Column::single(IS_SCCALL_EXT_LINE)
+}
+
+pub fn ctl_data_cpu_sccall_end<F: Field>() -> Vec<Column<F>> {
+    let mut res = vec![COL_TX_IDX, COL_ENV_IDX];
+    for limb_exe_ctx_col in COL_ADDR_STORAGE_RANGE {
+        res.push(limb_exe_ctx_col);
+    }
+    for limb_code_ctx_col in COL_ADDR_CODE_RANGE {
+        res.push(limb_code_ctx_col);
+    }
+    res.push(COL_CLK);
+    for reg_col in COL_REGS {
+        res.push(reg_col);
+    }
+    res.extend([COL_AUX0, COL_AUX1]);
+    Column::singles(res.into_iter()).collect_vec()
+}
+
+pub fn ctl_filter_cpu_sccall_end<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_SCCALL_END)
+}
+
 // get the data source for Rangecheck in Cpu table
 pub fn ctl_data_with_program<F: Field>() -> Vec<Column<F>> {
     Column::singles([COL_PC, COL_INST, COL_IMM_VAL]).collect_vec()
@@ -91,62 +285,175 @@ pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
     Column::single(COL_INST)
 }
 
+pub(crate) fn ctl_data_cpu_tape_sccall_caller<F: Field>(i: usize) -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![Column::single(COL_TX_IDX), Column::single(COL_OPCODE)];
+    res.push(Column::linear_combination_with_constant(
+        [(COL_TP, F::ONE)],
+        F::from_canonical_usize(i),
+    ));
+    res.push(Column::single(COL_S_OP0.start + i));
+    res
+}
+pub(crate) fn ctl_data_cpu_tape_sccall_callee_code<F: Field>(i: usize) -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![Column::single(COL_TX_IDX), Column::single(COL_OPCODE)];
+    res.push(Column::linear_combination_with_constant(
+        [(COL_TP, F::ONE)],
+        F::from_canonical_usize(4 + i),
+    ));
+    res.push(Column::single(COL_ADDR_CODE_RANGE.start + i));
+    res
+}
+pub(crate) fn ctl_data_cpu_tape_sccall_callee_storage<F: Field>(i: usize) -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![Column::single(COL_TX_IDX), Column::single(COL_OPCODE)];
+    res.push(Column::linear_combination_with_constant(
+        [(COL_TP, F::ONE)],
+        F::from_canonical_usize(8 + i),
+    ));
+    res.push(Column::single(COL_ADDR_STORAGE_RANGE.start + i));
+    res
+}
+pub fn ctl_filter_cpu_is_sccall_ext<F: Field>() -> Column<F> {
+    Column::single(IS_SCCALL_EXT_LINE)
+}
+
 #[derive(Copy, Clone, Default)]
 pub struct CpuStark<F, const D: usize> {
-    compress_challenge: Option<F>,
     pub f: PhantomData<F>,
 }
 
 impl<F: RichField, const D: usize> CpuStark<F, D> {
-    pub const OPCODE_SHIFTS: Range<u32> = 14..35;
+    pub const OPCODE_SHIFTS: Range<u32> = 7..32;
     pub const OP1_IMM_SHIFT: u32 = 62;
     pub const OP0_SHIFT_START: u32 = 61;
-    pub const OP1_SHIFT_START: u32 = 52;
-    pub const DST_SHIFT_START: u32 = 43;
+    pub const OP1_SHIFT_START: u32 = 51;
+    pub const DST_SHIFT_START: u32 = 41;
 
-    pub fn set_compress_challenge(&mut self, challenge: F) -> Result<()> {
-        assert!(self.compress_challenge.is_none(), "already set?");
-        self.compress_challenge = Some(challenge);
-        Ok(())
-    }
-
-    pub fn get_compress_challenge(&self) -> Option<F> {
-        self.compress_challenge
-    }
-}
-
-impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D> {
-    const COLUMNS: usize = NUM_CPU_COLS;
-
-    fn eval_packed_generic<FE, P, const D2: usize>(
-        &self,
-        vars: StarkEvaluationVars<FE, P, NUM_CPU_COLS>,
+    fn constraint_wrapper_cols<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
         yield_constr: &mut ConstraintConsumer<P>,
     ) where
         FE: FieldExtension<D2, BaseField = F>,
         P: PackedField<Scalar = FE>,
     {
-        let lv = vars.local_values;
-        let nv = vars.next_values;
+        // padding from zero to one, and padding row op is end.
+        yield_constr.constraint(wrapper.lv_is_padding * (wrapper.lv_is_padding - P::ONES));
+        yield_constr.constraint_transition(
+            (wrapper.nv_is_padding - wrapper.lv_is_padding)
+                * (wrapper.nv_is_padding - wrapper.lv_is_padding - P::ONES),
+        );
+        yield_constr.constraint(wrapper.lv_is_padding * (wrapper.lv[COL_S_END] - P::ONES));
+        // entry sc env_idx = 0
+        yield_constr.constraint(wrapper.lv_is_entry_sc * wrapper.nv[COL_ENV_IDX]);
+        // if in same tx, tx_idx should be same
+        yield_constr.constraint(
+            (P::ONES - wrapper.nv_is_padding)
+                * wrapper.is_in_same_tx
+                * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX]),
+        );
+        // if not same tx, diff of tx_idx should be 1
+        yield_constr.constraint_transition(
+            (P::ONES - wrapper.nv_is_padding)
+                * (P::ONES - wrapper.is_in_same_tx)
+                * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX] - P::ONES),
+        );
+        // when crossing inst, ext cnt must be ext length.
+        yield_constr.constraint(
+            wrapper.is_crossing_inst * (wrapper.lv_ext_length - wrapper.lv[COL_EXT_CNT]),
+        )
+    }
 
-        // 1. Constrain instruction decoding.
-        // op_imm should be binary.
-        yield_constr.constraint(lv[COL_OP1_IMM] * (P::ONES - lv[COL_OP1_IMM]));
+    fn constraint_tx_init<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        let lv = wrapper.lv;
+        let nv = wrapper.nv;
+        // first line context init
+        yield_constr.constraint_first_row(lv[COL_TX_IDX]);
+        yield_constr.constraint_first_row(lv[COL_ENV_IDX]);
+        yield_constr.constraint_first_row(lv[COL_CALL_SC_CNT]);
+        // todo exe and code context should be entry system contract?
+        yield_constr.constraint_first_row(lv[COL_CLK]);
+        yield_constr.constraint_first_row(lv[COL_PC]);
+        COL_REGS.for_each(|col_reg| {
+            yield_constr.constraint_first_row(lv[col_reg]);
+        });
+        // tx_idx should be the same or increase by one
+        yield_constr
+            .constraint_transition(wrapper.is_in_same_tx * (nv[COL_TX_IDX] - lv[COL_TX_IDX]));
+        // each tx context init
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_ENV_IDX]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_CALL_SC_CNT]);
+        // todo exe and code context should be entry system contract?
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_TP]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_CLK]);
+        yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[COL_PC]);
+        COL_REGS.for_each(|col_reg| {
+            yield_constr.constraint_transition((P::ONES - wrapper.is_in_same_tx) * nv[col_reg]);
+        });
+    }
 
-        // op0, op1, dst selectors should be binary.
-        let s_op0s: [P; REGISTER_NUM] = lv[COL_S_OP0].try_into().unwrap();
-        s_op0s
-            .iter()
-            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
-        let s_op1s: [P; REGISTER_NUM] = lv[COL_S_OP1].try_into().unwrap();
-        s_op1s
-            .iter()
-            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
-        let s_dsts: [P; REGISTER_NUM] = lv[COL_S_DST].try_into().unwrap();
-        s_dsts
-            .iter()
-            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
+    fn constraint_env_idx<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        // call_sc_cnt only increase by 1 on last ext line of call_sc
+        yield_constr.constraint_transition(
+            wrapper.lv[COL_S_CALL_SC]
+                * wrapper.is_crossing_inst
+                * (wrapper.nv[COL_CALL_SC_CNT] - wrapper.lv[COL_CALL_SC_CNT] - P::ONES),
+        );
+        yield_constr.constraint_transition(
+            wrapper.is_in_same_tx
+                * (P::ONES - wrapper.lv[COL_S_CALL_SC])
+                * (wrapper.nv[COL_CALL_SC_CNT] - wrapper.lv[COL_CALL_SC_CNT]),
+        );
+        yield_constr.constraint(
+            wrapper.lv[COL_S_CALL_SC]
+                * (P::ONES - wrapper.is_crossing_inst)
+                * (wrapper.nv[COL_CALL_SC_CNT] - wrapper.lv[COL_CALL_SC_CNT]),
+        );
+        // env_idx can change on last ext line of call_sc or ext of end, other lines
+        // should be the same
+        // last ext line of call_sc
+        yield_constr.constraint(
+            wrapper.lv[COL_S_CALL_SC]
+                * wrapper.is_crossing_inst
+                * (wrapper.nv[COL_ENV_IDX] - wrapper.lv[COL_CALL_SC_CNT]),
+        );
+        // not call_sc and end, env_idx should be the same
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_S_CALL_SC] - wrapper.lv[COL_S_END])
+                * (wrapper.nv[COL_ENV_IDX] - wrapper.lv[COL_ENV_IDX]),
+        );
+        // call_sc but not last ext line, env_idx should be the same
+        yield_constr.constraint(
+            wrapper.lv[COL_S_CALL_SC]
+                * (P::ONES - wrapper.is_crossing_inst)
+                * (wrapper.nv[COL_ENV_IDX] - wrapper.lv[COL_ENV_IDX]),
+        );
+        // ext of end, env_idx should be the same
+        yield_constr.constraint(
+            wrapper.lv[COL_S_END]
+                * wrapper.lv[COL_IS_EXT_LINE]
+                * (wrapper.nv[COL_ENV_IDX] - wrapper.lv[COL_ENV_IDX]),
+        );
+    }
 
+    fn constraint_opcode_selector<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        let lv = wrapper.lv;
         // Selector of opcode and builtins should be binary.
         let op_selectors = [
             lv[COL_S_ADD],
@@ -169,12 +476,20 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             lv[COL_S_NEQ],
             lv[COL_S_GTE],
             lv[COL_S_PSDN],
-            lv[COL_S_ECDSA],
+            lv[COL_S_SLOAD],
+            lv[COL_S_SSTORE],
+            lv[COL_S_TLOAD],
+            lv[COL_S_TSTORE],
+            lv[COL_S_CALL_SC],
         ];
 
         op_selectors
             .iter()
             .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
+
+        // Only one opcode selector enabled.
+        let sum_s_op: P = op_selectors.into_iter().sum();
+        yield_constr.constraint(P::ONES - sum_s_op);
 
         // Constrain opcode encoding.
         let opcode_shift = Self::OPCODE_SHIFTS
@@ -187,7 +502,23 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
             .map(|(selector, shift)| *selector * *shift)
             .sum();
         yield_constr.constraint(lv[COL_OPCODE] - opcode);
+    }
 
+    fn constraint_instruction_encode<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        let lv = wrapper.lv;
+
+        let s_op0s: [P; REGISTER_NUM] = lv[COL_S_OP0].try_into().unwrap();
+        let s_op1s: [P; REGISTER_NUM] = lv[COL_S_OP1].try_into().unwrap();
+        let s_dsts: [P; REGISTER_NUM] = lv[COL_S_DST].try_into().unwrap();
+
+        // op_imm should be binary.
+        yield_constr.constraint(lv[COL_OP1_IMM] * (P::ONES - lv[COL_OP1_IMM]));
         // Constrain instruction encoding.
         let op1_imm_shift = P::Scalar::from_canonical_u64(2_u64.pow(Self::OP1_IMM_SHIFT));
         let mut instruction = lv[COL_OP1_IMM] * op1_imm_shift;
@@ -215,97 +546,363 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         }
 
         instruction += lv[COL_OPCODE];
-        yield_constr.constraint(lv[COL_INST] - instruction);
+        yield_constr
+            .constraint((P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * (lv[COL_INST] - instruction));
 
-        // We constrain raw inst and inst.
-        // First constrain compress consistency
-        let beta = FE::from_basefield(self.get_compress_challenge().unwrap());
-        yield_constr.constraint(lv[COL_RAW_INST] * beta + lv[COL_RAW_PC] - lv[COL_ZIP_RAW]);
-        yield_constr.constraint(lv[COL_INST] * beta + lv[COL_PC] - lv[COL_ZIP_EXED]);
+        // When oprand exists, op1 is imm.
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
+                * (lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL])),
+        );
+    }
 
-        // Then check raw inst and inst's lookup logic.
-        eval_lookups(vars, yield_constr, COL_PER_ZIP_EXED, COL_PER_ZIP_RAW);
+    fn constraint_operands_mathches_registers<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        let lv = wrapper.lv;
+
+        let s_op0s: [P; REGISTER_NUM] = lv[COL_S_OP0].try_into().unwrap();
+        let s_op1s: [P; REGISTER_NUM] = lv[COL_S_OP1].try_into().unwrap();
+        let s_dsts: [P; REGISTER_NUM] = lv[COL_S_DST].try_into().unwrap();
+
+        // op0, op1, dst selectors should be binary. (only used as selector in main
+        // line)
+        s_op0s.iter().for_each(|s| {
+            yield_constr.constraint((P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * *s * (P::ONES - *s))
+        });
+        s_op1s.iter().for_each(|s| {
+            yield_constr.constraint((P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * *s * (P::ONES - *s))
+        });
+        s_dsts.iter().for_each(|s| {
+            yield_constr.constraint((P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * *s * (P::ONES - *s))
+        });
 
         // Only one register used for op0.
         let sum_s_op0: P = s_op0s.into_iter().sum();
-        yield_constr.constraint(sum_s_op0 * (P::ONES - sum_s_op0));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_op0 * (P::ONES - sum_s_op0),
+        );
 
         // Only one register used for op1.
         let sum_s_op1: P = s_op1s.into_iter().sum();
-        yield_constr.constraint(sum_s_op1 * (P::ONES - sum_s_op1));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_op1 * (P::ONES - sum_s_op1),
+        );
 
         // Only one register used for dst.
         let sum_s_dst: P = s_dsts.into_iter().sum();
-        yield_constr.constraint(sum_s_dst * (P::ONES - sum_s_dst));
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_dst * (P::ONES - sum_s_dst),
+        );
 
         // Op and register permutation.
         // Register should be next line.
-        let regs: [P; REGISTER_NUM] = lv[COL_REGS].try_into().unwrap();
-        let op0_sum: P = s_op0s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint(sum_s_op0 * (lv[COL_OP0] - op0_sum));
-
-        let op1_sum: P = s_op1s.iter().zip(regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint(sum_s_op1 * (lv[COL_OP1] - op1_sum));
-
-        let n_regs: [P; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
-        let dst_sum: P = s_dsts.iter().zip(n_regs.iter()).map(|(s, r)| *s * *r).sum();
-        yield_constr.constraint_transition(sum_s_dst * (lv[COL_DST] - dst_sum));
-
-        // Last row's 'next row' (AKA first row) regs should be all zeros.
-        n_regs
+        let op0_sum: P = s_op0s
             .iter()
-            .for_each(|nr| yield_constr.constraint_last_row(*nr));
+            .zip(wrapper.regs.iter())
+            .map(|(s, r)| *s * *r)
+            .sum();
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_op0 * (lv[COL_OP0] - op0_sum),
+        );
 
-        // When oprand exists, op1 is imm.
-        yield_constr.constraint(lv[COL_OP1_IMM] * (lv[COL_OP1] - lv[COL_IMM_VAL]));
+        let op1_sum: P = s_op1s
+            .iter()
+            .zip(wrapper.regs.iter())
+            .map(|(s, r)| *s * *r)
+            .sum();
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_op1 * (lv[COL_OP1] - op1_sum),
+        );
 
-        // Only one opcode selector enabled.
-        let sum_s_op: P = op_selectors.into_iter().sum();
-        yield_constr.constraint(P::ONES - sum_s_op);
+        let dst_sum: P = s_dsts
+            .iter()
+            .zip(wrapper.n_regs.iter())
+            .map(|(s, r)| *s * *r)
+            .sum();
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_EXT_LINE]) * sum_s_dst * (lv[COL_DST] - dst_sum),
+        );
+    }
 
-        // 2. Constrain state changing.
-        // clk
-        // if instruction is end, we don't need to contrain clk.
-        yield_constr
-            .constraint((P::ONES - lv[COL_S_END]) * (nv[COL_CLK] - (lv[COL_CLK] + P::ONES)));
+    fn constraint_ext_lines<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        // constraint is_ext_line
+        yield_constr.constraint((P::ONES - wrapper.lv_is_ext_inst) * wrapper.lv[COL_IS_EXT_LINE]);
+        yield_constr.constraint(
+            wrapper.lv_is_ext_inst
+                * (wrapper.lv_ext_length - wrapper.lv[COL_EXT_CNT])
+                * (P::ONES - wrapper.nv[COL_IS_EXT_LINE]),
+        );
+        // constraint ext_cnt
+        yield_constr.constraint(
+            wrapper.lv_is_ext_inst
+                * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
+                * wrapper.lv[COL_EXT_CNT],
+        );
+        yield_constr.constraint(
+            wrapper.nv_is_ext_inst
+                * wrapper.nv[COL_IS_EXT_LINE]
+                * (wrapper.nv[COL_EXT_CNT] - wrapper.lv[COL_EXT_CNT] - P::ONES),
+        );
+        // opcode, opcode selector, op1_imm not change
+        yield_constr.constraint(
+            wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[COL_OPCODE] - wrapper.lv[COL_OPCODE]),
+        );
+        for col_op_sel in (COL_S_ADD..COL_S_ADD + NUM_OP_SELECTOR).step_by(1) {
+            yield_constr.constraint(
+                wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[col_op_sel] - wrapper.lv[col_op_sel]),
+            );
+        }
+        yield_constr.constraint(
+            wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[COL_OP1_IMM] - wrapper.lv[COL_OP1_IMM]),
+        );
+    }
 
-        // reg
+    fn constraint_env_unchanged_clk<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        // next line is ext line, clk not change (except for end)
+        yield_constr.constraint(
+            wrapper.nv[COL_IS_EXT_LINE]
+                * (P::ONES - wrapper.nv[COL_S_END])
+                * (wrapper.nv[COL_CLK] - wrapper.lv[COL_CLK]),
+        );
+        // when not change env, clk increase one when meet main line
+        yield_constr.constraint(
+            wrapper.is_in_same_tx
+                * (P::ONES - wrapper.lv[COL_S_CALL_SC] - wrapper.lv[COL_S_END])
+                * (P::ONES - wrapper.nv[COL_IS_EXT_LINE])
+                * (wrapper.nv[COL_CLK] - wrapper.lv[COL_CLK] - P::ONES),
+        )
+    }
+
+    fn constraint_env_unchanged_pc<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        // next line is ext line, pc not change (except for end)
+        yield_constr.constraint(
+            wrapper.nv[COL_IS_EXT_LINE]
+                * (P::ONES - wrapper.nv[COL_S_END])
+                * (wrapper.nv[COL_CLK] - wrapper.lv[COL_CLK]),
+        );
+
+        let instruction_size = (P::ONES - wrapper.lv[COL_S_MLOAD] - wrapper.lv[COL_S_MSTORE])
+            * (P::ONES + wrapper.lv[COL_OP1_IMM])
+            + (wrapper.lv[COL_S_MLOAD] + wrapper.lv[COL_S_MSTORE])
+                * P::Scalar::from_canonical_u64(2);
+        let pc_incr = (P::ONES
+            - (wrapper.lv[COL_S_JMP]
+                + wrapper.lv[COL_S_CJMP]
+                + wrapper.lv[COL_S_CALL]
+                + wrapper.lv[COL_S_RET]))
+            * (wrapper.lv[COL_PC] + instruction_size);
+        let pc_jmp = wrapper.lv[COL_S_JMP] * wrapper.lv[COL_OP1];
+        let pc_cjmp = wrapper.lv[COL_S_CJMP]
+            * ((P::ONES - wrapper.lv[COL_OP0]) * (wrapper.lv[COL_PC] + instruction_size)
+                + wrapper.lv[COL_OP0] * wrapper.lv[COL_OP1]);
+        let pc_call = wrapper.lv[COL_S_CALL] * wrapper.lv[COL_OP1];
+        let pc_ret = wrapper.lv[COL_S_RET] * wrapper.lv[COL_DST];
+
+        yield_constr.constraint(
+            (P::ONES - wrapper.nv[COL_IS_EXT_LINE])
+                * (P::ONES - wrapper.lv[COL_S_END] - wrapper.lv[COL_S_CALL_SC])
+                * (wrapper.nv[COL_PC] - (pc_incr + pc_jmp + pc_cjmp + pc_call + pc_ret)),
+        );
+        yield_constr.constraint(
+            (P::ONES - wrapper.nv[COL_IS_EXT_LINE])
+                * wrapper.lv[COL_S_CJMP]
+                * wrapper.lv[COL_OP0]
+                * (P::ONES - wrapper.lv[COL_OP0]),
+        );
+    }
+
+    fn constraint_reg_consistency<FE, P, const D2: usize>(
+        wrapper: &CpuAdjacentRowWrapper<F, FE, P, D, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        let s_dsts: [P; REGISTER_NUM] = wrapper.lv[COL_S_DST].try_into().unwrap();
+        let multi_reg_change = wrapper.lv[COL_S_SLOAD]
+            + wrapper.lv[COL_S_PSDN]
+            + wrapper.lv[COL_S_CALL_SC] * wrapper.is_crossing_inst
+            + wrapper.lv[COL_S_END] * (P::ONES - wrapper.lv[COL_IS_EXT_LINE]);
+
+        // for normal opcode, only dst reg can change(not include fp)
         for (dst, l_r, n_r) in izip!(
             &s_dsts[..REGISTER_NUM - 1],
-            &regs[..REGISTER_NUM - 1],
-            &n_regs[..REGISTER_NUM - 1]
+            &wrapper.regs[..REGISTER_NUM - 1],
+            &wrapper.n_regs[..REGISTER_NUM - 1]
         ) {
-            yield_constr.constraint_transition((P::ONES - *dst) * (*n_r - *l_r));
+            yield_constr.constraint_transition(
+                (P::ONES - multi_reg_change) * (P::ONES - *dst) * (*n_r - *l_r),
+            );
         }
-        // fp
+        // for fp consistency
         yield_constr.constraint_transition(
-            (lv[COL_S_RET] * (n_regs[REGISTER_NUM - 1] - lv[COL_AUX1]))
-                + ((P::ONES - lv[COL_S_RET])
-                    * (P::ONES - s_dsts[REGISTER_NUM - 1])
-                    * (n_regs[REGISTER_NUM - 1] - regs[REGISTER_NUM - 1])),
+            (P::ONES
+                - wrapper.lv[COL_S_RET]
+                - wrapper.lv[COL_S_CALL_SC] * wrapper.is_crossing_inst
+                - wrapper.lv[COL_S_END])
+                * (P::ONES - s_dsts[REGISTER_NUM - 1])
+                * (wrapper.n_regs[REGISTER_NUM - 1] - wrapper.regs[REGISTER_NUM - 1]),
         );
+    }
+}
 
-        // pc
-        // if instruction is end, we don't need to constrain pc.
-        // when cjmp, op0 is binary
-        let instruction_size = (P::ONES - lv[COL_S_MLOAD] - lv[COL_S_MSTORE])
-            * (P::ONES + lv[COL_OP1_IMM])
-            + (lv[COL_S_MLOAD] + lv[COL_S_MSTORE]) * (P::ONES + P::ONES);
-        let pc_incr = (P::ONES - (lv[COL_S_JMP] + lv[COL_S_CJMP] + lv[COL_S_CALL] + lv[COL_S_RET]))
-            * (lv[COL_PC] + instruction_size);
-        let pc_jmp = lv[COL_S_JMP] * lv[COL_OP1];
-        let pc_cjmp = lv[COL_S_CJMP]
-            * ((P::ONES - lv[COL_OP0]) * (lv[COL_PC] + instruction_size)
-                + lv[COL_OP0] * lv[COL_OP1]);
-        let pc_call = lv[COL_S_CALL] * lv[COL_OP1];
-        let pc_ret = lv[COL_S_RET] * lv[COL_DST];
-        yield_constr.constraint(
-            (P::ONES - lv[COL_S_END])
-                * (nv[COL_PC] - (pc_incr + pc_jmp + pc_cjmp + pc_call + pc_ret)),
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct CpuAdjacentRowWrapper<'a, F, FE, P, const D: usize, const D2: usize>
+where
+    F: Field,
+    FE: FieldExtension<D2, BaseField = F>,
+    P: PackedField<Scalar = FE>,
+{
+    pub(crate) lv: &'a [P; NUM_CPU_COLS],
+    pub(crate) nv: &'a [P; NUM_CPU_COLS],
+    pub(crate) regs: [P; REGISTER_NUM],
+    pub(crate) n_regs: [P; REGISTER_NUM],
+    pub(crate) lv_is_padding: P,
+    pub(crate) nv_is_padding: P,
+    pub(crate) lv_is_ext_inst: P,
+    pub(crate) nv_is_ext_inst: P,
+    pub(crate) lv_ext_length: P,
+    pub(crate) is_crossing_inst: P,
+    pub(crate) is_in_same_tx: P,
+    pub(crate) lv_is_entry_sc: P,
+}
+
+impl<
+        'a,
+        F: RichField + Extendable<D>,
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+        const D: usize,
+        const D2: usize,
+    > CpuAdjacentRowWrapper<'a, F, FE, P, D, D2>
+{
+    fn from_vars(vars: StarkEvaluationVars<'a, FE, P, NUM_CPU_COLS>) -> Self {
+        let lv = vars.local_values;
+        let nv = vars.next_values;
+        let regs: [P; REGISTER_NUM] = lv[COL_REGS].try_into().unwrap();
+        let n_regs: [P; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
+
+        let lv_is_padding = lv[COL_IS_PADDING];
+        let nv_is_padding = nv[COL_IS_PADDING];
+        let lv_is_ext_inst = lv[COL_S_SLOAD]
+            + lv[COL_S_SSTORE]
+            + lv[COL_S_TLOAD]
+            + lv[COL_S_TSTORE]
+            + lv[COL_S_CALL_SC]
+            + lv[COL_S_END];
+        let nv_is_ext_inst = nv[COL_S_SLOAD]
+            + nv[COL_S_SSTORE]
+            + nv[COL_S_TLOAD]
+            + nv[COL_S_TSTORE]
+            + nv[COL_S_CALL_SC]
+            + nv[COL_S_END];
+        let lv_is_entry_sc = lv[COL_IS_ENTRY_SC];
+        let lv_ext_length = lv[COL_S_SLOAD]
+            + lv[COL_S_SSTORE]
+            + lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
+            + lv[COL_S_TSTORE]
+            + lv[COL_S_CALL_SC]
+            + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
+        let is_crossing_inst = lv[COL_IS_NEXT_LINE_DIFF_INST];
+        let is_in_same_tx = lv[COL_IS_NEXT_LINE_SAME_TX];
+        Self {
+            lv,
+            nv,
+            regs,
+            n_regs,
+            lv_is_padding,
+            nv_is_padding,
+            lv_is_ext_inst,
+            nv_is_ext_inst,
+            lv_ext_length,
+            is_crossing_inst,
+            is_in_same_tx,
+            lv_is_entry_sc,
+        }
+    }
+}
+
+impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D> {
+    const COLUMNS: usize = NUM_CPU_COLS;
+
+    fn eval_packed_generic<FE, P, const D2: usize>(
+        &self,
+        vars: StarkEvaluationVars<FE, P, NUM_CPU_COLS>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        let lv = vars.local_values;
+        let nv = vars.next_values;
+
+        let wrapper = CpuAdjacentRowWrapper::from_vars(vars);
+
+        Self::constraint_wrapper_cols(&wrapper, yield_constr);
+        Self::constraint_tx_init(&wrapper, yield_constr);
+        // tx_idx not change or increase by 1
+        yield_constr.constraint_transition(
+            (P::ONES - wrapper.nv_is_padding)
+                * (P::ONES - wrapper.lv[COL_S_END])
+                * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX]),
         );
-        yield_constr.constraint(lv[COL_S_CJMP] * lv[COL_OP0] * (P::ONES - lv[COL_OP0]));
+        yield_constr.constraint_transition(
+            (P::ONES - wrapper.nv_is_padding)
+                * wrapper.lv_is_entry_sc
+                * wrapper.lv[COL_S_END]
+                * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX] - P::ONES),
+        );
+        // ctx reg not change on normal opcodes
+        for ctx_reg_idx in 0..CTX_REGISTER_NUM {
+            yield_constr.constraint_transition(
+                (P::ONES - wrapper.nv_is_padding)
+                    * (P::ONES - wrapper.lv[COL_S_END])
+                    * (P::ONES - wrapper.lv[COL_S_CALL_SC])
+                    * (wrapper.nv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]
+                        - wrapper.lv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]),
+            );
+            yield_constr.constraint_transition(
+                (P::ONES - wrapper.nv_is_padding)
+                    * (P::ONES - wrapper.lv[COL_S_END])
+                    * (P::ONES - wrapper.lv[COL_S_CALL_SC])
+                    * (wrapper.nv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]
+                        - wrapper.lv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]),
+            );
+        }
 
-        // opcode
+        Self::constraint_ext_lines(&wrapper, yield_constr);
+        Self::constraint_env_idx(&wrapper, yield_constr);
+        Self::constraint_opcode_selector(&wrapper, yield_constr);
+        Self::constraint_instruction_encode(&wrapper, yield_constr);
+        Self::constraint_operands_mathches_registers(&wrapper, yield_constr);
+        Self::constraint_env_unchanged_clk(&wrapper, yield_constr);
+        Self::constraint_env_unchanged_pc(&wrapper, yield_constr);
+        Self::constraint_reg_consistency(&wrapper, yield_constr);
+
+        // // opcode
         add::eval_packed_generic(lv, nv, yield_constr);
         mul::eval_packed_generic(lv, nv, yield_constr);
         cmp::eval_packed_generic(lv, nv, yield_constr);
@@ -315,431 +912,136 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         ret::eval_packed_generic(lv, nv, yield_constr);
         mload::eval_packed_generic(lv, nv, yield_constr);
         mstore::eval_packed_generic(lv, nv, yield_constr);
-
-        // Last row must be `END`
-        yield_constr.constraint_last_row(lv[COL_S_END] - P::ONES);
-
-        // Padding row must be `END`
-        yield_constr.constraint_transition(lv[COL_S_END] * (nv[COL_S_END] - P::ONES));
+        storage::eval_packed_generic(lv, nv, yield_constr);
+        tape::eval_packed_generic(&wrapper, yield_constr);
+        call_sc::eval_packed_generic(&wrapper, yield_constr);
     }
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
-        vars: StarkEvaluationTargets<D, NUM_CPU_COLS>,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
+        _vars: StarkEvaluationTargets<D, NUM_CPU_COLS>,
+        _yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     ) {
-        let lv = vars.local_values;
-        let nv = vars.next_values;
-        let one = builder.one_extension();
-        let zero = builder.zero_extension();
-
-        // op_imm should be binary.
-        let op1_imm_boolean = builder.sub_extension(one, lv[COL_OP1_IMM]);
-        let op1_imm_boolean_cs = builder.mul_extension(lv[COL_OP1_IMM], op1_imm_boolean);
-        yield_constr.constraint(builder, op1_imm_boolean_cs);
-
-        // op0, op1, dst selectors should be binary.
-        let s_op0s: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_OP0].try_into().unwrap();
-        s_op0s.iter().for_each(|s| {
-            let s_boolean = builder.sub_extension(one, *s);
-            let s_boolean_cs = builder.mul_extension(*s, s_boolean);
-            yield_constr.constraint(builder, s_boolean_cs);
-        });
-        let s_op1s: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_OP1].try_into().unwrap();
-        s_op1s.iter().for_each(|s| {
-            let s_boolean = builder.sub_extension(one, *s);
-            let s_boolean_cs = builder.mul_extension(*s, s_boolean);
-            yield_constr.constraint(builder, s_boolean_cs);
-        });
-        let s_dsts: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_S_DST].try_into().unwrap();
-        s_dsts.iter().for_each(|s| {
-            let s_boolean = builder.sub_extension(one, *s);
-            let s_boolean_cs = builder.mul_extension(*s, s_boolean);
-            yield_constr.constraint(builder, s_boolean_cs);
-        });
-
-        // Selectors of Opcode and builtins should be binary.
-        let op_selectors = [
-            lv[COL_S_ADD],
-            lv[COL_S_MUL],
-            lv[COL_S_EQ],
-            lv[COL_S_ASSERT],
-            lv[COL_S_MOV],
-            lv[COL_S_JMP],
-            lv[COL_S_CJMP],
-            lv[COL_S_CALL],
-            lv[COL_S_RET],
-            lv[COL_S_MLOAD],
-            lv[COL_S_MSTORE],
-            lv[COL_S_END],
-            lv[COL_S_RC],
-            lv[COL_S_AND],
-            lv[COL_S_OR],
-            lv[COL_S_XOR],
-            lv[COL_S_NOT],
-            lv[COL_S_NEQ],
-            lv[COL_S_GTE],
-            lv[COL_S_PSDN],
-            lv[COL_S_ECDSA],
-        ];
-        op_selectors.iter().for_each(|s| {
-            let s_boolean = builder.sub_extension(one, *s);
-            let s_boolean_cs = builder.mul_extension(*s, s_boolean);
-            yield_constr.constraint(builder, s_boolean_cs);
-        });
-
-        // Constrain opcode encoding.
-        let opcode_shift = Self::OPCODE_SHIFTS
-            .rev()
-            .map(|i| builder.constant_extension(F::Extension::from_canonical_u64(2_u64.pow(i))))
-            .collect::<Vec<_>>();
-        let opcodes = op_selectors
-            .iter()
-            .zip(opcode_shift.iter())
-            .map(|(selector, shift)| builder.mul_extension(*selector, *shift))
-            .collect::<Vec<_>>();
-        let opcodes_cs = opcodes
-            .iter()
-            .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        yield_constr.constraint(builder, opcodes_cs);
-
-        // Constrain instruction encoding.
-        let op1_imm_shift = builder.constant_extension(F::Extension::from_canonical_u64(
-            2_u64.pow(Self::OP1_IMM_SHIFT),
-        ));
-        let mut instruction = builder.mul_extension(lv[COL_OP1_IMM], op1_imm_shift);
-
-        // The order of COL_S_OP0, COL_S_OP1, COL_S_DST is r8, r7, .. r0.
-        let op0_start_shift = builder.constant_extension(F::Extension::from_canonical_u64(
-            2_u64.pow(Self::OP0_SHIFT_START),
-        ));
-        for (index, s) in s_op0s.iter().rev().enumerate() {
-            let idx = builder
-                .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
-            let shift = builder.div_extension(op0_start_shift, idx);
-            instruction = builder.mul_add_extension(*s, shift, instruction);
-        }
-
-        let op1_start_shift = builder.constant_extension(F::Extension::from_canonical_u64(
-            2_u64.pow(Self::OP1_SHIFT_START),
-        ));
-        for (index, s) in s_op1s.iter().rev().enumerate() {
-            let idx = builder
-                .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
-            let shift = builder.div_extension(op1_start_shift, idx);
-            instruction = builder.mul_add_extension(*s, shift, instruction);
-        }
-
-        let dst_start_shift = builder.constant_extension(F::Extension::from_canonical_u64(
-            2_u64.pow(Self::DST_SHIFT_START),
-        ));
-        for (index, s) in s_dsts.iter().rev().enumerate() {
-            let idx = builder
-                .constant_extension(F::Extension::from_canonical_u64(2_u64.pow(index as u32)));
-            let shift = builder.div_extension(dst_start_shift, idx);
-            instruction = builder.mul_add_extension(*s, shift, instruction);
-        }
-
-        instruction = builder.add_extension(lv[COL_OPCODE], instruction);
-        let inst_cs = builder.sub_extension(lv[COL_INST], instruction);
-        yield_constr.constraint(builder, inst_cs);
-
-        // We constrain raw inst and inst.
-        // First constrain compress consistency
-        let beta = builder.constant_extension(F::Extension::from_basefield(
-            self.get_compress_challenge().unwrap(),
-        ));
-        let raw_cs = builder.mul_add_extension(lv[COL_RAW_INST], beta, lv[COL_RAW_PC]);
-        let raw_cs = builder.sub_extension(raw_cs, lv[COL_ZIP_RAW]);
-        yield_constr.constraint(builder, raw_cs);
-
-        let inst_cs = builder.mul_add_extension(lv[COL_INST], beta, lv[COL_PC]);
-        let inst_cs = builder.sub_extension(inst_cs, lv[COL_ZIP_EXED]);
-        yield_constr.constraint(builder, inst_cs);
-
-        // Then check raw inst and inst's lookup logic.
-        eval_lookups_circuit(
-            builder,
-            vars,
-            yield_constr,
-            COL_PER_ZIP_EXED,
-            COL_PER_ZIP_RAW,
-        );
-
-        // Only one register used for op0.
-        let sum_s_op0 = s_op0s
-            .iter()
-            .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        let sum_s_op0_boolean = builder.sub_extension(one, sum_s_op0);
-        let sum_s_op0_cs = builder.mul_extension(sum_s_op0, sum_s_op0_boolean);
-        yield_constr.constraint(builder, sum_s_op0_cs);
-
-        // Only one register used for op1.
-        let sum_s_op1 = s_op1s
-            .iter()
-            .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        let sum_s_op1_boolean = builder.sub_extension(one, sum_s_op1);
-        let sum_s_op1_cs = builder.mul_extension(sum_s_op1, sum_s_op1_boolean);
-        yield_constr.constraint(builder, sum_s_op1_cs);
-
-        // Only one register used for dst.
-        let sum_s_dst = s_dsts
-            .iter()
-            .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        let sum_s_dst_boolean = builder.sub_extension(one, sum_s_dst);
-        let sum_s_dst_cs = builder.mul_extension(sum_s_dst, sum_s_dst_boolean);
-        yield_constr.constraint(builder, sum_s_dst_cs);
-
-        // Op and register permutation.
-        // Register should be next line.
-        let regs: [ExtensionTarget<D>; REGISTER_NUM] = lv[COL_REGS].try_into().unwrap();
-        let op0_sum = s_op0s
-            .iter()
-            .zip(regs.iter())
-            .map(|(s, r)| builder.mul_extension(*s, *r))
-            .collect::<Vec<_>>();
-        let op0_sum = op0_sum
-            .iter()
-            .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        let op0_sum_cs = builder.sub_extension(lv[COL_OP0], op0_sum);
-        let op0_sum_cs = builder.mul_extension(sum_s_op0, op0_sum_cs);
-        yield_constr.constraint(builder, op0_sum_cs);
-
-        let op1_sum = s_op1s
-            .iter()
-            .zip(regs.iter())
-            .map(|(s, r)| builder.mul_extension(*s, *r))
-            .collect::<Vec<_>>();
-        let op1_sum = op1_sum
-            .iter()
-            .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        let op1_sum_cs = builder.sub_extension(lv[COL_OP1], op1_sum);
-        let op1_sum_cs = builder.mul_extension(sum_s_op1, op1_sum_cs);
-        yield_constr.constraint(builder, op1_sum_cs);
-
-        let n_regs: [ExtensionTarget<D>; REGISTER_NUM] = nv[COL_REGS].try_into().unwrap();
-        let dst_sum = s_dsts
-            .iter()
-            .zip(n_regs.iter())
-            .map(|(s, r)| builder.mul_extension(*s, *r))
-            .collect::<Vec<_>>();
-        let dst_sum = dst_sum
-            .iter()
-            .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        let dst_sum_cs = builder.sub_extension(lv[COL_DST], dst_sum);
-        let dst_sum_cs = builder.mul_extension(sum_s_dst, dst_sum_cs);
-        yield_constr.constraint(builder, dst_sum_cs);
-
-        // Last row's 'next row' (AKA first row) regs should be all zeros.
-        n_regs
-            .iter()
-            .for_each(|nr| yield_constr.constraint_last_row(builder, *nr));
-
-        // When oprand exists, op1 is imm.
-        let op1_imm_val_cs = builder.sub_extension(lv[COL_OP1], lv[COL_IMM_VAL]);
-        let op1_imm_val_cs = builder.mul_extension(lv[COL_OP1_IMM], op1_imm_val_cs);
-        yield_constr.constraint(builder, op1_imm_val_cs);
-
-        // Only one opcode selector enabled.
-        let sum_s_op = op_selectors
-            .iter()
-            .fold(zero, |acc, s| builder.add_extension(acc, *s));
-        let sum_s_op_cs = builder.sub_extension(one, sum_s_op);
-        yield_constr.constraint(builder, sum_s_op_cs);
-
-        // 2. Constrain state changing.
-        // clk
-        // if instruction is end, we don't need to contrain clk.
-        let clk_cs = builder.add_extension(lv[COL_CLK], one);
-        let clk_cs = builder.sub_extension(nv[COL_CLK], clk_cs);
-        let end_boolean = builder.sub_extension(one, lv[COL_S_END]);
-        let clk_cs = builder.mul_extension(end_boolean, clk_cs);
-        yield_constr.constraint(builder, clk_cs);
-
-        // reg
-        for (dst, l_r, n_r) in izip!(
-            &s_dsts[..REGISTER_NUM - 1],
-            &regs[..REGISTER_NUM - 1],
-            &n_regs[..REGISTER_NUM - 1]
-        ) {
-            let r_diff = builder.sub_extension(*n_r, *l_r);
-            let dst_boolean = builder.sub_extension(one, *dst);
-            let reg_cs = builder.mul_extension(dst_boolean, r_diff);
-            yield_constr.constraint_transition(builder, reg_cs);
-        }
-
-        // fp
-        let ret_cs = builder.sub_extension(n_regs[REGISTER_NUM - 1], lv[COL_AUX1]);
-        let ret_cs = builder.mul_extension(lv[COL_S_RET], ret_cs);
-        let ret_boolean = builder.sub_extension(one, lv[COL_S_RET]);
-        let fp_boolean = builder.sub_extension(one, s_dsts[REGISTER_NUM - 1]);
-        let fp_diff = builder.sub_extension(n_regs[REGISTER_NUM - 1], regs[REGISTER_NUM - 1]);
-        let fp_cs = builder.mul_many_extension([ret_boolean, fp_boolean, fp_diff]);
-        let fp_cs = builder.add_extension(ret_cs, fp_cs);
-        yield_constr.constraint(builder, fp_cs);
-
-        // pc
-        // if instruction is end, we don't need to constrain pc.
-        // when cjmp, op0 is binary
-        let pc_sum = builder.add_many_extension([
-            lv[COL_S_JMP],
-            lv[COL_S_CJMP],
-            lv[COL_S_CALL],
-            lv[COL_S_RET],
-        ]);
-        let is_mem_op = builder.add_extension(lv[COL_S_MLOAD], lv[COL_S_MSTORE]);
-        let not_mem_op = builder.sub_extension(one, is_mem_op);
-        let one_add_op1_imm = builder.add_extension(one, lv[COL_OP1_IMM]);
-        let instruction_size =
-            builder.arithmetic_extension(F::ONE, F::TWO, not_mem_op, one_add_op1_imm, is_mem_op);
-
-        let pc_sum_boolean = builder.sub_extension(one, pc_sum);
-        let pc_incr = builder.add_extension(lv[COL_PC], instruction_size);
-        let pc_incr_cs = builder.mul_extension(pc_sum_boolean, pc_incr);
-        let pc_jmp = builder.mul_extension(lv[COL_S_JMP], lv[COL_OP1]);
-        let one_m_op0 = builder.sub_extension(one, lv[COL_OP0]);
-        let op0_op1 = builder.mul_extension(lv[COL_OP0], lv[COL_OP1]);
-        let pc_cjmp = builder.mul_add_extension(one_m_op0, pc_incr, op0_op1);
-        let pc_cjmp_cs = builder.mul_extension(lv[COL_S_CJMP], pc_cjmp);
-        let pc_call = builder.mul_extension(lv[COL_S_CALL], lv[COL_OP1]);
-        let pc_ret = builder.mul_extension(lv[COL_S_RET], lv[COL_DST]);
-        let end_boolean = builder.sub_extension(one, lv[COL_S_END]);
-        let pc_part_cs =
-            builder.add_many_extension([pc_incr_cs, pc_jmp, pc_cjmp_cs, pc_call, pc_ret]);
-        let pc_diff = builder.sub_extension(nv[COL_PC], pc_part_cs);
-        let pc_cs = builder.mul_extension(end_boolean, pc_diff);
-        yield_constr.constraint(builder, pc_cs);
-        let cjmp_op0_binary_cs = builder.mul_extension(lv[COL_OP0], one_m_op0);
-        yield_constr.constraint(builder, cjmp_op0_binary_cs);
-
-        // opcode
-        add::eval_ext_circuit(builder, lv, nv, yield_constr);
-        mul::eval_ext_circuit(builder, lv, nv, yield_constr);
-        cmp::eval_ext_circuit(builder, lv, nv, yield_constr);
-        assert::eval_ext_circuit(builder, lv, nv, yield_constr);
-        mov::eval_ext_circuit(builder, lv, nv, yield_constr);
-        call::eval_ext_circuit(builder, lv, nv, yield_constr);
-        ret::eval_ext_circuit(builder, lv, nv, yield_constr);
-        mload::eval_ext_circuit(builder, lv, nv, yield_constr);
-        mstore::eval_ext_circuit(builder, lv, nv, yield_constr);
-
-        // Last row must be `END`
-        let last_end_cs = builder.sub_extension(lv[COL_S_END], one);
-        yield_constr.constraint(builder, last_end_cs);
-
-        // Padding row must be `END`
-        let next_end_boolean = builder.sub_extension(nv[COL_S_END], one);
-        let next_end_cs = builder.mul_extension(lv[COL_S_END], next_end_boolean);
-        yield_constr.constraint(builder, next_end_cs);
     }
 
     fn constraint_degree(&self) -> usize {
-        5
+        6
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::generation::cpu::generate_cpu_trace;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
+    use crate::{generation::cpu::generate_cpu_trace, test_utils::test_stark_with_asm_path};
+    use core::trace::trace::{Step, Trace};
+    use std::path::PathBuf;
     use {
         super::*,
-        core::program::Program,
-        executor::Process,
         plonky2::{
             field::goldilocks_field::GoldilocksField,
             plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
         },
-        plonky2_util::log2_strict,
     };
 
-    fn test_cpu_stark(program_path: &str) {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-        type S = CpuStark<F, D>;
-
-        let file = File::open(program_path).unwrap();
-        let instructions = BufReader::new(file).lines();
-
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-        };
-
-        for inst in instructions {
-            program.instructions.push(inst.unwrap());
-        }
-
-        let mut process = Process::new();
-        let _ = process.execute(&mut program);
-
-        let (cpu_rows, beta) =
-            generate_cpu_trace::<F, C, D>(&program.trace.exec, &program.trace.raw_binary_instructions);
-
-        let mut stark = S::default();
-        stark.set_compress_challenge(beta).unwrap();
-        let len = cpu_rows[0].len();
-        let last = F::primitive_root_of_unity(log2_strict(len)).inverse();
-        let subgroup =
-            F::cyclic_subgroup_known_order(F::primitive_root_of_unity(log2_strict(len)), len);
-        for i in 0..len {
-            let local_values = cpu_rows
-                .iter()
-                .map(|row| row[i % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let next_values = cpu_rows
-                .iter()
-                .map(|row| row[(i + 1) % len])
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-            let vars = StarkEvaluationVars {
-                local_values: &local_values,
-                next_values: &next_values,
-            };
-
-            let mut constraint_consumer = ConstraintConsumer::new(
-                vec![F::rand()],
-                subgroup[i] - last,
-                if i == 0 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-                if i == len - 1 {
-                    GoldilocksField::ONE
-                } else {
-                    GoldilocksField::ZERO
-                },
-            );
-            stark.eval_packed_generic(vars, &mut constraint_consumer);
-
-            for &acc in &constraint_consumer.constraint_accs {
-                assert_eq!(acc, GoldilocksField::ZERO);
-            }
-        }
-    }
-
     #[test]
-    fn test_fibo_use_loop() {
-        let program_path = "../assembler/testdata/fib_loop.bin";
-        test_cpu_stark(program_path);
+    fn test_cpu_fibo_loop() {
+        let file_name = "fibo_loop.json".to_string();
+        test_cpu_with_asm_file_name(file_name, None);
     }
 
     #[test]
     fn test_memory() {
-        let program_path = "../assembler/testdata/memory.bin";
-        test_cpu_stark(program_path);
+        let program_path = "memory.json";
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
     }
 
     #[test]
     fn test_call() {
-        let program_path = "../assembler/testdata/call.bin";
-        test_cpu_stark(program_path);
+        let program_path = "call.json";
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
+    }
+
+    // #[test]
+    // fn test_sqrt() {
+    //     let program_path = "sqrt.json";
+    //     test_cpu_with_asm_file_name(program_path.to_string(), None);
+    // }
+
+    #[test]
+    fn test_poseidon() {
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(1239976900),
+        ];
+        let program_path = "poseidon_hash.json";
+        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data));
+    }
+
+    #[test]
+    fn test_storage() {
+        let call_data = vec![
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(2364819430),
+        ];
+        let program_path = "storage_u32.json";
+        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data));
+    }
+
+    #[test]
+    fn test_malloc() {
+        let program_path = "malloc.json";
+        test_cpu_with_asm_file_name(program_path.to_string(), None);
+    }
+
+    // #[test]
+    // fn test_vote() {
+    //     let program_path = "vote.json";
+    //     test_cpu_with_asm_file_name(program_path.to_string(), None);
+    // }
+
+    #[allow(unused)]
+    fn test_cpu_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = CpuStark<F, D>;
+        let stark = S::default();
+
+        let get_trace_rows = |trace: Trace| trace.exec;
+        let generate_trace = |rows: &[Step]| generate_cpu_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_CPU_COLS>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
+            };
+        let error_hook = |i: usize,
+                          vars: StarkEvaluationVars<
+            GoldilocksField,
+            GoldilocksField,
+            NUM_CPU_COLS,
+        >| {
+            println!("constraint error in line {}", i);
+            let m = get_cpu_col_name_map();
+            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+            for col in m.keys() {
+                let name = m.get(col).unwrap();
+                let lv = vars.local_values[*col].0;
+                let nv = vars.next_values[*col].0;
+                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+            }
+        };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+            call_data,
+        );
     }
 }
