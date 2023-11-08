@@ -587,7 +587,6 @@ mod tests {
     use crate::stark::verifier::verify_proof;
     use anyhow::Result;
     use assembler::encoder::encode_asm_from_json_file;
-    use itertools::Itertools;
     use core::merkle_tree::tree::AccountTree;
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
@@ -596,6 +595,7 @@ mod tests {
     use core::vm::transaction::init_tx_context;
     use executor::load_tx::init_tape;
     use executor::Process;
+    use itertools::Itertools;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
@@ -657,7 +657,7 @@ mod tests {
 
     #[test]
     fn test_ola_prophet_sqrt() {
-        let calldata = [10u64, 1073741824u64, 2u64, 1336552657u64]
+        let calldata = [144u64, 10u64, 2u64, 3509365327u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();

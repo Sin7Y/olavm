@@ -1,0 +1,37 @@
+[
+  {
+    "name": "sqrt_benchmark",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "q",
+        "type": "u32",
+        "internalType": "u32"
+      },
+      {
+        "name": "times",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "sqrt_test",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "n",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ]
+  }
+]

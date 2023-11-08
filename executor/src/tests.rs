@@ -189,8 +189,14 @@ fn prophet_sqrt_test() {
 }
 
 #[test]
-fn prophet_fib_test() {
-    let calldata = [50u64, 1u64, 2146118040u64]
+fn fib_test() {
+    // recursive n-th fib, times, args num, fn_selector
+    // let calldata = [10u64, 1u64, 2u64, 3642896167u64]
+    //     .iter()
+    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //     .collect_vec();
+    // non-recursive n-th fib, times, args num, fn_selector
+    let calldata = [5u64, 1u64, 2u64, 4185064725u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();

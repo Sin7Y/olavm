@@ -1,0 +1,14 @@
+contract SqrtContract {
+
+     fn sqrt_benchmark(u32 q, u32 times) {
+        for (u32 i = 0; i < times; i++) {
+           u32 result = sqrt_test(q);
+        }
+    }
+
+    fn sqrt_test(u32 n) -> (u32) {
+        u32 b = u32_sqrt(n);
+        return b;
+    }
+
+}
