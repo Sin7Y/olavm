@@ -31,49 +31,43 @@ There are a lot of tricks to get a very ZK-friendly ZKVM in OlaVM. We would like
 
 ### Status
 
-| Features                   |         Status         |
-|----------------------------|------------------------|
-| Algebraic RISC             | $\color{Green}{Done}$  |
-| Small finite field         | $\color{Green}{Done}$  |
-| Builtins - bitwise         | $\color{Green}{Done}$  |
-| Builtins - rangecheck      | $\color{Green}{Done}$  |
-| Builtins - cmp             | $\color{Green}{Done}$  |
-| Builtins - poseidon        | $\color{Yellow}{Doing}$|
-| Builtins - ecdsa           | $\color{Yellow}{Doing}$|
-| Prover optimization        |  $\color{Green}{Done}$|
-| Prophets lib               | $\color{Red}{Todo}$    |
-| u32/u64/u256 lib           | $\color{Red}{Todo}$    |
-| Support privacy            | $\color{Red}{Todo}$    |
+| Features              | Status                  |
+| --------------------- | ----------------------- |
+| Algebraic RISC        | $\color{Green}{Done}$   |
+| Small finite field    | $\color{Green}{Done}$   |
+| Builtins - bitwise    | $\color{Green}{Done}$   |
+| Builtins - rangecheck | $\color{Green}{Done}$   |
+| Builtins - cmp        | $\color{Green}{Done}$   |
+| Builtins - poseidon   | $\color{Green}{Done}$   |
+| Storage               | $\color{Green}{Done}$   |
+| Cross-contract call   | $\color{Green}{Done}$   |
+| Prover optimization   | $\color{Green}{Done}$   |
+| Builtins - ecdsa      | $\color{Yellow}{Doing}$ |
+| Prophet libs          | $\color{Yellow}{Doing}$ |
+| u32/u64/u256 lib      | $\color{Yellow}{Doing}$ |
+| Support privacy       | $\color{Yellow}{Doing}$ |
 
 ### Project structure
 
 This project consists of several crates:
 
-| Crate                      | Description |
-|----------------------------|-------------|
-| [core](core)               | Define instruction structure and instruction sets       |
-| [circuits](circuits)       | 1. Constraints for instruction sets, builtins, memory; 2. Generate proof        |
+| Crate                      | Description                                                               |
+| -------------------------- | ------------------------------------------------------------------------- |
+| [core](core)               | Define instruction structure and instruction sets                         |
+| [circuits](circuits)       | 1. Constraints for instruction sets, builtins, memory; 2. Generate proof  |
 | [executor](executor)       | Execute the programme and generate the execution trace for the Ola-prover |
-| [client](client)           | Some commands can be used by developers        |
+| [client](client)           | Some commands can be used by developers                                   |
 | [plonky2](plonky2)         | A SNARK implementation based on techniques from PLONK and FRI techniques  |
-| [infrastructure](circuits) | Write the execution trace to an Excel file       |
+| [infrastructure](circuits) | Write the execution trace to an Excel file                                |
 
 ## Performance
 
 Many optimizations have not yet been applied, and we expect to see some speed improvements as we devote more time to performance optimization. The benchmarks below should only be used as a rough guide to expected future performance.
 
-In the benchmarks below, the VM executes the same Fibonacci calculator program for 2^20 cycles at 100-bit target security level on a high-end 64-core CPU:
-
-| VM cycles | Execution time | Proving time | RAM consumed | Proof size |
-|-----------|----------------|--------------|--------------|------------|
-| 2^18      | 81.115 ms      | 2.932 s      | 5.6 GB       | 175 KB     |
-| 2^19      | 159.80 ms      | 6.143 s      | 11.1 GB      | 181 KB     |
-| 2^20      | 318.08 ms      | 12.688 s     | 23.2 GB      | 187 KB     |
-| 2^21      | 627.38 ms      | 29.923 s     | 45.3 GB      | 195 KB     |
-| 2^22      | 1240.4 ms      | 61.834 s     | 86.6 GB      | 208 KB     |
-| 2^23      | 2453.8 ms      | 128.62 s     | 176 GB       | 216 KB     |
-
-Run `cd circuits && cargo bench -- fibo_loop_prover` to see the benchmark data.
+| Algorithm                                       | Execution Instructions | Lines in CPU Table | Mac(8-cpu 16GB-Mem) Execution and Generate trace Time | Mac(8-cpu 16GB-Mem) Prove Time | Linux(32-cpu 256GB-Mem) Execution and Generate Trace Time | Linux(32-cpu 256GB-Mem) Prove Time |
+| :---------------------------------------------- | :--------------------: | :----------------: | :---------------------------------------------------: | :----------------------------: | :-------------------------------------------------------: | :--------------------------------: |
+| Calculate the 47th Fibonacci number 300 times.  |         259915         |        2^18        |                    0.274s, 1.379s                     |            109.263s            |                      1.305s, 1.273s                       |              38.521s               |
+| Calculate the sqrt of 1,073,741,824 7000 times. |         238113         |        2^18        |                    1.191s, 1.335s                     |            109.873s            |                      0.697s, 1.266s                       |              38.654s               |
 
 Overall, we don't expect the benchmarks to change significantly, but there will definitely be some deviation from the numbers below in the future.
 
@@ -92,75 +86,6 @@ Hardware:
 - Integrate GPU accelerated polynomial evaluation
 - Integrate FPGA accelerated FFT
 - Integrate FPGA accelerated polynomial evaluation
-
-Here is an example program which calculates a fibonacci(8) cyclically and generates a main trace of 2^20 rows, then proves the execution is correct by generating a proof and verifying the proof:
-```Rust
-    // mov r0 8
-    // mov r1 1
-    // mov r2 1
-    // mov r3 0
-    // EQ r0 r3
-    // cjmp 19
-    // add r4 r1 r2
-    // mov r1 r2
-    // mov r2 r4
-    // mov r4 1
-    // add r3 r3 r4
-    // jmp 8
-    // end
-    let program_src = "0x4000000840000000
-        0x17200
-        0x4000001040000000
-        0x1
-        0x4000002040000000
-        0x1
-        0x4000004040000000
-        0x0
-        0x0020810100000000
-        0x4400000010000000
-        0x13
-        0x0040408400000000
-        0x0000401040000000
-        0x0001002040000000
-        0x4000008040000000
-        0x1
-        0x0101004400000000
-        0x4000000020000000
-        0x8
-        0x0000000000800000"
-
-    let instructions = program_src.split('\n');
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-    };
-
-    // prepare the fibonacci program
-    for inst in instructions.into_iter() {
-        program.instructions.push(inst.clone().parse().unwrap());
-    }
-
-    // execute the fibonacci program
-    let mut process = Process::new();
-    process.execute(&mut program);
-    
-
-    // generate the proof with traces from the execution of the fibonacci program
-    let mut ola_stark = OlaStark::default();
-    let (traces, public_values) = generate_traces::<F, C, D>(&program, &mut ola_stark);
-    let config = StarkConfig::standard_fast_config();
-    let proof = prove_with_traces::<F, C, D>(
-        &ola_stark,
-        &config,
-        traces,
-        public_values,
-        &mut TimingTree::default(),
-    )?;
-
-    // verify the proof is correct
-    let ola_stark = OlaStark::default();
-    verify_proof(ola_stark, proof, &config)
-```
 
 ## References
 
