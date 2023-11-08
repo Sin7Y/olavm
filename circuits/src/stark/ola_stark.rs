@@ -617,7 +617,11 @@ mod tests {
 
     #[test]
     fn fibo_loop_test() {
-        test_by_asm_json("fibo_loop.json".to_string(), None, None)
+        let calldata = [10u64, 1u64, 2u64, 4185064725u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        test_by_asm_json("fib_asm.json".to_string(), Some(calldata), None)
     }
 
     #[test]
@@ -712,7 +716,11 @@ mod tests {
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        test_by_asm_json("vote.json".to_string(), Some(winning_proposal_calldata), Some(db_name));
+        test_by_asm_json(
+            "vote.json".to_string(),
+            Some(winning_proposal_calldata),
+            Some(db_name),
+        );
     }
 
     #[test]
