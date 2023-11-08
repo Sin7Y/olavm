@@ -694,7 +694,25 @@ mod tests {
 
     #[test]
     fn test_ola_vote() {
-        test_by_asm_json("vote.json".to_string(), None, None);
+        let db_name = "vote_test".to_string();
+
+        let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        let vote_calldata = [2u64, 1u64, 2791810083u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        let winning_proposal_calldata = [0u64, 3186728800u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        let winning_name_calldata = [0u64, 363199787u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        test_by_asm_json("vote.json".to_string(), Some(winning_proposal_calldata), Some(db_name));
     }
 
     #[test]
@@ -713,11 +731,25 @@ mod tests {
     // }
 
     #[allow(unused)]
-    pub fn test_by_asm_json(file_name: String, call_data: Option<Vec<GoldilocksField>>, db: Option<String>) {
+    pub fn test_by_asm_json(
+        file_name: String,
+        call_data: Option<Vec<GoldilocksField>>,
+        db_name: Option<String>,
+    ) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
         path.push(file_name);
         let program_path = path.display().to_string();
+
+        let mut db = match db_name {
+            Some(name) => {
+                let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                db_path.push("../db_test/");
+                db_path.push(name);
+                AccountTree::new_db_test(db_path.display().to_string())
+            }
+            _ => AccountTree::new_test(),
+        };
 
         let program = encode_asm_from_json_file(program_path).unwrap();
         let instructions = program.bytecode.split("\n");
@@ -740,6 +772,7 @@ mod tests {
         process.addr_storage = Address::default();
         if let Some(calldata) = call_data {
             process.tp = GoldilocksField::ZERO;
+
             init_tape(
                 &mut process,
                 calldata,
@@ -749,11 +782,14 @@ mod tests {
                 &init_tx_context(),
             );
         }
-        let _ = process.execute(
-            &mut program,
-            &mut Some(prophets),
-            &mut AccountTree::new_test(),
-        );
+        let res = process.execute(&mut program, &mut Some(prophets), &mut db);
+        match res {
+            Ok(_) => {}
+            Err(e) => {
+                println!("execute err:{:?}", e);
+                return;
+            }
+        }
 
         let inputs = GenerationInputs::default();
 
