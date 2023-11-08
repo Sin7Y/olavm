@@ -183,6 +183,7 @@ pub fn calculate_arbitrary_poseidon_and_generate_intermediate_trace(
         rows,
     );
 }
+#[cfg(test)]
 mod test {
     use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 

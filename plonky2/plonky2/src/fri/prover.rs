@@ -35,7 +35,7 @@ where
     let n = lde_polynomial_values.len();
     assert_eq!(lde_polynomial_coeffs.len(), n);
 
-    let twiddle = twiddle_map;
+    let _twiddle = twiddle_map;
 
     // Commit phase
     let (trees, final_coeffs) = timed!(

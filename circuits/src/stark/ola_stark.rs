@@ -574,6 +574,7 @@ fn ctl_cpu_sccall_end<F: Field>() -> CrossTableLookup<F> {
 }*/
 
 #[allow(unused_imports)]
+#[cfg(test)]
 mod tests {
     use crate::generation::{generate_traces, GenerationInputs};
     use crate::stark::config::StarkConfig;

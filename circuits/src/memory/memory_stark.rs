@@ -315,7 +315,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         9
     }
 }
-
+#[cfg(test)]
 mod tests {
     use crate::generation::memory::generate_memory_trace;
     use crate::memory::columns::{get_memory_col_name_map, NUM_MEM_COLS};

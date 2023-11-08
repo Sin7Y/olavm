@@ -409,7 +409,7 @@ pub fn ctl_data_with_bitwise_fixed<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_bitwise_fixed<F: Field>() -> Column<F> {
     Column::one()
 }*/
-
+#[cfg(test)]
 mod tests {
     use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
     use crate::builtins::bitwise::columns::get_bitwise_col_name_map;

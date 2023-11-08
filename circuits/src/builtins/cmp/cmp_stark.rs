@@ -96,7 +96,7 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {
     Column::single(COL_CMP_FILTER_LOOKING_RC)
 }
-
+#[cfg(test)]
 mod tests {
     use crate::builtins::cmp::cmp_stark::CmpStark;
     use crate::builtins::cmp::columns::*;
