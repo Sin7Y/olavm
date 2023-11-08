@@ -1,20 +1,28 @@
 extern crate clap;
 
-use assembler::encode::Encoder;
+use assembler::encoder::encode_asm_from_json_file;
+use circuits::generation::GenerationInputs;
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::prover::prove;
 use circuits::stark::serialization::Buffer;
 use circuits::stark::verifier::verify_proof;
 use clap::{arg, Command};
+use core::merkle_tree::tree::AccountTree;
+use core::program::binary_program::BinaryProgram;
 use core::program::Program;
 use core::trace::trace::Trace;
+use core::types::{Field, GoldilocksField};
+use core::vm::transaction::init_tx_context;
+use core::vm::vm_state::Address;
+use executor::load_tx::init_tape;
 use executor::Process;
-use log::debug;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::fs::{metadata, File};
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::collections::{BTreeMap, HashMap};
+use std::fs::{self, metadata, File};
+use std::io::{BufRead, BufReader, Read, Write};
+use std::time::Instant;
 
 #[allow(dead_code)]
 const D: usize = 2;
@@ -43,6 +51,7 @@ fn main() {
                 .about("Run an program from an input code file")
                 .args(&[
                     arg!(-i --input <INPUT> "Must set a input file for OlaVM executing"),
+                    arg!(-a --args <INPUT> "Must set a input file for OlaVM executing"),
                     arg!(-o --output <OUTPUT> "Must set a output file for OlaVM executing"),
                 ])
                 .arg_required_else_help(true),
@@ -66,69 +75,86 @@ fn main() {
 
     match matches.subcommand() {
         Some(("asm", sub_matches)) => {
-            let path = sub_matches.get_one::<String>("input").expect("required");
-            println!("Input assemble file path: {}", path);
-            let file = File::open(path).unwrap();
-
-            let mut encoder: Encoder = Default::default();
-            let mut input_lines = BufReader::new(file).lines();
-            let mut asm_codes = Vec::new();
-            loop {
-                let asm = input_lines.next();
-                if let Some(asm) = asm {
-                    debug!("asm code:{:?}", asm);
-                    asm_codes.push(asm.unwrap());
-                } else {
-                    break;
-                }
-            }
-
-            let raw_insts = encoder.assemble_link(asm_codes);
-            let path = sub_matches.get_one::<String>("output").expect("required");
-            println!("Output olavm raw codes file path: {}", path);
-            let file = File::create(path).unwrap();
-            let mut fout = BufWriter::new(file);
-
-            for line in raw_insts {
-                let res = fout.write_all((line + "\n").as_bytes());
-                if res.is_err() {
-                    debug!("file write_all err: {:?}", res);
-                }
-            }
-
-            let res = fout.flush();
-            if res.is_err() {
-                debug!("file flush res: {:?}", res);
-            }
+            let input_path = sub_matches.get_one::<String>("input").expect("required");
+            println!("Input assemble file path: {}", input_path);
+            let program = encode_asm_from_json_file(input_path.clone()).unwrap();
+            let output_path = sub_matches.get_one::<String>("output").expect("required");
+            println!("Output OlaVM raw codes file path: {}", output_path);
+            let pretty = serde_json::to_string_pretty(&program).unwrap();
+            fs::write(output_path, pretty).unwrap();
             println!("Asm done!");
         }
         Some(("run", sub_matches)) => {
             let path = sub_matches.get_one::<String>("input").expect("required");
             println!("Input program file path: {}", path);
 
+            let args_path = sub_matches.get_one::<String>("args").expect("required");
+            println!("Args file path: {}", args_path);
+            let args_file = File::open(&args_path).unwrap();
+            let args_reader = BufReader::new(args_file);
+            let mut args = Vec::new();
+            for line_result in args_reader.lines() {
+                let line = line_result.unwrap();
+                let number = line.trim().parse::<u64>().unwrap();
+                args.push(number);
+            }
+            if args.len() < 2 {
+                panic!("args length must larger than 2");
+            }
+            let first_two_inv: Vec<u64> = vec![args[1], args[0]];
+            let rest: Vec<u64> = args.iter().skip(2).cloned().collect();
+            let combined: Vec<u64> = [rest.as_slice(), first_two_inv.as_slice()].concat();
+            let calldata: Vec<GoldilocksField> = combined
+                .iter()
+                .map(|v| GoldilocksField::from_canonical_u64(*v))
+                .collect();
+
+            let program = encode_asm_from_json_file(path.clone()).unwrap();
+            let instructions = program.bytecode.split("\n");
+            let mut prophets = HashMap::new();
+            for item in program.prophets {
+                prophets.insert(item.host as u64, item);
+            }
+
             let mut program: Program = Program {
                 instructions: Vec::new(),
                 trace: Default::default(),
+                debug_info: BTreeMap::new(),
             };
 
-            let file = File::open(path).unwrap();
-            let mut input_lines = BufReader::new(file).lines();
-            loop {
-                let inst = input_lines.next();
-                if let Some(inst) = inst {
-                    debug!("inst:{:?}", inst);
-                    program.instructions.push(inst.unwrap());
-                } else {
-                    break;
-                }
+            for inst in instructions {
+                program.instructions.push(inst.to_string());
             }
-
+            let now = Instant::now();
             let mut process = Process::new();
-            process.execute(&mut program).expect("OlaVM execute fail");
+            process.addr_storage = Address::default();
+            process.tp = GoldilocksField::ZERO;
+            init_tape(
+                &mut process,
+                calldata,
+                Address::default(),
+                Address::default(),
+                Address::default(),
+                &init_tx_context(),
+            );
+
+            process
+                .execute(
+                    &mut program,
+                    &mut Some(prophets),
+                    &mut AccountTree::new_db_test("./db_test".to_string()),
+                )
+                .expect("OlaVM execute fail");
+            println!("exec time:{}", now.elapsed().as_millis());
+
+            let now = Instant::now();
+
             let path = sub_matches.get_one::<String>("output").expect("required");
             println!("Output trace file path: {}", path);
             let file = File::create(path).unwrap();
             serde_json::to_writer(file, &program.trace).unwrap();
+            println!("write time:{}", now.elapsed().as_millis());
+
             println!("Run done!");
         }
         Some(("prove", sub_matches)) => {
@@ -142,13 +168,17 @@ fn main() {
             let program: Program = Program {
                 instructions: trace.raw_binary_instructions.clone(),
                 trace,
+                debug_info: BTreeMap::new(),
             };
+
+            let inputs = GenerationInputs::default();
 
             let mut ola_stark = OlaStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
             let proof = prove::<F, C, D>(
                 &program,
                 &mut ola_stark,
+                inputs,
                 &config,
                 &mut TimingTree::default(),
             )

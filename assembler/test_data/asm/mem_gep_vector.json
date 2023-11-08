@@ -1,0 +1,45 @@
+{
+  "program": "main:\n.LBL0_0:\n  add r9 r9 6\n  mov r1 5\n.PROPHET0_0:\n  mov r0 psp\n  mload r0 [r0]\n  mov r6 r0\n  not r7 5\n  add r7 r7 1\n  add r5 r6 r7\n  mov r6 0\n  mstore [r9,-6] r6\n  jmp .LBL0_1\n.LBL0_1:\n  mload r6 [r9,-6]\n  mov r7 5\n  gte r7 r7 r6\n  neq r8 r6 5\n  and r7 r7 r8\n  cjmp r7 .LBL0_2\n  jmp .LBL0_3\n.LBL0_2:\n  mov r8 0\n  mstore [r5,r6] r8\n  add r7 r6 1\n  mstore [r9,-6] r7\n  jmp .LBL0_1\n.LBL0_3:\n  mov r6 5\n  mstore [r9,-5] r6\n  mstore [r9,-4] r5\n  mov r5 0\n  mstore [r9,-3] r5\n  jmp .LBL0_4\n.LBL0_4:\n  mload r5 [r9,-3]\n  mov r6 5\n  gte r6 r6 r5\n  neq r5 r5 5\n  and r6 r6 r5\n  cjmp r6 .LBL0_5\n  jmp .LBL0_7\n.LBL0_5:\n  mload r2 [r9,-3]\n  mload r1 [r9,-5]\n  not r7 1\n  add r7 r7 1\n  add r5 r1 r7\n  not r7 r2\n  add r7 r7 1\n  add r6 r5 r7\n  range r6\n  mov r1 1\n.PROPHET0_1:\n  mov r0 psp\n  mload r0 [r0]\n  mov r5 r0\n  not r7 1\n  add r7 r7 1\n  add r8 r5 r7\n  mov r5 r8\n  mov r6 49\n  mstore [r5] r6\n  mov r6 1\n  mstore [r9,-2] r6\n  mstore [r9,-1] r5\n  mload r5 [r9,-4]\n  mload r6 [r9,-1]\n  mstore [r5,r2] r6\n  jmp .LBL0_6\n.LBL0_6:\n  mload r6 [r9,-3]\n  add r5 r6 1\n  mstore [r9,-3] r5\n  jmp .LBL0_4\n.LBL0_7:\n  add r9 r9 -6\n  end\n",
+  "prophets": [
+    {
+      "label": ".PROPHET0_0",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET0_1",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    }
+  ]
+}

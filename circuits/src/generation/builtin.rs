@@ -32,7 +32,7 @@ use crate::stark::lookup::permuted_cols;
 // Extend:
 //      looking_table: <0,1,2,3,4,5,5,5,5,5,5,5,5,5,5,5>
 //      looked_table: <0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15>
-pub fn generate_bitwise_trace<F: RichField, C: GenericConfig<D, F = F>, const D: usize>(
+pub fn generate_bitwise_trace<F: RichField>(
     cells: &[BitwiseCombinedRow],
 ) -> ([Vec<F>; bitwise::COL_NUM_BITWISE], F) {
     // Ensure the max rows number.
@@ -54,7 +54,7 @@ pub fn generate_bitwise_trace<F: RichField, C: GenericConfig<D, F = F>, const D:
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; ext_trace_len]; bitwise::COL_NUM_BITWISE];
     for (i, c) in cells.iter().enumerate() {
         trace[bitwise::FILTER][i] = F::from_canonical_usize(1);
-        trace[bitwise::TAG][i] = F::from_canonical_u32(c.opcode);
+        trace[bitwise::TAG][i] = F::from_canonical_u64(c.opcode);
         trace[bitwise::OP0][i] = F::from_canonical_u64(c.op0.to_canonical_u64());
         trace[bitwise::OP1][i] = F::from_canonical_u64(c.op1.to_canonical_u64());
         trace[bitwise::RES][i] = F::from_canonical_u64(c.res.to_canonical_u64());
@@ -118,7 +118,7 @@ pub fn generate_bitwise_trace<F: RichField, C: GenericConfig<D, F = F>, const D:
 
     // TODO: We should choose proper columns for oracle.
     let mut challenger =
-        Challenger::<F, C::Hasher>::new();
+        Challenger::<F, <PoseidonGoldilocksConfig as GenericConfig<2>>::Hasher>::new();
     for i in 0..bitwise::OP0_LIMBS.len() {
         challenger.observe_elements(&trace[bitwise::OP0_LIMBS.start + i]);
     }
@@ -265,8 +265,10 @@ pub fn generate_rc_trace<F: RichField>(
     for (i, c) in cells.iter().enumerate() {
         trace[rangecheck::CPU_FILTER][i] =
             F::from_canonical_u64(c.filter_looked_for_cpu.to_canonical_u64());
-        trace[rangecheck::MEMORY_FILTER][i] =
-            F::from_canonical_u64(c.filter_looked_for_memory.to_canonical_u64());
+        trace[rangecheck::MEMORY_SORT_FILTER][i] =
+            F::from_canonical_u64(c.filter_looked_for_mem_sort.to_canonical_u64());
+        trace[rangecheck::MEMORY_REGION_FILTER][i] =
+            F::from_canonical_u64(c.filter_looked_for_mem_region.to_canonical_u64());
         trace[rangecheck::CMP_FILTER][i] =
             F::from_canonical_u64(c.filter_looked_for_comparison.to_canonical_u64());
         trace[rangecheck::VAL][i] = F::from_canonical_u64(c.val.to_canonical_u64());
@@ -278,6 +280,17 @@ pub fn generate_rc_trace<F: RichField>(
     trace[rangecheck::FIX_RANGE_CHECK_U16] = (0..rangecheck::RANGE_CHECK_U16_SIZE)
         .map(|i| F::from_canonical_usize(i))
         .collect();
+    if trace[rangecheck::FIX_RANGE_CHECK_U16].len() < ext_trace_len {
+        let append_start = trace[rangecheck::FIX_RANGE_CHECK_U16].len();
+        let append_end_exclusive = ext_trace_len;
+        let append_value = trace[rangecheck::FIX_RANGE_CHECK_U16]
+            .last()
+            .unwrap()
+            .clone();
+        (append_start..append_end_exclusive).for_each(|_| {
+            trace[rangecheck::FIX_RANGE_CHECK_U16].push(append_value.clone());
+        });
+    }
 
     let (permuted_inputs, permuted_table) = permuted_cols(
         &trace[rangecheck::LIMB_LO],

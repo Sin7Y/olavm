@@ -1,0 +1,4 @@
+{
+  "program": "chain_id:\n.LBL7_0:\n  add r9 r9 2\n  mov r0 7\n  mstore [r9,-1] r0\n  mload r0 [r9,-1]\n  add r1 r9 -2\n  mov r2 0\n  tload r1 r2 r0\n  mload r0 [r9,-2]\n  add r9 r9 -2\n  ret\nmain:\n.LBL8_0:\n  add r9 r9 5\n  mstore [r9,-2] r9\n  call chain_id\n  mstore [r9,-3] r0\n  mload r0 [r9,-3]\n  add r9 r9 -5\n  end\n",
+  "prophets": []
+}

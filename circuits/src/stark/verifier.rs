@@ -1,3 +1,5 @@
+use std::any::type_name;
+
 use anyhow::{ensure, Result};
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::types::Field;
@@ -9,17 +11,22 @@ use plonky2::plonk::plonk_common::reduce_with_powers;
 use super::config::StarkConfig;
 use super::constraint_consumer::ConstraintConsumer;
 use super::cross_table_lookup::{verify_cross_table_lookups, CtlCheckVars};
-use super::ola_stark::{OlaStark, Table};
-use super::permutation::PermutationCheckVars;
+use super::ola_stark::{OlaStark, Table, NUM_TABLES};
+use super::permutation::{GrandProductChallenge, PermutationCheckVars};
 use super::proof::{
-    AllProof, AllProofChallenges, StarkOpeningSet, StarkProof, StarkProofChallenges,
+    AllProof, AllProofChallenges, PublicValues, StarkOpeningSet, StarkProof, StarkProofChallenges,
 };
 use super::stark::Stark;
 use super::vanishing_poly::eval_vanishing_poly;
 use super::vars::StarkEvaluationVars;
 use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
+use crate::builtins::poseidon::poseidon_chunk_stark::PoseidonChunkStark;
+use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
+use crate::builtins::sccall::sccall_stark::SCCallStark;
+use crate::builtins::storage::storage_access_stark::StorageAccessStark;
+// use crate::builtins::tape::tape_stark::TapeStark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::MemoryStark;
 
@@ -29,12 +36,17 @@ pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, co
     config: &StarkConfig,
 ) -> Result<()>
 where
+    [(); C::Hasher::HASH_SIZE]:,
     [(); CpuStark::<F, D>::COLUMNS]:,
     [(); MemoryStark::<F, D>::COLUMNS]:,
     [(); BitwiseStark::<F, D>::COLUMNS]:,
     [(); CmpStark::<F, D>::COLUMNS]:,
     [(); RangeCheckStark::<F, D>::COLUMNS]:,
-    [(); C::Hasher::HASH_SIZE]:,
+    [(); PoseidonStark::<F, D>::COLUMNS]:,
+    [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
+    [(); StorageAccessStark::<F, D>::COLUMNS]:,
+    // [(); TapeStark::<F, D>::COLUMNS]:,
+    [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let AllProofChallenges {
         stark_challenges,
@@ -44,19 +56,18 @@ where
     let nums_permutation_zs = ola_stark.nums_permutation_zs(config);
 
     let OlaStark {
-        mut cpu_stark,
+        cpu_stark,
         memory_stark,
         mut bitwise_stark,
         cmp_stark,
         rangecheck_stark,
+        poseidon_stark,
+        poseidon_chunk_stark,
+        storage_access_stark,
+        tape_stark,
+        sccall_stark,
         cross_table_lookups,
     } = ola_stark;
-
-    if cpu_stark.get_compress_challenge().is_none() {
-        cpu_stark
-            .set_compress_challenge(all_proof.compress_challenges[Table::Cpu as usize])
-            .unwrap();
-    }
 
     if bitwise_stark.get_compress_challenge().is_none() {
         bitwise_stark
@@ -109,15 +120,73 @@ where
         config,
     )?;
 
-    let degrees_bits =
-        std::array::from_fn(|i| all_proof.stark_proofs[i].recover_degree_bits(config));
+    verify_stark_proof_with_challenges(
+        poseidon_stark,
+        &all_proof.stark_proofs[Table::Poseidon as usize],
+        &stark_challenges[Table::Poseidon as usize],
+        &ctl_vars_per_table[Table::Poseidon as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        poseidon_chunk_stark,
+        &all_proof.stark_proofs[Table::PoseidonChunk as usize],
+        &stark_challenges[Table::PoseidonChunk as usize],
+        &ctl_vars_per_table[Table::PoseidonChunk as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        storage_access_stark,
+        &all_proof.stark_proofs[Table::StorageAccess as usize],
+        &stark_challenges[Table::StorageAccess as usize],
+        &ctl_vars_per_table[Table::StorageAccess as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        tape_stark,
+        &all_proof.stark_proofs[Table::Tape as usize],
+        &stark_challenges[Table::Tape as usize],
+        &ctl_vars_per_table[Table::Tape as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        sccall_stark,
+        &all_proof.stark_proofs[Table::SCCall as usize],
+        &stark_challenges[Table::SCCall as usize],
+        &ctl_vars_per_table[Table::SCCall as usize],
+        config,
+    )?;
+
+    // TODO:
+    // let public_values = all_proof.public_values;
+    let extra_looking_products = vec![vec![F::ONE; config.num_challenges]; NUM_TABLES];
+    // extra_looking_products.push(Vec::new());
+    // for c in 0..config.num_challenges {
+    //     extra_looking_products[Table::StorageAccess as usize].push(
+    //         get_storagehash_extra_looking_products(&public_values,
+    // ctl_challenges.challenges[c]),     );
+    // }
+
     verify_cross_table_lookups::<F, C, D>(
         cross_table_lookups,
         all_proof.stark_proofs.map(|p| p.openings.ctl_zs_last),
-        degrees_bits,
-        ctl_challenges,
+        extra_looking_products,
         config,
     )
+}
+
+pub(crate) fn get_storagehash_extra_looking_products<F, const D: usize>(
+    _public_values: &PublicValues,
+    _challenge: GrandProductChallenge<F>,
+) -> F
+where
+    F: RichField + Extendable<D>,
+{
+    let prod = F::ONE;
+    prod
 }
 
 pub(crate) fn verify_stark_proof_with_challenges<
@@ -197,7 +266,8 @@ where
     {
         ensure!(
             vanishing_polys_zeta[i] == z_h_zeta * reduce_with_powers(chunk, zeta_pow_deg),
-            "Mismatch between evaluation and opening of quotient polynomial"
+            "Mismatch between evaluation and opening of quotient polynomial in {}",
+            type_name::<S>()
         );
     }
 

@@ -5,33 +5,45 @@ from enum import Enum
 import xlsxwriter
 import argparse
 
-
+REG_NUM = 10
+CTX_REG_NUM = 4
 class OpcodeValue(Enum):
-    SEL_ADD = 2 ** 34
-    SEL_MUL = 2 ** 33
-    SEL_EQ = 2 ** 32
-    SEL_ASSERT = 2 ** 31
-    SEL_MOV = 2 ** 30
-    SEL_JMP = 2 ** 29
-    SEL_CJMP = 2 ** 28
-    SEL_CALL = 2 ** 27
-    SEL_RET = 2 ** 26
-    SEL_MLOAD = 2 ** 25
-    SEL_MSTORE = 2 ** 24
-    SEL_END = 2 ** 23
+    SEL_ADD = 2 ** 31
+    SEL_MUL = 2 ** 30
+    SEL_EQ = 2 ** 29
+    SEL_ASSERT = 2 ** 28
+    SEL_MOV = 2 ** 27
+    SEL_JMP = 2 ** 26
+    SEL_CJMP = 2 ** 25
+    SEL_CALL = 2 ** 24
+    SEL_RET = 2 ** 23
+    SEL_MLOAD = 2 ** 22
+    SEL_MSTORE = 2 ** 21
+    SEL_END = 2 ** 20
 
-    SEL_RANGE_CHECK = 2 ** 22
-    SEL_AND = 2 ** 21
-    SEL_OR = 2 ** 20
-    SEL_XOR = 2 ** 19
-    SEL_NOT = 2 ** 18
-    SEL_NEQ = 2 ** 17
-    SEL_GTE = 2 ** 16
+    SEL_RANGE_CHECK = 2 ** 19
+    SEL_AND = 2 ** 18
+    SEL_OR = 2 ** 17
+    SEL_XOR = 2 ** 16
+    SEL_NOT = 2 ** 15
+    SEL_NEQ = 2 ** 14
+    SEL_GTE = 2 ** 13
+    SEL_POSEIDON = 2 ** 12
+    SEL_SLOAD = 2 ** 11
+    SEL_SSTORE = 2 ** 10
 
 
 class JsonMainTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
+    SC_CNT = 'call_sc_cnt'
     CLK = 'clk'
     PC = 'pc'
+    TP = 'tp'
+    STORAGE_ACCESS_IDX = 'storage_access_idx'
+    IS_EXT_LINE = 'is_ext_line'
+    ADDR_STORAGE = "addr_storage"
+    ADDR_CODE = "addr_code"
     REGS = 'regs'
     INST = 'instruction'
     OP1_IMM = 'op1_imm'
@@ -60,11 +72,30 @@ class JsonMainTraceColumnType(Enum):
     SEL_NOT = 'sel_not'
     SEL_NEQ = 'sel_neq'
     SEL_GTE = 'sel_gte'
-
+    SEL_POSEIDON = 'sel_poseidon'
+    SEL_SSTORE = 'sel_sstore'
+    SEL_SLOAD = 'sel_sload'
 
 class MainTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
+    SC_CNT = 'call_sc_cnt'
     CLK = 'clk'
     PC = 'pc'
+    TP = 'tp'
+    STORAGE_ACCESS_IDX = 'storage_access_idx'
+    IS_EXT_LINE = 'is_ext_line'
+
+    CTX0 = "ctx0"
+    CTX1 = "ctx1"
+    CTX2 = "ctx2"
+    CTX3 = "ctx3"
+
+    CTX_EXE_CODE0 = "addr_code0"
+    CTX_EXE_CODE1 = "addr_code1"
+    CTX_EXE_CODE2 = "addr_code2"
+    CTX_EXE_CODE3 = "addr_code3"
+
     R0 = 'r0'
     R1 = 'r1'
     R2 = 'r2'
@@ -74,6 +105,9 @@ class MainTraceColumnType(Enum):
     R6 = 'r6'
     R7 = 'r7'
     R8 = 'r8'
+    R9 = 'r9'
+
+
 
     INST = 'inst'
     OP1_IMM = 'op1_imm'
@@ -96,6 +130,7 @@ class MainTraceColumnType(Enum):
     SEL_OP0_R6 = 'sel_op0_r6'
     SEL_OP0_R7 = 'sel_op0_r7'
     SEL_OP0_R8 = 'sel_op0_r8'
+    SEL_OP0_R9 = 'sel_op0_r9'
 
     SEL_OP1_R0 = 'sel_op1_r0'
     SEL_OP1_R1 = 'sel_op1_r1'
@@ -106,6 +141,7 @@ class MainTraceColumnType(Enum):
     SEL_OP1_R6 = 'sel_op1_r6'
     SEL_OP1_R7 = 'sel_op1_r7'
     SEL_OP1_R8 = 'sel_op1_r8'
+    SEL_OP1_R9 = 'sel_op1_r9'
 
     SEL_DST_R0 = 'sel_dst_r0'
     SEL_DST_R1 = 'sel_dst_r1'
@@ -116,6 +152,7 @@ class MainTraceColumnType(Enum):
     SEL_DST_R6 = 'sel_dst_r6'
     SEL_DST_R7 = 'sel_dst_r7'
     SEL_DST_R8 = 'sel_dst_r8'
+    SEL_DST_R9 = 'sel_dst_r9'
 
     SEL_ADD = 'sel_add'
     SEL_MUL = 'sel_mul'
@@ -137,9 +174,14 @@ class MainTraceColumnType(Enum):
     SEL_NOT = 'sel_not'
     SEL_NEQ = 'sel_neq'
     SEL_GTE = 'sel_gte'
+    SEL_POSEIDON = 'sel_poseidon'
+    SEL_SSTORE = 'sel_sstore'
+    SEL_SLOAD = 'sel_sload'
 
 
 class MemoryTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
     ADDR = 'addr'
     CLK = 'clk'
     IS_RW = 'is_rw'
@@ -153,19 +195,19 @@ class MemoryTraceColumnType(Enum):
     FILTER_LOOKED_FOR_MAIN = 'filter_looked_for_main'
     RW_ADDR_UNCHANGED = 'rw_addr_unchanged'
     REGION_PROPHET = 'region_prophet'
-    REGION_POSEIDON = 'region_poseidon'
-    REGION_ECDSA = 'region_ecdsa'
+    REGION_HEAP = 'region_heap'
     RC_VALUE = 'rc_value'
-    FILTER_LOOKING_RC = 'filter_looking_rc'
 
 
 class RangeCheckTraceColumnType(Enum):
     VAL = 'val'
     LIMB_LO = 'limb_lo'
     LIMB_HI = 'limb_hi'
-    FILTER_LOOKED_FOR_MEMORY = 'filter_looked_for_memory'
+    FILTER_LOOKED_FOR_MEM_SORT = 'filter_looked_for_mem_sort'
     FILTER_LOOKED_FOR_CPU = 'filter_looked_for_cpu'
     FILTER_LOOKED_FOR_CMP = 'filter_looked_for_comparison'
+    FILTER_LOOKED_FOR_STORE = 'filter_looked_for_storage'
+    FILTER_LOOKED_FOR_MEM_REGION = 'filter_looked_for_mem_region'
 
 
 class BitwiseTraceColumnType(Enum):
@@ -195,6 +237,74 @@ class ComparisonTraceColumnType(Enum):
     ABS_DIFF_INV = 'abs_diff_inv'
     FILTER_LOOKING_FOR_RANGE_CHECK = 'filter_looking_rc'
 
+class StorageTraceColumnType(Enum):
+    CLK = 'clk'
+    DIFF_CLK = 'diff_clk'
+    OP = 'opcode'
+    ROOT = 'root'
+    ADD = 'addr'
+    VALUE = 'value'
+
+class StorageHashTraceColumnType(Enum):
+    STORAGE_ACCESS_IDX = 'storage_access_idx'
+    LAYER = 'layer'
+    LAYER_BIT = 'layer_bit'
+    ADDR_ACC = 'addr_acc'
+    # IS_LAYER64 = 'is_layer64'
+    # IS_LAYER128 = 'is_layer128'
+    # IS_LAYER192 = 'is_layer192'
+    # IS_LAYER256 = 'is_layer256'
+    ADDR = 'addr'
+    PRE_ROOT = 'pre_root'
+    ROOT = 'root'
+    PRE_PATH = 'pre_path'
+    PATH = 'path'
+    SIBLING = 'sibling'
+    PRE_HASH = 'pre_hash'
+    HASH = 'hash'
+
+class PoseidonHashTraceColumnType(Enum):
+    FULL_0_1 = 'full_0_1'
+    FULL_0_2 = 'full_0_2'
+    FULL_0_3 = 'full_0_3'
+    PARTIAL = 'partial'
+    FULL_1_0 = 'full_1_0'
+    FULL_1_1 = 'full_1_1'
+    FULL_1_2 = 'full_1_2'
+    FULL_1_3 = 'full_1_3'
+    OUTPUT = 'output'
+    FILTER_LOOKED_NORMAL = 'filter_looked_normal'
+    FILTER_LOOKED_STORAGE = 'filter_looked_storage'
+    FILTER_LOOKED_STORAGE_BRANCH = 'filter_looked_storage_branch'
+
+class PoseidonChunkTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    ENV_IDX = 'env_idx'
+    CLK = 'clk'
+    OPCODE = "opcode"
+    OP0 = 'op0'
+    OP1 = 'op1'
+    DST = 'dst'
+    ACC_CNT = 'acc_cnt'
+    VALUE =    'value'
+    CAP = 'cap'
+    HASH = 'hash'
+    IS_EXT_LINE = 'is_ext_line'
+
+class TapeTraceColumnType(Enum):
+    TX_IDX = 'tx_idx'
+    IS_INIT = "is_init"
+    OPCODE = "opcode"
+    ADDR = "addr"
+    VALUE = 'value'
+    FILTER_LOOKED = 'filter_looked'
+
+class ScCallColumnType(Enum):
+    IS_INIT = "is_init"
+    OPCODE = "opcode"
+    ADDR = "addr"
+    VALUE = 'value'
+    FILTER_LOOKED = 'filter_looked'
 
 def generate_columns_of_title(worksheet, trace_column_title):
     col = 0
@@ -234,13 +344,29 @@ def main():
         col = 0
         for data in JsonMainTraceColumnType:
             if data.value == "regs":
-                for i in range(0, 9):
+                for i in range(0, REG_NUM):
                     if args.format == 'hex':
                         worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
                             row[data.value][i] // (2 ** 32), row[data.value][i] % (2 ** 32)))
                     else:
                         worksheet.write(row_index, col, row[data.value][i])
                     col += 1
+            elif data.value == "addr_storage":
+                for i in range(0, CTX_REG_NUM):
+                    if args.format == 'hex':
+                        worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                            row[data.value][i] // (2 ** 32), row[data.value][i] % (2 ** 32)))
+                    else:
+                        worksheet.write(row_index, col, row[data.value][i])
+                    col += 1
+            elif data.value == "addr_code":
+                            for i in range(0, CTX_REG_NUM):
+                                if args.format == 'hex':
+                                    worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
+                                        row[data.value][i] // (2 ** 32), row[data.value][i] % (2 ** 32)))
+                                else:
+                                    worksheet.write(row_index, col, row[data.value][i])
+                                col += 1
             elif data.value == 'register_selector':
                 if args.format == 'hex':
                     worksheet.write(row_index, col, '=CONCATENATE("0x",DEC2HEX({0}),DEC2HEX({1},8))'.format(
@@ -285,11 +411,11 @@ def main():
                     worksheet.write(row_index, col, reg)
                     col += 1
             elif data.value == 'asm':
-                # print(trace_json["raw_instructions"]['{0}'.format(row["pc"])])
-                worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
+                if trace_json["raw_instructions"] != {}:
+                    worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
                 col += 1
             else:
-                if (data.value == "instruction" or data.value == "opcode"):
+                if data.value == "instruction" or data.value == "opcode" or data.value == "aux0":
                     # print("{0}:{1}:{2}".format(data.value, row[data.value],
                     #                            '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
                     #                                row[data.value] // (2 ** 32), row[data.value] % (2 ** 32))))
@@ -302,7 +428,8 @@ def main():
                         or data.value == "sel_mload" or data.value == "sel_mstore" or data.value == "sel_end" \
                         or data.value == "sel_range_check" or data.value == "sel_and" or data.value == "sel_or" \
                         or data.value == "sel_xor" or data.value == "sel_not" or data.value == "sel_neq" \
-                        or data.value == "sel_gte" \
+                        or data.value == "sel_gte" or data.value == "sel_poseidon" or  data.value == "sel_sload"  \
+                        or data.value == "sel_sstore" \
                         :
                     # print("sel:{0}:{1}".format(row["opcode"], OpcodeValue[data.name].value))
                     if row["opcode"] == OpcodeValue[data.name].value:
@@ -390,6 +517,109 @@ def main():
             col += 1
         row_index += 1
 
+    # Storage Trace
+    worksheet = workbook.add_worksheet("StorageTrace")
+    generate_columns_of_title(worksheet, StorageTraceColumnType)
+
+    # generate storage trace table
+    row_index = 1
+    for row in trace_json["builtin_storage"]:
+        col = 0
+        for data in StorageTraceColumnType:
+            if data.value == "root" or data.value == "addr" or  data.value == "value" \
+                    or data.value == "clk" or data.value == "diff_clk":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif args.format == 'hex':
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
+    # Storage Hash Trace
+    worksheet = workbook.add_worksheet("HashStorageTrace")
+    generate_columns_of_title(worksheet, StorageHashTraceColumnType)
+
+    # generate storage hash trace table
+    row_index = 1
+    for row in trace_json["builtin_storage_hash"]:
+        col = 0
+        for data in StorageHashTraceColumnType:
+            if data.value == "addr" or data.value == "pre_root" or  data.value == "root" or \
+               data.value == "sibling" or data.value == "pre_path" or  data.value == "path" or\
+               data.value == "pre_hash" or data.value == "hash" :
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "layer" or data.value == 'storage_access_idx':
+                worksheet.write(row_index, col, row[data.value])
+            elif args.format == 'hex':
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            col += 1
+        row_index += 1
+
+    # Tape Trace
+    worksheet = workbook.add_worksheet("TapeTrace")
+    generate_columns_of_title(worksheet, TapeTraceColumnType)
+
+    row_index = 1
+    for row in trace_json["tape"]:
+        col = 0
+        for data in TapeTraceColumnType:
+            if data.value == "is_init" or  data.value == "value" or data.value == "filter_looked":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "opcode" or data.value == "addr":
+                worksheet.write(row_index, col,
+                                '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                    row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
+    # Poseidon Hash Trace
+    worksheet = workbook.add_worksheet("PoseidonTrace")
+    generate_columns_of_title(worksheet, PoseidonHashTraceColumnType)
+    # generate poseidon hash trace table
+    row_index = 1
+    for row in trace_json["builtin_poseidon"]:
+        col = 0
+        for data in PoseidonHashTraceColumnType:
+            if data.value == "input" or  data.value == "full_0_1" or \
+                    data.value == "full_0_2" or data.value == "full_0_3" or  data.value == "partial" or \
+                    data.value == "full_1_0" or data.value == "full_1_1" or  data.value == "full_1_2" or \
+                    data.value == "full_1_3" or  data.value == "output":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "opcode":
+                worksheet.write(row_index, col,
+                                    '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                        row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
+
+    # Poseidon CHUNK Trace
+    worksheet = workbook.add_worksheet("PoseidonChunkTrace")
+    generate_columns_of_title(worksheet, PoseidonChunkTraceColumnType)
+    # generate poseidon hash trace table
+    row_index = 1
+    for row in trace_json["builtin_poseidon_chunk"]:
+        col = 0
+        for data in PoseidonChunkTraceColumnType:
+            if data.value == "value" or  data.value == "cap" or \
+                    data.value == "hash":
+                worksheet.write(row_index, col, '{0}'.format(row[data.value]))
+            elif data.value == "opcode":
+                worksheet.write(row_index, col,
+                                    '=CONCATENATE("0x",DEC2HEX({0},8),DEC2HEX({1},8))'.format(
+                                        row[data.value] // (2 ** 32), row[data.value] % (2 ** 32)))
+            else:
+                worksheet.write(row_index, col, row[data.value])
+            col += 1
+        row_index += 1
     workbook.close()
 
 
