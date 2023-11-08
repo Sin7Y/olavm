@@ -1,17 +1,24 @@
 use assembler::encoder::encode_asm_from_json_file;
-use circuits::generation::generate_traces;
+use circuits::generation::{generate_traces, GenerationInputs};
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::proof::PublicValues;
 use circuits::stark::prover::prove_with_traces;
 use circuits::stark::verifier::verify_proof;
+use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
+use core::types::{Field, GoldilocksField};
+use core::vm::transaction::init_tx_context;
+use core::vm::vm_state::Address;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use executor::load_tx::init_tape;
 use executor::Process;
+use itertools::Itertools;
 use log::{debug, error, info, logger, LevelFilter};
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 const D: usize = 2;
@@ -29,6 +36,7 @@ pub fn test_by_asm_json(path: String) {
     let mut program: Program = Program {
         instructions: Vec::new(),
         trace: Default::default(),
+        debug_info: program.debug_info,
     };
 
     for inst in instructions {
@@ -38,6 +46,20 @@ pub fn test_by_asm_json(path: String) {
     let mut process = Process::new();
     let now = Instant::now();
 
+    let calldata = [10u64, 1073741824u64, 2u64, 1336552657u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    process.tp = GoldilocksField::ZERO;
+    init_tape(
+        &mut process,
+        calldata,
+        Address::default(),
+        Address::default(),
+        Address::default(),
+        &init_tx_context(),
+    );
+
     let _ = process.execute(
         &mut program,
         &mut Some(prophets),
@@ -46,7 +68,8 @@ pub fn test_by_asm_json(path: String) {
     info!("exec time:{}", now.elapsed().as_millis());
     let mut ola_stark = OlaStark::default();
     let now = Instant::now();
-    let (traces, public_values) = generate_traces(&program, &mut ola_stark);
+    let (traces, public_values) =
+        generate_traces(&program, &mut ola_stark, GenerationInputs::default());
     info!("generate_traces time:{}", now.elapsed().as_millis());
     let now = Instant::now();
 
@@ -70,11 +93,13 @@ pub fn test_by_asm_json(path: String) {
 }
 
 fn sqrt_prophet_benchmark(c: &mut Criterion) {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("benches/asm/sqrt_prophet_asm.json");
     let mut group = c.benchmark_group("sqrt_prophet");
     let input = 0;
     group.bench_with_input(BenchmarkId::from_parameter(1), &input, |b, _| {
         b.iter(|| {
-            test_by_asm_json("../assembler/test_data/asm/prophet_sqrt.json".to_string());
+            test_by_asm_json(path.display().to_string());
         });
     });
     group.finish();

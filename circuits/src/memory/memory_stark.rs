@@ -325,6 +325,7 @@ mod tests {
     use crate::stark::vars::StarkEvaluationVars;
     use crate::test_utils::test_stark_with_asm_path;
     use core::trace::trace::{MemoryTraceCell, Trace};
+    use core::types::Field;
 
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
