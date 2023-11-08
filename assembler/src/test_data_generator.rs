@@ -90,10 +90,10 @@ mod tests {
         generate_from_file("malloc.json".to_string(), "malloc.json".to_string());
     }
 
-    // #[test]
-    // fn generate_vote() {
-    //     generate_from_file("vote.json".to_string(), "vote.json".to_string());
-    // }
+    #[test]
+    fn generate_vote() {
+        generate_from_file("vote.json".to_string(), "vote.json".to_string());
+    }
 
     #[test]
     fn generate_mem_gep() {

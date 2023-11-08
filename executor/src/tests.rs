@@ -85,7 +85,7 @@ fn executor_run_test_program(
     let res = process.execute(
         &mut program,
         &mut Some(prophets),
-        // &mut AccountTree::new_db_test("./".to_string()),
+        // &mut AccountTree::new_db_test("./test_db_vote".to_string()),
         &mut AccountTree::new_test(),
     );
 
@@ -260,11 +260,27 @@ fn malloc_test() {
 
 #[test]
 fn vote_test() {
+    // let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
+    //     .iter()
+    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //     .collect_vec();
+    // let vote_calldata = [2u64, 1u64, 2791810083u64]
+    //     .iter()
+    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //     .collect_vec();
+    let winning_proposal_calldata = [0u64, 3186728800u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    let winning_name_calldata = [0u64, 363199787u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
     executor_run_test_program(
         "../assembler/test_data/bin/vote.json",
         "vote_trace.txt",
         false,
-        None,
+        Some(winning_proposal_calldata),
     );
 }
 

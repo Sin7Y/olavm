@@ -617,22 +617,22 @@ mod tests {
 
     #[test]
     fn fibo_loop_test() {
-        test_by_asm_json("fibo_loop.json".to_string(), None)
+        test_by_asm_json("fibo_loop.json".to_string(), None, None)
     }
 
     #[test]
     fn fibo_recursive_decode() {
-        test_by_asm_json("fibo_recursive.json".to_string(), None)
+        test_by_asm_json("fibo_recursive.json".to_string(), None, None)
     }
 
     #[test]
     fn memory_test() {
-        test_by_asm_json("memory.json".to_string(), None)
+        test_by_asm_json("memory.json".to_string(), None, None)
     }
 
     #[test]
     fn call_test() {
-        test_by_asm_json("call.json".to_string(), None)
+        test_by_asm_json("call.json".to_string(), None, None)
     }
 
     // #[test]
@@ -647,7 +647,7 @@ mod tests {
 
     #[test]
     fn comparison_test() {
-        test_by_asm_json("comparison.json".to_string(), None)
+        test_by_asm_json("comparison.json".to_string(), None, None)
     }
 
     // #[test]
@@ -661,7 +661,7 @@ mod tests {
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        test_by_asm_json("sqrt_prophet_asm.json".to_string(), Some(calldata));
+        test_by_asm_json("sqrt_prophet_asm.json".to_string(), Some(calldata), None);
     }
 
     // #[test]
@@ -675,7 +675,7 @@ mod tests {
             GoldilocksField::ZERO,
             GoldilocksField::from_canonical_u64(1239976900),
         ];
-        test_by_asm_json("poseidon_hash.json".to_string(), Some(call_data));
+        test_by_asm_json("poseidon_hash.json".to_string(), Some(call_data), None);
     }
 
     #[test]
@@ -684,27 +684,27 @@ mod tests {
             GoldilocksField::from_canonical_u64(0),
             GoldilocksField::from_canonical_u64(2364819430),
         ];
-        test_by_asm_json("storage_u32.json".to_string(), Some(call_data));
+        test_by_asm_json("storage_u32.json".to_string(), Some(call_data), None);
     }
 
     #[test]
     fn test_ola_malloc() {
-        test_by_asm_json("malloc.json".to_string(), None);
+        test_by_asm_json("malloc.json".to_string(), None, None);
     }
 
-    // #[test]
-    // fn test_ola_vote() {
-    //     test_by_asm_json("vote.json".to_string(), None);
-    // }
+    #[test]
+    fn test_ola_vote() {
+        test_by_asm_json("vote.json".to_string(), None, None);
+    }
 
     #[test]
     fn test_ola_mem_gep() {
-        test_by_asm_json("mem_gep.json".to_string(), None);
+        test_by_asm_json("mem_gep.json".to_string(), None, None);
     }
 
     #[test]
     fn test_ola_mem_gep_vector() {
-        test_by_asm_json("mem_gep_vector.json".to_string(), None);
+        test_by_asm_json("mem_gep_vector.json".to_string(), None, None);
     }
 
     // #[test]
@@ -713,7 +713,7 @@ mod tests {
     // }
 
     #[allow(unused)]
-    pub fn test_by_asm_json(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
+    pub fn test_by_asm_json(file_name: String, call_data: Option<Vec<GoldilocksField>>, db: Option<String>) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
         path.push(file_name);
