@@ -5,10 +5,10 @@ mod tests {
     use log::LevelFilter;
     use std::fs;
 
-    // #[test]
-    // fn generate_sqrt() {
-    //     generate_from_file("sqrt.json".to_string(), "sqrt.json".to_string());
-    // }
+    #[test]
+    fn generate_fib() {
+        generate_from_file("fib_asm.json".to_string(), "fib_asm.json".to_string());
+    }
 
     #[test]
     fn generate_prophet_sqrt() {
