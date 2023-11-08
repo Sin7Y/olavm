@@ -9,6 +9,7 @@ use core::program::Program;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::vm::transaction::init_tx_context;
+use itertools::Itertools;
 use log::LevelFilter;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
@@ -98,6 +99,7 @@ fn executor_run_test_program(
     }
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
+println!("exec len: {}", program.trace.exec.len());
     let mut file = File::create(trace_name).unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
@@ -174,11 +176,19 @@ fn fibo_recursive() {
 
 #[test]
 fn prophet_sqrt_test() {
+    // let calldata = [1336552657u64, 2u64, 144u64, 2u64]
+    //     .iter()
+    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //     .collect_vec();
+    let calldata = [2u64, 144u64, 2u64, 1336552657u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
     executor_run_test_program(
-        "../assembler/test_data/bin/prophet_sqrt.json",
-        "prophet_sqrt_trace.txt",
+        "../assembler/test_data/bin/sqrt_prophet_asm.json",
+        "sqrt_prophet_asm.txt",
         true,
-        None,
+        Some(calldata),
     );
 }
 

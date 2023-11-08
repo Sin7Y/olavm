@@ -10,13 +10,13 @@ mod tests {
     //     generate_from_file("sqrt.json".to_string(), "sqrt.json".to_string());
     // }
 
-    // #[test]
-    // fn generate_prophet_sqrt() {
-    //     generate_from_file(
-    //         "prophet_sqrt.json".to_string(),
-    //         "prophet_sqrt.json".to_string(),
-    //     );
-    // }
+    #[test]
+    fn generate_prophet_sqrt() {
+        generate_from_file(
+            "sqrt_prophet_asm.json".to_string(),
+            "sqrt_prophet_asm.json".to_string(),
+        );
+    }
 
     // #[test]
     // fn generate_hand_write_prophet() {
