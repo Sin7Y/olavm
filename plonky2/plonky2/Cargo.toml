@@ -34,6 +34,8 @@ serde_cbor = "0.11.1"
 keccak-hash = "0.8.0"
 static_assertions = "1.1.0"
 blake3 = "1.3.3"
+arrayref = "0.3.6"
+hashbrown = { version = "0.14.0", default-features = false, features = ["ahash", "serde"] } # NOTE: When upgrading, see `ahash` dependency.
 
 [dev-dependencies]
 rand = "0.8.4"
@@ -54,6 +56,14 @@ required-features = ["rand", "rand_chacha"]
 
 [[bench]]
 name = "field_arithmetic"
+harness = false
+
+[[bench]]
+name = "poseidon_prove"
+harness = false
+
+[[bench]]
+name = "poseidon2_prove"
 harness = false
 
 [[bench]]

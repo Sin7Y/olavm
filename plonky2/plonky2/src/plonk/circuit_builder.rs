@@ -1,6 +1,7 @@
 use std::cmp::max;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::time::Instant;
+use alloc::sync::Arc;
 
 use itertools::Itertools;
 use log::{debug, info, Level};
@@ -9,7 +10,7 @@ use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::fft::fft_root_table;
 use plonky2_field::polynomial::PolynomialValues;
 use plonky2_field::types::Field;
-use plonky2_util::{log2_ceil, log2_strict};
+use plonky2_util::{log2_ceil, log2_strict, ceil_div_usize};
 
 use crate::fri::oracle::PolynomialBatch;
 use crate::fri::{FriConfig, FriParams};
@@ -22,7 +23,7 @@ use crate::gates::constant::ConstantGate;
 use crate::gates::gate::{CurrentSlot, Gate, GateInstance, GateRef};
 use crate::gates::noop::NoopGate;
 use crate::gates::public_input::PublicInputGate;
-use crate::gates::selectors::selector_polynomials;
+use crate::gates::selectors::{selector_ends_lookups, selector_polynomials, selectors_lookup};
 use crate::hash::hash_types::{HashOut, HashOutTarget, MerkleCapTarget, RichField};
 use crate::hash::merkle_proofs::MerkleProofTarget;
 use crate::hash::merkle_tree::MerkleCap;
@@ -45,6 +46,40 @@ use crate::util::context_tree::ContextTree;
 use crate::util::partial_products::num_partial_products;
 use crate::util::timing::TimingTree;
 use crate::util::{transpose, transpose_poly_values};
+use crate::gates::lookup::{Lookup, LookupGate, BitwiseLookup, BitwiseLookupGate};
+use crate::gates::lookup_table::{LookupTable, BitwiseLookupTable};
+
+
+/// Number of random coins needed for lookups (for each challenge).
+/// A coin is a randomly sampled extension field element from the verifier,
+/// consisting internally of `CircuitConfig::num_challenges` field elements.
+pub const NUM_COINS_LOOKUP: usize = 4;
+
+/// Enum listing the different types of lookup challenges.
+/// `ChallengeA` is used for the linear combination of input and output pairs in Sum and LDC.
+/// `ChallengeB` is used for the linear combination of input and output pairs in the polynomial RE.
+/// `ChallengeAlpha` is used for the running sums: 1/(alpha - combo_i).
+/// `ChallengeDelta` is a challenge on which to evaluate the interpolated LUT function.
+pub enum LookupChallenges {
+    ChallengeA = 0,
+    ChallengeB = 1,
+    ChallengeAlpha = 2,
+    ChallengeDelta = 3,
+}
+
+/// Structure containing, for each lookup table, the indices of the last lookup row,
+/// the last lookup table row and the first lookup table row. Since the rows are in
+/// reverse order in the trace, they actually correspond, respectively, to: the indices
+/// of the first `LookupGate`, the first `LookupTableGate` and the last `LookupTableGate`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LookupWire {
+    /// Index of the last lookup row (i.e. the first `LookupGate`).
+    pub last_lu_gate: usize,
+    /// Index of the last lookup table row (i.e. the first `LookupTableGate`).
+    pub last_lut_gate: usize,
+    /// Index of the first lookup table row (i.e. the last `LookupTableGate`).
+    pub first_lut_gate: usize,
+}
 
 pub struct CircuitBuilder<F: RichField + Extendable<D>, const D: usize> {
     pub config: CircuitConfig,
@@ -71,6 +106,15 @@ pub struct CircuitBuilder<F: RichField + Extendable<D>, const D: usize> {
 
     constants_to_targets: HashMap<F, Target>,
     targets_to_constants: HashMap<Target, F>,
+
+    /// Rows for each LUT: LookupWire contains: first `LookupGate`, first `LookupTableGate`, last `LookupTableGate`.
+    lookup_rows: Vec<LookupWire>,
+
+    /// For each LUT index, vector of `(looking_in, looking_out)` pairs.
+    lut_to_lookups: Vec<BitwiseLookup>,
+
+    // Lookup tables in the form of `Vec<(input_value, output_value)>`.
+    luts: Vec<BitwiseLookupTable>,
 
     /// Memoized results of `arithmetic` calls.
     pub(crate) base_arithmetic_results: HashMap<BaseArithmeticOperation<F>, Target>,
@@ -99,6 +143,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             generators: Vec::new(),
             constants_to_targets: HashMap::new(),
             targets_to_constants: HashMap::new(),
+            lookup_rows: Vec::new(),
+            lut_to_lookups: Vec::new(),
+            luts: Vec::new(),
             base_arithmetic_results: HashMap::new(),
             arithmetic_results: HashMap::new(),
             current_slots: HashMap::new(),
@@ -423,6 +470,133 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         self.context_log.pop(self.num_gates());
     }
 
+    /// Returns the total number of LUTs.
+    pub fn get_luts_length(&self) -> usize {
+        self.luts.len()
+    }
+
+    /// Gets the length of the LUT at index `idx`.
+    pub fn get_luts_idx_length(&self, idx: usize) -> usize {
+        assert!(
+            idx < self.luts.len(),
+            "index idx: {} greater than the total number of created LUTS: {}",
+            idx,
+            self.luts.len()
+        );
+        self.luts[idx].len()
+    }
+
+    /// Checks whether a LUT is already stored in `self.luts`
+    pub fn is_stored(&self, lut: BitwiseLookupTable) -> Option<usize> {
+        self.luts.iter().position(|elt| *elt == lut)
+    }
+
+    /// Returns the LUT at index `idx`.
+    pub fn get_lut(&self, idx: usize) -> BitwiseLookupTable {
+        assert!(
+            idx < self.luts.len(),
+            "index idx: {} greater than the total number of created LUTS: {}",
+            idx,
+            self.luts.len()
+        );
+        self.luts[idx].clone()
+    }
+
+    /// Generates a LUT from a function.
+    pub fn get_lut_from_fn<T>(f: fn(T) -> T, inputs: &[T]) -> Vec<(T, T)>
+    where
+        T: Copy,
+    {
+        inputs.iter().map(|&input| (input, f(input))).collect()
+    }
+
+    /// Given a function `f: fn(u16) -> u16`, adds a LUT to the circuit builder.
+    /*pub fn update_luts_from_fn(&mut self, f: fn(u16) -> u16, inputs: &[u16]) -> usize {
+        let lut = Arc::new(Self::get_lut_from_fn::<u16>(f, inputs));
+
+        // If the LUT `lut` is already stored in `self.luts`, return its index. Otherwise, append `table` to `self.luts` and return its index.
+        if let Some(idx) = self.is_stored(lut.clone()) {
+            idx
+        } else {
+            self.luts.push(lut);
+            self.lut_to_lookups.push(vec![]);
+            assert!(self.luts.len() == self.lut_to_lookups.len());
+            self.luts.len() - 1
+        }
+    }*/
+
+    /// Adds a table to the vector of LUTs in the circuit builder, given a list of inputs and table values.
+    /*pub fn update_luts_from_table(&mut self, inputs: &[u16], table: &[u16]) -> usize {
+        assert!(
+            inputs.len() == table.len(),
+            "Inputs and table have incompatible lengths: {} and {}",
+            inputs.len(),
+            table.len()
+        );
+        let pairs = inputs
+            .iter()
+            .copied()
+            .zip_eq(table.iter().copied())
+            .collect();
+        let lut: LookupTable = Arc::new(pairs);
+
+        // If the LUT `lut` is already stored in `self.luts`, return its index. Otherwise, append `table` to `self.luts` and return its index.
+        if let Some(idx) = self.is_stored(lut.clone()) {
+            idx
+        } else {
+            self.luts.push(lut);
+            self.lut_to_lookups.push(vec![]);
+            assert!(self.luts.len() == self.lut_to_lookups.len());
+            self.luts.len() - 1
+        }
+    }*/
+
+    /// Adds a table to the vector of LUTs in the circuit builder.
+    pub fn update_luts_from_pairs(&mut self, table: BitwiseLookupTable) -> usize {
+        // If the LUT `table` is already stored in `self.luts`, return its index. Otherwise, append `table` to `self.luts` and return its index.
+        if let Some(idx) = self.is_stored(table.clone()) {
+            idx
+        } else {
+            self.luts.push(table);
+            self.lut_to_lookups.push(vec![]);
+            assert!(self.luts.len() == self.lut_to_lookups.len());
+            self.luts.len() - 1
+        }
+    }
+
+    /// Adds lookup rows for a lookup table.
+    pub fn add_lookup_rows(
+        &mut self,
+        last_lu_gate: usize,
+        last_lut_gate: usize,
+        first_lut_gate: usize,
+    ) {
+        self.lookup_rows.push(LookupWire {
+            last_lu_gate,
+            last_lut_gate,
+            first_lut_gate,
+        });
+    }
+
+    /// Adds a looking (input, output) pair to the corresponding LUT.
+    pub fn update_lookups(&mut self, looking_in_0: Target, looking_in_1: Target, looking_out: Target, lut_index: usize) {
+        assert!(
+            lut_index < self.lut_to_lookups.len(),
+            "The LUT with index {} has not been created. The last LUT is at index {}",
+            lut_index,
+            self.lut_to_lookups.len() - 1
+        );
+        self.lut_to_lookups[lut_index].push((looking_in_0, looking_in_1, looking_out));
+    }
+
+    pub fn num_luts(&self) -> usize {
+        self.lut_to_lookups.len()
+    }
+
+    pub fn get_lut_lookups(&self, lut_index: usize) -> &[(Target, Target, Target)] {
+        &self.lut_to_lookups[lut_index]
+    }
+
     /// Find an available slot, of the form `(row, op)` for gate `G` using
     /// parameters `params` and constants `constants`. Parameters are any
     /// data used to differentiate which gate should be used for the given
@@ -676,6 +850,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let rate_bits = self.config.fri_config.rate_bits;
         let cap_height = self.config.fri_config.cap_height;
 
+        // Total number of LUTs.
+        let num_luts = self.get_luts_length();
+
         // Hash the public inputs, and route them to a `PublicInputGate` which will
         // enforce that those hash wires match the claimed public inputs.
         let num_public_inputs = self.public_inputs.len();
@@ -689,6 +866,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         {
             self.connect(hash_part, Target::wire(pi_gate, wire))
         }
+
+        // Place LUT-related gates.
+        self.add_all_lookups();
 
         // Make sure we have enough constant generators. If not, add a `ConstantGate`.
         while self.constants_to_targets.len() > self.constant_generators.len() {
@@ -741,6 +921,20 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         gates.sort_unstable_by_key(|g| (g.0.degree(), g.0.id()));
         let (mut constant_vecs, selectors_info) =
             selector_polynomials(&gates, &self.gate_instances, quotient_degree_factor + 1);
+
+        // Get the lookup selectors.
+        let num_lookup_selectors = if num_luts != 0 {
+            let selector_lookups =
+                selectors_lookup(&gates, &self.gate_instances, &self.lookup_rows);
+            let selector_ends = selector_ends_lookups(&self.lookup_rows, &self.gate_instances);
+            let all_lookup_selectors = [selector_lookups, selector_ends].concat();
+            let num_lookup_selectors = all_lookup_selectors.len();
+            constant_vecs.extend(all_lookup_selectors);
+            num_lookup_selectors
+        } else {
+            0
+        };
+
         constant_vecs.extend(self.constant_polys());
         let num_constants = constant_vecs.len();
 
@@ -818,6 +1012,14 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let num_partial_products =
             num_partial_products(self.config.num_routed_wires, quotient_degree_factor);
 
+        let lookup_degree = self.config.max_quotient_degree_factor - 1;
+        let num_lookup_polys = if num_luts == 0 {
+            0
+        } else {
+            // There is 1 RE polynomial and multiple Sum/LDC polynomials.
+            ceil_div_usize(BitwiseLookupGate::num_slots(&self.config), lookup_degree) + 1
+        };
+
         let constants_sigmas_cap = constants_sigmas_commitment.merkle_tree.cap.clone();
         // TODO: This should also include an encoding of gate constraints.
         let circuit_digest_parts = [
@@ -840,6 +1042,9 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             num_public_inputs,
             k_is,
             num_partial_products,
+            num_lookup_polys,
+            num_lookup_selectors,
+            luts: self.luts,
         };
 
         let prover_only = ProverOnlyCircuitData {
@@ -852,6 +1057,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
             representative_map: forest.parents,
             fft_root_table: Some(fft_root_table),
             circuit_digest,
+            lookup_rows: self.lookup_rows.clone(),
+            lut_to_lookups: self.lut_to_lookups.clone(),
         };
 
         let verifier_only = VerifierOnlyCircuitData {

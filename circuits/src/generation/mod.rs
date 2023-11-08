@@ -8,7 +8,6 @@ use ethereum_types::{Address, H256};
 //use eth_trie_utils::partial_trie::PartialTrie;
 use plonky2::field::extension::Extendable;
 use plonky2::field::polynomial::PolynomialValues;
-use plonky2::gates::public_input;
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 

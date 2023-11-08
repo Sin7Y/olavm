@@ -1,6 +1,7 @@
 use core::program::Program;
 use std::any::type_name;
 use std::collections::BTreeMap;
+use std::time::Instant;
 
 use anyhow::{ensure, Result};
 use maybe_rayon::*;
@@ -99,6 +100,9 @@ where
 
     let mut twiddle_map = BTreeMap::new();
 
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let trace_commitments = timed!(
         timing,
         "compute trace commitments",
@@ -120,6 +124,9 @@ where
             .collect::<Vec<_>>()
     );
 
+    #[cfg(feature = "benchmark")]
+    println!("trace_commitments total time: {:?}", start.elapsed());
+
     let trace_caps = trace_commitments
         .iter()
         .map(|c| c.merkle_tree.cap.clone())
@@ -129,12 +136,21 @@ where
         challenger.observe_cap(cap);
     }
 
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
         config,
         &trace_poly_values,
         &ola_stark.cross_table_lookups,
         &mut challenger,
     );
+
+    #[cfg(feature = "benchmark")]
+    println!("cross_table_lookup_data total time: {:?}", start.elapsed());
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
 
     let cpu_proof = prove_single_table(
         &ola_stark.cpu_stark,
@@ -146,6 +162,13 @@ where
         timing,
         &mut twiddle_map,
     )?;
+
+    #[cfg(feature = "benchmark")]
+    println!("prove_cpu_table total time: {:?}", start.elapsed());
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let memory_proof = prove_single_table(
         &ola_stark.memory_stark,
         config,
@@ -309,6 +332,10 @@ where
             stark.permutation_batch_size(),
         )
     });
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let permutation_zs = permutation_challenges.as_ref().map(|challenges| {
         timed!(
             timing,
@@ -316,6 +343,12 @@ where
             compute_permutation_z_polys::<F, C, S, D>(stark, config, trace_poly_values, challenges)
         )
     });
+
+    #[cfg(feature = "benchmark")]
+    if S::COLUMNS == 76 {
+        println!("compute_permutation_z_polys total time: {:?}", start.elapsed());
+    }
+
     let num_permutation_zs = permutation_zs.as_ref().map(|v| v.len()).unwrap_or(0);
 
     let z_polys = match permutation_zs {
@@ -326,6 +359,9 @@ where
         }
     };
     assert!(!z_polys.is_empty(), "No CTL?");
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
 
     let permutation_ctl_zs_commitment = timed!(
         timing,
@@ -339,6 +375,11 @@ where
             twiddle_map,
         )
     );
+
+    #[cfg(feature = "benchmark")]
+    if S::COLUMNS == 76 {
+        println!("permutation_ctl_zs_commitment total time: {:?}", start.elapsed());
+    }
 
     let permutation_ctl_zs_cap = permutation_ctl_zs_commitment.merkle_tree.cap.clone();
     challenger.observe_cap(&permutation_ctl_zs_cap);
@@ -372,6 +413,15 @@ where
             config,
         )
     );
+
+    #[cfg(feature = "benchmark")]
+    if S::COLUMNS == 76 {
+        println!("compute quotient polys total time: {:?}", start.elapsed());
+    }
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let all_quotient_chunks = timed!(
         timing,
         "split quotient polys",
@@ -400,6 +450,11 @@ where
             twiddle_map,
         )
     );
+    #[cfg(feature = "benchmark")]
+    if S::COLUMNS == 76 {
+        println!("compute quotient commitment total time: {:?}", start.elapsed());
+    }
+
     let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
     challenger.observe_cap(&quotient_polys_cap);
 
@@ -414,6 +469,9 @@ where
         "Opening point is in the subgroup."
     );
 
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let openings = StarkOpeningSet::new(
         zeta,
         g,
@@ -423,6 +481,12 @@ where
         degree_bits,
         stark.num_permutation_batches(config),
     );
+
+    #[cfg(feature = "benchmark")]
+    if S::COLUMNS == 76 {
+        println!("StarkOpening total time: {:?}", start.elapsed());
+    }
+
     challenger.observe_openings(&openings.to_fri_openings());
 
     let initial_merkle_trees = vec![
@@ -430,6 +494,9 @@ where
         &permutation_ctl_zs_commitment,
         &quotient_commitment,
     ];
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
 
     let opening_proof = timed!(
         timing,
@@ -443,6 +510,11 @@ where
             twiddle_map,
         )
     );
+
+    #[cfg(feature = "benchmark")]
+    if S::COLUMNS == 76 {
+        println!("opening_proof total time: {:?}", start.elapsed());
+    }
 
     Ok(StarkProof {
         trace_cap: trace_commitment.merkle_tree.cap.clone(),

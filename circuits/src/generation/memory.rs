@@ -135,6 +135,10 @@ pub fn generate_memory_trace<F: RichField>(
             trace[memory::COL_MEM_DIFF_ADDR_COND][i] = p - addr;
             trace[memory::COL_MEM_REGION_PROPHET][i] = F::ONE;
             trace[memory::COL_MEM_RC_VALUE][i] = trace[memory::COL_MEM_DIFF_ADDR_COND][i];
+            trace[memory::COL_MEM_DIFF_ADDR_INV][i] = trace[memory::COL_MEM_DIFF_ADDR][i].inverse();
+            trace[memory::COL_MEM_DIFF_ADDR_COND][i] = p - addr;
+            trace[memory::COL_MEM_REGION_PROPHET][i] = F::ONE;
+            trace[memory::COL_MEM_RC_VALUE][i] = trace[memory::COL_MEM_DIFF_ADDR_COND][i];
 
             addr += F::ONE;
             is_first_pad_row = false

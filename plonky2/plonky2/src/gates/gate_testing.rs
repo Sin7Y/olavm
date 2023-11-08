@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use anyhow::{ensure, Result};
 use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::polynomial::{PolynomialCoeffs, PolynomialValues};
@@ -161,6 +163,13 @@ where
     pw.set_extension_targets(&evals_t, &evals);
 
     let data = builder.build::<C>();
+
+    //let start = Instant::now();
+
     let proof = data.prove(pw)?;
+
+    //let exe_time = start.elapsed();
+    //println!("exe_time = {:?}us", exe_time.as_micros());
+
     verify(proof, &data.verifier_only, &data.common)
 }

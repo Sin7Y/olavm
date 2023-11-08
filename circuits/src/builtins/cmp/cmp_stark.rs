@@ -101,6 +101,7 @@ mod tests {
     use crate::builtins::cmp::cmp_stark::CmpStark;
     use crate::builtins::cmp::columns::*;
     use crate::generation::builtin::generate_cmp_trace;
+    use crate::builtins::cmp::columns::*;
     use crate::stark::constraint_consumer::ConstraintConsumer;
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
