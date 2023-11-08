@@ -85,7 +85,7 @@ fn executor_run_test_program(
     let res = process.execute(
         &mut program,
         &mut Some(prophets),
-        &mut AccountTree::new_db_test("../../db_test/vote_test".to_string()),
+        &mut AccountTree::new_db_test("./db_test/vote_test".to_string()),
         // &mut AccountTree::new_test(),
     );
 
@@ -291,7 +291,7 @@ fn vote_test() {
         "../assembler/test_data/bin/vote.json",
         "vote_trace.txt",
         false,
-        Some(vote_calldata),
+        Some(init_calldata),
     );
 }
 
