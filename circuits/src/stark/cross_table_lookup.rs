@@ -328,7 +328,7 @@ impl<'a, F: RichField + Extendable<D>, const D: usize>
     CtlCheckVars<'a, F, F::Extension, F::Extension, D>
 {
     pub(crate) fn from_proofs<C: GenericConfig<D, F = F>>(
-        proofs: &[StarkProof<F, C, D>; NUM_TABLES],
+        proofs: &[StarkProof<F, C, D>; 1],
         cross_table_lookups: &'a [CrossTableLookup<F>],
         ctl_challenges: &'a GrandProductChallengeSet<F>,
         num_permutation_zs: &[usize; NUM_TABLES],
@@ -554,7 +554,7 @@ pub(crate) fn verify_cross_table_lookups<
     const D: usize,
 >(
     cross_table_lookups: Vec<CrossTableLookup<F>>,
-    ctl_zs_lasts: [Vec<F>; NUM_TABLES],
+    ctl_zs_lasts: [Vec<F>; 1],
     ctl_extra_looking_products: Vec<Vec<F>>,
     config: &StarkConfig,
 ) -> Result<()> {
