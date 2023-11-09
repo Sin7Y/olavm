@@ -69,9 +69,6 @@ where
     [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let (traces, public_values) = generate_traces(program, ola_stark, inputs);
-    for (i, trace) in traces.iter().enumerate() {
-        println!("table {i}, rows = {}", trace[0].values.len());
-    }
     prove_with_traces(ola_stark, config, traces, public_values, timing)
 }
 
@@ -102,6 +99,10 @@ where
     let cap_height = config.fri_config.cap_height;
 
     let mut twiddle_map = BTreeMap::new();
+
+    for (i, trace) in trace_poly_values.iter().enumerate() {
+        println!("table {i}, rows = {}", trace[0].values.len());
+    }
 
     // #[cfg(feature = "benchmark")]
     let start = Instant::now();

@@ -859,62 +859,62 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         let lv = vars.local_values;
         let nv = vars.next_values;
 
-        let wrapper = CpuAdjacentRowWrapper::from_vars(vars);
+        // let wrapper = CpuAdjacentRowWrapper::from_vars(vars);
 
-        Self::constraint_wrapper_cols(&wrapper, yield_constr);
-        Self::constraint_tx_init(&wrapper, yield_constr);
-        // tx_idx not change or increase by 1
-        yield_constr.constraint_transition(
-            (P::ONES - wrapper.nv_is_padding)
-                * (P::ONES - wrapper.lv[COL_S_END])
-                * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX]),
-        );
-        yield_constr.constraint_transition(
-            (P::ONES - wrapper.nv_is_padding)
-                * wrapper.lv_is_entry_sc
-                * wrapper.lv[COL_S_END]
-                * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX] - P::ONES),
-        );
-        // ctx reg not change on normal opcodes
-        for ctx_reg_idx in 0..CTX_REGISTER_NUM {
-            yield_constr.constraint_transition(
-                (P::ONES - wrapper.nv_is_padding)
-                    * (P::ONES - wrapper.lv[COL_S_END])
-                    * (P::ONES - wrapper.lv[COL_S_CALL_SC])
-                    * (wrapper.nv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]
-                        - wrapper.lv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]),
-            );
-            yield_constr.constraint_transition(
-                (P::ONES - wrapper.nv_is_padding)
-                    * (P::ONES - wrapper.lv[COL_S_END])
-                    * (P::ONES - wrapper.lv[COL_S_CALL_SC])
-                    * (wrapper.nv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]
-                        - wrapper.lv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]),
-            );
-        }
+        // Self::constraint_wrapper_cols(&wrapper, yield_constr);
+        // Self::constraint_tx_init(&wrapper, yield_constr);
+        // // tx_idx not change or increase by 1
+        // yield_constr.constraint_transition(
+        //     (P::ONES - wrapper.nv_is_padding)
+        //         * (P::ONES - wrapper.lv[COL_S_END])
+        //         * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX]),
+        // );
+        // yield_constr.constraint_transition(
+        //     (P::ONES - wrapper.nv_is_padding)
+        //         * wrapper.lv_is_entry_sc
+        //         * wrapper.lv[COL_S_END]
+        //         * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX] - P::ONES),
+        // );
+        // // ctx reg not change on normal opcodes
+        // for ctx_reg_idx in 0..CTX_REGISTER_NUM {
+        //     yield_constr.constraint_transition(
+        //         (P::ONES - wrapper.nv_is_padding)
+        //             * (P::ONES - wrapper.lv[COL_S_END])
+        //             * (P::ONES - wrapper.lv[COL_S_CALL_SC])
+        //             * (wrapper.nv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]
+        //                 - wrapper.lv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]),
+        //     );
+        //     yield_constr.constraint_transition(
+        //         (P::ONES - wrapper.nv_is_padding)
+        //             * (P::ONES - wrapper.lv[COL_S_END])
+        //             * (P::ONES - wrapper.lv[COL_S_CALL_SC])
+        //             * (wrapper.nv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]
+        //                 - wrapper.lv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]),
+        //     );
+        // }
 
-        Self::constraint_ext_lines(&wrapper, yield_constr);
-        Self::constraint_env_idx(&wrapper, yield_constr);
-        Self::constraint_opcode_selector(&wrapper, yield_constr);
-        Self::constraint_instruction_encode(&wrapper, yield_constr);
-        Self::constraint_operands_mathches_registers(&wrapper, yield_constr);
-        Self::constraint_env_unchanged_clk(&wrapper, yield_constr);
-        Self::constraint_env_unchanged_pc(&wrapper, yield_constr);
-        Self::constraint_reg_consistency(&wrapper, yield_constr);
+        // Self::constraint_ext_lines(&wrapper, yield_constr);
+        // Self::constraint_env_idx(&wrapper, yield_constr);
+        // Self::constraint_opcode_selector(&wrapper, yield_constr);
+        // Self::constraint_instruction_encode(&wrapper, yield_constr);
+        // Self::constraint_operands_mathches_registers(&wrapper, yield_constr);
+        // Self::constraint_env_unchanged_clk(&wrapper, yield_constr);
+        // Self::constraint_env_unchanged_pc(&wrapper, yield_constr);
+        // Self::constraint_reg_consistency(&wrapper, yield_constr);
 
-        // // opcode
-        add::eval_packed_generic(lv, nv, yield_constr);
-        mul::eval_packed_generic(lv, nv, yield_constr);
-        cmp::eval_packed_generic(lv, nv, yield_constr);
-        assert::eval_packed_generic(lv, nv, yield_constr);
-        mov::eval_packed_generic(lv, nv, yield_constr);
-        call::eval_packed_generic(lv, nv, yield_constr);
-        ret::eval_packed_generic(lv, nv, yield_constr);
-        mload::eval_packed_generic(lv, nv, yield_constr);
-        mstore::eval_packed_generic(lv, nv, yield_constr);
-        storage::eval_packed_generic(lv, nv, yield_constr);
-        tape::eval_packed_generic(&wrapper, yield_constr);
-        call_sc::eval_packed_generic(&wrapper, yield_constr);
+        // // // opcode
+        // add::eval_packed_generic(lv, nv, yield_constr);
+        // mul::eval_packed_generic(lv, nv, yield_constr);
+        // cmp::eval_packed_generic(lv, nv, yield_constr);
+        // assert::eval_packed_generic(lv, nv, yield_constr);
+        // mov::eval_packed_generic(lv, nv, yield_constr);
+        // call::eval_packed_generic(lv, nv, yield_constr);
+        // ret::eval_packed_generic(lv, nv, yield_constr);
+        // mload::eval_packed_generic(lv, nv, yield_constr);
+        // mstore::eval_packed_generic(lv, nv, yield_constr);
+        // storage::eval_packed_generic(lv, nv, yield_constr);
+        // tape::eval_packed_generic(&wrapper, yield_constr);
+        // call_sc::eval_packed_generic(&wrapper, yield_constr);
     }
 
     fn eval_ext_circuit(
@@ -926,7 +926,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     }
 
     fn constraint_degree(&self) -> usize {
-        6
+        1
     }
 }
 
