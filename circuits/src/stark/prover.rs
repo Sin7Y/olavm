@@ -69,6 +69,9 @@ where
     [(); SCCallStark::<F, D>::COLUMNS]:,
 {
     let (traces, public_values) = generate_traces(program, ola_stark, inputs);
+    for (i, trace) in traces.iter().enumerate() {
+        println!("table {i}, rows = {}", trace[0].values.len());
+    }
     prove_with_traces(ola_stark, config, traces, public_values, timing)
 }
 
@@ -663,7 +666,7 @@ where
         size,
     );
 
-    println!("fft total time: {:?}", start.elapsed());
+    println!("fft cost time: {:?}", start.elapsed());
 
     // We will step by `P::WIDTH`, and in each iteration, evaluate the quotient
     // polynomial at a batch of `P::WIDTH` points.
