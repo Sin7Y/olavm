@@ -68,7 +68,14 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
         );
     }
 
-    let _ = process.execute(&mut program, &mut Some(prophets), &mut db);
+    let res = process.execute(&mut program, &mut Some(prophets), &mut db);
+    match res {
+        Ok(_) => {}
+        Err(e) => {
+            println!("execute err:{:?}", e);
+            return;
+        }
+    }
 
     let raw_trace_rows = get_trace_rows(program.trace);
     let rows = generate_trace(&raw_trace_rows);
