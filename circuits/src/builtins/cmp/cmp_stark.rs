@@ -155,6 +155,7 @@ mod tests {
             eval_packed_generic,
             Some(error_hook),
             None,
+            None,
         );
     }
 }
