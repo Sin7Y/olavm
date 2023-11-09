@@ -136,7 +136,7 @@ where
         challenger.observe_cap(cap);
     }
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
@@ -146,10 +146,10 @@ where
         &mut challenger,
     );
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     println!("cross_table_lookup_data total time: {:?}", start.elapsed());
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let cpu_proof = prove_single_table(
@@ -163,10 +163,10 @@ where
         &mut twiddle_map,
     )?;
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     println!("prove_cpu_table total time: {:?}", start.elapsed());
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let memory_proof = prove_single_table(
@@ -179,7 +179,11 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_mem_table total time: {:?}", start.elapsed());
 
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
     let bitwise_proof = prove_single_table(
         &ola_stark.bitwise_stark,
         config,
@@ -190,6 +194,12 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_bitwise_table total time: {:?}", start.elapsed());
+
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let cmp_proof = prove_single_table(
         &ola_stark.cmp_stark,
         config,
@@ -200,6 +210,11 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_cmp_table total time: {:?}", start.elapsed());
+
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
     let rangecheck_proof = prove_single_table(
         &ola_stark.rangecheck_stark,
         config,
@@ -210,6 +225,11 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_rc_table total time: {:?}", start.elapsed());
+
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
     let poseidon_proof = prove_single_table(
         &ola_stark.poseidon_stark,
         config,
@@ -220,6 +240,11 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_poseidon_table total time: {:?}", start.elapsed());
+
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
     let poseidon_chunk_proof = prove_single_table(
         &ola_stark.poseidon_chunk_stark,
         config,
@@ -230,6 +255,11 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_poseidon_chunck_table total time: {:?}", start.elapsed());
+
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
     let storage_access_proof = prove_single_table(
         &ola_stark.storage_access_stark,
         config,
@@ -240,6 +270,11 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_storage_table total time: {:?}", start.elapsed());
+
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
     let tape_proof = prove_single_table(
         &ola_stark.tape_stark,
         config,
@@ -250,6 +285,11 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_tape_table total time: {:?}", start.elapsed());
+
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
     let sccall_proof = prove_single_table(
         &ola_stark.sccall_stark,
         config,
@@ -260,6 +300,8 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_sccall_table total time: {:?}", start.elapsed());
 
     let stark_proofs = [
         cpu_proof,
@@ -346,7 +388,10 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("compute_permutation_z_polys total time: {:?}", start.elapsed());
+        println!(
+            "compute_permutation_z_polys total time: {:?}",
+            start.elapsed()
+        );
     }
 
     let num_permutation_zs = permutation_zs.as_ref().map(|v| v.len()).unwrap_or(0);
@@ -378,7 +423,10 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("permutation_ctl_zs_commitment total time: {:?}", start.elapsed());
+        println!(
+            "permutation_ctl_zs_commitment total time: {:?}",
+            start.elapsed()
+        );
     }
 
     let permutation_ctl_zs_cap = permutation_ctl_zs_commitment.merkle_tree.cap.clone();
@@ -452,7 +500,10 @@ where
     );
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("compute quotient commitment total time: {:?}", start.elapsed());
+        println!(
+            "compute quotient commitment total time: {:?}",
+            start.elapsed()
+        );
     }
 
     let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();

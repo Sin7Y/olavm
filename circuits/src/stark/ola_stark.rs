@@ -617,7 +617,7 @@ mod tests {
 
     #[test]
     fn fibo_loop_test() {
-        let calldata = [10u64, 1u64, 2u64, 4185064725u64]
+        let calldata = [47u64, 300u64, 2u64, 4185064725u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
@@ -661,7 +661,7 @@ mod tests {
 
     #[test]
     fn test_ola_prophet_sqrt() {
-        let calldata = [144u64, 10u64, 2u64, 3509365327u64]
+        let calldata = [1073741824u64, 7000u64, 2u64, 3509365327u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
@@ -804,6 +804,8 @@ mod tests {
         let mut ola_stark = OlaStark::default();
         let (traces, public_values) = generate_traces(&program, &mut ola_stark, inputs);
         let config = StarkConfig::standard_fast_config();
+        // #[cfg(feature = "benchmark")]
+        let start = Instant::now();
         let proof = prove_with_traces::<F, C, D>(
             &ola_stark,
             &config,
@@ -811,6 +813,8 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         );
+        // #[cfg(feature = "benchmark")]
+        println!("prove_ total time: {:?}", start.elapsed());
 
         if let Ok(proof) = proof {
             let ola_stark = OlaStark::default();
