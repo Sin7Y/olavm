@@ -411,6 +411,22 @@ fn printf_test() {
 }
 
 #[test]
+fn book_test() {
+    let call_data = [60, 5, 111, 108, 97, 118, 109, 7, 120553111];
+
+    let calldata = call_data
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/books.json",
+        "books_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
 fn gen_storage_table_test() {
     let mut program: Program = Program {
         instructions: Vec::new(),
