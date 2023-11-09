@@ -12,11 +12,12 @@ use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::Program;
 use core::trace::trace::Trace;
-use core::types::{Field, GoldilocksField};
 use core::vm::transaction::init_tx_context;
 use core::vm::vm_state::Address;
 use executor::load_tx::init_tape;
 use executor::Process;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::Field;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::collections::{BTreeMap, HashMap};
@@ -50,8 +51,8 @@ fn main() {
             Command::new("run")
                 .about("Run an program from an input code file")
                 .args(&[
-                    arg!(-i --input <INPUT> "Must set a input file for OlaVM executing"),
-                    arg!(-a --args <INPUT> "Must set a input file for OlaVM executing"),
+                    arg!(-i --input <INPUT> "Must set a binary file for OlaVM executing"),
+                    arg!(-a --args <INPUT> "Must set a input args file for OlaVM executing"),
                     arg!(-o --output <OUTPUT> "Must set a output file for OlaVM executing"),
                 ])
                 .arg_required_else_help(true),
@@ -87,29 +88,19 @@ fn main() {
         Some(("run", sub_matches)) => {
             let path = sub_matches.get_one::<String>("input").expect("required");
             println!("Input program file path: {}", path);
+            let file = File::open(&path).unwrap();
+            let reader = BufReader::new(file);
+            let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
 
-            let args_path = sub_matches.get_one::<String>("args").expect("required");
-            println!("Args file path: {}", args_path);
-            let args_file = File::open(&args_path).unwrap();
-            let args_reader = BufReader::new(args_file);
-            let mut args = Vec::new();
-            for line_result in args_reader.lines() {
-                let line = line_result.unwrap();
-                let number = line.trim().parse::<u64>().unwrap();
-                args.push(number);
-            }
-            if args.len() < 2 {
-                panic!("args length must larger than 2");
-            }
-            let first_two_inv: Vec<u64> = vec![args[1], args[0]];
-            let rest: Vec<u64> = args.iter().skip(2).cloned().collect();
-            let combined: Vec<u64> = [rest.as_slice(), first_two_inv.as_slice()].concat();
-            let calldata: Vec<GoldilocksField> = combined
-                .iter()
-                .map(|v| GoldilocksField::from_canonical_u64(*v))
+            let arg_path = sub_matches.get_one::<String>("args").expect("required");
+            let file = File::open(&arg_path).unwrap();
+            let reader = BufReader::new(file);
+            let mut calldata: Vec<_> = reader
+                .lines()
+                .into_iter()
+                .map(|e| GoldilocksField::from_canonical_u64(e.unwrap().parse::<u64>().unwrap()))
                 .collect();
 
-            let program = encode_asm_from_json_file(path.clone()).unwrap();
             let instructions = program.bytecode.split("\n");
             let mut prophets = HashMap::new();
             for item in program.prophets {
@@ -125,16 +116,44 @@ fn main() {
             for inst in instructions {
                 program.instructions.push(inst.to_string());
             }
+
             let now = Instant::now();
             let mut process = Process::new();
-            process.addr_storage = Address::default();
-            process.tp = GoldilocksField::ZERO;
+            let mut args: Vec<_> = calldata.drain(2..).collect();
+            calldata.reverse();
+            args.extend(calldata);
+            if args.len() < 2 {
+                panic!("args length must larger than 2");
+            }
+
+            let tp_start = 0;
+            process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
+
+            //todo: address info need contain in tx!
+            let callee: Address = [
+                GoldilocksField::from_canonical_u64(9),
+                GoldilocksField::from_canonical_u64(10),
+                GoldilocksField::from_canonical_u64(11),
+                GoldilocksField::from_canonical_u64(12),
+            ];
+            let caller_addr = [
+                GoldilocksField::from_canonical_u64(17),
+                GoldilocksField::from_canonical_u64(18),
+                GoldilocksField::from_canonical_u64(19),
+                GoldilocksField::from_canonical_u64(20),
+            ];
+            let callee_exe_addr = [
+                GoldilocksField::from_canonical_u64(13),
+                GoldilocksField::from_canonical_u64(14),
+                GoldilocksField::from_canonical_u64(15),
+                GoldilocksField::from_canonical_u64(16),
+            ];
             init_tape(
                 &mut process,
-                calldata,
-                Address::default(),
-                Address::default(),
-                Address::default(),
+                args,
+                caller_addr,
+                callee,
+                callee_exe_addr,
                 &init_tx_context(),
             );
 
