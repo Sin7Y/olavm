@@ -946,19 +946,19 @@ mod tests {
     #[test]
     fn test_cpu_fibo_loop() {
         let file_name = "fibo_loop.json".to_string();
-        test_cpu_with_asm_file_name(file_name, None);
+        test_cpu_with_asm_file_name(file_name, None, None);
     }
 
     #[test]
     fn test_memory() {
         let program_path = "memory.json";
-        test_cpu_with_asm_file_name(program_path.to_string(), None);
+        test_cpu_with_asm_file_name(program_path.to_string(), None, None);
     }
 
     #[test]
     fn test_call() {
         let program_path = "call.json";
-        test_cpu_with_asm_file_name(program_path.to_string(), None);
+        test_cpu_with_asm_file_name(program_path.to_string(), None, None);
     }
 
     // #[test]
@@ -974,7 +974,7 @@ mod tests {
             GoldilocksField::from_canonical_u64(1239976900),
         ];
         let program_path = "poseidon_hash.json";
-        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data));
+        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data), None);
     }
 
     #[test]
@@ -984,23 +984,48 @@ mod tests {
             GoldilocksField::from_canonical_u64(2364819430),
         ];
         let program_path = "storage_u32.json";
-        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data));
+        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data), None);
     }
 
     #[test]
     fn test_malloc() {
         let program_path = "malloc.json";
-        test_cpu_with_asm_file_name(program_path.to_string(), None);
+        test_cpu_with_asm_file_name(program_path.to_string(), None, None);
     }
 
-    // #[test]
-    // fn test_vote() {
-    //     let program_path = "vote.json";
-    //     test_cpu_with_asm_file_name(program_path.to_string(), None);
-    // }
+    #[test]
+    fn test_ola_vote() {
+        let db_name = "vote_test".to_string();
+
+        let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        let vote_calldata = [2u64, 1u64, 2791810083u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        let winning_proposal_calldata = [0u64, 3186728800u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        let winning_name_calldata = [0u64, 363199787u64]
+            .iter()
+            .map(|v| GoldilocksField::from_canonical_u64(*v))
+            .collect_vec();
+        test_cpu_with_asm_file_name(
+            "vote.json".to_string(),
+            Some(winning_proposal_calldata),
+            Some(db_name),
+        );
+    }
 
     #[allow(unused)]
-    fn test_cpu_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
+    fn test_cpu_with_asm_file_name(
+        file_name: String,
+        call_data: Option<Vec<GoldilocksField>>,
+        db_name: Option<String>,
+    ) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("../assembler/test_data/asm/");
         path.push(file_name);
@@ -1042,6 +1067,7 @@ mod tests {
             eval_packed_generic,
             Some(error_hook),
             call_data,
+            db_name,
         );
     }
 }

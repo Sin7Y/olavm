@@ -223,6 +223,7 @@ mod tests {
             eval_packed_generic,
             Some(error_hook),
             call_data,
+            None,
         );
     }
 }

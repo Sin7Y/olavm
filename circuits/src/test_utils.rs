@@ -1,5 +1,6 @@
 use core::{program::Program, trace::trace::Trace, types::account::Address};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use assembler::encoder::encode_asm_from_json_file;
 use executor::{load_tx::init_tape, Process};
@@ -17,6 +18,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     eval_packed_generic: E,
     error_hook: Option<H>,
     call_data: Option<Vec<GoldilocksField>>,
+    db_name: Option<String>,
 ) where
     E: Fn(
         StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_NUM>,
@@ -24,6 +26,16 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     ) -> (),
     H: Fn(usize, StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_NUM>) -> (),
 {
+    let mut db = match db_name {
+        Some(name) => {
+            let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            db_path.push("../db_test/");
+            db_path.push(name);
+            AccountTree::new_db_test(db_path.display().to_string())
+        }
+        _ => AccountTree::new_test(),
+    };
+
     let program = encode_asm_from_json_file(path).unwrap();
     let instructions = program.bytecode.split("\n");
     let mut prophets = HashMap::new();
@@ -46,14 +58,17 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
 
     if let Some(calldata) = call_data {
         process.tp = GoldilocksField::ZERO;
-        init_tape(&mut process, calldata, Address::default(), Address::default(), Address::default(), &init_tx_context());
+        init_tape(
+            &mut process,
+            calldata,
+            Address::default(),
+            Address::default(),
+            Address::default(),
+            &init_tx_context(),
+        );
     }
 
-    let _ = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
-    );
+    let _ = process.execute(&mut program, &mut Some(prophets), &mut db);
 
     let raw_trace_rows = get_trace_rows(program.trace);
     let rows = generate_trace(&raw_trace_rows);
