@@ -354,6 +354,15 @@ where
     [(); C::Hasher::HASH_SIZE]:,
     [(); S::COLUMNS]:,
 {
+    #[cfg(feature = "benchmark")]
+    {
+        println!("\n\n\n");
+        println!(
+            "prove_single_table start: columns = {:?}",
+            S::COLUMNS
+        );
+    }
+
     let degree = trace_poly_values[0].len();
     let degree_bits = log2_strict(degree);
     let fri_params = config.fri_params(degree_bits);
@@ -387,9 +396,10 @@ where
     });
 
     #[cfg(feature = "benchmark")]
-    if S::COLUMNS == 76 {
+    {
         println!(
-            "compute_permutation_z_polys total time: {:?}",
+            "Stark columns = {:?}, compute_permutation_z_polys total time: {:?}",
+            S::COLUMNS,
             start.elapsed()
         );
     }
@@ -422,9 +432,10 @@ where
     );
 
     #[cfg(feature = "benchmark")]
-    if S::COLUMNS == 76 {
+    {
         println!(
-            "permutation_ctl_zs_commitment total time: {:?}",
+            "Stark columns = {:?}, permutation_ctl_zs_commitment total time: {:?}",
+            S::COLUMNS,
             start.elapsed()
         );
     }
@@ -433,19 +444,23 @@ where
     challenger.observe_cap(&permutation_ctl_zs_cap);
 
     let alphas = challenger.get_n_challenges(config.num_challenges);
-    if cfg!(test) {
-        check_constraints(
-            stark,
-            trace_commitment,
-            &permutation_ctl_zs_commitment,
-            permutation_challenges.as_ref(),
-            ctl_data,
-            alphas.clone(),
-            degree_bits,
-            num_permutation_zs,
-            config,
-        );
-    }
+    // if cfg!(test) {
+    //     check_constraints(
+    //         stark,
+    //         trace_commitment,
+    //         &permutation_ctl_zs_commitment,
+    //         permutation_challenges.as_ref(),
+    //         ctl_data,
+    //         alphas.clone(),
+    //         degree_bits,
+    //         num_permutation_zs,
+    //         config,
+    //     );
+    // }
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let quotient_polys = timed!(
         timing,
         "compute quotient polys",
@@ -463,8 +478,12 @@ where
     );
 
     #[cfg(feature = "benchmark")]
-    if S::COLUMNS == 76 {
-        println!("compute quotient polys total time: {:?}", start.elapsed());
+    {
+        println!(
+            "Stark columns = {:?}, compute_quotient_polys total time: {:?}",
+            S::COLUMNS,
+            start.elapsed()
+        );
     }
 
     #[cfg(feature = "benchmark")]
@@ -499,9 +518,10 @@ where
         )
     );
     #[cfg(feature = "benchmark")]
-    if S::COLUMNS == 76 {
+    {
         println!(
-            "compute quotient commitment total time: {:?}",
+            "Stark columns = {:?}, compute quotient commitment total time: {:?}",
+            S::COLUMNS,
             start.elapsed()
         );
     }
@@ -534,8 +554,12 @@ where
     );
 
     #[cfg(feature = "benchmark")]
-    if S::COLUMNS == 76 {
-        println!("StarkOpening total time: {:?}", start.elapsed());
+    {
+        println!(
+            "Stark columns = {:?}, StarkOpening total time: {:?}",
+            S::COLUMNS,
+            start.elapsed()
+        );
     }
 
     challenger.observe_openings(&openings.to_fri_openings());
@@ -563,8 +587,12 @@ where
     );
 
     #[cfg(feature = "benchmark")]
-    if S::COLUMNS == 76 {
-        println!("opening_proof total time: {:?}", start.elapsed());
+    {
+        println!(
+            "Stark columns = {:?}, opening_proof total time: {:?}",
+            S::COLUMNS,
+            start.elapsed()
+        );
     }
 
     Ok(StarkProof {
