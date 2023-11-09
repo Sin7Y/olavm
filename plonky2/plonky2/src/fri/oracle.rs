@@ -1,5 +1,6 @@
 use std::borrow::BorrowMut;
 use std::collections::BTreeMap;
+use std::time::Instant;
 
 use itertools::Itertools;
 use maybe_rayon::*;
@@ -53,11 +54,13 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     where
         [(); C::Hasher::HASH_SIZE]:,
     {
+        let start = Instant::now();
         let coeffs = timed!(
             timing,
             "IFFT",
             values.into_par_iter().map(|v| v.ifft()).collect::<Vec<_>>()
         );
+        println!("ifft total time {:?}", start.elapsed());
 
         Self::from_coeffs(coeffs, rate_bits, blinding, cap_height, timing, twiddle_map)
     }
@@ -74,6 +77,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
     where
         [(); C::Hasher::HASH_SIZE]:,
     {
+        let start = Instant::now();
+        
         let degree = polynomials[0].len();
         let lde_values = timed!(
             timing,
@@ -81,13 +86,20 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
             Self::lde_values(&polynomials, rate_bits, blinding, twiddle_map)
         );
 
+        println!("fft offset total time {:?}", start.elapsed());
+
         let mut leaves = timed!(timing, "transpose LDEs", transpose(&lde_values));
         reverse_index_bits_in_place(&mut leaves);
+
+        let start = Instant::now();
+
         let merkle_tree = timed!(
             timing,
             "build Merkle tree",
             MerkleTree::new_v2(leaves, cap_height)
         );
+
+        println!("hash total time {:?}", start.elapsed());
 
         Self {
             polynomials,
@@ -218,11 +230,14 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         final_poly.coeffs.insert(0, F::Extension::ZERO);
 
         let lde_final_poly = final_poly.lde(fri_params.config.rate_bits);
+
+        let start = Instant::now();
         let lde_final_values = timed!(
             timing,
             &format!("perform final FFT {}", lde_final_poly.coeffs.len()),
             lde_final_poly.coset_fft(F::coset_shift().into(), None)
         );
+        println!("fft total time {:?}", start.elapsed());
 
         let fri_proof = fri_proof::<F, C, D>(
             &oracles

@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::time::Instant;
 
 use itertools::Itertools;
 use maybe_rayon::*;
@@ -88,12 +89,17 @@ where
         let arity = 1 << arity_bits;
 
         reverse_index_bits_in_place(&mut values.values);
+
+        let start = Instant::now();
+
         let chunked_values = values
             .values
             .par_chunks(arity)
             .map(|chunk: &[F::Extension]| flatten(chunk))
             .collect();
         let tree = MerkleTree::<F, C::Hasher>::new_v2(chunked_values, fri_params.config.cap_height);
+
+        println!("hash cost time {:?}", start.elapsed());
 
         challenger.observe_cap(&tree.cap);
         trees.push(tree);
@@ -108,7 +114,12 @@ where
                 .collect::<Vec<_>>(),
         );
         shift = shift.exp_u64(arity as u64);
-        values = coeffs.coset_fft(shift.into(), None)
+
+        let start = Instant::now();
+        
+        values = coeffs.coset_fft(shift.into(), None);
+
+        println!("hash cost time {:?}", start.elapsed());
     }
 
     // The coefficients being removed here should always be zero.

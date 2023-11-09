@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 use alloc::{format, vec};
 use core::cmp::min;
 use core::mem::swap;
+use std::time::Instant;
 
 use anyhow::{ensure, Result};
 use hashbrown::HashMap;
@@ -799,9 +800,15 @@ fn compute_quotient_polys<
         })
         .collect();
 
-    transpose(&quotient_values)
+    let start = Instant::now();
+
+    let res = transpose(&quotient_values)
         .into_par_iter()
         .map(PolynomialValues::new)
         .map(|values| values.coset_ifft(F::coset_shift()))
-        .collect()
+        .collect();
+
+    println!("ifft offset total time: {:?}", start.elapsed());
+
+    res
 }

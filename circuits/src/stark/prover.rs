@@ -486,7 +486,7 @@ where
         );
     }
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let all_quotient_chunks = timed!(
@@ -637,6 +637,7 @@ where
     // `next_step` steps away.
     let next_step = 1 << quotient_degree_bits;
 
+    let start = Instant::now();
     // Evaluation of the first Lagrange polynomial on the LDE domain.
     let lagrange_first = PolynomialValues::selector(degree, 0).lde_onto_coset(quotient_degree_bits);
     // Evaluation of the last Lagrange polynomial on the LDE domain.
@@ -661,6 +662,8 @@ where
         F::coset_shift(),
         size,
     );
+
+    println!("fft total time: {:?}", start.elapsed());
 
     // We will step by `P::WIDTH`, and in each iteration, evaluate the quotient
     // polynomial at a batch of `P::WIDTH` points.
@@ -735,11 +738,17 @@ where
         })
         .collect::<Vec<_>>();
 
-    transpose(&quotient_values)
+    let start = Instant::now();
+    
+    let res = transpose(&quotient_values)
         .into_par_iter()
         .map(PolynomialValues::new)
         .map(|values| values.coset_ifft(F::coset_shift()))
-        .collect()
+        .collect();
+
+    println!("ifft offset total time {:?}", start.elapsed());
+
+    res
 }
 
 /// Check that all constraints evaluate to zero on `H`.
