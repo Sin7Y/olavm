@@ -178,6 +178,22 @@ mod tests {
     fn generate_printf() {
         generate_from_file("printf.json".to_string(), "printf.json".to_string());
     }
+
+    #[test]
+    fn generate_books_test() {
+        generate_from_file(
+            "books.json".to_string(),
+            "books.json".to_string(),
+        );
+    }
+
+    #[test]
+    fn sqrt_prophet_asm_test() {
+        generate_from_file(
+            "sqrt_prophet_asm.json".to_string(),
+            "sqrt_prophet_asm.json".to_string(),
+        );
+    }
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin");
         let input_path = format!("test_data/asm/{}", input_file_name);
