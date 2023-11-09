@@ -100,7 +100,7 @@ where
 
     let mut twiddle_map = BTreeMap::new();
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let trace_commitments = timed!(
@@ -124,7 +124,7 @@ where
             .collect::<Vec<_>>()
     );
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     println!("trace_commitments total time: {:?}", start.elapsed());
 
     let trace_caps = trace_commitments
@@ -354,7 +354,7 @@ where
     [(); C::Hasher::HASH_SIZE]:,
     [(); S::COLUMNS]:,
 {
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     {
         println!("\n\n\n");
         println!(
@@ -384,7 +384,7 @@ where
         )
     });
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let permutation_zs = permutation_challenges.as_ref().map(|challenges| {
@@ -395,7 +395,7 @@ where
         )
     });
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     {
         println!(
             "Stark columns = {:?}, compute_permutation_z_polys total time: {:?}",
@@ -415,7 +415,7 @@ where
     };
     assert!(!z_polys.is_empty(), "No CTL?");
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let permutation_ctl_zs_commitment = timed!(
@@ -431,7 +431,7 @@ where
         )
     );
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     {
         println!(
             "Stark columns = {:?}, permutation_ctl_zs_commitment total time: {:?}",
@@ -458,7 +458,7 @@ where
     //     );
     // }
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let quotient_polys = timed!(
@@ -477,7 +477,7 @@ where
         )
     );
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     {
         println!(
             "Stark columns = {:?}, compute_quotient_polys total time: {:?}",
@@ -517,7 +517,7 @@ where
             twiddle_map,
         )
     );
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     {
         println!(
             "Stark columns = {:?}, compute quotient commitment total time: {:?}",
@@ -540,7 +540,7 @@ where
         "Opening point is in the subgroup."
     );
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let openings = StarkOpeningSet::new(
@@ -553,7 +553,7 @@ where
         stark.num_permutation_batches(config),
     );
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     {
         println!(
             "Stark columns = {:?}, StarkOpening total time: {:?}",
@@ -570,7 +570,7 @@ where
         &quotient_commitment,
     ];
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     let start = Instant::now();
 
     let opening_proof = timed!(
@@ -586,7 +586,7 @@ where
         )
     );
 
-    #[cfg(feature = "benchmark")]
+    // #[cfg(feature = "benchmark")]
     {
         println!(
             "Stark columns = {:?}, opening_proof total time: {:?}",
