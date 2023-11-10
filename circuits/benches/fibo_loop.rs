@@ -15,14 +15,14 @@ use executor::load_tx::init_tape;
 use executor::Process;
 use itertools::Itertools;
 use log::{debug, error, info, logger, LevelFilter};
-use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig, Blake3GoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 const D: usize = 2;
-type C = PoseidonGoldilocksConfig;
+type C = Blake3GoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
 
 pub fn test_by_asm_json(path: String) {
