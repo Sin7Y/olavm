@@ -170,154 +170,154 @@ where
     // #[cfg(feature = "benchmark")]
     println!("prove_cpu_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
 
-    // let memory_proof = prove_single_table(
-    //     &ola_stark.memory_stark,
-    //     config,
-    //     &trace_poly_values[Table::Memory as usize],
-    //     &trace_commitments[Table::Memory as usize],
-    //     &ctl_data_per_table[Table::Memory as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_mem_table total time: {:?}", start.elapsed());
+    let memory_proof = prove_single_table(
+        &ola_stark.memory_stark,
+        config,
+        &trace_poly_values[Table::Memory as usize],
+        &trace_commitments[Table::Memory as usize],
+        &ctl_data_per_table[Table::Memory as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_mem_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
-    // let bitwise_proof = prove_single_table(
-    //     &ola_stark.bitwise_stark,
-    //     config,
-    //     &trace_poly_values[Table::Bitwise as usize],
-    //     &trace_commitments[Table::Bitwise as usize],
-    //     &ctl_data_per_table[Table::Bitwise as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_bitwise_table total time: {:?}", start.elapsed());
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+    let bitwise_proof = prove_single_table(
+        &ola_stark.bitwise_stark,
+        config,
+        &trace_poly_values[Table::Bitwise as usize],
+        &trace_commitments[Table::Bitwise as usize],
+        &ctl_data_per_table[Table::Bitwise as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_bitwise_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
 
-    // let cmp_proof = prove_single_table(
-    //     &ola_stark.cmp_stark,
-    //     config,
-    //     &trace_poly_values[Table::Cmp as usize],
-    //     &trace_commitments[Table::Cmp as usize],
-    //     &ctl_data_per_table[Table::Cmp as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_cmp_table total time: {:?}", start.elapsed());
+    let cmp_proof = prove_single_table(
+        &ola_stark.cmp_stark,
+        config,
+        &trace_poly_values[Table::Cmp as usize],
+        &trace_commitments[Table::Cmp as usize],
+        &ctl_data_per_table[Table::Cmp as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_cmp_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
-    // let rangecheck_proof = prove_single_table(
-    //     &ola_stark.rangecheck_stark,
-    //     config,
-    //     &trace_poly_values[Table::RangeCheck as usize],
-    //     &trace_commitments[Table::RangeCheck as usize],
-    //     &ctl_data_per_table[Table::RangeCheck as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_rc_table total time: {:?}", start.elapsed());
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+    let rangecheck_proof = prove_single_table(
+        &ola_stark.rangecheck_stark,
+        config,
+        &trace_poly_values[Table::RangeCheck as usize],
+        &trace_commitments[Table::RangeCheck as usize],
+        &ctl_data_per_table[Table::RangeCheck as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_rc_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
-    // let poseidon_proof = prove_single_table(
-    //     &ola_stark.poseidon_stark,
-    //     config,
-    //     &trace_poly_values[Table::Poseidon as usize],
-    //     &trace_commitments[Table::Poseidon as usize],
-    //     &ctl_data_per_table[Table::Poseidon as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_poseidon_table total time: {:?}", start.elapsed());
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+    let poseidon_proof = prove_single_table(
+        &ola_stark.poseidon_stark,
+        config,
+        &trace_poly_values[Table::Poseidon as usize],
+        &trace_commitments[Table::Poseidon as usize],
+        &ctl_data_per_table[Table::Poseidon as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_poseidon_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
-    // let poseidon_chunk_proof = prove_single_table(
-    //     &ola_stark.poseidon_chunk_stark,
-    //     config,
-    //     &trace_poly_values[Table::PoseidonChunk as usize],
-    //     &trace_commitments[Table::PoseidonChunk as usize],
-    //     &ctl_data_per_table[Table::PoseidonChunk as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_poseidon_chunck_table total time: {:?}", start.elapsed());
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+    let poseidon_chunk_proof = prove_single_table(
+        &ola_stark.poseidon_chunk_stark,
+        config,
+        &trace_poly_values[Table::PoseidonChunk as usize],
+        &trace_commitments[Table::PoseidonChunk as usize],
+        &ctl_data_per_table[Table::PoseidonChunk as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_poseidon_chunck_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
-    // let storage_access_proof = prove_single_table(
-    //     &ola_stark.storage_access_stark,
-    //     config,
-    //     &trace_poly_values[Table::StorageAccess as usize],
-    //     &trace_commitments[Table::StorageAccess as usize],
-    //     &ctl_data_per_table[Table::StorageAccess as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_storage_table total time: {:?}", start.elapsed());
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+    let storage_access_proof = prove_single_table(
+        &ola_stark.storage_access_stark,
+        config,
+        &trace_poly_values[Table::StorageAccess as usize],
+        &trace_commitments[Table::StorageAccess as usize],
+        &ctl_data_per_table[Table::StorageAccess as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_storage_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
-    // let tape_proof = prove_single_table(
-    //     &ola_stark.tape_stark,
-    //     config,
-    //     &trace_poly_values[Table::Tape as usize],
-    //     &trace_commitments[Table::Tape as usize],
-    //     &ctl_data_per_table[Table::Tape as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_tape_table total time: {:?}", start.elapsed());
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+    let tape_proof = prove_single_table(
+        &ola_stark.tape_stark,
+        config,
+        &trace_poly_values[Table::Tape as usize],
+        &trace_commitments[Table::Tape as usize],
+        &ctl_data_per_table[Table::Tape as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_tape_table total time: {:?}", start.elapsed());
 
-    // // #[cfg(feature = "benchmark")]
-    // let start = Instant::now();
-    // let sccall_proof = prove_single_table(
-    //     &ola_stark.sccall_stark,
-    //     config,
-    //     &trace_poly_values[Table::SCCall as usize],
-    //     &trace_commitments[Table::SCCall as usize],
-    //     &ctl_data_per_table[Table::SCCall as usize],
-    //     &mut challenger,
-    //     timing,
-    //     &mut twiddle_map,
-    // )?;
-    // // #[cfg(feature = "benchmark")]
-    // println!("prove_sccall_table total time: {:?}", start.elapsed());
+    // #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+    let sccall_proof = prove_single_table(
+        &ola_stark.sccall_stark,
+        config,
+        &trace_poly_values[Table::SCCall as usize],
+        &trace_commitments[Table::SCCall as usize],
+        &ctl_data_per_table[Table::SCCall as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    // #[cfg(feature = "benchmark")]
+    println!("prove_sccall_table total time: {:?}", start.elapsed());
 
     let stark_proofs = [
         cpu_proof,
-        // memory_proof,
-        // bitwise_proof,
-        // cmp_proof,
-        // rangecheck_proof,
-        // poseidon_proof,
-        // poseidon_chunk_proof,
-        // storage_access_proof,
-        // tape_proof,
-        // sccall_proof,
+        memory_proof,
+        bitwise_proof,
+        cmp_proof,
+        rangecheck_proof,
+        poseidon_proof,
+        poseidon_chunk_proof,
+        storage_access_proof,
+        tape_proof,
+        sccall_proof,
     ];
 
     let compress_challenges = [
