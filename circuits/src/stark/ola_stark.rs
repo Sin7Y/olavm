@@ -804,7 +804,7 @@ mod tests {
         let mut ola_stark = OlaStark::default();
         let (traces, public_values) = generate_traces(&program, &mut ola_stark, inputs);
         let config = StarkConfig::standard_fast_config();
-        // #[cfg(feature = "benchmark")]
+        #[cfg(feature = "benchmark")]
         let start = Instant::now();
         let proof = prove_with_traces::<F, C, D>(
             &ola_stark,
@@ -813,7 +813,7 @@ mod tests {
             public_values,
             &mut TimingTree::default(),
         );
-        // #[cfg(feature = "benchmark")]
+        #[cfg(feature = "benchmark")]
         println!("prove_ total time: {:?}", start.elapsed());
 
         if let Ok(proof) = proof {

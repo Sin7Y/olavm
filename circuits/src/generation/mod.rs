@@ -2,6 +2,7 @@
 
 use core::program::Program;
 use std::collections::HashMap;
+use std::time::Instant;
 
 use eth_trie_utils::partial_trie::HashedPartialTrie;
 use ethereum_types::{Address, H256};
@@ -74,8 +75,21 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     ola_stark: &mut OlaStark<F, D>,
     inputs: GenerationInputs,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+
     let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
+
+    #[cfg(feature = "benchmark")]
+    println!("generate cpu trace cost time {:?}", start.elapsed());
+
+    #[cfg(feature = "benchmark")]
+    let start = Instant::now();
+    
     let cpu_trace = trace_to_poly_values(cpu_rows);
+
+    #[cfg(feature = "benchmark")]
+    println!("generate cpu trace cost time {:?}", start.elapsed());
 
     let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
     let memory_trace = trace_to_poly_values(memory_rows);
