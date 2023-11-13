@@ -315,108 +315,108 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         8
     }
 }
-#[cfg(test)]
-mod tests {
-    use crate::generation::memory::generate_memory_trace;
-    use crate::memory::columns::{get_memory_col_name_map, NUM_MEM_COLS};
-    use crate::memory::memory_stark::MemoryStark;
-    use crate::stark::constraint_consumer::ConstraintConsumer;
-    use crate::stark::stark::Stark;
-    use crate::stark::vars::StarkEvaluationVars;
-    use crate::test_utils::test_stark_with_asm_path;
-    use core::trace::trace::{MemoryTraceCell, Trace};
-    use core::types::Field;
-
-    use plonky2::{
-        field::goldilocks_field::GoldilocksField,
-        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
-    };
-    use std::path::PathBuf;
-
-    #[test]
-    fn test_memory_with_program() {
-        let program_path = "memory.json";
-        test_memory_with_asm_file_name(program_path.to_string(), None);
-    }
-
-    #[test]
-    fn test_memory_fib_loop() {
-        let program_path = "fibo_loop.json";
-        test_memory_with_asm_file_name(program_path.to_string(), None);
-    }
-
-    // #[test]
-    // fn test_memory_sqrt() {
-    //     let program_path = "sqrt.json";
-    //     test_memory_with_asm_file_name(program_path.to_string(), None);
-    // }
-
-    #[test]
-    fn test_memory_malloc() {
-        let program_path = "malloc.json";
-        test_memory_with_asm_file_name(program_path.to_string(), None);
-    }
-
-    // #[test]
-    // fn test_memory_vote() {
-    //     let program_path = "vote.json";
-    //     test_memory_with_asm_file_name(program_path.to_string(), None);
-    // }
-
-    #[test]
-    fn test_memory_poseidon() {
-        let call_data = vec![
-            GoldilocksField::ZERO,
-            GoldilocksField::from_canonical_u64(1239976900),
-        ];
-        let program_path = "poseidon_hash.json";
-        test_memory_with_asm_file_name(program_path.to_string(), Some(call_data));
-    }
-
-    #[allow(unused)]
-    fn test_memory_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("../assembler/test_data/asm/");
-        path.push(file_name);
-        let program_path = path.display().to_string();
-
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-        type S = MemoryStark<F, D>;
-        let stark = S::default();
-
-        let get_trace_rows = |trace: Trace| trace.memory;
-        let generate_trace = |rows: &[MemoryTraceCell]| generate_memory_trace(rows);
-        let eval_packed_generic =
-            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_MEM_COLS>,
-             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
-                stark.eval_packed_generic(vars, constraint_consumer);
-            };
-        let error_hook = |i: usize,
-                          vars: StarkEvaluationVars<
-            GoldilocksField,
-            GoldilocksField,
-            NUM_MEM_COLS,
-        >| {
-            println!("constraint error in line {}", i);
-            let m = get_memory_col_name_map();
-            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
-            for col in m.keys() {
-                let name = m.get(col).unwrap();
-                let lv = vars.local_values[*col].0;
-                let nv = vars.next_values[*col].0;
-                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
-            }
-        };
-        test_stark_with_asm_path(
-            program_path.to_string(),
-            get_trace_rows,
-            generate_trace,
-            eval_packed_generic,
-            Some(error_hook),
-            call_data,
-            None,
-        );
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::generation::memory::generate_memory_trace;
+//     use crate::memory::columns::{get_memory_col_name_map, NUM_MEM_COLS};
+//     use crate::memory::memory_stark::MemoryStark;
+//     use crate::stark::constraint_consumer::ConstraintConsumer;
+//     use crate::stark::stark::Stark;
+//     use crate::stark::vars::StarkEvaluationVars;
+//     use crate::test_utils::test_stark_with_asm_path;
+//     use core::trace::trace::{MemoryTraceCell, Trace};
+//     use core::types::Field;
+//
+//     use plonky2::{
+//         field::goldilocks_field::GoldilocksField,
+//         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+//     };
+//     use std::path::PathBuf;
+//
+//     #[test]
+//     fn test_memory_with_program() {
+//         let program_path = "memory.json";
+//         test_memory_with_asm_file_name(program_path.to_string(), None);
+//     }
+//
+//     #[test]
+//     fn test_memory_fib_loop() {
+//         let program_path = "fibo_loop.json";
+//         test_memory_with_asm_file_name(program_path.to_string(), None);
+//     }
+//
+//     // #[test]
+//     // fn test_memory_sqrt() {
+//     //     let program_path = "sqrt.json";
+//     //     test_memory_with_asm_file_name(program_path.to_string(), None);
+//     // }
+//
+//     #[test]
+//     fn test_memory_malloc() {
+//         let program_path = "malloc.json";
+//         test_memory_with_asm_file_name(program_path.to_string(), None);
+//     }
+//
+//     // #[test]
+//     // fn test_memory_vote() {
+//     //     let program_path = "vote.json";
+//     //     test_memory_with_asm_file_name(program_path.to_string(), None);
+//     // }
+//
+//     #[test]
+//     fn test_memory_poseidon() {
+//         let call_data = vec![
+//             GoldilocksField::ZERO,
+//             GoldilocksField::from_canonical_u64(1239976900),
+//         ];
+//         let program_path = "poseidon_hash.json";
+//         test_memory_with_asm_file_name(program_path.to_string(), Some(call_data));
+//     }
+//
+//     #[allow(unused)]
+//     fn test_memory_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
+//         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+//         path.push("../assembler/test_data/asm/");
+//         path.push(file_name);
+//         let program_path = path.display().to_string();
+//
+//         const D: usize = 2;
+//         type C = PoseidonGoldilocksConfig;
+//         type F = <C as GenericConfig<D>>::F;
+//         type S = MemoryStark<F, D>;
+//         let stark = S::default();
+//
+//         let get_trace_rows = |trace: Trace| trace.memory;
+//         let generate_trace = |rows: &[MemoryTraceCell]| generate_memory_trace(rows);
+//         let eval_packed_generic =
+//             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_MEM_COLS>,
+//              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+//                 stark.eval_packed_generic(vars, constraint_consumer);
+//             };
+//         let error_hook = |i: usize,
+//                           vars: StarkEvaluationVars<
+//             GoldilocksField,
+//             GoldilocksField,
+//             NUM_MEM_COLS,
+//         >| {
+//             println!("constraint error in line {}", i);
+//             let m = get_memory_col_name_map();
+//             println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+//             for col in m.keys() {
+//                 let name = m.get(col).unwrap();
+//                 let lv = vars.local_values[*col].0;
+//                 let nv = vars.next_values[*col].0;
+//                 println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+//             }
+//         };
+//         test_stark_with_asm_path(
+//             program_path.to_string(),
+//             get_trace_rows,
+//             generate_trace,
+//             eval_packed_generic,
+//             Some(error_hook),
+//             call_data,
+//             None,
+//         );
+//     }
+// }

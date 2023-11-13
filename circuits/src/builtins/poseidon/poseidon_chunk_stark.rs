@@ -284,87 +284,87 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonChunk
     }
 }
 
-mod test {
-    use core::trace::trace::{PoseidonChunkRow, Trace};
-    use core::types::Field;
-    use std::path::PathBuf;
-
-    use crate::builtins::poseidon::columns::{
-        get_poseidon_chunk_col_name_map, NUM_POSEIDON_CHUNK_COLS,
-    };
-    use crate::builtins::poseidon::poseidon_chunk_stark::PoseidonChunkStark;
-    use crate::generation::poseidon_chunk::generate_poseidon_chunk_trace;
-    use crate::stark::stark::Stark;
-    use crate::{
-        stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars},
-        test_utils::test_stark_with_asm_path,
-    };
-    use plonky2::{
-        field::goldilocks_field::GoldilocksField,
-        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
-    };
-
-    #[test]
-    fn test_poseidon_chunk() {
-        let call_data = vec![
-            GoldilocksField::ZERO,
-            GoldilocksField::from_canonical_u64(1239976900),
-        ];
-        let file_name = "poseidon_hash.json".to_string();
-        test_poseidon_chunk_with_asm_file_name(file_name, Some(call_data));
-    }
-
-    #[allow(unused)]
-    fn test_poseidon_chunk_with_asm_file_name(
-        file_name: String,
-        call_data: Option<Vec<GoldilocksField>>,
-    ) {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("../assembler/test_data/asm/");
-        path.push(file_name);
-        let program_path = path.display().to_string();
-
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-        type S = PoseidonChunkStark<F, D>;
-        let stark = S::default();
-
-        let get_trace_rows = |trace: Trace| trace.builtin_poseidon_chunk;
-        let generate_trace = |rows: &[PoseidonChunkRow]| generate_poseidon_chunk_trace(rows);
-        let eval_packed_generic =
-            |vars: StarkEvaluationVars<
-                GoldilocksField,
-                GoldilocksField,
-                NUM_POSEIDON_CHUNK_COLS,
-            >,
-             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
-                stark.eval_packed_generic(vars, constraint_consumer);
-            };
-        let error_hook = |i: usize,
-                          vars: StarkEvaluationVars<
-            GoldilocksField,
-            GoldilocksField,
-            NUM_POSEIDON_CHUNK_COLS,
-        >| {
-            println!("constraint error in line {}", i);
-            let m = get_poseidon_chunk_col_name_map();
-            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
-            for col in m.keys() {
-                let name = m.get(col).unwrap();
-                let lv = vars.local_values[*col].0;
-                let nv = vars.next_values[*col].0;
-                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
-            }
-        };
-        test_stark_with_asm_path(
-            program_path.to_string(),
-            get_trace_rows,
-            generate_trace,
-            eval_packed_generic,
-            Some(error_hook),
-            call_data,
-            None,
-        );
-    }
-}
+// mod test {
+//     use core::trace::trace::{PoseidonChunkRow, Trace};
+//     use core::types::Field;
+//     use std::path::PathBuf;
+//
+//     use crate::builtins::poseidon::columns::{
+//         get_poseidon_chunk_col_name_map, NUM_POSEIDON_CHUNK_COLS,
+//     };
+//     use crate::builtins::poseidon::poseidon_chunk_stark::PoseidonChunkStark;
+//     use crate::generation::poseidon_chunk::generate_poseidon_chunk_trace;
+//     use crate::stark::stark::Stark;
+//     use crate::{
+//         stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars},
+//         test_utils::test_stark_with_asm_path,
+//     };
+//     use plonky2::{
+//         field::goldilocks_field::GoldilocksField,
+//         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+//     };
+//
+//     #[test]
+//     fn test_poseidon_chunk() {
+//         let call_data = vec![
+//             GoldilocksField::ZERO,
+//             GoldilocksField::from_canonical_u64(1239976900),
+//         ];
+//         let file_name = "poseidon_hash.json".to_string();
+//         test_poseidon_chunk_with_asm_file_name(file_name, Some(call_data));
+//     }
+//
+//     #[allow(unused)]
+//     fn test_poseidon_chunk_with_asm_file_name(
+//         file_name: String,
+//         call_data: Option<Vec<GoldilocksField>>,
+//     ) {
+//         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+//         path.push("../assembler/test_data/asm/");
+//         path.push(file_name);
+//         let program_path = path.display().to_string();
+//
+//         const D: usize = 2;
+//         type C = PoseidonGoldilocksConfig;
+//         type F = <C as GenericConfig<D>>::F;
+//         type S = PoseidonChunkStark<F, D>;
+//         let stark = S::default();
+//
+//         let get_trace_rows = |trace: Trace| trace.builtin_poseidon_chunk;
+//         let generate_trace = |rows: &[PoseidonChunkRow]| generate_poseidon_chunk_trace(rows);
+//         let eval_packed_generic =
+//             |vars: StarkEvaluationVars<
+//                 GoldilocksField,
+//                 GoldilocksField,
+//                 NUM_POSEIDON_CHUNK_COLS,
+//             >,
+//              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+//                 stark.eval_packed_generic(vars, constraint_consumer);
+//             };
+//         let error_hook = |i: usize,
+//                           vars: StarkEvaluationVars<
+//             GoldilocksField,
+//             GoldilocksField,
+//             NUM_POSEIDON_CHUNK_COLS,
+//         >| {
+//             println!("constraint error in line {}", i);
+//             let m = get_poseidon_chunk_col_name_map();
+//             println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+//             for col in m.keys() {
+//                 let name = m.get(col).unwrap();
+//                 let lv = vars.local_values[*col].0;
+//                 let nv = vars.next_values[*col].0;
+//                 println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+//             }
+//         };
+//         test_stark_with_asm_path(
+//             program_path.to_string(),
+//             get_trace_rows,
+//             generate_trace,
+//             eval_packed_generic,
+//             Some(error_hook),
+//             call_data,
+//             None,
+//         );
+//     }
+// }

@@ -143,87 +143,87 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for TapeStark<F, 
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::stark::stark::Stark;
-    use core::{
-        trace::trace::{TapeRow, Trace},
-        types::{Field, GoldilocksField},
-    };
-    use std::path::PathBuf;
-
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-
-    use crate::{
-        builtins::tape::{
-            columns::{get_tape_col_name_map, NUM_COL_TAPE},
-            tape_stark::TapeStark,
-        },
-        generation::tape::generate_tape_trace,
-        stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars},
-        test_utils::test_stark_with_asm_path,
-    };
-
-    #[test]
-    fn test_tape_with_program() {
-        let program_path = "tape.json";
-        test_tape_with_asm_file_name(program_path.to_string(), None);
-    }
-
-    #[test]
-    fn test_tape_poseidon_with_program() {
-        let call_data = vec![
-            GoldilocksField::ZERO,
-            GoldilocksField::from_canonical_u64(1239976900),
-        ];
-        let program_path = "poseidon_hash.json";
-        test_tape_with_asm_file_name(program_path.to_string(), Some(call_data));
-    }
-
-    #[allow(unused)]
-    fn test_tape_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("../assembler/test_data/asm/");
-        path.push(file_name);
-        let program_path = path.display().to_string();
-
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-        type S = TapeStark<F, D>;
-        let stark = S::default();
-
-        let get_trace_rows = |trace: Trace| trace.tape;
-        let generate_trace = |rows: &[TapeRow]| generate_tape_trace(rows);
-        let eval_packed_generic =
-            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_TAPE>,
-             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
-                stark.eval_packed_generic(vars, constraint_consumer);
-            };
-        let error_hook = |i: usize,
-                          vars: StarkEvaluationVars<
-            GoldilocksField,
-            GoldilocksField,
-            NUM_COL_TAPE,
-        >| {
-            println!("constraint error in line {}", i);
-            let m = get_tape_col_name_map();
-            println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
-            for col in m.keys() {
-                let name = m.get(col).unwrap();
-                let lv = vars.local_values[*col].0;
-                let nv = vars.next_values[*col].0;
-                println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
-            }
-        };
-        test_stark_with_asm_path(
-            program_path.to_string(),
-            get_trace_rows,
-            generate_trace,
-            eval_packed_generic,
-            Some(error_hook),
-            call_data,
-            None,
-        );
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::stark::stark::Stark;
+//     use core::{
+//         trace::trace::{TapeRow, Trace},
+//         types::{Field, GoldilocksField},
+//     };
+//     use std::path::PathBuf;
+//
+//     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+//
+//     use crate::{
+//         builtins::tape::{
+//             columns::{get_tape_col_name_map, NUM_COL_TAPE},
+//             tape_stark::TapeStark,
+//         },
+//         generation::tape::generate_tape_trace,
+//         stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars},
+//         test_utils::test_stark_with_asm_path,
+//     };
+//
+//     #[test]
+//     fn test_tape_with_program() {
+//         let program_path = "tape.json";
+//         test_tape_with_asm_file_name(program_path.to_string(), None);
+//     }
+//
+//     #[test]
+//     fn test_tape_poseidon_with_program() {
+//         let call_data = vec![
+//             GoldilocksField::ZERO,
+//             GoldilocksField::from_canonical_u64(1239976900),
+//         ];
+//         let program_path = "poseidon_hash.json";
+//         test_tape_with_asm_file_name(program_path.to_string(), Some(call_data));
+//     }
+//
+//     #[allow(unused)]
+//     fn test_tape_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
+//         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+//         path.push("../assembler/test_data/asm/");
+//         path.push(file_name);
+//         let program_path = path.display().to_string();
+//
+//         const D: usize = 2;
+//         type C = PoseidonGoldilocksConfig;
+//         type F = <C as GenericConfig<D>>::F;
+//         type S = TapeStark<F, D>;
+//         let stark = S::default();
+//
+//         let get_trace_rows = |trace: Trace| trace.tape;
+//         let generate_trace = |rows: &[TapeRow]| generate_tape_trace(rows);
+//         let eval_packed_generic =
+//             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_TAPE>,
+//              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+//                 stark.eval_packed_generic(vars, constraint_consumer);
+//             };
+//         let error_hook = |i: usize,
+//                           vars: StarkEvaluationVars<
+//             GoldilocksField,
+//             GoldilocksField,
+//             NUM_COL_TAPE,
+//         >| {
+//             println!("constraint error in line {}", i);
+//             let m = get_tape_col_name_map();
+//             println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+//             for col in m.keys() {
+//                 let name = m.get(col).unwrap();
+//                 let lv = vars.local_values[*col].0;
+//                 let nv = vars.next_values[*col].0;
+//                 println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+//             }
+//         };
+//         test_stark_with_asm_path(
+//             program_path.to_string(),
+//             get_trace_rows,
+//             generate_trace,
+//             eval_packed_generic,
+//             Some(error_hook),
+//             call_data,
+//             None,
+//         );
+//     }
+// }

@@ -8,8 +8,7 @@ use std::collections::HashMap;
 use crate::cpu::columns::{self as cpu, COL_IS_ENTRY_SC};
 use plonky2::hash::hash_types::RichField;
 
-pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU_COLS] {
-    let steps = steps.to_vec();
+pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> [Vec<F>; cpu::NUM_CPU_COLS] {
     let trace_len = steps.len();
 
     let ext_trace_len = if !trace_len.is_power_of_two() {
@@ -166,7 +165,6 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
                 F::ZERO
             };
     }
-
     // fill in padding.
     let inst_end = if trace_len == 0 {
         F::from_canonical_u64(1048576)
@@ -204,6 +202,5 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
             v.len()
         )
     });
-
     trace_row_vecs
 }

@@ -1,6 +1,7 @@
 use core::program::Program;
 use std::any::type_name;
 use std::collections::BTreeMap;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use anyhow::{ensure, Result};
@@ -47,7 +48,7 @@ use crate::memory::memory_stark::MemoryStark;
 
 /// Generate traces, then create all STARK proofs.
 pub fn prove<F, C, const D: usize>(
-    program: &Program,
+    program: Program,
     ola_stark: &mut OlaStark<F, D>,
     inputs: GenerationInputs,
     config: &StarkConfig,
