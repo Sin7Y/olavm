@@ -446,10 +446,7 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
     {
         let lv = wrapper.lv;
         let ops_to_op = [
-            (lv[COL_S_ADD], OlaOpcode::ADD.binary_bit_mask()),
-            (lv[COL_S_MUL], OlaOpcode::MUL.binary_bit_mask()),
-            (lv[COL_S_EQ], OlaOpcode::EQ.binary_bit_mask()),
-            (lv[COL_S_ASSERT], OlaOpcode::ASSERT.binary_bit_mask()),
+            (lv[COL_S_SIMPLE_ARITHMATIC_OP], 0u64),
             (lv[COL_S_MOV], OlaOpcode::MOV.binary_bit_mask()),
             (lv[COL_S_JMP], OlaOpcode::JMP.binary_bit_mask()),
             (lv[COL_S_CJMP], OlaOpcode::CJMP.binary_bit_mask()),
@@ -461,7 +458,6 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
             (lv[COL_S_RC], OlaOpcode::RC.binary_bit_mask()),
             (lv[COL_S_BITWISE], 0u64),
             (lv[COL_S_NOT], OlaOpcode::NOT.binary_bit_mask()),
-            (lv[COL_S_NEQ], OlaOpcode::NEQ.binary_bit_mask()),
             (lv[COL_S_GTE], OlaOpcode::GTE.binary_bit_mask()),
             (lv[COL_S_PSDN], OlaOpcode::POSEIDON.binary_bit_mask()),
             (lv[COL_S_SLOAD], OlaOpcode::SLOAD.binary_bit_mask()),
@@ -470,6 +466,26 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
             (lv[COL_S_TSTORE], OlaOpcode::TSTORE.binary_bit_mask()),
             (lv[COL_S_CALL_SC], OlaOpcode::SCCALL.binary_bit_mask()),
         ];
+        yield_constr.constraint(
+            lv[COL_S_SIMPLE_ARITHMATIC_OP]
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::ADD.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::MUL.binary_bit_mask()))
+                * (lv[COL_OPCODE] - P::Scalar::from_canonical_u64(OlaOpcode::EQ.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::NEQ.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::ASSERT.binary_bit_mask())),
+        );
+        yield_constr.constraint(
+            lv[COL_S_BITWISE]
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::AND.binary_bit_mask()))
+                * (lv[COL_OPCODE] - P::Scalar::from_canonical_u64(OlaOpcode::OR.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::XOR.binary_bit_mask())),
+        );
 
         ops_to_op
             .iter()
@@ -484,7 +500,10 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         let cal_opcode = ops_to_op.iter().fold(P::ZEROS, |acc, (selector, opcode)| {
             acc + *selector * P::Scalar::from_canonical_u64(*opcode)
         });
-        yield_constr.constraint((lv[COL_OPCODE] - cal_opcode) * (P::ONES - lv[COL_S_BITWISE]));
+        yield_constr.constraint(
+            (lv[COL_OPCODE] - cal_opcode)
+                * (P::ONES - lv[COL_S_BITWISE] - lv[COL_S_SIMPLE_ARITHMATIC_OP]),
+        );
     }
 
     fn constraint_instruction_encode<FE, P, const D2: usize>(
@@ -641,7 +660,9 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         yield_constr.constraint(
             wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[COL_OPCODE] - wrapper.lv[COL_OPCODE]),
         );
-        for col_op_sel in (COL_S_ADD..COL_S_ADD + NUM_OP_SELECTOR).step_by(1) {
+        for col_op_sel in
+            (COL_S_SIMPLE_ARITHMATIC_OP..COL_S_SIMPLE_ARITHMATIC_OP + NUM_OP_SELECTOR).step_by(1)
+        {
             yield_constr.constraint(
                 wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[col_op_sel] - wrapper.lv[col_op_sel]),
             );
@@ -886,10 +907,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         Self::constraint_reg_consistency(&wrapper, yield_constr);
 
         // // opcode
-        add::eval_packed_generic(lv, nv, yield_constr);
-        mul::eval_packed_generic(lv, nv, yield_constr);
-        cmp::eval_packed_generic(lv, nv, yield_constr);
-        assert::eval_packed_generic(lv, nv, yield_constr);
+        simple_arithmatic_op::eval_packed_generic(lv, nv, yield_constr);
         mov::eval_packed_generic(lv, nv, yield_constr);
         call::eval_packed_generic(lv, nv, yield_constr);
         ret::eval_packed_generic(lv, nv, yield_constr);
@@ -909,7 +927,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     }
 
     fn constraint_degree(&self) -> usize {
-        6
+        7
     }
 }
 
