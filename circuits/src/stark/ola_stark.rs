@@ -239,17 +239,7 @@ fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
             TableWithColumns::new(
                 Table::Cpu,
                 cpu_stark::ctl_data_with_bitwise(),
-                Some(cpu_stark::ctl_filter_with_bitwise_and()),
-            ),
-            TableWithColumns::new(
-                Table::Cpu,
-                cpu_stark::ctl_data_with_bitwise(),
-                Some(cpu_stark::ctl_filter_with_bitwise_or()),
-            ),
-            TableWithColumns::new(
-                Table::Cpu,
-                cpu_stark::ctl_data_with_bitwise(),
-                Some(cpu_stark::ctl_filter_with_bitwise_xor()),
+                Some(cpu_stark::ctl_filter_with_bitwise()),
             ),
         ],
         TableWithColumns::new(

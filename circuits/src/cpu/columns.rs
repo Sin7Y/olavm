@@ -111,10 +111,8 @@ pub(crate) const COL_S_END: usize = COL_S_MSTORE + 1;
 // │   0   │   0   │      0     │    0  │   0   |
 // ┴───────┴───────┴────────────┴───────┴───────┴
 pub(crate) const COL_S_RC: usize = COL_S_END + 1;
-pub(crate) const COL_S_AND: usize = COL_S_RC + 1;
-pub(crate) const COL_S_OR: usize = COL_S_AND + 1;
-pub(crate) const COL_S_XOR: usize = COL_S_OR + 1;
-pub(crate) const COL_S_NOT: usize = COL_S_XOR + 1;
+pub(crate) const COL_S_BITWISE: usize = COL_S_RC + 1;
+pub(crate) const COL_S_NOT: usize = COL_S_BITWISE + 1;
 pub(crate) const COL_S_NEQ: usize = COL_S_NOT + 1;
 pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
@@ -195,9 +193,7 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_S_MSTORE, "s_mstore".to_string());
     m.insert(COL_S_END, "s_end".to_string());
     m.insert(COL_S_RC, "s_rc".to_string());
-    m.insert(COL_S_AND, "s_and".to_string());
-    m.insert(COL_S_OR, "s_or".to_string());
-    m.insert(COL_S_XOR, "s_xor".to_string());
+    m.insert(COL_S_BITWISE, "s_bitwise".to_string());
     m.insert(COL_S_NOT, "s_not".to_string());
     m.insert(COL_S_NEQ, "s_neq".to_string());
     m.insert(COL_S_GTE, "s_gte".to_string());

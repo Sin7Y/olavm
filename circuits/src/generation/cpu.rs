@@ -32,9 +32,9 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     opcode_to_selector.insert(OlaOpcode::MSTORE.binary_bit_mask(), cpu::COL_S_MSTORE);
     opcode_to_selector.insert(OlaOpcode::END.binary_bit_mask(), cpu::COL_S_END);
     opcode_to_selector.insert(OlaOpcode::RC.binary_bit_mask(), cpu::COL_S_RC);
-    opcode_to_selector.insert(OlaOpcode::AND.binary_bit_mask(), cpu::COL_S_AND);
-    opcode_to_selector.insert(OlaOpcode::OR.binary_bit_mask(), cpu::COL_S_OR);
-    opcode_to_selector.insert(OlaOpcode::XOR.binary_bit_mask(), cpu::COL_S_XOR);
+    opcode_to_selector.insert(OlaOpcode::AND.binary_bit_mask(), cpu::COL_S_BITWISE);
+    opcode_to_selector.insert(OlaOpcode::OR.binary_bit_mask(), cpu::COL_S_BITWISE);
+    opcode_to_selector.insert(OlaOpcode::XOR.binary_bit_mask(), cpu::COL_S_BITWISE);
     opcode_to_selector.insert(OlaOpcode::NOT.binary_bit_mask(), cpu::COL_S_NOT);
     opcode_to_selector.insert(OlaOpcode::NEQ.binary_bit_mask(), cpu::COL_S_NEQ);
     opcode_to_selector.insert(OlaOpcode::GTE.binary_bit_mask(), cpu::COL_S_GTE);
