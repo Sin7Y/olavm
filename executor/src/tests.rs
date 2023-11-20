@@ -282,7 +282,7 @@ fn malloc_test() {
 }
 
 #[test]
-fn vote_test() {
+fn vote_test() { 
     let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
@@ -303,7 +303,7 @@ fn vote_test() {
         "../assembler/test_data/bin/vote.json",
         "vote_trace.txt",
         false,
-        Some(init_calldata),
+        Some(winning_proposal_calldata),
     );
 }
 

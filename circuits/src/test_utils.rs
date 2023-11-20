@@ -29,7 +29,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     let mut db = match db_name {
         Some(name) => {
             let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            db_path.push("../db_test/");
+            db_path.push("../executor/db_test/");
             db_path.push(name);
             AccountTree::new_db_test(db_path.display().to_string())
         }

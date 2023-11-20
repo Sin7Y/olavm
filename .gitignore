@@ -7,3 +7,4 @@
 /assembler/test_data/bin/*
 executor/*.json
 db_test/*
+executor/db_test/*

@@ -997,7 +997,6 @@ mod tests {
     #[test]
     fn test_ola_vote() {
         let db_name = "vote_test".to_string();
-
         let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
@@ -1014,11 +1013,7 @@ mod tests {
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        test_cpu_with_asm_file_name(
-            "vote.json".to_string(),
-            Some(winning_proposal_calldata),
-            Some(db_name),
-        );
+        test_cpu_with_asm_file_name("vote.json".to_string(), Some(winning_proposal_calldata), Some(db_name));
     }
 
     #[allow(unused)]
