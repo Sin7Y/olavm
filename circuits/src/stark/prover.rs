@@ -185,7 +185,7 @@ where
             );
 
             let cmp_proof = prove_single_table_without_challenger(
-                &ola_stark.bitwise_stark,
+                &ola_stark.cmp_stark,
                 &config,
                 &trace_values_ref2[Table::Cmp as usize],
                 &trace_commitments2[Table::Cmp as usize],
@@ -195,7 +195,7 @@ where
             );
 
             let rangecheck_proof = prove_single_table_without_challenger(
-                &ola_stark.bitwise_stark,
+                &ola_stark.rangecheck_stark,
                 &config,
                 &trace_values_ref2[Table::RangeCheck as usize],
                 &trace_commitments2[Table::RangeCheck as usize],
@@ -205,7 +205,7 @@ where
             );
 
             let poseidon_proof = prove_single_table_without_challenger(
-                &ola_stark.bitwise_stark,
+                &ola_stark.poseidon_stark,
                 &config,
                 &trace_values_ref2[Table::Poseidon as usize],
                 &trace_commitments2[Table::Poseidon as usize],
@@ -215,7 +215,7 @@ where
             );
 
             let poseidon_chunk_proof = prove_single_table_without_challenger(
-                &ola_stark.bitwise_stark,
+                &ola_stark.poseidon_chunk_stark,
                 &config,
                 &trace_values_ref2[Table::PoseidonChunk as usize],
                 &trace_commitments2[Table::PoseidonChunk as usize],
@@ -225,7 +225,7 @@ where
             );
 
             let storage_access_proof = prove_single_table_without_challenger(
-                &ola_stark.bitwise_stark,
+                &ola_stark.storage_access_stark,
                 &config,
                 &trace_values_ref2[Table::StorageAccess as usize],
                 &trace_commitments2[Table::StorageAccess as usize],
@@ -235,7 +235,7 @@ where
             );
 
             let tape_proof = prove_single_table_without_challenger(
-                &ola_stark.bitwise_stark,
+                &ola_stark.tape_stark,
                 &config,
                 &trace_values_ref2[Table::Tape as usize],
                 &trace_commitments2[Table::Tape as usize],
@@ -245,7 +245,7 @@ where
             );
 
             let sccall_proof = prove_single_table_without_challenger(
-                &ola_stark.bitwise_stark,
+                &ola_stark.sccall_stark,
                 &config,
                 &trace_values_ref2[Table::SCCall as usize],
                 &trace_commitments2[Table::SCCall as usize],
