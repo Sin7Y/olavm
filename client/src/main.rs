@@ -195,7 +195,7 @@ fn main() {
             let mut ola_stark = OlaStark::<F, D>::default();
             let config = StarkConfig::standard_fast_config();
             let proof = prove::<F, C, D>(
-                &program,
+                program,
                 &mut ola_stark,
                 inputs,
                 &config,

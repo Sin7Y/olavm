@@ -81,7 +81,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     let (cpu_tx, cpu_rx) = channel();
     let exec =   std::mem::replace(&mut program.trace.exec, Vec::new());
-    let handle = thread::spawn(move || {
+    thread::spawn(move || {
         let cpu_rows = generate_cpu_trace::<F>(&exec);
         cpu_tx.send(trace_to_poly_values(cpu_rows));
     });

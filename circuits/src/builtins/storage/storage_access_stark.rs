@@ -314,79 +314,79 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageAccess
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::{
-//         builtins::storage::{
-//             columns::{get_storage_access_col_name_map, NUM_COL_ST},
-//             storage_access_stark::StorageAccessStark,
-//         },
-//         generation::storage::generate_storage_access_trace,
-//         stark::stark::Stark,
-//     };
-//     use core::{
-//         trace::trace::{StorageHashRow, Trace},
-//         types::{Field, GoldilocksField},
-//     };
-//     use std::path::PathBuf;
-//
-//     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-//
-//     use crate::{
-//         stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars},
-//         test_utils::test_stark_with_asm_path,
-//     };
-//
-//     #[test]
-//     fn test_storage_with_program() {
-//         let call_data = vec![
-//             GoldilocksField::from_canonical_u64(0),
-//             GoldilocksField::from_canonical_u64(2364819430),
-//         ];
-//         let program_path = "storage_u32.json";
-//         test_storage_with_asm_file_name(program_path.to_string(), Some(call_data));
-//     }
-//
-//     #[allow(unused)]
-//     fn test_storage_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
-//         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-//         path.push("../assembler/test_data/asm/");
-//         path.push(file_name);
-//         let program_path = path.display().to_string();
-//
-//         const D: usize = 2;
-//         type C = PoseidonGoldilocksConfig;
-//         type F = <C as GenericConfig<D>>::F;
-//         type S = StorageAccessStark<F, D>;
-//         let stark = S::default();
-//
-//         let get_trace_rows = |trace: Trace| trace.builtin_storage_hash;
-//         let generate_trace = |rows: &[StorageHashRow]| generate_storage_access_trace(rows);
-//         let eval_packed_generic =
-//             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_ST>,
-//              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
-//                 stark.eval_packed_generic(vars, constraint_consumer);
-//             };
-//         let error_hook =
-//             |i: usize, vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_ST>| {
-//                 println!("constraint error in line {}", i);
-//                 let m = get_storage_access_col_name_map();
-//                 println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
-//                 for col in m.keys() {
-//                     let name = m.get(col).unwrap();
-//                     let lv = vars.local_values[*col].0;
-//                     let nv = vars.next_values[*col].0;
-//                     println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
-//                 }
-//             };
-//         test_stark_with_asm_path(
-//             program_path.to_string(),
-//             get_trace_rows,
-//             generate_trace,
-//             eval_packed_generic,
-//             Some(error_hook),
-//             call_data,
-//             None,
-//         );
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use crate::{
+        builtins::storage::{
+            columns::{get_storage_access_col_name_map, NUM_COL_ST},
+            storage_access_stark::StorageAccessStark,
+        },
+        generation::storage::generate_storage_access_trace,
+        stark::stark::Stark,
+    };
+    use core::{
+        trace::trace::{StorageHashRow, Trace},
+        types::{Field, GoldilocksField},
+    };
+    use std::path::PathBuf;
+
+    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+
+    use crate::{
+        stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars},
+        test_utils::test_stark_with_asm_path,
+    };
+
+    #[test]
+    fn test_storage_with_program() {
+        let call_data = vec![
+            GoldilocksField::from_canonical_u64(0),
+            GoldilocksField::from_canonical_u64(2364819430),
+        ];
+        let program_path = "storage_u32.json";
+        test_storage_with_asm_file_name(program_path.to_string(), Some(call_data));
+    }
+
+    #[allow(unused)]
+    fn test_storage_with_asm_file_name(file_name: String, call_data: Option<Vec<GoldilocksField>>) {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("../assembler/test_data/asm/");
+        path.push(file_name);
+        let program_path = path.display().to_string();
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+        type S = StorageAccessStark<F, D>;
+        let stark = S::default();
+
+        let get_trace_rows = |trace: Trace| trace.builtin_storage_hash;
+        let generate_trace = |rows: &Vec<StorageHashRow>| generate_storage_access_trace(rows);
+        let eval_packed_generic =
+            |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_ST>,
+             constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
+                stark.eval_packed_generic(vars, constraint_consumer);
+            };
+        let error_hook =
+            |i: usize, vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_ST>| {
+                println!("constraint error in line {}", i);
+                let m = get_storage_access_col_name_map();
+                println!("{:>32}\t{:>22}\t{:>22}", "name", "lv", "nv");
+                for col in m.keys() {
+                    let name = m.get(col).unwrap();
+                    let lv = vars.local_values[*col].0;
+                    let nv = vars.next_values[*col].0;
+                    println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
+                }
+            };
+        test_stark_with_asm_path(
+            program_path.to_string(),
+            get_trace_rows,
+            generate_trace,
+            eval_packed_generic,
+            Some(error_hook),
+            call_data,
+            None,
+        );
+    }
+}

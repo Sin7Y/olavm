@@ -66,7 +66,7 @@ pub fn test_by_asm_json(path: String) {
         &mut Some(prophets),
         &mut AccountTree::new_test(),
     );
-    info!("exec time:{}", now.elapsed().as_millis());
+    info!("exec time:{}, len:{}", now.elapsed().as_millis(), program.trace.exec.len());
     let mut ola_stark = OlaStark::default();
     let now = Instant::now();
     let (traces, public_values) =

@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use anyhow::{ensure, Result};
+use log::info;
 use maybe_rayon::*;
 use plonky2::field::extension::Extendable;
 use plonky2::field::packable::Packable;
@@ -126,7 +127,7 @@ where
     );
 
     #[cfg(feature = "benchmark")]
-    println!("trace_commitments total time: {:?}", start.elapsed());
+    info!("trace_commitments total time: {:?}", start.elapsed());
 
     let trace_caps = trace_commitments
         .iter()
@@ -148,7 +149,7 @@ where
     );
 
     #[cfg(feature = "benchmark")]
-    println!("cross_table_lookup_data total time: {:?}", start.elapsed());
+    info!("cross_table_lookup_data total time: {:?}", start.elapsed());
 
     #[cfg(feature = "benchmark")]
     let start = Instant::now();
@@ -165,7 +166,7 @@ where
     )?;
 
     #[cfg(feature = "benchmark")]
-    println!("prove_cpu_table total time: {:?}", start.elapsed());
+    info!("prove_cpu_table total time: {:?}", start.elapsed());
 
     #[cfg(feature = "benchmark")]
     let start = Instant::now();
@@ -262,6 +263,9 @@ where
         &mut twiddle_map,
     )?;
 
+    #[cfg(feature = "benchmark")]
+    info!("prove_other_table total time: {:?}", start.elapsed());
+
     let stark_proofs = [
         cpu_proof,
         memory_proof,
@@ -347,7 +351,7 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("compute_permutation_z_polys total time: {:?}", start.elapsed());
+        info!("compute_permutation_z_polys total time: {:?}", start.elapsed());
     }
 
     let num_permutation_zs = permutation_zs.as_ref().map(|v| v.len()).unwrap_or(0);
@@ -379,7 +383,7 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("permutation_ctl_zs_commitment total time: {:?}", start.elapsed());
+        info!("permutation_ctl_zs_commitment total time: {:?}", start.elapsed());
     }
 
     let permutation_ctl_zs_cap = permutation_ctl_zs_commitment.merkle_tree.cap.clone();
@@ -417,7 +421,7 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("compute quotient polys total time: {:?}", start.elapsed());
+        info!("compute quotient polys total time: {:?}", start.elapsed());
     }
 
     #[cfg(feature = "benchmark")]
@@ -453,7 +457,7 @@ where
     );
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("compute quotient commitment total time: {:?}", start.elapsed());
+        info!("compute quotient commitment total time: {:?}", start.elapsed());
     }
 
     let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();
@@ -485,7 +489,7 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("StarkOpening total time: {:?}", start.elapsed());
+        info!("StarkOpening total time: {:?}", start.elapsed());
     }
 
     challenger.observe_openings(&openings.to_fri_openings());
@@ -514,7 +518,7 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        println!("opening_proof total time: {:?}", start.elapsed());
+        info!("opening_proof total time: {:?}", start.elapsed());
     }
 
     Ok(StarkProof {
@@ -763,7 +767,7 @@ fn check_constraints<'a, F, C, S, const D: usize>(
             );
             if !check_failed && consumer.constraint_accs[0].is_nonzero() {
                 check_failed = true;
-                println!("{} constraint failed in line: {}", type_name::<S>(), i);
+                info!("{} constraint failed in line: {}", type_name::<S>(), i);
             }
             consumer.accumulators()
         })
