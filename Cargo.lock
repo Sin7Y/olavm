@@ -385,6 +385,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "tiny-keccak",
+ "tokio",
 ]
 
 [[package]]

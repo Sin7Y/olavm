@@ -873,7 +873,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         //     (P::ONES - wrapper.nv_is_padding)
         //         * wrapper.lv_is_entry_sc
         //         * wrapper.lv[COL_S_END]
-        //         * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX] - P::ONES),
+        //         * (wrapper.nv[COL_TX_IDX] - wrapper.lv[COL_TX_IDX] -
+        //           P::ONES),
         // );
         // // ctx reg not change on normal opcodes
         // for ctx_reg_idx in 0..CTX_REGISTER_NUM {
@@ -882,14 +883,16 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         //             * (P::ONES - wrapper.lv[COL_S_END])
         //             * (P::ONES - wrapper.lv[COL_S_CALL_SC])
         //             * (wrapper.nv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]
-        //                 - wrapper.lv[COL_ADDR_STORAGE_RANGE.start + ctx_reg_idx]),
+        //                 - wrapper.lv[COL_ADDR_STORAGE_RANGE.start +
+        //                   ctx_reg_idx]),
         //     );
         //     yield_constr.constraint_transition(
         //         (P::ONES - wrapper.nv_is_padding)
         //             * (P::ONES - wrapper.lv[COL_S_END])
         //             * (P::ONES - wrapper.lv[COL_S_CALL_SC])
         //             * (wrapper.nv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]
-        //                 - wrapper.lv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]),
+        //                 - wrapper.lv[COL_ADDR_CODE_RANGE.start +
+        //                   ctx_reg_idx]),
         //     );
         // }
 

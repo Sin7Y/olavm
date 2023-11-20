@@ -2,15 +2,15 @@ use crate::lexer::token::Token;
 use crate::lexer::token::Token::{
     And, Array, Assign, Begin, Cid, Comma, Else, End, Entry, Equal, Felt, FeltConst, Function,
     GreaterEqual, GreaterThan, I32Const, Id, If, IndexId, IntegerDivision, LBracket, LParen,
-    LessEqual, LessThan, Malloc, Minus, Mod, Multiply, NotEqual, Or, Plus, RBracket, RParen,
-    Return, ReturnDel, Semi, Sqrt, While, EOF, I32, Printf
+    LessEqual, LessThan, Malloc, Minus, Mod, Multiply, NotEqual, Or, Plus, Printf, RBracket,
+    RParen, Return, ReturnDel, Semi, Sqrt, While, EOF, I32,
 };
 use crate::lexer::Lexer;
 use crate::parser::node::{
     ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode, CondStatNode,
     ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode, IdentDeclarationNode,
     IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode, MultiAssignNode, Node,
-    ReturnNode, SqrtNode, TypeNode, UnaryOpNode, PrintfNode
+    PrintfNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
 };
 use crate::utils::number::Number;
 use log::debug;

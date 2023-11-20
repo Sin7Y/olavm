@@ -116,7 +116,7 @@ where
         shift = shift.exp_u64(arity as u64);
 
         let start = Instant::now();
-        
+
         values = coeffs.coset_fft(shift.into(), None);
 
         println!("hash cost time {:?}", start.elapsed());
