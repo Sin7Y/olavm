@@ -1,25 +1,23 @@
 use plonky2_field::extension::Extendable;
 
-use crate::gates::noop::NoopGate;
 use crate::hash::hash_types::RichField;
+use crate::gates::noop::NoopGate;
 use crate::iop::witness::{PartialWitness, Witness};
-use crate::plonk::circuit_builder::CircuitBuilder;
-use crate::plonk::circuit_data::{
-    CircuitConfig, CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData,
-};
-use crate::plonk::config::{AlgebraicHasher, GenericConfig, Hasher};
+use crate::plonk::circuit_data::{VerifierOnlyCircuitData, CircuitConfig, CommonCircuitData, VerifierCircuitTarget};
+use crate::plonk::config::{AlgebraicHasher, Hasher, GenericConfig};
 use crate::plonk::proof::ProofWithPublicInputs;
+use crate::plonk::circuit_builder::CircuitBuilder;
 use crate::plonk::prover::prove;
 use crate::util::timing::TimingTree;
-use anyhow::{Ok, Result};
 use log::Level;
+use anyhow::{Result, Ok};
 
-pub fn recursive_aggregate_prove<
+pub fn recursive_aggregate_prove<        
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
     InnerC: GenericConfig<D, F = F>,
-    const D: usize,
->(
+    const D: usize,> 
+(
     proofs: Vec<ProofWithPublicInputs<F, InnerC, D>>,
     verify_datas: Vec<VerifierOnlyCircuitData<InnerC, D>>,
     circuit_datas: Vec<CommonCircuitData<F, InnerC, D>>,
@@ -33,21 +31,14 @@ where
 {
     let aggregate_size = proofs.len();
 
-    assert_eq!(
-        verify_datas.len(),
-        aggregate_size,
-        "aggregate_size should be same"
-    );
-    assert_eq!(
-        circuit_datas.len(),
-        aggregate_size,
-        "aggregate_size should be same"
-    );
+    assert_eq!(verify_datas.len(), aggregate_size, "aggregate_size should be same");
+    assert_eq!(circuit_datas.len(), aggregate_size, "aggregate_size should be same");
 
     let mut builder = CircuitBuilder::<F, D>::new(config.clone());
     let mut pw = PartialWitness::new();
 
     for i in 0..aggregate_size {
+
         let inner_proof = proofs[i].clone();
         let inner_vd = &verify_datas[i];
         let inner_cd = &circuit_datas[i];
@@ -88,14 +79,16 @@ where
     let mut timing = TimingTree::new("prove", Level::Debug);
 
     let proof = prove(&data.prover_only, &data.common, pw, &mut timing)?;
-
+    
     if print_gate_counts {
+        
         timing.print();
 
         data.verify(proof.clone())?;
     }
 
     Ok(proof)
+
 }
 
 #[cfg(test)]
@@ -105,13 +98,14 @@ mod tests {
     use super::*;
     use crate::gates::noop::NoopGate;
     use crate::iop::witness::PartialWitness;
-    use crate::plonk::circuit_builder::CircuitBuilder;
     use crate::plonk::circuit_data::{CircuitConfig, VerifierOnlyCircuitData};
     use crate::plonk::config::{GenericConfig, Hasher, Poseidon2GoldilocksConfig};
+    use crate::plonk::circuit_builder::CircuitBuilder;
     use crate::plonk::proof::ProofWithPublicInputs;
 
     #[test]
     fn test_recursive_aggreate_verifier_2() -> Result<()> {
+
         init_logger();
 
         const D: usize = 2;
@@ -120,9 +114,9 @@ mod tests {
 
         let config = CircuitConfig::standard_recursion_config();
 
-        let mut proofs: Vec<ProofWithPublicInputs<F, _, D>> = Vec::new();
-        let mut verifier_datas: Vec<VerifierOnlyCircuitData<_, D>> = Vec::new();
-        let mut circuit_datas: Vec<CommonCircuitData<F, _, D>> = Vec::new();
+        let mut proofs:Vec<ProofWithPublicInputs<F, _, D>> = Vec::new();
+        let mut verifier_datas:Vec<VerifierOnlyCircuitData<_, D>> = Vec::new();
+        let mut circuit_datas:Vec<CommonCircuitData<F, _, D>> = Vec::new();
 
         let (proof, vd, cd) = dummy_proof::<F, C, D>(&config, 4_000)?;
 
@@ -131,19 +125,13 @@ mod tests {
         circuit_datas.push(cd);
 
         let (proof, vd, cd) = dummy_proof::<F, C, D>(&config, 2_000)?;
-
+        
         proofs.push(proof);
         verifier_datas.push(vd);
         circuit_datas.push(cd);
 
-        let _ = recursive_aggregate_prove::<F, C, C, D>(
-            proofs,
-            verifier_datas,
-            circuit_datas,
-            &config,
-            None,
-            true,
-        );
+
+        let _ = recursive_aggregate_prove::<F, C, C, D>(proofs, verifier_datas, circuit_datas, &config, None, true);
 
         Ok(())
     }
@@ -176,4 +164,5 @@ mod tests {
     fn init_logger() {
         let _ = env_logger::builder().format_timestamp(None).try_init();
     }
+
 }

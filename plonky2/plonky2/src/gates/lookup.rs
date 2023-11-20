@@ -6,7 +6,7 @@ use core::usize;
 use itertools::Itertools;
 use keccak_hash::keccak;
 
-use super::lookup_table::{BitwiseLookupTable, LookupTable};
+use super::lookup_table::{LookupTable,BitwiseLookupTable};
 use crate::field::extension::Extendable;
 use crate::field::packed::PackedField;
 use crate::gates::gate::Gate;
@@ -28,8 +28,7 @@ pub type Lookup = Vec<(Target, Target)>;
 
 pub type BitwiseLookup = Vec<(Target, Target, Target)>;
 
-/// A gate which stores (input, output) lookup pairs made elsewhere in the
-/// trace. It doesn't check any constraints itself.
+/// A gate which stores (input, output) lookup pairs made elsewhere in the trace. It doesn't check any constraints itself.
 #[derive(Debug, Clone)]
 pub struct LookupGate {
     /// Number of lookups per gate.
@@ -40,8 +39,7 @@ pub struct LookupGate {
     lut_hash: [u8; 32],
 }
 
-/// A gate which stores (input, output) lookup pairs made elsewhere in the
-/// trace. It doesn't check any constraints itself.
+/// A gate which stores (input, output) lookup pairs made elsewhere in the trace. It doesn't check any constraints itself.
 #[derive(Debug, Clone)]
 pub struct BitwiseLookupGate {
     /// Number of lookups per gate.
@@ -80,17 +78,11 @@ impl LookupGate {
 }
 
 impl BitwiseLookupGate {
+
     pub fn new_from_table(config: &CircuitConfig, lut: BitwiseLookupTable) -> Self {
         let table_bytes = lut
             .iter()
-            .flat_map(|(input_0, input_1, output)| {
-                [
-                    input_0.to_le_bytes(),
-                    input_1.to_le_bytes(),
-                    output.to_le_bytes(),
-                ]
-                .concat()
-            })
+            .flat_map(|(input_0, input_1, output)| [input_0.to_le_bytes(), input_1.to_le_bytes(), output.to_le_bytes()].concat())
             .collect_vec();
 
         Self {
@@ -271,6 +263,7 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D> for
     }
 }
 
+
 #[derive(Clone, Debug, Default)]
 pub struct LookupGenerator<const D: usize> {
     row: usize,
@@ -285,7 +278,9 @@ pub struct BitwiseLookupGenerator<const D: usize> {
     slot_nb: usize,
 }
 
+
 impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for LookupGenerator<D> {
+
     fn dependencies(&self) -> Vec<Target> {
         vec![Target::wire(
             self.row,
@@ -319,20 +314,16 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for Lookup
     }
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
-    for BitwiseLookupGenerator<D>
-{
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for BitwiseLookupGenerator<D> {
+
     fn dependencies(&self) -> Vec<Target> {
-        vec![
+        vec![Target::wire(
+                self.row,
+                BitwiseLookupGate::wire_ith_looking_inp0(self.slot_nb)),
             Target::wire(
                 self.row,
-                BitwiseLookupGate::wire_ith_looking_inp0(self.slot_nb),
-            ),
-            Target::wire(
-                self.row,
-                BitwiseLookupGate::wire_ith_looking_inp1(self.slot_nb),
-            ),
-        ]
+                BitwiseLookupGate::wire_ith_looking_inp1(self.slot_nb))
+            ]
     }
 
     fn run_once(&self, witness: &PartitionWitness<F>, out_buffer: &mut GeneratedValues<F>) {
@@ -340,30 +331,23 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
 
         let input0_val = get_wire(BitwiseLookupGate::wire_ith_looking_inp0(self.slot_nb));
         let input1_val = get_wire(BitwiseLookupGate::wire_ith_looking_inp1(self.slot_nb));
-        let (input0, input1, output) =
-            self.lut[(input0_val.to_canonical_u64() * 16 + input1_val.to_canonical_u64()) as usize];
+        let (input0, input1, output) = self.lut[(input0_val.to_canonical_u64() * 16 +  input1_val.to_canonical_u64()) as usize];
         // find directly
-        if input0_val == F::from_canonical_u8(input0) && input1_val == F::from_canonical_u8(input1)
-        {
+        if input0_val == F::from_canonical_u8(input0) && input1_val == F::from_canonical_u8(input1){
             let output_val = F::from_canonical_u8(output);
 
-            let out_wire = Target::wire(
-                self.row,
-                BitwiseLookupGate::wire_ith_looking_out(self.slot_nb),
-            );
+            let out_wire = Target::wire(self.row, BitwiseLookupGate::wire_ith_looking_out(self.slot_nb));
             out_buffer.set_target(out_wire, output_val);
         } else {
             // loop all case
             for (input0, input1, output) in self.lut.iter() {
-                if input0_val == F::from_canonical_u8(*input0)
-                    && input1_val == F::from_canonical_u8(*input1)
-                {
+
+                if input0_val == F::from_canonical_u8(*input0) && input1_val == F::from_canonical_u8(*input1){
+
                     let output_val = F::from_canonical_u8(*output);
 
-                    let out_wire = Target::wire(
-                        self.row,
-                        BitwiseLookupGate::wire_ith_looking_out(self.slot_nb),
-                    );
+                    let out_wire =
+                        Target::wire(self.row, BitwiseLookupGate::wire_ith_looking_out(self.slot_nb));
                     out_buffer.set_target(out_wire, output_val);
                     return;
                 }
@@ -433,23 +417,24 @@ mod tests {
 
         //let tip5_table = TIP5_TABLE.to_vec();
 
-        let mut table = Vec::<(u8, u8, u8)>::with_capacity(65536 * 3);
+        let mut table =Vec::<(u8,u8,u8)>::with_capacity(65536 * 3);
 
         for i in 0..256 {
             for j in 0..256 {
-                let or = i as u8 | j as u8;
-                let and = i as u8 & j as u8;
-                let xor = i as u8 ^ j as u8;
+                 let or = i as u8 | j as u8;
+                 let and = i as u8 & j as u8;
+                 let xor = i as u8 ^ j as u8;
 
-                table[i + j * 256] = (i as u8, j as u8, or);
-                table[i + j * 256 + 65536] = (i as u8, j as u8, and);
-                table[i + j * 256 + 65536 * 2] = (i as u8, j as u8, xor);
+                 table[i + j * 256] = (i as u8, j as u8, or);
+                 table[i + j * 256 + 65536] = (i as u8, j as u8, and);
+                 table[i + j * 256 + 65536 * 2] = (i as u8, j as u8, xor);
             }
         }
 
         builder.add_lookup_table_from_pairs(Arc::new(table));
 
         builder.build::<C>();
+
     }
 
     #[should_panic]
@@ -491,17 +476,17 @@ mod tests {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        let mut table = Vec::<(u8, u8, u8)>::with_capacity(256);
+        let mut table =Vec::<(u8,u8,u8)>::with_capacity(256);
 
         for i in 0..16 {
             for j in 0..16 {
-                //let or = i as u8 | j as u8;
-                let and = i as u8 & j as u8;
-                //let xor = i as u8 ^ j as u8;
+                 //let or = i as u8 | j as u8;
+                 let and = i as u8 & j as u8;
+                 //let xor = i as u8 ^ j as u8;
 
-                //table.push((i as u8, j as u8, or));
-                table.push((i as u8, j as u8, and));
-                //table.push((i as u8, j as u8, xor));
+                 //table.push((i as u8, j as u8, or));
+                 table.push((i as u8, j as u8, and));
+                 //table.push((i as u8, j as u8, xor));
             }
         }
 
@@ -516,6 +501,7 @@ mod tests {
         let table_index = builder.add_lookup_table_from_pairs(Arc::new(table));
 
         let output_a_and_b = builder.add_lookup_from_index(initial_a, initial_b, table_index);
+
 
         builder.register_public_input(initial_a);
         builder.register_public_input(initial_b);
@@ -934,4 +920,6 @@ mod tests {
         builder.try_init()?;
         Ok(())
     }
+    
 }
+

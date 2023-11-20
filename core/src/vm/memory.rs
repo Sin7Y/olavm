@@ -1,5 +1,6 @@
 use crate::vm::error::ProcessorError;
 
+
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field64;
 use serde::{Deserialize, Serialize};

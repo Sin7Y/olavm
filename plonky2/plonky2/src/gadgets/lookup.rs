@@ -1,8 +1,6 @@
 use crate::field::extension::Extendable;
 use crate::gates::lookup::BitwiseLookupGate;
-use crate::gates::lookup_table::{
-    BitwiseLookupTable, BitwiseLookupTableGate, LookupTable, LookupTableGate,
-};
+use crate::gates::lookup_table::{LookupTable, LookupTableGate, BitwiseLookupTable, BitwiseLookupTableGate};
 use crate::gates::noop::NoopGate;
 use crate::hash::hash_types::RichField;
 use crate::iop::target::Target;
@@ -46,34 +44,23 @@ pub const OTHER_TABLE: [u16; 256] = [
 pub const SMALLER_TABLE: [u16; 8] = [2, 24, 56, 100, 128, 16, 20, 49];
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
-    /// Adds a lookup table to the list of stored lookup tables `self.luts`
-    /// based on a table of (input, output) pairs. It returns the index of the
-    /// LUT within `self.luts`.
+    /// Adds a lookup table to the list of stored lookup tables `self.luts` based on a table of (input, output) pairs. It returns the index of the LUT within `self.luts`.
     pub fn add_lookup_table_from_pairs(&mut self, table: BitwiseLookupTable) -> usize {
         self.update_luts_from_pairs(table)
     }
 
-    /// Adds a lookup table to the list of stored lookup tables `self.luts`
-    /// based on a table, represented as a slice `&[u16]` of inputs and a slice
-    /// `&[u16]` of outputs. It returns the index of the LUT within `self.luts`.
+    /// Adds a lookup table to the list of stored lookup tables `self.luts` based on a table, represented as a slice `&[u16]` of inputs and a slice `&[u16]` of outputs. It returns the index of the LUT within `self.luts`.
     //pub fn add_lookup_table_from_table(&mut self, inps: &[u16], outs: &[u16]) -> usize {
     //    self.update_luts_from_table(inps, outs)
     //}
 
-    /// Adds a lookup table to the list of stored lookup tables `self.luts`
-    /// based on a function. It returns the index of the LUT within `self.luts`.
-    //pub fn add_lookup_table_from_fn(&mut self, f: fn(u8, u8) -> u8, inputs: &[[u8; 2]]) -> usize
-    // {    self.update_luts_from_fn(f, inputs)
+    /// Adds a lookup table to the list of stored lookup tables `self.luts` based on a function. It returns the index of the LUT within `self.luts`.
+    //pub fn add_lookup_table_from_fn(&mut self, f: fn(u8, u8) -> u8, inputs: &[[u8; 2]]) -> usize {
+    //    self.update_luts_from_fn(f, inputs)
     //}
 
-    /// Adds a lookup (input, output) pair to the stored lookups. Takes a
-    /// `Target` input and returns a `Target` output.
-    pub fn add_lookup_from_index(
-        &mut self,
-        looking_in_0: Target,
-        looking_in_1: Target,
-        lut_index: usize,
-    ) -> Target {
+    /// Adds a lookup (input, output) pair to the stored lookups. Takes a `Target` input and returns a `Target` output.
+    pub fn add_lookup_from_index(&mut self, looking_in_0: Target, looking_in_1: Target, lut_index: usize) -> Target {
         assert!(
             lut_index < self.get_luts_length(),
             "lut number {} not in luts (length = {})",
@@ -85,9 +72,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         looking_out
     }
 
-    /// We call this function at the end of circuit building right before the PI
-    /// gate to add all `LookupTableGate` and `LookupGate`. It also updates
-    /// `self.lookup_rows` accordingly.
+    /// We call this function at the end of circuit building right before the PI gate to add all `LookupTableGate` and `LookupGate`.
+    /// It also updates `self.lookup_rows` accordingly.
     pub fn add_all_lookups(&mut self) {
         for lut_index in 0..self.num_luts() {
             assert!(
@@ -103,7 +89,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
 
                 let lookups = self.get_lut_lookups(lut_index).to_owned();
 
-                for (looking_in_0, looking_in_1, looking_out) in lookups {
+                for (looking_in_0,looking_in_1, looking_out) in lookups {
                     let gate = BitwiseLookupGate::new_from_table(&self.config, lut.clone());
                     let (gate, i) =
                         self.find_slot(gate, &[F::from_canonical_usize(lut_index)], &[]);
@@ -121,26 +107,21 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
                 let num_lut_rows = (self.get_luts_idx_length(lut_index) - 1) / num_lut_entries + 1;
                 let num_lut_cells = num_lut_entries * num_lut_rows;
                 for _ in 0..num_lut_cells {
-                    let gate = BitwiseLookupTableGate::new_from_table(
-                        &self.config,
-                        lut.clone(),
-                        last_lut_gate,
-                    );
+                    let gate =
+                        BitwiseLookupTableGate::new_from_table(&self.config, lut.clone(), last_lut_gate);
                     self.find_slot(gate, &[], &[]);
                 }
 
                 let first_lut_gate = self.num_gates() - 1;
 
-                // Will ensure the next row's wires will be all zeros. With this, there is no
-                // distinction between the transition constraints on the first row
-                // and on the other rows. Additionally, initial constraints become a simple zero
-                // check.
+                // Will ensure the next row's wires will be all zeros. With this, there is no distinction between the transition constraints on the first row
+                // and on the other rows. Additionally, initial constraints become a simple zero check.
                 self.add_gate(NoopGate, vec![]);
 
                 // These elements are increasing: the gate rows are deliberately upside down.
-                // This is necessary for constraint evaluation so that you do not need values of
-                // the next row's wires, which aren't provided in the evaluation
-                // variables. last_lu_gate : the first gate used lookup
+                // This is necessary for constraint evaluation so that you do not need values of the next
+                // row's wires, which aren't provided in the evaluation variables.
+                // last_lu_gate : the first gate used lookup
                 // last_lut_gate: the last gate used lookup
                 // first_lut_gate: the last gate used to store lookup_table
                 self.add_lookup_rows(last_lu_gate, last_lut_gate, first_lut_gate);

@@ -5,19 +5,23 @@ use plonky2_field::extension::Extendable;
 use plonky2_field::types::Field;
 
 use plonky2::gates::gate::Gate;
-use plonky2::gates::poseidon::PoseidonGate;
 use plonky2::hash::hash_types::HashOut;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::witness::{PartialWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::circuit_data::CircuitConfig;
-use plonky2::plonk::config::PoseidonGoldilocksConfig;
 use plonky2::plonk::config::{GenericConfig, Hasher};
 use plonky2::plonk::vars::{EvaluationTargets, EvaluationVars};
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::gates::poseidon::PoseidonGate;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-pub fn bench_poseidon<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+pub fn bench_poseidon<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     c: &mut Criterion,
 ) where
     [(); C::Hasher::HASH_SIZE]:,
@@ -27,49 +31,52 @@ pub fn bench_poseidon<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, 
     group.sample_size(10);
 
     for i in 0..1 {
+
         group.bench_with_input(BenchmarkId::from_parameter(i), &i, |b, _| {
             b.iter(|| {
-                // Test that `eval_unfiltered` and `eval_unfiltered_recursively` are coherent.
-                let wires = F::Extension::rand_vec(gate.num_wires());
-                let constants = F::Extension::rand_vec(gate.num_constants());
-                let public_inputs_hash = HashOut::rand();
 
-                let config = CircuitConfig::standard_recursion_config();
-                let mut pw = PartialWitness::new();
-                let mut builder = CircuitBuilder::<F, D>::new(config);
+            // Test that `eval_unfiltered` and `eval_unfiltered_recursively` are coherent.
+            let wires = F::Extension::rand_vec(gate.num_wires());
+            let constants = F::Extension::rand_vec(gate.num_constants());
+            let public_inputs_hash = HashOut::rand();
 
-                let wires_t = builder.add_virtual_extension_targets(wires.len());
-                let constants_t = builder.add_virtual_extension_targets(constants.len());
-                pw.set_extension_targets(&wires_t, &wires);
-                pw.set_extension_targets(&constants_t, &constants);
-                let public_inputs_hash_t = builder.add_virtual_hash();
-                pw.set_hash_target(public_inputs_hash_t, public_inputs_hash);
+            let config = CircuitConfig::standard_recursion_config();
+            let mut pw = PartialWitness::new();
+            let mut builder = CircuitBuilder::<F, D>::new(config);
 
-                let vars = EvaluationVars {
-                    local_constants: &constants,
-                    local_wires: &wires,
-                    public_inputs_hash: &public_inputs_hash,
-                };
-                let evals = gate.eval_unfiltered(vars);
+            let wires_t = builder.add_virtual_extension_targets(wires.len());
+            let constants_t = builder.add_virtual_extension_targets(constants.len());
+            pw.set_extension_targets(&wires_t, &wires);
+            pw.set_extension_targets(&constants_t, &constants);
+            let public_inputs_hash_t = builder.add_virtual_hash();
+            pw.set_hash_target(public_inputs_hash_t, public_inputs_hash);
 
-                let vars_t = EvaluationTargets {
-                    local_constants: &constants_t,
-                    local_wires: &wires_t,
-                    public_inputs_hash: &public_inputs_hash_t,
-                };
-                let evals_t = gate.eval_unfiltered_circuit(&mut builder, vars_t);
-                pw.set_extension_targets(&evals_t, &evals);
+            let vars = EvaluationVars {
+                local_constants: &constants,
+                local_wires: &wires,
+                public_inputs_hash: &public_inputs_hash,
+            };
+            let evals = gate.eval_unfiltered(vars);
 
-                let data = builder.build::<C>();
+            let vars_t = EvaluationTargets {
+                local_constants: &constants_t,
+                local_wires: &wires_t,
+                public_inputs_hash: &public_inputs_hash_t,
+            };
+            let evals_t = gate.eval_unfiltered_circuit(&mut builder, vars_t);
+            pw.set_extension_targets(&evals_t, &evals);
 
-                //let start = Instant::now();
+            let data = builder.build::<C>();
 
-                let proof = data.prove(pw);
+            //let start = Instant::now();
 
-                //println!("poseidon prover time = {:?}",
-                // start.elapsed().as_micros());
+            let proof = data.prove(pw);   
+
+            //println!("poseidon prover time = {:?}", start.elapsed().as_micros());
+
             });
-        });
+        }   
+        );
     }
 }
 
@@ -87,53 +94,57 @@ pub fn bench_poseidon_remove_prove<
     group.sample_size(10);
 
     for i in 0..1 {
+
         group.bench_with_input(BenchmarkId::from_parameter(i), &i, |b, _| {
             b.iter(|| {
-                // Test that `eval_unfiltered` and `eval_unfiltered_recursively` are coherent.
-                let wires = F::Extension::rand_vec(gate.num_wires());
-                let constants = F::Extension::rand_vec(gate.num_constants());
-                let public_inputs_hash = HashOut::rand();
 
-                let config = CircuitConfig::standard_recursion_config();
-                let mut pw = PartialWitness::new();
-                let mut builder = CircuitBuilder::<F, D>::new(config);
+            // Test that `eval_unfiltered` and `eval_unfiltered_recursively` are coherent.
+            let wires = F::Extension::rand_vec(gate.num_wires());
+            let constants = F::Extension::rand_vec(gate.num_constants());
+            let public_inputs_hash = HashOut::rand();
 
-                let wires_t = builder.add_virtual_extension_targets(wires.len());
-                let constants_t = builder.add_virtual_extension_targets(constants.len());
-                pw.set_extension_targets(&wires_t, &wires);
-                pw.set_extension_targets(&constants_t, &constants);
-                let public_inputs_hash_t = builder.add_virtual_hash();
-                pw.set_hash_target(public_inputs_hash_t, public_inputs_hash);
+            let config = CircuitConfig::standard_recursion_config();
+            let mut pw = PartialWitness::new();
+            let mut builder = CircuitBuilder::<F, D>::new(config);
 
-                let vars = EvaluationVars {
-                    local_constants: &constants,
-                    local_wires: &wires,
-                    public_inputs_hash: &public_inputs_hash,
-                };
-                let evals = gate.eval_unfiltered(vars);
+            let wires_t = builder.add_virtual_extension_targets(wires.len());
+            let constants_t = builder.add_virtual_extension_targets(constants.len());
+            pw.set_extension_targets(&wires_t, &wires);
+            pw.set_extension_targets(&constants_t, &constants);
+            let public_inputs_hash_t = builder.add_virtual_hash();
+            pw.set_hash_target(public_inputs_hash_t, public_inputs_hash);
 
-                let vars_t = EvaluationTargets {
-                    local_constants: &constants_t,
-                    local_wires: &wires_t,
-                    public_inputs_hash: &public_inputs_hash_t,
-                };
-                let evals_t = gate.eval_unfiltered_circuit(&mut builder, vars_t);
-                pw.set_extension_targets(&evals_t, &evals);
+            let vars = EvaluationVars {
+                local_constants: &constants,
+                local_wires: &wires,
+                public_inputs_hash: &public_inputs_hash,
+            };
+            let evals = gate.eval_unfiltered(vars);
 
-                let data = builder.build::<C>();
+            let vars_t = EvaluationTargets {
+                local_constants: &constants_t,
+                local_wires: &wires_t,
+                public_inputs_hash: &public_inputs_hash_t,
+            };
+            let evals_t = gate.eval_unfiltered_circuit(&mut builder, vars_t);
+            pw.set_extension_targets(&evals_t, &evals);
 
-                //let start = Instant::now();
+            let data = builder.build::<C>();
 
-                //let proof = data.prove(pw);
+            //let start = Instant::now();
 
-                //println!("poseidon prover time = {:?}",
-                // start.elapsed().as_micros());
+            //let proof = data.prove(pw);   
+
+            //println!("poseidon prover time = {:?}", start.elapsed().as_micros());
+
             });
-        });
+        }   
+        );
     }
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
+
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;

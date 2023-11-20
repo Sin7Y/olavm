@@ -85,7 +85,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
 
     #[cfg(feature = "benchmark")]
     let start = Instant::now();
-
+    
     let cpu_trace = trace_to_poly_values(cpu_rows);
 
     #[cfg(feature = "benchmark")]

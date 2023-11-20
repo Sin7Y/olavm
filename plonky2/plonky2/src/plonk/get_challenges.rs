@@ -50,8 +50,7 @@ fn get_challenges<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, cons
     let plonk_gammas = challenger.get_n_challenges(num_challenges);
 
     // If there are lookups in the circuit, we should get delta challenges as well.
-    // But we can use the already generated `plonk_betas` and `plonk_gammas` as the
-    // first `plonk_deltas` challenges.
+    // But we can use the already generated `plonk_betas` and `plonk_gammas` as the first `plonk_deltas` challenges.
     let plonk_deltas = if has_lookup {
         let num_lookup_challenges = NUM_COINS_LOOKUP * num_challenges;
         let mut deltas = Vec::with_capacity(num_lookup_challenges);
@@ -65,8 +64,7 @@ fn get_challenges<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, cons
         vec![]
     };
 
-    // `plonk_zs_partial_products_cap` also contains the commitment to lookup
-    // polynomials.
+    // `plonk_zs_partial_products_cap` also contains the commitment to lookup polynomials.
     challenger.observe_cap::<C::Hasher>(plonk_zs_partial_products_cap);
     let plonk_alphas = challenger.get_n_challenges(num_challenges);
 
@@ -280,7 +278,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let mut challenger = RecursiveChallenger::<F, C::Hasher, D>::new(self);
         let has_lookup = inner_common_data.num_lookup_polys != 0;
         //let has_lookup = false;
-
+        
         // Observe the instance.
         challenger.observe_hash(&inner_circuit_digest);
         challenger.observe_hash(&public_inputs_hash);
@@ -290,8 +288,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let plonk_gammas = challenger.get_n_challenges(self, num_challenges);
 
         // If there are lookups in the circuit, we should get delta challenges as well.
-        // But we can use the already generated `plonk_betas` and `plonk_gammas` as the
-        // first `plonk_deltas` challenges.
+        // But we can use the already generated `plonk_betas` and `plonk_gammas` as the first `plonk_deltas` challenges.
         let plonk_deltas = if has_lookup {
             let num_lookup_challenges = NUM_COINS_LOOKUP * num_challenges;
             let mut deltas = Vec::with_capacity(num_lookup_challenges);

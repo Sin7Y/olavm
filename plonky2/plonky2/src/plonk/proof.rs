@@ -318,27 +318,26 @@ impl<F: RichField + Extendable<D>, const D: usize> OpeningSet<F, D> {
                 .collect::<Vec<_>>()
         };
         let constants_sigmas_eval = eval_commitment(zeta, constants_sigmas_commitment);
-        // `zs_partial_products_lookup_eval` contains the permutation argument
-        // polynomials as well as lookup polynomials.
+        // `zs_partial_products_lookup_eval` contains the permutation argument polynomials as well as lookup polynomials.
         let zs_partial_products_lookup_eval =
             eval_commitment(zeta, zs_partial_products_lookup_commitment);
         let zs_partial_products_lookup_next_eval =
             eval_commitment(g * zeta, zs_partial_products_lookup_commitment);
         let quotient_polys = eval_commitment(zeta, quotient_polys_commitment);
 
+        
         Self {
-            constants: constants_sigmas_eval[common_data.constants_range()].to_vec(),
-            plonk_sigmas: constants_sigmas_eval[common_data.sigmas_range()].to_vec(),
-            wires: eval_commitment(zeta, wires_commitment),
-            plonk_zs: zs_partial_products_lookup_eval[common_data.zs_range()].to_vec(),
-            plonk_zs_next: zs_partial_products_lookup_next_eval[common_data.zs_range()].to_vec(),
-            partial_products: zs_partial_products_lookup_eval[common_data.partial_products_range()]
-                .to_vec(),
-            quotient_polys,
-            lookup_zs: zs_partial_products_lookup_eval[common_data.lookup_range()].to_vec(),
-            lookup_zs_next: zs_partial_products_lookup_next_eval[common_data.lookup_range()]
-                .to_vec(),
+                constants: constants_sigmas_eval[common_data.constants_range()].to_vec(),
+                plonk_sigmas: constants_sigmas_eval[common_data.sigmas_range()].to_vec(),
+                wires: eval_commitment(zeta, wires_commitment),
+                plonk_zs: zs_partial_products_lookup_eval[common_data.zs_range()].to_vec(),
+                plonk_zs_next: zs_partial_products_lookup_next_eval[common_data.zs_range()].to_vec(),
+                partial_products: zs_partial_products_lookup_eval[common_data.partial_products_range()].to_vec(),
+                quotient_polys,
+                lookup_zs: zs_partial_products_lookup_eval[common_data.lookup_range()].to_vec(),
+                lookup_zs_next: zs_partial_products_lookup_next_eval[common_data.lookup_range()].to_vec(),
         }
+        
     }
 
     pub(crate) fn to_fri_openings(&self) -> FriOpenings<F, D> {

@@ -1,4 +1,6 @@
 #[allow(unused_imports)]
+use core::types::{Field, GoldilocksField};
+#[allow(unused_imports)]
 use crate::{
     cpu::{
         self,
@@ -11,10 +13,8 @@ use crate::{
         },
         memory::generate_memory_trace,
     },
-    memory::{self, columns::*},
+    memory::{columns::*, self},
 };
-#[allow(unused_imports)]
-use core::types::{Field, GoldilocksField};
 
 #[test]
 fn print_cpu_mem_ctl_info() {

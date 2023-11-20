@@ -9,9 +9,9 @@ use crate::stark::constraint_consumer::ConstraintConsumer;
 
 use super::{
     columns::{
-        COL_ADDR_CODE_RANGE, COL_ADDR_STORAGE_RANGE, COL_AUX0, COL_AUX1, COL_CLK, COL_ENV_IDX,
-        COL_FILTER_SCCALL_END, COL_IS_EXT_LINE, COL_OP0, COL_OP1, COL_PC, COL_REGS, COL_S_CALL_SC,
-        COL_S_END, COL_S_OP0, IS_SCCALL_EXT_LINE,
+        COL_AUX0, COL_AUX1, COL_CLK, COL_ADDR_CODE_RANGE, COL_ADDR_STORAGE_RANGE, COL_ENV_IDX,
+        COL_FILTER_SCCALL_END, IS_SCCALL_EXT_LINE, COL_IS_EXT_LINE, COL_OP0, COL_OP1,
+        COL_PC, COL_REGS, COL_S_CALL_SC, COL_S_END, COL_S_OP0,
     },
     cpu_stark::CpuAdjacentRowWrapper,
 };
@@ -37,7 +37,8 @@ pub(crate) fn eval_packed_generic<F, FE, P, const D: usize, const D2: usize>(
         yield_constr.constraint(
             wrapper.lv[COL_S_CALL_SC]
                 * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
-                * (wrapper.nv[COL_S_OP0.start + 4 + i] - wrapper.lv[COL_ADDR_CODE_RANGE.start + i]),
+                * (wrapper.nv[COL_S_OP0.start + 4 + i]
+                    - wrapper.lv[COL_ADDR_CODE_RANGE.start + i]),
         );
     }
     // op0, op1 all same as main line
@@ -102,9 +103,13 @@ pub(crate) fn eval_packed_generic<F, FE, P, const D: usize, const D2: usize>(
     );
 
     // filter: ext line of sccall is one
-    yield_constr
-        .constraint(wrapper.lv[IS_SCCALL_EXT_LINE] * (P::ONES - wrapper.lv[IS_SCCALL_EXT_LINE]));
-    yield_constr.constraint((P::ONES - wrapper.lv[COL_S_CALL_SC]) * wrapper.lv[IS_SCCALL_EXT_LINE]);
+    yield_constr.constraint(
+        wrapper.lv[IS_SCCALL_EXT_LINE]
+            * (P::ONES - wrapper.lv[IS_SCCALL_EXT_LINE]),
+    );
+    yield_constr.constraint(
+        (P::ONES - wrapper.lv[COL_S_CALL_SC]) * wrapper.lv[IS_SCCALL_EXT_LINE],
+    );
     yield_constr.constraint(
         wrapper.lv[COL_S_CALL_SC]
             * wrapper.lv[COL_IS_EXT_LINE]

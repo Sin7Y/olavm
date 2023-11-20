@@ -5,7 +5,8 @@ use crate::crypto::hash::Hasher;
 use crate::trace::trace::PoseidonRow;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use crate::types::merkle_tree::{
-    tree_key_to_u256, u256_to_tree_key, NodeEntry, TreeKey, TreeKeyU256, TreeValue,
+    tree_key_to_u256, u256_to_tree_key, NodeEntry, TreeKey, TreeKeyU256,
+    TreeValue,
 };
 use core::iter;
 use itertools::Itertools;

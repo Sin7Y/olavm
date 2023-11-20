@@ -78,7 +78,7 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         [(); C::Hasher::HASH_SIZE]:,
     {
         let start = Instant::now();
-
+        
         let degree = polynomials[0].len();
         let lde_values = timed!(
             timing,

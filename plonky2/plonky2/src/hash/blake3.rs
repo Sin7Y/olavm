@@ -10,9 +10,9 @@ use core::slice;
 use blake3;
 
 use super::hash_types::BytesHash;
-use arrayref::array_ref;
-use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::types::{Field, PrimeField64};
+use plonky2_field::extension::{Extendable, FieldExtension};
+use arrayref::array_ref;
 
 pub const ROUND: usize = 7;
 pub const STATE_SIZE: usize = 16;
@@ -20,24 +20,20 @@ pub const IV_SIZE: usize = 8;
 pub const BLOCK_LEN: usize = 64;
 
 pub trait Blake3: PrimeField64 {
+
     const MSG_SCHEDULE: [[usize; STATE_SIZE]; ROUND];
     const IV: [u32; IV_SIZE];
 
+
     #[inline]
     fn g_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(
-        state: &mut [F; STATE_SIZE],
-        a: usize,
-        b: usize,
-        c: usize,
-        d: usize,
-        x: u32,
-        y: u32,
-    ) {
+        state: &mut [F; STATE_SIZE], a: usize, b: usize, c: usize, d: usize, x: u32, y: u32) {
+
+        
         let mut state_tmp = [0u32; STATE_SIZE];
 
         for i in 0..STATE_SIZE {
-            state_tmp[i] =
-                F::BaseField::to_noncanonical_u64(&state[i].to_basefield_array()[0]) as u32;
+            state_tmp[i] = F::BaseField::to_noncanonical_u64(&state[i].to_basefield_array()[0]) as u32;
         }
 
         state_tmp[a] = state_tmp[a].wrapping_add(state_tmp[b]).wrapping_add(x);
@@ -49,17 +45,16 @@ pub trait Blake3: PrimeField64 {
         state_tmp[c] = state_tmp[c].wrapping_add(state_tmp[d]);
         state_tmp[b] = (state_tmp[b] ^ state_tmp[c]).rotate_right(7);
 
+
         for i in 0..STATE_SIZE {
             state[i] = F::from_canonical_u32(state_tmp[i]);
         }
+
     }
 
     #[inline(always)]
     fn round_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(
-        state: &mut [F; 16],
-        msg: &[u32; 16],
-        round: usize,
-    ) {
+        state: &mut [F; 16], msg: &[u32; 16], round: usize) {
         // Select the message schedule based on the round.
         let schedule = Self::MSG_SCHEDULE[round];
 
@@ -84,7 +79,8 @@ pub trait Blake3: PrimeField64 {
         counter: u64,
         flags: u8,
     ) -> [F; 16] {
-        let mut block_words = [0u32; STATE_SIZE];
+
+        let mut block_words  = [0u32; STATE_SIZE];
 
         block_words[0] = u32::from_le_bytes(*array_ref!(block, 0 * 4, 4));
         block_words[1] = u32::from_le_bytes(*array_ref!(block, 1 * 4, 4));
@@ -133,6 +129,7 @@ pub trait Blake3: PrimeField64 {
         state
     }
 
+
     fn compress_in_place_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(
         cv: &mut [F; IV_SIZE],
         block: &[u8; BLOCK_LEN],
@@ -145,8 +142,7 @@ pub trait Blake3: PrimeField64 {
         let mut state_tmp = [0u32; STATE_SIZE];
 
         for i in 0..STATE_SIZE {
-            state_tmp[i] =
-                F::BaseField::to_noncanonical_u64(&state[i].to_basefield_array()[0]) as u32;
+            state_tmp[i] = F::BaseField::to_noncanonical_u64(&state[i].to_basefield_array()[0]) as u32;
         }
 
         cv[0] = F::from_canonical_u32(state_tmp[0] ^ state_tmp[8]);
@@ -159,9 +155,11 @@ pub trait Blake3: PrimeField64 {
         cv[7] = F::from_canonical_u32(state_tmp[7] ^ state_tmp[15]);
     }
 
-    // ---------------------------------- circuit
-    // --------------------------------------
+
+    // ---------------------------------- circuit --------------------------------------
+
 }
+
 
 pub struct Blake3Permutation;
 impl<F: RichField> PlonkyPermutation<F> for Blake3Permutation {

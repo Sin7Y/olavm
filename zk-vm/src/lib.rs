@@ -173,11 +173,7 @@ impl OlaVM {
         }
     }
 
-    pub fn manual_deploy(
-        &mut self,
-        contract: &str,
-        addr: &TreeValue,
-    ) -> Result<TreeValue, StateError> {
+    pub fn manual_deploy(&mut self, contract: &str, addr: &TreeValue) -> Result<TreeValue, StateError> {
         let file = File::open(contract).unwrap();
         let reader = BufReader::new(file);
         let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
