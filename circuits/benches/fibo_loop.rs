@@ -46,6 +46,8 @@ pub fn test_by_asm_json(path: String) {
     let mut process = Process::new();
     let now = Instant::now();
 
+    // 2^18: 300u64
+    // 2^20: 1000u64
     let calldata = [47u64, 300u64, 2u64, 4185064725u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
