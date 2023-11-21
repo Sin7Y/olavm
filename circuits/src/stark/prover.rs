@@ -261,7 +261,10 @@ where
         &mut twiddle_map,
     )?;
     #[cfg(feature = "benchmark")]
-    println!("prove_poseidon_chunck_table total time: {:?}", start.elapsed());
+    println!(
+        "prove_poseidon_chunck_table total time: {:?}",
+        start.elapsed()
+    );
 
     #[cfg(feature = "benchmark")]
     let start = Instant::now();
@@ -362,10 +365,7 @@ where
     #[cfg(feature = "benchmark")]
     {
         println!("\n\n\n");
-        println!(
-            "prove_single_table start: columns = {:?}",
-            S::COLUMNS
-        );
+        println!("prove_single_table start: columns = {:?}", S::COLUMNS);
     }
 
     let degree = trace_poly_values[0].len();
@@ -744,7 +744,7 @@ where
         .collect::<Vec<_>>();
 
     let start = Instant::now();
-    
+
     let res = transpose(&quotient_values)
         .into_par_iter()
         .map(PolynomialValues::new)

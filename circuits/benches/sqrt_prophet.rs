@@ -15,7 +15,7 @@ use executor::load_tx::init_tape;
 use executor::Process;
 use itertools::Itertools;
 use log::{debug, error, info, logger, LevelFilter};
-use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig, Blake3GoldilocksConfig};
+use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -48,7 +48,7 @@ pub fn test_by_asm_json(path: String) {
 
     // 2^18: 7000u64
     // 2^20: 16000u64
-    let calldata = [1073741824u64, 7000u64, 2u64, 3509365327u64]
+    let calldata = [1073741824u64, 16000u64, 2u64, 3509365327u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();

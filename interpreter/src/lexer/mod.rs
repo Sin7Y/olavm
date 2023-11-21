@@ -1,7 +1,12 @@
 pub mod token;
 use self::token::Token;
 
-use crate::lexer::token::Token::{And, Assign, Begin, Colon, Comma, Dot, Else, End, Entry, Equal, Felt, FeltConst, Function, GreaterEqual, GreaterThan, I32Const, Id, If, IntegerDivision, LBracket, LParen, LessEqual, LessThan, Malloc, Minus, Mod, Multiply, NotEqual, Or, Plus, RBracket, RParen, Return, ReturnDel, Semi, Sqrt, While, EOF, I32, Printf};
+use crate::lexer::token::Token::{
+    And, Assign, Begin, Colon, Comma, Dot, Else, End, Entry, Equal, Felt, FeltConst, Function,
+    GreaterEqual, GreaterThan, I32Const, Id, If, IntegerDivision, LBracket, LParen, LessEqual,
+    LessThan, Malloc, Minus, Mod, Multiply, NotEqual, Or, Plus, Printf, RBracket, RParen, Return,
+    ReturnDel, Semi, Sqrt, While, EOF, I32,
+};
 
 #[derive(Clone)]
 pub struct Lexer {

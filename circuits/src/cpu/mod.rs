@@ -1,6 +1,7 @@
 mod add;
 mod assert;
 mod call;
+mod call_sc;
 mod cmp;
 pub mod columns;
 pub mod cpu_stark;
@@ -9,6 +10,5 @@ mod mov;
 mod mstore;
 mod mul;
 mod ret;
-mod tape;
-mod call_sc;
 mod storage;
+mod tape;

@@ -11,9 +11,9 @@ use std::{
 };
 
 use assembler::encoder::encode_asm_from_json_file;
+use core::vm::transaction::init_tx_context;
 use executor::{load_tx::init_tape, Process};
 use plonky2::hash::hash_types::RichField;
-use core::vm::transaction::init_tx_context;
 
 #[allow(unused)]
 fn get_looking_looked_info<
@@ -168,7 +168,14 @@ pub fn get_exec_trace(file_name: String, call_data: Option<Vec<GoldilocksField>>
     process.addr_storage = Address::default();
     if let Some(calldata) = call_data {
         process.tp = GoldilocksField::ZERO;
-        init_tape(&mut process, calldata, Address::default(), Address::default(), Address::default(), &init_tx_context());
+        init_tape(
+            &mut process,
+            calldata,
+            Address::default(),
+            Address::default(),
+            Address::default(),
+            &init_tx_context(),
+        );
     }
     let _ = process.execute(
         &mut program,
