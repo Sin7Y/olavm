@@ -3,7 +3,7 @@ use circuits::generation::{generate_traces, GenerationInputs};
 use circuits::stark::config::StarkConfig;
 use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::proof::PublicValues;
-use circuits::stark::prover::prove_with_traces;
+use circuits::stark::prover::{prove_with_traces, prove_with_traces_parallel};
 use circuits::stark::verifier::verify_proof;
 use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
@@ -19,6 +19,7 @@ use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGold
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 const D: usize = 2;
@@ -46,7 +47,7 @@ pub fn test_by_asm_json(path: String) {
     let mut process = Process::new();
     let now = Instant::now();
 
-    let calldata = [47u64, 300u64, 2u64, 4185064725u64]
+    let calldata = [47u64, 1000u64, 2u64, 4185064725u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();
@@ -74,13 +75,8 @@ pub fn test_by_asm_json(path: String) {
     let now = Instant::now();
 
     let config = StarkConfig::standard_fast_config();
-    let proof = prove_with_traces::<F, C, D>(
-        &ola_stark,
-        &config,
-        traces,
-        public_values,
-        &mut TimingTree::default(),
-    );
+    let traces = Arc::new(traces);
+    let proof = prove_with_traces_parallel::<F, C, D>(&ola_stark, &config, traces, public_values);
     info!("prove_with_traces time:{}", now.elapsed().as_millis());
 
     if let Ok(proof) = proof {
