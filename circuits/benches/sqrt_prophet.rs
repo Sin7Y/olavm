@@ -75,19 +75,15 @@ pub fn test_by_asm_json(path: String) {
     let now = Instant::now();
 
     let config = StarkConfig::standard_fast_config();
-    // let proof = prove_with_traces::<F, C, D>(
-    //     &ola_stark,
-    //     &config,
-    //     traces,
-    //     public_values,
-    //     &mut TimingTree::default(),
-    // );
+    let ola_stark = Arc::new(ola_stark);
+    let config = Arc::new(config);
     let traces = Arc::new(traces);
-    let proof = prove_with_traces_parallel::<F, C, D>(&ola_stark, &config, traces, public_values);
+    let proof = prove_with_traces_parallel::<F, C, D>(ola_stark, config, traces, public_values);
     info!("prove_with_traces time:{}", now.elapsed().as_millis());
 
     if let Ok(proof) = proof {
         let ola_stark = OlaStark::default();
+        let config = StarkConfig::standard_fast_config();
         let verify_res = verify_proof(ola_stark, proof, &config);
         println!("verify result:{:?}", verify_res);
     } else {
