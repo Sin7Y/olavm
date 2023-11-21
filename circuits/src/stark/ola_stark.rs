@@ -580,7 +580,7 @@ mod tests {
     use crate::stark::config::StarkConfig;
     use crate::stark::ola_stark::OlaStark;
     use crate::stark::proof::PublicValues;
-    use crate::stark::prover::prove_with_traces;
+    use crate::stark::prover::{prove_with_traces, prove_with_traces_parallel};
     use crate::stark::serialization::Buffer;
     use crate::stark::stark::Stark;
     use crate::stark::util::trace_rows_to_poly_values;
@@ -604,6 +604,7 @@ mod tests {
     use std::io::{BufRead, BufReader};
     use std::mem;
     use std::path::PathBuf;
+    use std::sync::Arc;
     use std::time::{Duration, Instant};
 
     #[allow(dead_code)]
@@ -617,7 +618,7 @@ mod tests {
 
     #[test]
     fn fibo_loop_test() {
-        let calldata = [47u64, 300u64, 2u64, 4185064725u64]
+        let calldata = [47u64, 1u64, 2u64, 4185064725u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
@@ -806,18 +807,16 @@ mod tests {
         let config = StarkConfig::standard_fast_config();
         #[cfg(feature = "benchmark")]
         let start = Instant::now();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        );
+        let ola_stark = Arc::new(ola_stark);
+        let config = Arc::new(config);
+        let traces = Arc::new(traces);
+        let proof = prove_with_traces_parallel::<F, C, D>(ola_stark, config, traces, public_values);
         #[cfg(feature = "benchmark")]
         println!("prove_ total time: {:?}", start.elapsed());
 
         if let Ok(proof) = proof {
             let ola_stark = OlaStark::default();
+            let config = StarkConfig::standard_fast_config();
             let verify_res = verify_proof(ola_stark, proof, &config);
             println!("verify result:{:?}", verify_res);
         } else {

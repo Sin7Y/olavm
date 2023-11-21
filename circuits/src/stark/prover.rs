@@ -74,8 +74,8 @@ where
 }
 
 pub fn prove_with_traces_parallel<F, C, const D: usize>(
-    ola_stark: &OlaStark<F, D>,
-    config: &StarkConfig,
+    ola_stark: Arc<OlaStark<F, D>>,
+    config: Arc<StarkConfig>,
     trace_poly_values: Arc<[Vec<PolynomialValues<F>>; NUM_TABLES]>,
     public_values: PublicValues,
 ) -> Result<AllProof<F, C, D>>
@@ -96,8 +96,6 @@ where
 {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let res = rt.block_on(async {
-        let ola_stark_copy = ola_stark.clone();
-        let ola_stark_copy2 = ola_stark.clone();
         let rate_bits = config.fri_config.rate_bits;
         let cap_height = config.fri_config.cap_height;
 
@@ -127,157 +125,221 @@ where
         }
 
         let ctl_data_per_table = cross_table_lookup_data::<F, C, D>(
-            config,
+            config.as_ref(),
             &trace_poly_values,
             &ola_stark.cross_table_lookups,
             &mut challenger,
         );
 
-        let ctl_data_per_table_copy = ctl_data_per_table.clone();
+        let ctl_data_per_table = Arc::new(ctl_data_per_table);
+        // let ctl_data_per_table_copy = ctl_data_per_table.clone();
 
-        let trace_values_ref = trace_poly_values.clone();
-        let trace_values_ref2 = trace_poly_values.clone();
+        // let trace_values_ref = trace_poly_values.clone();
+        // let trace_values_ref2 = trace_poly_values.clone();
 
         let trace_commitments = Arc::new(trace_commitments);
-        let trace_commitments2 = trace_commitments.clone();
 
-        let mut twiddle_map2 = twiddle_map.clone();
-
+        // let ola_stark_copy = ola_stark.clone();
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
         let h_cpu = tokio::spawn(async move {
-            let ola_stark_copy = ola_stark_copy.clone();
-            let config = StarkConfig::standard_fast_config();
             let cpu_proof = prove_single_table_without_challenger(
                 &ola_stark_copy.cpu_stark,
-                &config,
-                &trace_values_ref[Table::Cpu as usize],
-                &trace_commitments[Table::Cpu as usize],
-                &ctl_data_per_table[Table::Cpu as usize],
+                &config_copy,
+                &trace_poly_values_copy[Table::Cpu as usize],
+                &trace_commitments_copy[Table::Cpu as usize],
+                &ctl_data_per_table_copy[Table::Cpu as usize],
                 &mut TimingTree::default(),
-                &mut twiddle_map,
+                &mut twiddle_map_copy,
             );
             cpu_proof
         });
 
-        let h_subtables = tokio::spawn(async move {
-            let ola_stark_copy = ola_stark_copy2.clone();
-            let ola_stark = ola_stark_copy.clone();
-            let config = StarkConfig::standard_fast_config();
-            let mut timing = TimingTree::default();
-
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_memory = tokio::spawn(async move {
             let memory_proof = prove_single_table_without_challenger(
-                &ola_stark.memory_stark,
-                &config,
-                &trace_values_ref2[Table::Memory as usize],
-                &trace_commitments2[Table::Memory as usize],
+                &ola_stark_copy.memory_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::Memory as usize],
+                &trace_commitments_copy[Table::Memory as usize],
                 &ctl_data_per_table_copy[Table::Memory as usize],
                 &mut TimingTree::default(),
-                &mut twiddle_map2,
+                &mut twiddle_map_copy,
             );
+            memory_proof
+        });
 
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_bitwise = tokio::spawn(async move {
             let bitwise_proof = prove_single_table_without_challenger(
-                &ola_stark.bitwise_stark,
-                &config,
-                &trace_values_ref2[Table::Bitwise as usize],
-                &trace_commitments2[Table::Bitwise as usize],
+                &ola_stark_copy.bitwise_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::Bitwise as usize],
+                &trace_commitments_copy[Table::Bitwise as usize],
                 &ctl_data_per_table_copy[Table::Bitwise as usize],
-                &mut timing,
-                &mut twiddle_map2,
+                &mut TimingTree::default(),
+                &mut twiddle_map_copy,
             );
+            bitwise_proof
+        });
 
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_cmp = tokio::spawn(async move {
             let cmp_proof = prove_single_table_without_challenger(
-                &ola_stark.cmp_stark,
-                &config,
-                &trace_values_ref2[Table::Cmp as usize],
-                &trace_commitments2[Table::Cmp as usize],
+                &ola_stark_copy.cmp_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::Cmp as usize],
+                &trace_commitments_copy[Table::Cmp as usize],
                 &ctl_data_per_table_copy[Table::Cmp as usize],
-                &mut timing,
-                &mut twiddle_map2,
+                &mut TimingTree::default(),
+                &mut twiddle_map_copy,
             );
+            cmp_proof
+        });
 
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_rangecheck = tokio::spawn(async move {
             let rangecheck_proof = prove_single_table_without_challenger(
-                &ola_stark.rangecheck_stark,
-                &config,
-                &trace_values_ref2[Table::RangeCheck as usize],
-                &trace_commitments2[Table::RangeCheck as usize],
+                &ola_stark_copy.rangecheck_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::RangeCheck as usize],
+                &trace_commitments_copy[Table::RangeCheck as usize],
                 &ctl_data_per_table_copy[Table::RangeCheck as usize],
-                &mut timing,
-                &mut twiddle_map2,
+                &mut TimingTree::default(),
+                &mut twiddle_map_copy,
             );
+            rangecheck_proof
+        });
 
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_poseidon = tokio::spawn(async move {
             let poseidon_proof = prove_single_table_without_challenger(
-                &ola_stark.poseidon_stark,
-                &config,
-                &trace_values_ref2[Table::Poseidon as usize],
-                &trace_commitments2[Table::Poseidon as usize],
+                &ola_stark_copy.poseidon_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::Poseidon as usize],
+                &trace_commitments_copy[Table::Poseidon as usize],
                 &ctl_data_per_table_copy[Table::Poseidon as usize],
-                &mut timing,
-                &mut twiddle_map2,
+                &mut TimingTree::default(),
+                &mut twiddle_map_copy,
             );
+            poseidon_proof
+        });
 
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_poseidon_chunk = tokio::spawn(async move {
             let poseidon_chunk_proof = prove_single_table_without_challenger(
-                &ola_stark.poseidon_chunk_stark,
-                &config,
-                &trace_values_ref2[Table::PoseidonChunk as usize],
-                &trace_commitments2[Table::PoseidonChunk as usize],
+                &ola_stark_copy.poseidon_chunk_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::PoseidonChunk as usize],
+                &trace_commitments_copy[Table::PoseidonChunk as usize],
                 &ctl_data_per_table_copy[Table::PoseidonChunk as usize],
-                &mut timing,
-                &mut twiddle_map2,
+                &mut TimingTree::default(),
+                &mut twiddle_map_copy,
             );
+            poseidon_chunk_proof
+        });
 
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_storage_access = tokio::spawn(async move {
             let storage_access_proof = prove_single_table_without_challenger(
-                &ola_stark.storage_access_stark,
-                &config,
-                &trace_values_ref2[Table::StorageAccess as usize],
-                &trace_commitments2[Table::StorageAccess as usize],
+                &ola_stark_copy.storage_access_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::StorageAccess as usize],
+                &trace_commitments_copy[Table::StorageAccess as usize],
                 &ctl_data_per_table_copy[Table::StorageAccess as usize],
-                &mut timing,
-                &mut twiddle_map2,
+                &mut TimingTree::default(),
+                &mut twiddle_map_copy,
             );
+            storage_access_proof
+        });
 
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_tape = tokio::spawn(async move {
             let tape_proof = prove_single_table_without_challenger(
-                &ola_stark.tape_stark,
-                &config,
-                &trace_values_ref2[Table::Tape as usize],
-                &trace_commitments2[Table::Tape as usize],
+                &ola_stark_copy.tape_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::Tape as usize],
+                &trace_commitments_copy[Table::Tape as usize],
                 &ctl_data_per_table_copy[Table::Tape as usize],
-                &mut timing,
-                &mut twiddle_map2,
+                &mut TimingTree::default(),
+                &mut twiddle_map_copy,
             );
+            tape_proof
+        });
 
+        let ola_stark_copy = Arc::clone(&ola_stark);
+        let config_copy = Arc::clone(&config);
+        let mut twiddle_map_copy = twiddle_map.clone();
+        let trace_poly_values_copy = Arc::clone(&trace_poly_values);
+        let ctl_data_per_table_copy = Arc::clone(&ctl_data_per_table);
+        let trace_commitments_copy = Arc::clone(&trace_commitments);
+        let h_sccall = tokio::spawn(async move {
             let sccall_proof = prove_single_table_without_challenger(
-                &ola_stark.sccall_stark,
-                &config,
-                &trace_values_ref2[Table::SCCall as usize],
-                &trace_commitments2[Table::SCCall as usize],
+                &ola_stark_copy.sccall_stark,
+                &config_copy,
+                &trace_poly_values_copy[Table::SCCall as usize],
+                &trace_commitments_copy[Table::SCCall as usize],
                 &ctl_data_per_table_copy[Table::SCCall as usize],
-                &mut timing,
-                &mut twiddle_map2,
+                &mut TimingTree::default(),
+                &mut twiddle_map_copy,
             );
-            (
-                memory_proof.unwrap(),
-                bitwise_proof.unwrap(),
-                cmp_proof.unwrap(),
-                rangecheck_proof.unwrap(),
-                poseidon_proof.unwrap(),
-                poseidon_chunk_proof.unwrap(),
-                storage_access_proof.unwrap(),
-                tape_proof.unwrap(),
-                sccall_proof.unwrap(),
-            )
+            sccall_proof
         });
 
         let cpu_proof = h_cpu.await.unwrap().unwrap();
-        let (
-            memory_proof,
-            bitwise_proof,
-            cmp_proof,
-            rangecheck_proof,
-            poseidon_proof,
-            poseidon_chunk_proof,
-            storage_access_proof,
-            tape_proof,
-            sccall_proof,
-        ) = h_subtables.await.unwrap();
+        let memory_proof = h_memory.await.unwrap().unwrap();
+        let bitwise_proof = h_bitwise.await.unwrap().unwrap();
+        let cmp_proof = h_cmp.await.unwrap().unwrap();
+        let rangecheck_proof = h_rangecheck.await.unwrap().unwrap();
+        let poseidon_proof = h_poseidon.await.unwrap().unwrap();
+        let poseidon_chunk_proof = h_poseidon_chunk.await.unwrap().unwrap();
+        let storage_access_proof = h_storage_access.await.unwrap().unwrap();
+        let tape_proof = h_tape.await.unwrap().unwrap();
+        let sccall_proof = h_sccall.await.unwrap().unwrap();
 
         let stark_proofs = [
             cpu_proof,
