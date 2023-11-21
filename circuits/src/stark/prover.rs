@@ -330,29 +330,50 @@ where
             sccall_proof
         });
 
-        let cpu_proof = h_cpu.await.unwrap().unwrap();
-        let memory_proof = h_memory.await.unwrap().unwrap();
-        let bitwise_proof = h_bitwise.await.unwrap().unwrap();
-        let cmp_proof = h_cmp.await.unwrap().unwrap();
-        let rangecheck_proof = h_rangecheck.await.unwrap().unwrap();
-        let poseidon_proof = h_poseidon.await.unwrap().unwrap();
-        let poseidon_chunk_proof = h_poseidon_chunk.await.unwrap().unwrap();
-        let storage_access_proof = h_storage_access.await.unwrap().unwrap();
-        let tape_proof = h_tape.await.unwrap().unwrap();
-        let sccall_proof = h_sccall.await.unwrap().unwrap();
+        let result = futures::future::join_all([
+            h_cpu,
+            h_memory,
+            h_bitwise,
+            h_cmp,
+            h_rangecheck,
+            h_poseidon,
+            h_poseidon_chunk,
+            h_storage_access,
+            h_tape,
+            h_sccall,
+        ])
+        .await;
 
-        let stark_proofs = [
-            cpu_proof,
-            memory_proof,
-            bitwise_proof,
-            cmp_proof,
-            rangecheck_proof,
-            poseidon_proof,
-            poseidon_chunk_proof,
-            storage_access_proof,
-            tape_proof,
-            sccall_proof,
-        ];
+        // let cpu_proof = h_cpu.await.unwrap().unwrap();
+        // let memory_proof = h_memory.await.unwrap().unwrap();
+        // let bitwise_proof = h_bitwise.await.unwrap().unwrap();
+        // let cmp_proof = h_cmp.await.unwrap().unwrap();
+        // let rangecheck_proof = h_rangecheck.await.unwrap().unwrap();
+        // let poseidon_proof = h_poseidon.await.unwrap().unwrap();
+        // let poseidon_chunk_proof = h_poseidon_chunk.await.unwrap().unwrap();
+        // let storage_access_proof = h_storage_access.await.unwrap().unwrap();
+        // let tape_proof = h_tape.await.unwrap().unwrap();
+        // let sccall_proof = h_sccall.await.unwrap().unwrap();
+
+        let stark_proofs = result
+            .into_iter()
+            .map(|res| res.unwrap().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        // let stark_proofs = [
+        //     cpu_proof,
+        //     memory_proof,
+        //     bitwise_proof,
+        //     cmp_proof,
+        //     rangecheck_proof,
+        //     poseidon_proof,
+        //     poseidon_chunk_proof,
+        //     storage_access_proof,
+        //     tape_proof,
+        //     sccall_proof,
+        // ];
 
         let compress_challenges = [
             F::ZERO,

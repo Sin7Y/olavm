@@ -364,6 +364,7 @@ dependencies = [
  "eth_trie_utils",
  "ethereum-types 0.14.1",
  "executor",
+ "futures",
  "hex",
  "hex-literal",
  "itertools",
