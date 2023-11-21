@@ -1015,7 +1015,7 @@ mod tests {
             .collect_vec();
         test_cpu_with_asm_file_name(
             "vote.json".to_string(),
-            Some(winning_proposal_calldata),
+            Some(init_calldata),
             Some(db_name),
         );
     }

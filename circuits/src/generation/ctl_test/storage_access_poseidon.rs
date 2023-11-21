@@ -16,7 +16,7 @@ fn print_storage_access_poseidon_ctl_info() {
         GoldilocksField::from_canonical_u64(2364819430),
     ];
 
-    let trace = get_exec_trace(program_file_name, Some(call_data));
+    let trace = get_exec_trace(program_file_name, Some(call_data), None);
     let st_cols = generate_storage_access_trace::<GoldilocksField>(&trace.builtin_storage_hash);
     let st_rows = get_rows_vec_from_trace(st_cols);
     let poseidon_cols = generate_poseidon_trace::<GoldilocksField>(&trace.builtin_poseidon);

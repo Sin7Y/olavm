@@ -11,9 +11,9 @@ use std::{
 };
 
 use assembler::encoder::encode_asm_from_json_file;
+use core::vm::transaction::init_tx_context;
 use executor::{load_tx::init_tape, Process};
 use plonky2::hash::hash_types::RichField;
-use core::vm::transaction::init_tx_context;
 
 #[allow(unused)]
 fn get_looking_looked_info<
@@ -141,11 +141,24 @@ fn get_title_and_data(
 }
 
 #[allow(unused)]
-pub fn get_exec_trace(file_name: String, call_data: Option<Vec<GoldilocksField>>) -> Trace {
+pub fn get_exec_trace(
+    file_name: String,
+    call_data: Option<Vec<GoldilocksField>>,
+    db_name: Option<String>,
+) -> Trace {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("../assembler/test_data/asm/");
     path.push(file_name);
     let program_path = path.display().to_string();
+    let mut db = match db_name {
+        Some(name) => {
+            let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            db_path.push("../executor/db_test/");
+            db_path.push(name);
+            AccountTree::new_db_test(db_path.display().to_string())
+        }
+        _ => AccountTree::new_test(),
+    };
 
     let program = encode_asm_from_json_file(program_path).unwrap();
     let instructions = program.bytecode.split("\n");
@@ -168,13 +181,22 @@ pub fn get_exec_trace(file_name: String, call_data: Option<Vec<GoldilocksField>>
     process.addr_storage = Address::default();
     if let Some(calldata) = call_data {
         process.tp = GoldilocksField::ZERO;
-        init_tape(&mut process, calldata, Address::default(), Address::default(), Address::default(), &init_tx_context());
+        init_tape(
+            &mut process,
+            calldata,
+            Address::default(),
+            Address::default(),
+            Address::default(),
+            &init_tx_context(),
+        );
     }
-    let _ = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
-    );
+    let res = process.execute(&mut program, &mut Some(prophets), &mut db);
+    match res {
+        Ok(_) => {}
+        Err(e) => {
+            println!("execute err:{:?}", e);
+        }
+    }
     return program.trace;
 }
 

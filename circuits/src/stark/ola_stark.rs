@@ -708,7 +708,7 @@ mod tests {
             .collect_vec();
         test_by_asm_json(
             "vote.json".to_string(),
-            Some(winning_proposal_calldata),
+            Some(init_calldata),
             Some(db_name),
         );
     }
@@ -742,7 +742,7 @@ mod tests {
         let mut db = match db_name {
             Some(name) => {
                 let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-                db_path.push("../db_test/");
+                db_path.push("../executor/db_test/");
                 db_path.push(name);
                 AccountTree::new_db_test(db_path.display().to_string())
             }

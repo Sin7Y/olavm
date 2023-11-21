@@ -23,7 +23,7 @@ fn print_cpu_mem_ctl_info() {
         GoldilocksField::ZERO,
         GoldilocksField::from_canonical_u64(1239976900),
     ];
-    let trace = get_exec_trace(program_file_name, Some(call_data));
+    let trace = get_exec_trace(program_file_name, Some(call_data), None);
     let cols = generate_cpu_trace::<GoldilocksField>(&trace.exec);
     let cpu_rows = get_rows_from_trace(cols);
     let mem_cols = generate_memory_trace::<GoldilocksField>(&trace.memory);

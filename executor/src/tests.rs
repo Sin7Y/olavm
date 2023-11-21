@@ -303,7 +303,7 @@ fn vote_test() {
         "../assembler/test_data/bin/vote.json",
         "vote_trace.txt",
         false,
-        Some(winning_proposal_calldata),
+        Some(vote_calldata),
     );
 }
 
