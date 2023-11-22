@@ -137,7 +137,7 @@ mod tests {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.sc_call;
-        let generate_trace = |rows: &[SCCallRow]| generate_sccall_trace(rows);
+        let generate_trace = |rows: &Vec<SCCallRow>| generate_sccall_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_SCCALL>,
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {

@@ -86,11 +86,8 @@ pub(crate) const COL_S_DST: Range<usize> = COL_S_DST_START..COL_S_DST_START + RE
 // ┼────────┼────────┼───────|─────────┼──────────┼───────┼
 // │    0   │    0   │   0   |     0   │     0    │   0   │
 // ┴────────┴────────┴───────┴─────────┴──────────┴───────┴
-pub(crate) const COL_S_ADD: usize = COL_S_DST.end;
-pub(crate) const COL_S_MUL: usize = COL_S_ADD + 1;
-pub(crate) const COL_S_EQ: usize = COL_S_MUL + 1;
-pub(crate) const COL_S_ASSERT: usize = COL_S_EQ + 1;
-pub(crate) const COL_S_MOV: usize = COL_S_ASSERT + 1;
+pub(crate) const COL_S_SIMPLE_ARITHMATIC_OP: usize = COL_S_DST.end;
+pub(crate) const COL_S_MOV: usize = COL_S_SIMPLE_ARITHMATIC_OP + 1;
 pub(crate) const COL_S_JMP: usize = COL_S_MOV + 1;
 pub(crate) const COL_S_CJMP: usize = COL_S_JMP + 1;
 pub(crate) const COL_S_CALL: usize = COL_S_CJMP + 1;
@@ -111,19 +108,16 @@ pub(crate) const COL_S_END: usize = COL_S_MSTORE + 1;
 // │   0   │   0   │      0     │    0  │   0   |
 // ┴───────┴───────┴────────────┴───────┴───────┴
 pub(crate) const COL_S_RC: usize = COL_S_END + 1;
-pub(crate) const COL_S_AND: usize = COL_S_RC + 1;
-pub(crate) const COL_S_OR: usize = COL_S_AND + 1;
-pub(crate) const COL_S_XOR: usize = COL_S_OR + 1;
-pub(crate) const COL_S_NOT: usize = COL_S_XOR + 1;
-pub(crate) const COL_S_NEQ: usize = COL_S_NOT + 1;
-pub(crate) const COL_S_GTE: usize = COL_S_NEQ + 1;
+pub(crate) const COL_S_BITWISE: usize = COL_S_RC + 1;
+pub(crate) const COL_S_NOT: usize = COL_S_BITWISE + 1;
+pub(crate) const COL_S_GTE: usize = COL_S_NOT + 1;
 pub(crate) const COL_S_PSDN: usize = COL_S_GTE + 1;
 pub(crate) const COL_S_SLOAD: usize = COL_S_PSDN + 1;
 pub(crate) const COL_S_SSTORE: usize = COL_S_SLOAD + 1;
 pub(crate) const COL_S_TLOAD: usize = COL_S_SSTORE + 1;
 pub(crate) const COL_S_TSTORE: usize = COL_S_TLOAD + 1;
 pub(crate) const COL_S_CALL_SC: usize = COL_S_TSTORE + 1;
-pub(crate) const NUM_OP_SELECTOR: usize = COL_S_CALL_SC - COL_S_ADD + 1;
+pub(crate) const NUM_OP_SELECTOR: usize = COL_S_CALL_SC - COL_S_SIMPLE_ARITHMATIC_OP + 1;
 
 pub(crate) const COL_IS_ENTRY_SC: usize = COL_S_CALL_SC + 1;
 pub(crate) const COL_IS_NEXT_LINE_DIFF_INST: usize = COL_IS_ENTRY_SC + 1;
@@ -182,10 +176,7 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
         let name = format!("sel_dst_r{}", index);
         m.insert(col, name);
     }
-    m.insert(COL_S_ADD, "s_add".to_string());
-    m.insert(COL_S_MUL, "s_mul".to_string());
-    m.insert(COL_S_EQ, "s_eq".to_string());
-    m.insert(COL_S_ASSERT, "s_assert".to_string());
+    m.insert(COL_S_SIMPLE_ARITHMATIC_OP, "s_simple_arith_op".to_string());
     m.insert(COL_S_MOV, "s_mov".to_string());
     m.insert(COL_S_JMP, "s_jmp".to_string());
     m.insert(COL_S_CJMP, "s_cjmp".to_string());
@@ -195,11 +186,8 @@ pub(crate) fn get_cpu_col_name_map() -> BTreeMap<usize, String> {
     m.insert(COL_S_MSTORE, "s_mstore".to_string());
     m.insert(COL_S_END, "s_end".to_string());
     m.insert(COL_S_RC, "s_rc".to_string());
-    m.insert(COL_S_AND, "s_and".to_string());
-    m.insert(COL_S_OR, "s_or".to_string());
-    m.insert(COL_S_XOR, "s_xor".to_string());
+    m.insert(COL_S_BITWISE, "s_bitwise".to_string());
     m.insert(COL_S_NOT, "s_not".to_string());
-    m.insert(COL_S_NEQ, "s_neq".to_string());
     m.insert(COL_S_GTE, "s_gte".to_string());
     m.insert(COL_S_PSDN, "s_psdn".to_string());
     m.insert(COL_S_SLOAD, "s_sload".to_string());

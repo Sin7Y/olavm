@@ -1,4 +1,4 @@
-use core::program::CTX_REGISTER_NUM;
+use core::{program::CTX_REGISTER_NUM, vm::opcodes::OlaOpcode};
 
 use {
     super::{columns::*, *},
@@ -110,19 +110,11 @@ pub fn ctl_filter_cpu_mem_sccall<F: Field>() -> Column<F> {
 
 // get the data source for bitwise in Cpu table
 pub fn ctl_data_with_bitwise<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_OP0, COL_OP1, COL_DST]).collect_vec()
+    Column::singles([COL_OPCODE, COL_OP0, COL_OP1, COL_DST]).collect_vec()
 }
 
-pub fn ctl_filter_with_bitwise_and<F: Field>() -> Column<F> {
-    Column::single(COL_S_AND)
-}
-
-pub fn ctl_filter_with_bitwise_or<F: Field>() -> Column<F> {
-    Column::single(COL_S_OR)
-}
-
-pub fn ctl_filter_with_bitwise_xor<F: Field>() -> Column<F> {
-    Column::single(COL_S_XOR)
+pub fn ctl_filter_with_bitwise<F: Field>() -> Column<F> {
+    Column::single(COL_S_BITWISE)
 }
 
 // get the data source for CMP in Cpu table
@@ -322,7 +314,6 @@ pub struct CpuStark<F, const D: usize> {
 }
 
 impl<F: RichField, const D: usize> CpuStark<F, D> {
-    pub const OPCODE_SHIFTS: Range<u32> = 7..32;
     pub const OP1_IMM_SHIFT: u32 = 62;
     pub const OP0_SHIFT_START: u32 = 61;
     pub const OP1_SHIFT_START: u32 = 51;
@@ -454,54 +445,65 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         P: PackedField<Scalar = FE>,
     {
         let lv = wrapper.lv;
-        // Selector of opcode and builtins should be binary.
-        let op_selectors = [
-            lv[COL_S_ADD],
-            lv[COL_S_MUL],
-            lv[COL_S_EQ],
-            lv[COL_S_ASSERT],
-            lv[COL_S_MOV],
-            lv[COL_S_JMP],
-            lv[COL_S_CJMP],
-            lv[COL_S_CALL],
-            lv[COL_S_RET],
-            lv[COL_S_MLOAD],
-            lv[COL_S_MSTORE],
-            lv[COL_S_END],
-            lv[COL_S_RC],
-            lv[COL_S_AND],
-            lv[COL_S_OR],
-            lv[COL_S_XOR],
-            lv[COL_S_NOT],
-            lv[COL_S_NEQ],
-            lv[COL_S_GTE],
-            lv[COL_S_PSDN],
-            lv[COL_S_SLOAD],
-            lv[COL_S_SSTORE],
-            lv[COL_S_TLOAD],
-            lv[COL_S_TSTORE],
-            lv[COL_S_CALL_SC],
+        let ops_to_op = [
+            (lv[COL_S_SIMPLE_ARITHMATIC_OP], 0u64),
+            (lv[COL_S_MOV], OlaOpcode::MOV.binary_bit_mask()),
+            (lv[COL_S_JMP], OlaOpcode::JMP.binary_bit_mask()),
+            (lv[COL_S_CJMP], OlaOpcode::CJMP.binary_bit_mask()),
+            (lv[COL_S_CALL], OlaOpcode::CALL.binary_bit_mask()),
+            (lv[COL_S_RET], OlaOpcode::RET.binary_bit_mask()),
+            (lv[COL_S_MLOAD], OlaOpcode::MLOAD.binary_bit_mask()),
+            (lv[COL_S_MSTORE], OlaOpcode::MSTORE.binary_bit_mask()),
+            (lv[COL_S_END], OlaOpcode::END.binary_bit_mask()),
+            (lv[COL_S_RC], OlaOpcode::RC.binary_bit_mask()),
+            (lv[COL_S_BITWISE], 0u64),
+            (lv[COL_S_NOT], OlaOpcode::NOT.binary_bit_mask()),
+            (lv[COL_S_GTE], OlaOpcode::GTE.binary_bit_mask()),
+            (lv[COL_S_PSDN], OlaOpcode::POSEIDON.binary_bit_mask()),
+            (lv[COL_S_SLOAD], OlaOpcode::SLOAD.binary_bit_mask()),
+            (lv[COL_S_SSTORE], OlaOpcode::SSTORE.binary_bit_mask()),
+            (lv[COL_S_TLOAD], OlaOpcode::TLOAD.binary_bit_mask()),
+            (lv[COL_S_TSTORE], OlaOpcode::TSTORE.binary_bit_mask()),
+            (lv[COL_S_CALL_SC], OlaOpcode::SCCALL.binary_bit_mask()),
         ];
+        yield_constr.constraint(
+            lv[COL_S_SIMPLE_ARITHMATIC_OP]
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::ADD.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::MUL.binary_bit_mask()))
+                * (lv[COL_OPCODE] - P::Scalar::from_canonical_u64(OlaOpcode::EQ.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::NEQ.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::ASSERT.binary_bit_mask())),
+        );
+        yield_constr.constraint(
+            lv[COL_S_BITWISE]
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::AND.binary_bit_mask()))
+                * (lv[COL_OPCODE] - P::Scalar::from_canonical_u64(OlaOpcode::OR.binary_bit_mask()))
+                * (lv[COL_OPCODE]
+                    - P::Scalar::from_canonical_u64(OlaOpcode::XOR.binary_bit_mask())),
+        );
 
-        op_selectors
+        ops_to_op
             .iter()
-            .for_each(|s| yield_constr.constraint(*s * (P::ONES - *s)));
+            .for_each(|(s, _)| yield_constr.constraint(*s * (P::ONES - *s)));
 
         // Only one opcode selector enabled.
-        let sum_s_op: P = op_selectors.into_iter().sum();
+        let sum_s_op = ops_to_op
+            .iter()
+            .fold(P::ZEROS, |acc, (selector, _)| acc + *selector);
         yield_constr.constraint(P::ONES - sum_s_op);
 
-        // Constrain opcode encoding.
-        let opcode_shift = Self::OPCODE_SHIFTS
-            .rev()
-            .map(|i| P::Scalar::from_canonical_u64(2_u64.pow(i)))
-            .collect::<Vec<_>>();
-        let opcode: P = op_selectors
-            .iter()
-            .zip(opcode_shift.iter())
-            .map(|(selector, shift)| *selector * *shift)
-            .sum();
-        yield_constr.constraint(lv[COL_OPCODE] - opcode);
+        let cal_opcode = ops_to_op.iter().fold(P::ZEROS, |acc, (selector, opcode)| {
+            acc + *selector * P::Scalar::from_canonical_u64(*opcode)
+        });
+        yield_constr.constraint(
+            (lv[COL_OPCODE] - cal_opcode)
+                * (P::ONES - lv[COL_S_BITWISE] - lv[COL_S_SIMPLE_ARITHMATIC_OP]),
+        );
     }
 
     fn constraint_instruction_encode<FE, P, const D2: usize>(
@@ -658,7 +660,9 @@ impl<F: RichField, const D: usize> CpuStark<F, D> {
         yield_constr.constraint(
             wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[COL_OPCODE] - wrapper.lv[COL_OPCODE]),
         );
-        for col_op_sel in (COL_S_ADD..COL_S_ADD + NUM_OP_SELECTOR).step_by(1) {
+        for col_op_sel in
+            (COL_S_SIMPLE_ARITHMATIC_OP..COL_S_SIMPLE_ARITHMATIC_OP + NUM_OP_SELECTOR).step_by(1)
+        {
             yield_constr.constraint(
                 wrapper.nv[COL_IS_EXT_LINE] * (wrapper.nv[col_op_sel] - wrapper.lv[col_op_sel]),
             );
@@ -903,10 +907,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
         Self::constraint_reg_consistency(&wrapper, yield_constr);
 
         // // opcode
-        add::eval_packed_generic(lv, nv, yield_constr);
-        mul::eval_packed_generic(lv, nv, yield_constr);
-        cmp::eval_packed_generic(lv, nv, yield_constr);
-        assert::eval_packed_generic(lv, nv, yield_constr);
+        simple_arithmatic_op::eval_packed_generic(lv, nv, yield_constr);
         mov::eval_packed_generic(lv, nv, yield_constr);
         call::eval_packed_generic(lv, nv, yield_constr);
         ret::eval_packed_generic(lv, nv, yield_constr);
@@ -926,7 +927,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
     }
 
     fn constraint_degree(&self) -> usize {
-        6
+        7
     }
 }
 
@@ -1038,7 +1039,7 @@ mod tests {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.exec;
-        let generate_trace = |rows: &[Step]| generate_cpu_trace(rows);
+        let generate_trace = |rows: &Vec<Step>| generate_cpu_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_CPU_COLS>,
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {

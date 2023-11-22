@@ -182,7 +182,7 @@ mod tests {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.raw_binary_instructions;
-        let generate_trace = |rows: &[String]| {
+        let generate_trace = |rows: &Vec<String>| {
             let addr = Address::default();
             let insts = rows
                 .iter()

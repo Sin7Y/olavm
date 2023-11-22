@@ -331,7 +331,7 @@ mod test {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.builtin_poseidon_chunk;
-        let generate_trace = |rows: &[PoseidonChunkRow]| generate_poseidon_chunk_trace(rows);
+        let generate_trace = |rows: &Vec<PoseidonChunkRow>| generate_poseidon_chunk_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<
                 GoldilocksField,

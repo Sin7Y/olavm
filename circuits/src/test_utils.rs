@@ -14,7 +14,7 @@ use core::vm::transaction::init_tx_context;
 pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     path: String,
     get_trace_rows: fn(Trace) -> Vec<Row>,
-    generate_trace: fn(&[Row]) -> [Vec<GoldilocksField>; COL_NUM],
+    generate_trace: fn(&Vec<Row>) -> [Vec<GoldilocksField>; COL_NUM],
     eval_packed_generic: E,
     error_hook: Option<H>,
     call_data: Option<Vec<GoldilocksField>>,
