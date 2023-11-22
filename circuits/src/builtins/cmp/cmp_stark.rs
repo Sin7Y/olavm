@@ -130,7 +130,7 @@ mod tests {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.builtin_cmp;
-        let generate_trace = |rows: &[CmpRow]| generate_cmp_trace(rows);
+        let generate_trace = |rows: &Vec<CmpRow>| generate_cmp_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, COL_NUM_CMP>,
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {

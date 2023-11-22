@@ -99,7 +99,19 @@ fn executor_run_test_program(
     }
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    println!("exec len: {}", program.trace.exec.len());
+    println!(
+        "exec: {}, mem: {}, rc: {}, bitwise: {}, cmp: {}, psdn: {}, psdn_chunk: {}, storage: {}, tape: {}, sccall: {}",
+        program.trace.exec.len(),
+        program.trace.memory.len(),
+        program.trace.builtin_rangecheck.len(),
+        program.trace.builtin_bitwise_combined.len(),
+        program.trace.builtin_cmp.len(),
+        program.trace.builtin_poseidon.len(),
+        program.trace.builtin_poseidon_chunk.len(),
+        program.trace.builtin_storage_hash.len(),
+        program.trace.tape.len(),
+        program.trace.sc_call.len(),
+    );
     let mut file = File::create(trace_name).unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
@@ -188,7 +200,7 @@ fn prophet_sqrt_test() {
     );
 }
 
-#[test] 
+#[test]
 fn fib_test() {
     // fib_non_recursive
     // let calldata = [5u64, 1u64, 2146118040u64]

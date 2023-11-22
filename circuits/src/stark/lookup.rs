@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 use itertools::Itertools;
+use maybe_rayon::MaybeParIter;
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::{Field, PrimeField64};
@@ -9,6 +10,7 @@ use plonky2::plonk::circuit_builder::CircuitBuilder;
 
 use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use maybe_rayon::ParallelIterator;
 
 pub(crate) fn eval_lookups<F: Field, P: PackedField<Scalar = F>, const COLS: usize>(
     vars: StarkEvaluationVars<F, P, COLS>,

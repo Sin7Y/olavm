@@ -2,29 +2,27 @@ name: CI checks
 
 on:
   push:
-    branches: [ "peinlcy/prover", "dev/pierre" ]
+    branches: ["peinlcy/prover", "dev/pierre"]
   pull_request:
-    branches: [ "peinlcy/prover", "dev/pierre", "main" ]
+    branches: ["peinlcy/prover", "dev/pierre", "main"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
+      - name: Install Rustfmt
+        run: rustup component add rustfmt --toolchain nightly
       - name: check
-        run:
-          cargo check --all-features
+        run: cargo check --all-features
       - name: fmt-check
-        run:
-          cargo fmt --all -- --check
+        run: cargo fmt --all -- --check
       - name: Clippy
-        run:
-          cargo clippy
+        run: cargo clippy
       - name: Build
         run: cargo build
       - name: Run tests

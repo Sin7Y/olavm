@@ -365,7 +365,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for BitwiseStark<
 
 // Get the column info for Cross_Lookup<Cpu_table, Bitwise_table>
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
-    Column::singles([OP0, OP1, RES]).collect_vec()
+    Column::singles([TAG, OP0, OP1, RES]).collect_vec()
 }
 
 pub fn ctl_filter_with_cpu<F: Field>() -> Column<F> {

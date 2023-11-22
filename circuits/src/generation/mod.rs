@@ -2,9 +2,14 @@
 
 use core::program::Program;
 use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
+use std::sync::mpsc::channel;
+use std::thread;
 
 use eth_trie_utils::partial_trie::HashedPartialTrie;
 use ethereum_types::{Address, H256};
+use itertools::Itertools;
+use num::complex::ComplexFloat;
 //use eth_trie_utils::partial_trie::PartialTrie;
 use plonky2::field::extension::Extendable;
 use plonky2::field::polynomial::PolynomialValues;
@@ -70,58 +75,99 @@ pub struct TrieInputs {
 }
 
 pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
-    program: &Program,
+    mut program: Program,
     ola_stark: &mut OlaStark<F, D>,
     inputs: GenerationInputs,
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
-    let cpu_rows = generate_cpu_trace::<F>(&program.trace.exec);
-    let cpu_trace = trace_to_poly_values(cpu_rows);
+    let (cpu_tx, cpu_rx) = channel();
+    let exec =   std::mem::replace(&mut program.trace.exec, Vec::new());
+    thread::spawn(move || {
+        let cpu_rows = generate_cpu_trace::<F>(&exec);
+        cpu_tx.send(trace_to_poly_values(cpu_rows));
+    });
 
-    let memory_rows = generate_memory_trace::<F>(&program.trace.memory);
-    let memory_trace = trace_to_poly_values(memory_rows);
+    let (memory_tx, memory_rx) = channel();
+    let memory = std::mem::replace(&mut program.trace.memory, Vec::new());
+    thread::spawn(move || {
+        let memory_rows = generate_memory_trace::<F>(&memory);
+        memory_tx.send(trace_to_poly_values(memory_rows));
+    });
 
-    let (bitwise_rows, bitwise_beta) =
-        generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);
-    let bitwise_trace = trace_to_poly_values(bitwise_rows);
+    let (bitwise_tx, bitwise_rx) = channel();
+    let builtin_bitwise_combined = std::mem::replace(&mut program.trace.builtin_bitwise_combined, Vec::new());
+    thread::spawn(move || {
+        let (bitwise_rows, bitwise_beta) =
+            generate_bitwise_trace::<F>(&builtin_bitwise_combined);
+        bitwise_tx.send((trace_to_poly_values(bitwise_rows), bitwise_beta));
+    });
 
-    let cmp_rows = generate_cmp_trace(&program.trace.builtin_cmp);
-    let cmp_trace = trace_to_poly_values(cmp_rows);
+    let (cmp_tx, cmp_rx) = channel();
+    let builtin_cmp =  std::mem::replace(&mut program.trace.builtin_cmp, Vec::new());
+    thread::spawn(move || {
+        let cmp_rows = generate_cmp_trace(&builtin_cmp);
+        cmp_tx.send(trace_to_poly_values(cmp_rows));
+    });
 
-    let rc_rows = generate_rc_trace(&program.trace.builtin_rangecheck);
-    let rc_trace = trace_to_poly_values(rc_rows);
+    let (rc_tx, rc_rx) = channel();
+    let builtin_rangecheck = std::mem::replace(&mut program.trace.builtin_rangecheck, Vec::new());
+    thread::spawn(move || {
+        let rc_rows = generate_rc_trace(&builtin_rangecheck);
+        rc_tx.send(trace_to_poly_values(rc_rows));
+    });
 
-    let poseidon_rows = generate_poseidon_trace(&program.trace.builtin_poseidon);
-    let poseidon_trace = trace_to_poly_values(poseidon_rows);
+    let (poseidon_tx, poseidon_rx) = channel();
+    let builtin_poseidon = std::mem::replace(&mut program.trace.builtin_poseidon, Vec::new());
+    thread::spawn(move || {
+        let poseidon_rows = generate_poseidon_trace(&builtin_poseidon);
+        poseidon_tx.send(trace_to_poly_values(poseidon_rows));
+    });
 
-    let poseidon_chunk_rows: [Vec<F>; 53] =
-        generate_poseidon_chunk_trace(&program.trace.builtin_poseidon_chunk);
-    let poseidon_chunk_trace = trace_to_poly_values(poseidon_chunk_rows);
+    let (poseidon_chunk_tx, poseidon_chunk_rx) = channel();
+    let builtin_poseidon_chunk = std::mem::replace(&mut program.trace.builtin_poseidon_chunk, Vec::new());
+    thread::spawn(move || {
+        let poseidon_chunk_rows: [Vec<F>; 53] =
+            generate_poseidon_chunk_trace(&builtin_poseidon_chunk);
+        poseidon_chunk_tx.send(trace_to_poly_values(poseidon_chunk_rows));
+    });
 
-    let storage_access_rows = generate_storage_access_trace(&program.trace.builtin_storage_hash);
-    let storage_access_trace = trace_to_poly_values(storage_access_rows);
+    let (storage_tx, storage_rx) = channel();
+    let builtin_storage_hash = std::mem::replace(&mut program.trace.builtin_storage_hash, Vec::new());
+    thread::spawn(move || {
+        let storage_access_rows = generate_storage_access_trace(&builtin_storage_hash);
+        storage_tx.send(trace_to_poly_values(storage_access_rows));
+    });
 
-    let tape_rows = generate_tape_trace(&program.trace.tape);
-    let tape_trace = trace_to_poly_values(tape_rows);
+    let (tape_tx, tape_rx) = channel();
+    let tape = std::mem::replace(&mut program.trace.tape, Vec::new());
+    thread::spawn(move || {
+        let tape_rows = generate_tape_trace(&tape);
+        tape_tx.send(trace_to_poly_values(tape_rows));
+    });
 
-    let sccall_rows = generate_sccall_trace(&program.trace.sc_call);
-    let sccall_trace = trace_to_poly_values(sccall_rows);
+    let (sccall_tx, sccall_rx) = channel();
+    let sc_call = std::mem::replace(&mut program.trace.sc_call, Vec::new());
+    thread::spawn(move || {
+        let sccall_rows = generate_sccall_trace(&sc_call);
+        sccall_tx.send(trace_to_poly_values(sccall_rows));
+    });
 
+    let (bitwise_trace, bitwise_beta) = bitwise_rx.recv().unwrap();
     ola_stark
         .bitwise_stark
         .set_compress_challenge(bitwise_beta)
         .unwrap();
 
     let traces = [
-        cpu_trace,
-        memory_trace,
+        cpu_rx.recv().unwrap(),
+        memory_rx.recv().unwrap(),
         bitwise_trace,
-        cmp_trace,
-        rc_trace,
-        poseidon_trace,
-        poseidon_chunk_trace,
-        storage_access_trace,
-        tape_trace,
-        sccall_trace,
+        cmp_rx.recv().unwrap(),
+        rc_rx.recv().unwrap(),
+        poseidon_rx.recv().unwrap(),
+        poseidon_chunk_rx.recv().unwrap(),
+        storage_rx.recv().unwrap(),
+        tape_rx.recv().unwrap(),
+        sccall_rx.recv().unwrap(),
     ];
 
     // TODO: update trie_roots_before & trie_roots_after

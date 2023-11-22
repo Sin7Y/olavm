@@ -194,7 +194,7 @@ mod tests {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.tape;
-        let generate_trace = |rows: &[TapeRow]| generate_tape_trace(rows);
+        let generate_trace = |rows: &Vec<TapeRow>| generate_tape_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_TAPE>,
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {

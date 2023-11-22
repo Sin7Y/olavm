@@ -8,8 +8,7 @@ use std::collections::HashMap;
 use crate::cpu::columns::{self as cpu, COL_IS_ENTRY_SC};
 use plonky2::hash::hash_types::RichField;
 
-pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU_COLS] {
-    let steps = steps.to_vec();
+pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> [Vec<F>; cpu::NUM_CPU_COLS] {
     let trace_len = steps.len();
 
     let ext_trace_len = if !trace_len.is_power_of_two() {
@@ -19,10 +18,22 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     };
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; ext_trace_len]; cpu::NUM_CPU_COLS];
     let mut opcode_to_selector = HashMap::new();
-    opcode_to_selector.insert(OlaOpcode::ADD.binary_bit_mask(), cpu::COL_S_ADD);
-    opcode_to_selector.insert(OlaOpcode::MUL.binary_bit_mask(), cpu::COL_S_MUL);
-    opcode_to_selector.insert(OlaOpcode::EQ.binary_bit_mask(), cpu::COL_S_EQ);
-    opcode_to_selector.insert(OlaOpcode::ASSERT.binary_bit_mask(), cpu::COL_S_ASSERT);
+    opcode_to_selector.insert(
+        OlaOpcode::ADD.binary_bit_mask(),
+        cpu::COL_S_SIMPLE_ARITHMATIC_OP,
+    );
+    opcode_to_selector.insert(
+        OlaOpcode::MUL.binary_bit_mask(),
+        cpu::COL_S_SIMPLE_ARITHMATIC_OP,
+    );
+    opcode_to_selector.insert(
+        OlaOpcode::EQ.binary_bit_mask(),
+        cpu::COL_S_SIMPLE_ARITHMATIC_OP,
+    );
+    opcode_to_selector.insert(
+        OlaOpcode::ASSERT.binary_bit_mask(),
+        cpu::COL_S_SIMPLE_ARITHMATIC_OP,
+    );
     opcode_to_selector.insert(OlaOpcode::MOV.binary_bit_mask(), cpu::COL_S_MOV);
     opcode_to_selector.insert(OlaOpcode::JMP.binary_bit_mask(), cpu::COL_S_JMP);
     opcode_to_selector.insert(OlaOpcode::CJMP.binary_bit_mask(), cpu::COL_S_CJMP);
@@ -32,11 +43,14 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
     opcode_to_selector.insert(OlaOpcode::MSTORE.binary_bit_mask(), cpu::COL_S_MSTORE);
     opcode_to_selector.insert(OlaOpcode::END.binary_bit_mask(), cpu::COL_S_END);
     opcode_to_selector.insert(OlaOpcode::RC.binary_bit_mask(), cpu::COL_S_RC);
-    opcode_to_selector.insert(OlaOpcode::AND.binary_bit_mask(), cpu::COL_S_AND);
-    opcode_to_selector.insert(OlaOpcode::OR.binary_bit_mask(), cpu::COL_S_OR);
-    opcode_to_selector.insert(OlaOpcode::XOR.binary_bit_mask(), cpu::COL_S_XOR);
+    opcode_to_selector.insert(OlaOpcode::AND.binary_bit_mask(), cpu::COL_S_BITWISE);
+    opcode_to_selector.insert(OlaOpcode::OR.binary_bit_mask(), cpu::COL_S_BITWISE);
+    opcode_to_selector.insert(OlaOpcode::XOR.binary_bit_mask(), cpu::COL_S_BITWISE);
     opcode_to_selector.insert(OlaOpcode::NOT.binary_bit_mask(), cpu::COL_S_NOT);
-    opcode_to_selector.insert(OlaOpcode::NEQ.binary_bit_mask(), cpu::COL_S_NEQ);
+    opcode_to_selector.insert(
+        OlaOpcode::NEQ.binary_bit_mask(),
+        cpu::COL_S_SIMPLE_ARITHMATIC_OP,
+    );
     opcode_to_selector.insert(OlaOpcode::GTE.binary_bit_mask(), cpu::COL_S_GTE);
     opcode_to_selector.insert(OlaOpcode::POSEIDON.binary_bit_mask(), cpu::COL_S_PSDN);
     opcode_to_selector.insert(OlaOpcode::SLOAD.binary_bit_mask(), cpu::COL_S_SLOAD);
@@ -151,7 +165,6 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
                 F::ZERO
             };
     }
-
     // fill in padding.
     let inst_end = if trace_len == 0 {
         F::from_canonical_u64(1048576)
@@ -189,6 +202,5 @@ pub fn generate_cpu_trace<F: RichField>(steps: &[Step]) -> [Vec<F>; cpu::NUM_CPU
             v.len()
         )
     });
-
     trace_row_vecs
 }

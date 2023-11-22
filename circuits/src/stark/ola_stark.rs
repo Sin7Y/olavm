@@ -239,17 +239,7 @@ fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
             TableWithColumns::new(
                 Table::Cpu,
                 cpu_stark::ctl_data_with_bitwise(),
-                Some(cpu_stark::ctl_filter_with_bitwise_and()),
-            ),
-            TableWithColumns::new(
-                Table::Cpu,
-                cpu_stark::ctl_data_with_bitwise(),
-                Some(cpu_stark::ctl_filter_with_bitwise_or()),
-            ),
-            TableWithColumns::new(
-                Table::Cpu,
-                cpu_stark::ctl_data_with_bitwise(),
-                Some(cpu_stark::ctl_filter_with_bitwise_xor()),
+                Some(cpu_stark::ctl_filter_with_bitwise()),
             ),
         ],
         TableWithColumns::new(
@@ -604,6 +594,7 @@ mod tests {
     use std::io::{BufRead, BufReader};
     use std::mem;
     use std::path::PathBuf;
+    use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
 
     #[allow(dead_code)]
@@ -802,7 +793,7 @@ mod tests {
         let inputs = GenerationInputs::default();
 
         let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(&program, &mut ola_stark, inputs);
+        let (traces, public_values) = generate_traces(program, &mut ola_stark, inputs);
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
             &ola_stark,
