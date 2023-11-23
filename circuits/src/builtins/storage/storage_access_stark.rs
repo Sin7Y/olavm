@@ -20,6 +20,16 @@ use crate::stark::{
 
 use super::columns::*;
 
+pub fn ctl_data_for_prog_chunk<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles([COL_ST_IS_WRITE]).collect_vec();
+    res.extend(Column::singles(COL_ST_ADDR_RANGE.chain(COL_ST_PATH_RANGE)));
+    res
+}
+
+pub fn ctl_filter_for_prog_chunk<F: Field>() -> Column<F> {
+    Column::single(COL_ST_FILTER_IS_FOR_PROG)
+}
+
 pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
     let mut res = Column::singles([COL_ST_ACCESS_IDX, COL_ST_IS_WRITE]).collect_vec();
     res.extend(Column::singles(COL_ST_ADDR_RANGE.chain(COL_ST_PATH_RANGE)));
@@ -109,6 +119,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageAccess
         let nv_st_access_idx = nv[COL_ST_ACCESS_IDX];
         let lv_layer = lv[COL_ST_LAYER];
         let nv_layer = nv[COL_ST_LAYER];
+
         // is_padding binary and change from 0 to 1 once.
         yield_constr.constraint((P::ONES - lv_is_padding) * lv_is_padding);
         yield_constr.constraint_transition(
@@ -299,6 +310,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageAccess
         );
         yield_constr.constraint(lv_is_padding * lv[COL_ST_FILTER_IS_HASH_BIT_0]);
         yield_constr.constraint(lv_is_padding * lv[COL_ST_FILTER_IS_HASH_BIT_1]);
+        yield_constr.constraint(lv[COL_ST_FILTER_IS_FOR_PROG] * lv[COL_ST_IS_WRITE]);
+        yield_constr
+            .constraint(lv[COL_ST_FILTER_IS_FOR_PROG] * (P::ONES - lv[COL_ST_IS_LAYER_256]));
     }
 
     fn eval_ext_circuit(
@@ -323,19 +337,17 @@ mod tests {
         },
         generation::storage::generate_storage_access_trace,
         stark::stark::Stark,
+        test_utils::simple_test_stark,
     };
     use core::{
-        trace::trace::{StorageHashRow, Trace},
+        trace::trace::Trace,
         types::{Field, GoldilocksField},
     };
     use std::path::PathBuf;
 
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 
-    use crate::{
-        stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars},
-        test_utils::test_stark_with_asm_path,
-    };
+    use crate::stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars};
 
     #[test]
     fn test_storage_with_program() {
@@ -360,8 +372,9 @@ mod tests {
         type S = StorageAccessStark<F, D>;
         let stark = S::default();
 
-        let get_trace_rows = |trace: Trace| trace.builtin_storage_hash;
-        let generate_trace = |rows: &Vec<StorageHashRow>| generate_storage_access_trace(rows);
+        let generate_trace = |trace: Trace| {
+            generate_storage_access_trace(&trace.builtin_storage_hash, &trace.builtin_program_hash)
+        };
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_ST>,
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
@@ -379,9 +392,8 @@ mod tests {
                     println!("{:>32}\t{:>22}\t{:>22}", name, lv, nv);
                 }
             };
-        test_stark_with_asm_path(
+        simple_test_stark(
             program_path.to_string(),
-            get_trace_rows,
             generate_trace,
             eval_packed_generic,
             Some(error_hook),

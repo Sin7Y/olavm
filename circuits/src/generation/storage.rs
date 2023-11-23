@@ -5,9 +5,10 @@ use plonky2::hash::hash_types::RichField;
 use crate::builtins::storage::columns::*;
 
 pub fn generate_storage_access_trace<F: RichField>(
-    cells: &[StorageHashRow],
+    accesses: &[StorageHashRow],
+    prog_hash_read: &[StorageHashRow],
 ) -> [Vec<F>; NUM_COL_ST] {
-    let num_filled_row_len: usize = cells.len();
+    let num_filled_row_len: usize = accesses.len() + prog_hash_read.len();
     let num_padded_rows = if !num_filled_row_len.is_power_of_two() || num_filled_row_len < 2 {
         if num_filled_row_len < 2 {
             2
@@ -19,7 +20,7 @@ pub fn generate_storage_access_trace<F: RichField>(
     };
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_COL_ST];
-    for (i, c) in cells.iter().enumerate() {
+    for (i, c) in accesses.iter().chain(prog_hash_read).enumerate() {
         trace[COL_ST_ACCESS_IDX][i] = F::from_canonical_u64(c.storage_access_idx);
         for j in 0..4 {
             trace[COL_ST_PRE_ROOT_RANGE.start + j][i] = F::from_canonical_u64(c.pre_root[j].0);
@@ -70,6 +71,13 @@ pub fn generate_storage_access_trace<F: RichField>(
         };
         trace[COL_ST_FILTER_IS_HASH_BIT_0][i] = if c.layer_bit == 0 { F::ONE } else { F::ZERO };
         trace[COL_ST_FILTER_IS_HASH_BIT_1][i] = if c.layer_bit == 1 { F::ONE } else { F::ZERO };
+        trace[COL_ST_FILTER_IS_FOR_PROG][i] = if i < accesses.len() {
+            F::ZERO
+        } else if c.layer == 256 {
+            F::ONE
+        } else {
+            F::ZERO
+        };
         trace[COL_ST_IS_PADDING][i] = F::ZERO;
     }
 
