@@ -61,8 +61,10 @@ pub fn generate_poseidon_chunk_trace<F: RichField>(
             }
             if c.op1.0 == c.acc_cnt.0 {
                 let first_padding_index = (c.op1.0 % 8) as usize;
-                for j in first_padding_index..8 {
-                    trace[COL_POSEIDON_CHUNK_FILTER_LOOKING_MEM_RANGE.start + j][i] = F::ZERO
+                if first_padding_index != 0 {
+                    for j in first_padding_index..8 {
+                        trace[COL_POSEIDON_CHUNK_FILTER_LOOKING_MEM_RANGE.start + j][i] = F::ZERO
+                    }
                 }
             }
         }
