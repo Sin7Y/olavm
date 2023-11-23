@@ -269,12 +269,25 @@ pub fn ctl_filter_cpu_sccall_end<F: Field>() -> Column<F> {
 }
 
 // get the data source for Rangecheck in Cpu table
-pub fn ctl_data_with_program<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_PC, COL_INST, COL_IMM_VAL]).collect_vec()
+pub fn ctl_data_inst_to_program<F: Field>() -> Vec<Column<F>> {
+    Column::singles(COL_ADDR_CODE_RANGE.chain([COL_PC, COL_INST])).collect_vec()
+}
+
+pub fn ctl_data_imm_to_program<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles(COL_ADDR_STORAGE_RANGE).collect_vec();
+    res.push(Column::linear_combination_with_constant(
+        [(COL_PC, F::ONE)],
+        F::ONE,
+    ));
+    res.push(Column::single(COL_IMM_VAL));
+    res
 }
 
 pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
-    Column::single(COL_INST)
+    Column::linear_combination_with_constant(
+        [(COL_IS_EXT_LINE, F::NEG_ONE), (COL_IS_PADDING, F::NEG_ONE)],
+        F::ONE,
+    )
 }
 
 pub(crate) fn ctl_data_cpu_tape_sccall_caller<F: Field>(i: usize) -> Vec<Column<F>> {
@@ -1013,11 +1026,7 @@ mod tests {
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        test_cpu_with_asm_file_name(
-            "vote.json".to_string(),
-            Some(init_calldata),
-            Some(db_name),
-        );
+        test_cpu_with_asm_file_name("vote.json".to_string(), Some(init_calldata), Some(db_name));
     }
 
     #[allow(unused)]

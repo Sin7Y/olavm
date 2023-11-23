@@ -11,9 +11,8 @@ pub(crate) const COL_PROG_EXEC_PC: usize = COL_PROG_EXEC_CODE_ADDR_RANGE.end;
 pub(crate) const COL_PROG_EXEC_INST: usize = COL_PROG_EXEC_PC + 1;
 pub(crate) const COL_PROG_EXEC_COMP_PROG: usize = COL_PROG_EXEC_INST + 1;
 pub(crate) const COL_PROG_EXEC_COMP_PROG_PERM: usize = COL_PROG_EXEC_COMP_PROG + 1;
-pub(crate) const COL_PROG_FILTER_EXEC_OPERATION: usize = COL_PROG_EXEC_COMP_PROG_PERM + 1;
-pub(crate) const COL_PROG_FILTER_EXEC_IMM_VALUE: usize = COL_PROG_FILTER_EXEC_OPERATION + 1;
-pub(crate) const COL_PROG_FILTER_PROG_CHUNK: usize = COL_PROG_FILTER_EXEC_IMM_VALUE + 1;
+pub(crate) const COL_PROG_FILTER_EXEC: usize = COL_PROG_EXEC_COMP_PROG_PERM + 1;
+pub(crate) const COL_PROG_FILTER_PROG_CHUNK: usize = COL_PROG_FILTER_EXEC + 1;
 pub(crate) const NUM_PROG_COLS: usize = COL_PROG_FILTER_PROG_CHUNK + 1;
 
 pub(crate) fn get_prog_col_name_map() -> BTreeMap<usize, String> {
@@ -38,12 +37,8 @@ pub(crate) fn get_prog_col_name_map() -> BTreeMap<usize, String> {
         String::from("EXEC_COMP_PROG_PERM"),
     );
     m.insert(
-        COL_PROG_FILTER_EXEC_OPERATION,
-        String::from("FILTER_EXEC_OPERATION"),
-    );
-    m.insert(
-        COL_PROG_FILTER_EXEC_IMM_VALUE,
-        String::from("FILTER_EXEC_IMM_VALUE"),
+        COL_PROG_FILTER_EXEC,
+        String::from("FILTER_EXEC"),
     );
     m.insert(
         COL_PROG_FILTER_PROG_CHUNK,

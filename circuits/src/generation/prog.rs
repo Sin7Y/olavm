@@ -63,7 +63,7 @@ pub fn generate_prog_trace<F: RichField>(
         }
         trace[COL_PROG_EXEC_PC][exec_index] = F::from_canonical_u64(e.pc);
         trace[COL_PROG_EXEC_INST][exec_index] = F::from_canonical_u64(e.instruction.0);
-        trace[COL_PROG_FILTER_EXEC_OPERATION][exec_index] = F::ONE;
+        trace[COL_PROG_FILTER_EXEC][exec_index] = F::ONE;
         trace[COL_PROG_EXEC_COMP_PROG][exec_index] = compress(
             [
                 trace[COL_PROG_EXEC_CODE_ADDR_RANGE.start][exec_index],
@@ -88,7 +88,7 @@ pub fn generate_prog_trace<F: RichField>(
             }
             trace[COL_PROG_EXEC_PC][exec_index] = F::from_canonical_u64(e.pc + 1);
             trace[COL_PROG_EXEC_INST][exec_index] = F::from_canonical_u64(e.immediate_data.0);
-            trace[COL_PROG_FILTER_EXEC_IMM_VALUE][exec_index] = F::ONE;
+            trace[COL_PROG_FILTER_EXEC][exec_index] = F::ONE;
             trace[COL_PROG_EXEC_COMP_PROG][exec_index] = compress(
                 [
                     trace[COL_PROG_EXEC_CODE_ADDR_RANGE.start][exec_index],
