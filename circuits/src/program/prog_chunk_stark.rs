@@ -31,6 +31,19 @@ pub fn ctl_data_to_program<F: Field>(i: usize) -> Vec<Column<F>> {
 pub fn ctl_filter_to_program<F: Field>(i: usize) -> Column<F> {
     Column::single(COL_PROG_CHUNK_FILTER_LOOKING_PROG_RANGE.start + i)
 }
+
+pub fn ctl_data_to_poseidon<F: Field>() -> Vec<Column<F>> {
+    Column::singles(
+        COL_PROG_CHUNK_INST_RANGE
+            .chain(COL_PROG_CHUNK_CAP_RANGE)
+            .chain(COL_PROG_CHUNK_HASH_RANGE),
+    )
+    .collect_vec()
+}
+
+pub fn ctl_filter_to_poseidon<F: Field>() -> Column<F> {
+    Column::linear_combination_with_constant([(COL_PROG_CHUNK_IS_PADDING_LINE, F::NEG_ONE)], F::ONE)
+}
 #[derive(Copy, Clone, Default)]
 pub struct ProgChunkStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
