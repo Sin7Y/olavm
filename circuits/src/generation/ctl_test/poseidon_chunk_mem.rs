@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 #[allow(unused_imports)]
 use super::debug_trace_print::{get_exec_trace, get_rows_vec_from_trace, print_title_data};
 #[allow(unused_imports)]
@@ -11,12 +13,27 @@ use core::types::{Field, GoldilocksField};
 
 #[test]
 fn print_poseidon_chunk_mem_ctl_info() {
-    let program_file_name: String = "poseidon_hash.json".to_string();
-    let call_data = vec![
-        GoldilocksField::ZERO,
-        GoldilocksField::from_canonical_u64(1239976900),
-    ];
-    let trace = get_exec_trace(program_file_name, Some(call_data));
+    let program_file_name: String = "vote.json".to_string();
+    let db_name = "vote_test".to_string();
+
+    let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    let vote_calldata = [2u64, 1u64, 2791810083u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    let winning_proposal_calldata = [0u64, 3186728800u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+    let winning_name_calldata = [0u64, 363199787u64]
+        .iter()
+        .map(|v| GoldilocksField::from_canonical_u64(*v))
+        .collect_vec();
+
+    let trace = get_exec_trace(program_file_name, Some(init_calldata), Some(db_name));
     let cols = generate_poseidon_chunk_trace::<GoldilocksField>(&trace.builtin_poseidon_chunk);
     let poseidon_rows = get_rows_vec_from_trace(cols);
     let mem_cols = generate_memory_trace::<GoldilocksField>(&trace.memory);

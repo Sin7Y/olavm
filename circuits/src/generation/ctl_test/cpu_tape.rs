@@ -16,7 +16,7 @@ fn print_cpu_tape_ctl_info() {
         GoldilocksField::ZERO,
         GoldilocksField::from_canonical_u64(1239976900),
     ];
-    let trace = get_exec_trace(program_file_name, Some(call_data));
+    let trace = get_exec_trace(program_file_name, Some(call_data), None);
     let cols = generate_cpu_trace::<GoldilocksField>(&trace.exec);
     let cpu_rows = get_rows_vec_from_trace(cols);
     let tape_cols = generate_tape_trace::<GoldilocksField>(&trace.tape);

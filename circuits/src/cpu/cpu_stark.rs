@@ -827,7 +827,7 @@ impl<
         let lv_ext_length = lv[COL_S_SLOAD]
             + lv[COL_S_SSTORE]
             + lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
-            + lv[COL_S_TSTORE]
+            + lv[COL_S_TSTORE] * lv[COL_OP1]
             + lv[COL_S_CALL_SC]
             + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
         let is_crossing_inst = lv[COL_IS_NEXT_LINE_DIFF_INST];
@@ -997,7 +997,6 @@ mod tests {
     #[test]
     fn test_ola_vote() {
         let db_name = "vote_test".to_string();
-
         let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
@@ -1016,7 +1015,7 @@ mod tests {
             .collect_vec();
         test_cpu_with_asm_file_name(
             "vote.json".to_string(),
-            Some(winning_proposal_calldata),
+            Some(init_calldata),
             Some(db_name),
         );
     }

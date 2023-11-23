@@ -118,7 +118,6 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> [Vec<F>; cpu::NUM_
 
         let ext_length = if s.opcode.0 == OlaOpcode::SLOAD.binary_bit_mask()
             || s.opcode.0 == OlaOpcode::SSTORE.binary_bit_mask()
-            || s.opcode.0 == OlaOpcode::TSTORE.binary_bit_mask()
             || s.opcode.0 == OlaOpcode::SCCALL.binary_bit_mask()
             || (s.opcode.0 == OlaOpcode::END.binary_bit_mask()
                 && !trace[cpu::COL_ENV_IDX][i].is_zero())
@@ -126,6 +125,8 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> [Vec<F>; cpu::NUM_
             1
         } else if s.opcode.0 == OlaOpcode::TLOAD.binary_bit_mask() {
             s.register_selector.op0.0 * s.register_selector.op1.0 + (1 - s.register_selector.op0.0)
+        } else if s.opcode.0 == OlaOpcode::TSTORE.binary_bit_mask() {
+            s.register_selector.op1.0
         } else {
             0
         };

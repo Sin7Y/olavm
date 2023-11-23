@@ -41,11 +41,22 @@ pub(crate) fn eval_packed_generic<F, FE, P, const D: usize, const D2: usize>(
     );
 
     // COL_S_OP0[0] is tape-addr in ext lines, and increase by one
-    // main and first ext for tstore
+    // in ext lines
     yield_constr.constraint(
         wrapper.lv[COL_S_TSTORE]
             * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
-            * (wrapper.nv[COL_S_OP0.start] - wrapper.lv[COL_TP] - P::ONES),
+            * (wrapper.lv[COL_TP] - wrapper.nv[COL_S_OP0.start]),
+    );
+    yield_constr.constraint(
+        wrapper.lv[COL_S_TSTORE]
+            * wrapper.lv[COL_IS_EXT_LINE]
+            * wrapper.nv[COL_IS_EXT_LINE]
+            * (wrapper.nv[COL_S_OP0.start] - wrapper.lv[COL_S_OP0.start] - P::ONES),
+    );
+    yield_constr.constraint(
+        wrapper.lv[COL_S_TSTORE]
+            * (P::ONES - wrapper.nv[COL_IS_EXT_LINE])
+            * (wrapper.nv[COL_TP] - wrapper.lv[COL_S_OP0.start] - P::ONES),
     );
     // main and first ext for tload (flag == 1)
     yield_constr.constraint(
@@ -72,7 +83,7 @@ pub(crate) fn eval_packed_generic<F, FE, P, const D: usize, const D2: usize>(
     yield_constr.constraint(
         wrapper.lv[COL_S_TSTORE]
             * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
-            * (wrapper.nv[COL_OP0] - wrapper.lv[COL_AUX0]),
+            * (wrapper.lv[COL_OP0] - wrapper.nv[COL_AUX0]),
     );
     // for tload, main dst equals first ext line's aux0
     yield_constr.constraint(
@@ -81,24 +92,23 @@ pub(crate) fn eval_packed_generic<F, FE, P, const D: usize, const D2: usize>(
             * (wrapper.lv[COL_DST] - wrapper.nv[COL_AUX0]),
     );
 
-    // tp only changes when tstore and sccall next line
+    // tp only changes when tstore last ext line and sccall next line
     // not tstore and sccall, tp not change
     yield_constr.constraint(
         wrapper.is_in_same_tx
-            * (P::ONES - wrapper.nv[COL_S_TSTORE] - wrapper.nv[COL_S_CALL_SC])
+            * (P::ONES - wrapper.lv[COL_S_TSTORE] - wrapper.nv[COL_S_CALL_SC])
             * (wrapper.nv[COL_TP] - wrapper.lv[COL_TP]),
     );
-    // for tstore, main tp equals first ext line's tp; other ext line's tp++
+    // for tstore, main only last ext line tp change
     yield_constr.constraint(
         wrapper.lv[COL_S_TSTORE]
-            * (P::ONES - wrapper.lv[COL_IS_EXT_LINE])
+            * wrapper.nv[COL_IS_EXT_LINE]
             * (wrapper.nv[COL_TP] - wrapper.lv[COL_TP]),
     );
     yield_constr.constraint(
         wrapper.lv[COL_S_TSTORE]
-            * wrapper.nv[COL_S_TSTORE]
-            * wrapper.lv[COL_IS_EXT_LINE]
-            * (wrapper.nv[COL_TP] - wrapper.lv[COL_TP] - P::ONES),
+            * (P::ONES - wrapper.nv[COL_IS_EXT_LINE])
+            * (wrapper.nv[COL_TP] - wrapper.lv[COL_S_OP0.start] - P::ONES),
     );
     // for sccall, main tp equals ext line's tp; ext line next tp += 12;
     yield_constr.constraint(
