@@ -260,7 +260,6 @@ pub fn generate_rc_trace<F: RichField>(
     } else {
         max_trace_len
     };
-
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; ext_trace_len]; rangecheck::COL_NUM_RC];
     for (i, c) in cells.iter().enumerate() {
         trace[rangecheck::CPU_FILTER][i] =
@@ -275,7 +274,6 @@ pub fn generate_rc_trace<F: RichField>(
         trace[rangecheck::LIMB_LO][i] = F::from_canonical_u64(c.limb_lo.to_canonical_u64());
         trace[rangecheck::LIMB_HI][i] = F::from_canonical_u64(c.limb_hi.to_canonical_u64());
     }
-
     // add fix rangecheck info
     trace[rangecheck::FIX_RANGE_CHECK_U16] = (0..rangecheck::RANGE_CHECK_U16_SIZE)
         .map(|i| F::from_canonical_usize(i))
@@ -315,4 +313,5 @@ pub fn generate_rc_trace<F: RichField>(
             v.len()
         )
     })
+
 }

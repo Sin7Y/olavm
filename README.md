@@ -64,10 +64,10 @@ This project consists of several crates:
 
 Many optimizations have not yet been applied, and we expect to see some speed improvements as we devote more time to performance optimization. The benchmarks below should only be used as a rough guide to expected future performance.
 
-| Algorithm                                       | Execution Instructions | Lines in CPU Table | Mac(8-cpu 16GB-Mem) Execution and Generate trace Time | Mac(8-cpu 16GB-Mem) Prove Time | Linux(32-cpu 256GB-Mem) Execution and Generate Trace Time | Linux(32-cpu 256GB-Mem) Prove Time |
-| :---------------------------------------------- | :--------------------: | :----------------: | :---------------------------------------------------: | :----------------------------: | :-------------------------------------------------------: | :--------------------------------: |
-| Calculate the 47th Fibonacci number 300 times.  |         259915         |        2^18        |                    0.274s, 1.379s                     |            109.263s            |                      1.305s, 1.273s                       |              38.521s               |
-| Calculate the sqrt of 1,073,741,824 7000 times. |         238113         |        2^18        |                    1.191s, 1.335s                     |            109.873s            |                      0.697s, 1.266s                       |              38.654s               |
+| Algorithm                                        | Execution Instructions | Lines in CPU Table | Mac(8-cpu 16GB-Mem) Execution and Generate trace Time | Mac(10-cpu 32GB-Mem) Prove Time | Linux(64-cpu 128GB-Mem) Execution and Generate Trace Time | Linux(64-cpu 128GB-Mem) Prove Time |
+|:-------------------------------------------------| :--------------------: |:------------------:|:-----------------------------------------------------:|:-------------------------------:|:---------------------------------------------------------:|:----------------------------------:|
+| Calculate the 47th Fibonacci number 1000 times.  |         866115         |        2^20        |                    0.275s, 0.571s                     |             80.524s             |                       0.315s, 0.95s                       |              39.767 s              |
+| Calculate the sqrt of 1,073,741,824 16000 times. |         544113         |        2^20        |                    0.892s, 0.572s                     |             65.758s             |                      1.185s, 0.955s                       |              29.935 s              |
 
 Overall, we don't expect the benchmarks to change significantly, but there will definitely be some deviation from the numbers below in the future.
 

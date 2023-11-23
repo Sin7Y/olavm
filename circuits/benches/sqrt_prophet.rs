@@ -19,6 +19,7 @@ use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig, Blake3Gold
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 const D: usize = 2;
@@ -46,7 +47,7 @@ pub fn test_by_asm_json(path: String) {
     let mut process = Process::new();
     let now = Instant::now();
 
-    let calldata = [1073741824u64, 7000u64, 2u64, 3509365327u64]
+    let calldata = [1073741824u64, 16000u64, 2u64, 3509365327u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();
@@ -69,7 +70,7 @@ pub fn test_by_asm_json(path: String) {
     let mut ola_stark = OlaStark::default();
     let now = Instant::now();
     let (traces, public_values) =
-        generate_traces(&program, &mut ola_stark, GenerationInputs::default());
+        generate_traces(program, &mut ola_stark, GenerationInputs::default());
     info!("generate_traces time:{}", now.elapsed().as_millis());
     let now = Instant::now();
 

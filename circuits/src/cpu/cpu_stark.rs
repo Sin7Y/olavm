@@ -1038,7 +1038,7 @@ mod tests {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.exec;
-        let generate_trace = |rows: &[Step]| generate_cpu_trace(rows);
+        let generate_trace = |rows: &Vec<Step>| generate_cpu_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_CPU_COLS>,
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {

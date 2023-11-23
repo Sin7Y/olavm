@@ -361,7 +361,7 @@ mod tests {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.builtin_storage_hash;
-        let generate_trace = |rows: &[StorageHashRow]| generate_storage_access_trace(rows);
+        let generate_trace = |rows: &Vec<StorageHashRow>| generate_storage_access_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_COL_ST>,
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {

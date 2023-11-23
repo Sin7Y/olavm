@@ -19,6 +19,7 @@ use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig, Blake3Gold
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 const D: usize = 2;
@@ -46,7 +47,7 @@ pub fn test_by_asm_json(path: String) {
     let mut process = Process::new();
     let now = Instant::now();
 
-    let calldata = [47u64, 300u64, 2u64, 4185064725u64]
+    let calldata = [47u64, 1000u64, 2u64, 4185064725u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();
@@ -65,12 +66,12 @@ pub fn test_by_asm_json(path: String) {
         &mut Some(prophets),
         &mut AccountTree::new_test(),
     );
-    info!("exec time:{}", now.elapsed().as_millis());
+    info!("exec time:{}, len:{}", now.elapsed().as_millis(), program.trace.exec.len());
     let mut ola_stark = OlaStark::default();
     let now = Instant::now();
     let (traces, public_values) =
-        generate_traces(&program, &mut ola_stark, GenerationInputs::default());
-    info!("generate_traces time:{}", now.elapsed().as_millis());
+        generate_traces(program, &mut ola_stark, GenerationInputs::default());
+    info!("generate_traces time:{}, len{}", now.elapsed().as_millis(), traces[0].get(0).unwrap().values.len());
     let now = Instant::now();
 
     let config = StarkConfig::standard_fast_config();
@@ -92,7 +93,7 @@ pub fn test_by_asm_json(path: String) {
     }
 }
 
-fn sqrt_prophet_benchmark(c: &mut Criterion) {
+fn fib_loop_benchmark(c: &mut Criterion) {
     let _ = env_logger::builder()
     .filter_level(LevelFilter::Info)
         .try_init();
@@ -111,6 +112,6 @@ fn sqrt_prophet_benchmark(c: &mut Criterion) {
 criterion_group![
     name = benches;
     config = Criterion::default().sample_size(10);
-    targets = sqrt_prophet_benchmark
+    targets = fib_loop_benchmark
 ];
 criterion_main!(benches);

@@ -387,7 +387,7 @@ mod tests {
         let stark = S::default();
 
         let get_trace_rows = |trace: Trace| trace.memory;
-        let generate_trace = |rows: &[MemoryTraceCell]| generate_memory_trace(rows);
+        let generate_trace = |rows: &Vec<MemoryTraceCell>| generate_memory_trace(rows);
         let eval_packed_generic =
             |vars: StarkEvaluationVars<GoldilocksField, GoldilocksField, NUM_MEM_COLS>,
              constraint_consumer: &mut ConstraintConsumer<GoldilocksField>| {
