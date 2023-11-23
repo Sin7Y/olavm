@@ -31,6 +31,14 @@ pub fn ctl_filter_by_cpu<F: Field>() -> Column<F> {
     Column::single(COL_PROG_FILTER_EXEC)
 }
 
+pub fn ctl_data_by_program_chunk<F: Field>() -> Vec<Column<F>> {
+    Column::singles(COL_PROG_CODE_ADDR_RANGE.chain([COL_PROG_PC, COL_PROG_INST])).collect_vec()
+}
+
+pub fn ctl_filter_by_program_chunk<F: Field>() -> Column<F> {
+    Column::single(COL_PROG_FILTER_PROG_CHUNK)
+}
+
 #[derive(Copy, Clone, Default)]
 pub struct ProgramStark<F, const D: usize> {
     compress_challenge: Option<F>,

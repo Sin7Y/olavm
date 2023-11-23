@@ -1,5 +1,7 @@
+use core::types::Field;
 use std::marker::PhantomData;
 
+use itertools::Itertools;
 use plonky2::{
     field::{
         extension::{Extendable, FieldExtension},
@@ -11,11 +13,24 @@ use plonky2::{
 
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    cross_table_lookup::Column,
     stark::Stark,
     vars::{StarkEvaluationTargets, StarkEvaluationVars},
 };
 
 use super::columns::*;
+
+pub fn ctl_data_to_program<F: Field>(i: usize) -> Vec<Column<F>> {
+    Column::singles(COL_PROG_CHUNK_CODE_ADDR_RANGE.chain([
+        COL_PROG_CHUNK_START_PC + i,
+        COL_PROG_CHUNK_INST_RANGE.start + i,
+    ]))
+    .collect_vec()
+}
+
+pub fn ctl_filter_to_program<F: Field>(i: usize) -> Column<F> {
+    Column::single(COL_PROG_CHUNK_FILTER_LOOKING_PROG_RANGE.start + i)
+}
 #[derive(Copy, Clone, Default)]
 pub struct ProgChunkStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
