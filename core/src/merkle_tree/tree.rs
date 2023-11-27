@@ -11,6 +11,7 @@ use crate::types::merkle_tree::{
     LevelIndex, NodeEntry, TreeKey, TreeMetadata, TreeOperation, TreeValue, ZkHash,
 };
 use crate::types::proof::StorageLogMetadata;
+use crate::trace::trace::HashTrace;
 use itertools::Itertools;
 use log::{debug, info};
 use std::borrow::{Borrow, BorrowMut};
@@ -102,14 +103,7 @@ impl AccountTree {
     pub fn process_block<I>(
         &mut self,
         storage_logs: I,
-    ) -> Vec<(
-        PoseidonRow,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        PoseidonRow,
-    )>
+    ) -> Vec<HashTrace>
     where
         I: IntoIterator,
         I::Item: Borrow<WitnessStorageLog>,
@@ -120,14 +114,7 @@ impl AccountTree {
     pub fn process_blocks<I>(
         &mut self,
         blocks: I,
-    ) -> Vec<(
-        PoseidonRow,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        PoseidonRow,
-    )>
+    ) -> Vec<HashTrace>
     where
         I: IntoIterator,
         I::Item: IntoIterator,
@@ -178,14 +165,7 @@ impl AccountTree {
         &mut self,
         updates_batch: Vec<Vec<(TreeKey, TreeOperation)>>,
     ) -> Result<
-        Vec<(
-            PoseidonRow,
-            TreeValue,
-            TreeValue,
-            TreeValue,
-            TreeValue,
-            PoseidonRow,
-        )>,
+        Vec<HashTrace>,
         TreeError,
     > {
         let total_blocks = updates_batch.len();

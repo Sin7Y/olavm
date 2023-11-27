@@ -1,5 +1,5 @@
 use crate::program::REGISTER_NUM;
-use crate::types::account::Address;
+use crate::types::{account::Address, merkle_tree::TreeValue};
 use crate::utils::split_limbs_from_field;
 use crate::utils::split_u16_limbs_from_field;
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -257,6 +257,9 @@ impl Display for PoseidonRow {
         )
     }
 }
+
+#[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
+pub struct HashTrace(pub PoseidonRow, pub TreeValue, pub TreeValue, pub TreeValue, pub TreeValue, pub PoseidonRow);
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct StorageRow {
