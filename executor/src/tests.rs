@@ -43,7 +43,7 @@ fn executor_run_test_program(
         .clone()
         .map(|e| GoldilocksField::from_canonical_u64(u64::from_str_radix(&e[2..], 16).unwrap()))
         .collect();
-    let code_hash = hash.hash_bytes(code);
+    let code_hash = hash.hash_bytes(&code);
     let mut prophets = HashMap::new();
     for item in program.prophets {
         prophets.insert(item.host as u64, item);
@@ -99,7 +99,7 @@ fn executor_run_test_program(
     program
         .trace
         .addr_program_hash
-        .insert(encode_addr(&callee_exe_addr), code_hash);
+        .insert(encode_addr(&callee_exe_addr), code);
     let mut account_tree = AccountTree::new_test();
     //let mut account_tree =AccountTree::new_db_test("./".to_string()),
 

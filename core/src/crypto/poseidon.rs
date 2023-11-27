@@ -15,9 +15,8 @@ use plonky2::hash::poseidon::PoseidonPermutation;
 pub struct PoseidonHasher;
 
 impl Hasher<TreeValue> for PoseidonHasher {
-    fn hash_bytes<I: IntoIterator<Item = GoldilocksField>>(&self, value: I) -> TreeValue {
-        let value_iter: Vec<_> = value.into_iter().collect();
-        hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation>(&value_iter).elements
+    fn hash_bytes(&self, value: &Vec<GoldilocksField>) -> TreeValue {
+        hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation>(&value).elements
     }
 
     /// Get the hash of the hashes sequence.
