@@ -322,6 +322,8 @@ pub struct Trace {
     // pub raw_instructions: HashMap<u64, Instruction>,
     pub raw_instructions: HashMap<u64, String>,
     pub raw_binary_instructions: Vec<String>,
+    pub addr_program_hash: HashMap<String, Vec<GoldilocksField>>,
+    pub start_end_roots: (TreeValue, TreeValue),
     // todo need limit the trace size
     pub exec: Vec<Step>,
     pub memory: Vec<MemoryTraceCell>,
@@ -332,6 +334,7 @@ pub struct Trace {
     pub builtin_poseidon_chunk: Vec<PoseidonChunkRow>,
     pub builtin_storage: Vec<StorageRow>,
     pub builtin_storage_hash: Vec<StorageHashRow>,
+    pub builtin_program_hash: Vec<StorageHashRow>,
     pub tape: Vec<TapeRow>,
     pub sc_call: Vec<SCCallRow>,
 }

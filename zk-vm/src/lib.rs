@@ -1,5 +1,5 @@
 use executor::load_tx::init_tape;
-use executor::trace::gen_dump_file;
+use executor::trace::{gen_dump_file, gen_storage_hash_table, gen_storage_table};
 use executor::Process;
 use log::debug;
 use ola_core::crypto::ZkHasher;
@@ -14,16 +14,17 @@ use ola_core::state::NodeState;
 use ola_core::storage::db::{Database, RocksDB};
 use ola_core::trace::trace::Trace;
 use ola_core::types::account::Address;
-use ola_core::types::merkle_tree::TreeValue;
+use ola_core::types::merkle_tree::{encode_addr, tree_key_default, TreeValue};
 use ola_core::types::GoldilocksField;
 use ola_core::types::{Field, PrimeField64};
 use ola_core::vm::error::ProcessorError;
-use ola_core::vm::transaction::{init_tx_context, TxCtxInfo};
+use ola_core::vm::transaction::{TxCtxInfo};
 use ola_core::vm::vm_state::{SCCallType, VMState};
 
+use ola_core::merkle_tree::log::{StorageLog, WitnessStorageLog};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader};
 use std::ops::Not;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -32,6 +33,7 @@ mod config;
 
 #[cfg(test)]
 pub mod test;
+
 #[derive(Debug)]
 pub struct OlaVM {
     pub ola_state: NodeState<ZkHasher>,
@@ -142,16 +144,25 @@ impl OlaVM {
 
         if get_code {
             let contract = self.get_contract(&code_hash)?;
-            for inst in contract {
+            for inst in &contract {
                 program
                     .instructions
                     .push(format!("0x{:x}", inst.to_canonical_u64()));
             }
+
             if let Ok(debug_str) = self.get_debug_info(&code_hash) {
                 let debug_info =
                     serde_json::from_str::<BTreeMap<usize, String>>(&debug_str).unwrap();
                 program.debug_info = debug_info;
             }
+            process.program_log.push(WitnessStorageLog {
+                storage_log: StorageLog::new_read_log(exe_code_addr, code_hash),
+                previous_value: tree_key_default(),
+            });
+            program
+                .trace
+                .addr_program_hash
+                .insert(encode_addr(&exe_code_addr),  contract);
         }
 
         let prophet = self.get_prophet(&code_hash).unwrap();
@@ -173,7 +184,11 @@ impl OlaVM {
         }
     }
 
-    pub fn manual_deploy(&mut self, contract: &str, addr: &TreeValue) -> Result<TreeValue, StateError> {
+    pub fn manual_deploy(
+        &mut self,
+        contract: &str,
+        addr: &TreeValue,
+    ) -> Result<TreeValue, StateError> {
         let file = File::open(contract).unwrap();
         let reader = BufReader::new(file);
         let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
@@ -188,11 +203,17 @@ impl OlaVM {
         let code_hash = self.save_contract(&code).unwrap();
         if !program.debug_info.is_empty() {
             let debug_info = serde_json::to_string(&program.debug_info).unwrap();
-            self.save_debug_info(&code_hash, &debug_info);
+            self.save_debug_info(&code_hash, &debug_info)?;
         }
 
         self.save_prophet(&code_hash, &prophets)?;
         self.save_contract_map(addr, &code_hash)?;
+
+        self.account_tree.process_block(vec![WitnessStorageLog {
+            storage_log: StorageLog::new_write_log(addr.clone(), code_hash),
+            previous_value: tree_key_default(),
+        }]);
+        let _ = self.account_tree.save();
         Ok(code_hash)
     }
 
@@ -290,22 +311,47 @@ impl OlaVM {
                 }
                 VMState::ExeEnd(step) => {
                     debug!("end contract:{:?}", mutex_data!(process).addr_code);
-                    let mut trace =
-                        std::mem::replace(&mut mutex_data!(program).trace, Trace::default());
 
                     if self.process_ctx.is_empty() {
+                        assert_eq!(env_idx, 0);
+                        let hash_roots = gen_storage_hash_table(
+                            &mut mutex_data!(process),
+                            &mut mutex_data!(program),
+                            &mut self.account_tree,
+                        );
+                        if gen_storage_table(
+                            &mut mutex_data!(process),
+                            &mut mutex_data!(program),
+                            hash_roots,
+                        )
+                        .is_err()
+                        {
+                            panic!("gen_storage_table fail");
+                        };
+                        let trace =
+                            std::mem::replace(&mut mutex_data!(program).trace, Trace::default());
                         self.ola_state
                             .txs_trace
                             .insert(mutex_data!(process).env_idx.to_canonical_u64(), trace);
-                        assert_eq!(env_idx, 0);
                         debug!("finish tx");
                         break;
                     } else {
+                        let mut trace =
+                            std::mem::replace(&mut mutex_data!(program).trace, Trace::default());
                         let tape_tree = mutex_data!(process).tape.clone();
                         let tp = mutex_data!(process).tp.clone();
                         let clk = mutex_data!(process).clk.clone();
                         let ctx = self.process_ctx.pop().unwrap();
                         let env_id = mutex_data!(process).env_idx.to_canonical_u64();
+                        let program_log =
+                            std::mem::replace(&mut mutex_data!(process).program_log, Vec::new());
+                        let witness_log =
+                            std::mem::replace(&mut mutex_data!(process).storage_log, Vec::new());
+                        let storage_tree = std::mem::replace(
+                            &mut mutex_data!(process).storage.trace,
+                            HashMap::new(),
+                        );
+
                         process = ctx.0;
                         program = ctx.1;
                         caller_addr = ctx.2;
@@ -315,7 +361,13 @@ impl OlaVM {
                         step.env_idx = mutex_data!(process).env_idx;
                         step.addr_storage = mutex_data!(process).addr_storage;
                         step.addr_code = mutex_data!(process).addr_code;
+
                         trace.exec.push(step);
+                        let exec = std::mem::replace(&mut trace.exec, Vec::new());
+                        mutex_data!(program).trace.exec.extend(exec);
+                        mutex_data!(process).storage_log.extend(witness_log);
+                        mutex_data!(process).program_log.extend(program_log);
+                        mutex_data!(process).storage.trace.extend(storage_tree);
                         {
                             let sccall_rows = &mut mutex_data!(program).trace.sc_call;
                             let len = sccall_rows.len() - 1;
