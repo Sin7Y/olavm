@@ -11,6 +11,7 @@ use crate::types::merkle_tree::{
     LevelIndex, NodeEntry, TreeKey, TreeMetadata, TreeOperation, TreeValue, ZkHash,
 };
 use crate::types::proof::StorageLogMetadata;
+use crate::trace::trace::HashTrace;
 use itertools::Itertools;
 use log::{debug, info};
 use std::borrow::{Borrow, BorrowMut};
@@ -102,32 +103,19 @@ impl AccountTree {
     pub fn process_block<I>(
         &mut self,
         storage_logs: I,
-    ) -> Vec<(
-        PoseidonRow,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        PoseidonRow,
-    )>
+    ) -> (Vec<HashTrace>, Option<TreeMetadata>)
     where
         I: IntoIterator,
         I::Item: Borrow<WitnessStorageLog>,
     {
-        self.process_blocks(once(storage_logs))
+        let (hash_traces, tree_metadata) = self.process_blocks(once(storage_logs));
+        (hash_traces, tree_metadata.last().cloned())
     }
 
     pub fn process_blocks<I>(
         &mut self,
         blocks: I,
-    ) -> Vec<(
-        PoseidonRow,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        PoseidonRow,
-    )>
+    ) -> (Vec<HashTrace>, Vec<TreeMetadata>)
     where
         I: IntoIterator,
         I::Item: IntoIterator,
@@ -178,14 +166,7 @@ impl AccountTree {
         &mut self,
         updates_batch: Vec<Vec<(TreeKey, TreeOperation)>>,
     ) -> Result<
-        Vec<(
-            PoseidonRow,
-            TreeValue,
-            TreeValue,
-            TreeValue,
-            TreeValue,
-            PoseidonRow,
-        )>,
+        (Vec<HashTrace>, Vec<TreeMetadata>),
         TreeError,
     > {
         let total_blocks = updates_batch.len();
@@ -237,7 +218,7 @@ impl AccountTree {
             .flat_map(|e| e)
             .collect();
 
-        let _tree_metadata: Vec<_> = {
+        let tree_metadata: Vec<_> = {
             let patch_metadata =
                 self.apply_patch(updates.0, &storage_logs_with_blocks, &leaf_indices);
 
@@ -278,7 +259,7 @@ impl AccountTree {
         };
 
         self.block_number += total_blocks as u32;
-        Ok(hash_trace)
+        Ok((hash_trace, tree_metadata))
     }
 
     /// Prepares all the data which will be needed to calculate new Merkle Trees
