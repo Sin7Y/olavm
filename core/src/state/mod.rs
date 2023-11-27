@@ -40,7 +40,7 @@ where
     ) -> Result<Vec<TreeValue>, StateError> {
         let mut code_hashes = Vec::new();
         for code in contracts {
-            code_hashes.push(self.hasher.hash_bytes(code.clone()));
+            code_hashes.push(self.hasher.hash_bytes(&code));
         }
         self.state_storage
             .save_contracts(&code_hashes, &contracts)?;
@@ -51,7 +51,7 @@ where
         &mut self,
         contract: &Vec<GoldilocksField>,
     ) -> Result<TreeValue, StateError> {
-        let code_hash = self.hasher.hash_bytes(contract.clone());
+        let code_hash = self.hasher.hash_bytes(&contract);
         self.state_storage.save_contract(&code_hash, &contract)?;
         return Ok(code_hash);
     }
