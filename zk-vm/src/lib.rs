@@ -144,7 +144,7 @@ impl OlaVM {
 
         if get_code {
             let contract = self.get_contract(&code_hash)?;
-            for inst in contract {
+            for inst in &contract {
                 program
                     .instructions
                     .push(format!("0x{:x}", inst.to_canonical_u64()));
@@ -162,7 +162,7 @@ impl OlaVM {
             program
                 .trace
                 .addr_program_hash
-                .insert(encode_addr(&exe_code_addr), code_hash);
+                .insert(encode_addr(&exe_code_addr),  contract);
         }
 
         let prophet = self.get_prophet(&code_hash).unwrap();

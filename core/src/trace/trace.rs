@@ -320,7 +320,7 @@ pub struct Trace {
     // pub raw_instructions: HashMap<u64, Instruction>,
     pub raw_instructions: HashMap<u64, String>,
     pub raw_binary_instructions: Vec<String>,
-    pub addr_program_hash: HashMap<String, TreeValue>,
+    pub addr_program_hash: HashMap<String, Vec<GoldilocksField>>,
     pub start_end_roots: (TreeValue, TreeValue),
     // todo need limit the trace size
     pub exec: Vec<Step>,
