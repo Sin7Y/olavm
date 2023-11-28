@@ -7,7 +7,7 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use web3::types::U256;
+use web3::types::{U256, H256};
 
 pub const TREE_VALUE_LEN: usize = 4;
 pub type TreeKey = [GoldilocksField; TREE_VALUE_LEN];
@@ -28,6 +28,10 @@ impl LevelIndex {
 }
 
 pub fn tree_key_default() -> TreeKey {
+    [GoldilocksField::ZERO; TREE_VALUE_LEN]
+}
+
+pub fn tree_value_default() -> TreeValue {
     [GoldilocksField::ZERO; TREE_VALUE_LEN]
 }
 
@@ -116,6 +120,23 @@ pub fn u256_to_tree_key(value: &TreeKeyU256) -> TreeKey {
             tree_key
         },
     )
+}
+
+pub fn h256_to_tree_key(value: &H256) -> TreeKey {
+    u8_arr_to_tree_key(&value.0.to_vec())
+}
+
+pub fn tree_key_to_h256(value: &TreeKey) -> H256 {
+    let bytes: [u8; 32] = tree_key_to_u8_arr(value).try_into().unwrap();
+    H256(bytes)
+}
+
+pub fn h256_to_tree_value(value: &H256) -> TreeValue {
+    h256_to_tree_key(value)
+}
+
+pub fn tree_value_to_h256(value: &TreeValue) -> H256 {
+    tree_key_to_h256(value)
 }
 
 pub fn u8_arr_to_tree_key(value: &Vec<u8>) -> TreeKey {
