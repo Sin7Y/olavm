@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 /// Typed fully qualified key of the storage slot in global state tree.
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StorageKey {
-    account: AccountTreeId,
-    key: TreeKey,
+    pub account: AccountTreeId,
+    pub key: TreeKey,
 }
 
 impl StorageKey {
