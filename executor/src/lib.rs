@@ -899,6 +899,255 @@ impl Process {
         Ok(())
     }
 
+    fn execute_inst_range(
+        &mut self,
+        program: &mut Program,
+        ops: &[&str],
+        step: u64,
+    ) -> Result<(), ProcessorError> {
+        let opcode = ops.first().unwrap().to_lowercase();
+        assert_eq!(
+            ops.len(),
+            2,
+            "{}",
+            format!("{} params len is 1", opcode.as_str())
+        );
+        let op1_index = self.get_reg_index(ops[1]);
+        if self.registers[op1_index].to_canonical_u64() > u32::MAX as u64 {
+            return Err(ProcessorError::U32RangeCheckFail);
+        }
+
+        if !program.pre_exe_flag {
+            self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
+            self.register_selector.op1 = self.registers[op1_index];
+            self.register_selector.op1_reg_sel[op1_index] = GoldilocksField::from_canonical_u64(1);
+
+            program.trace.insert_rangecheck(
+                self.registers[op1_index],
+                (
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ONE,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                ),
+            );
+        }
+        self.pc += step;
+        Ok(())
+    }
+
+    fn execute_inst_bitwise(&mut self, program: &mut Program, ops: &[&str], step: u64) {
+        let opcode = ops.first().unwrap().to_lowercase();
+        assert_eq!(
+            ops.len(),
+            4,
+            "{}",
+            format!("{} params len is 3", opcode.as_str())
+        );
+        let dst_index = self.get_reg_index(ops[1]);
+        let op0_index = self.get_reg_index(ops[2]);
+        let op1_value = self.get_index_value(ops[3]);
+
+        self.register_selector.op0 = self.registers[op0_index];
+        self.register_selector.op1 = op1_value.0;
+        self.register_selector.op0_reg_sel[op0_index] = GoldilocksField::from_canonical_u64(1);
+        if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+            self.register_selector.op1_reg_sel[op1_index] = GoldilocksField::from_canonical_u64(1);
+        }
+
+        let opcode = match opcode.as_str() {
+            "and" => {
+                self.registers[dst_index] =
+                    GoldilocksField(self.registers[op0_index].0 & op1_value.0 .0);
+                self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::AND as u8);
+                1 << Opcode::AND as u64
+            }
+            "or" => {
+                self.registers[dst_index] =
+                    GoldilocksField(self.registers[op0_index].0 | op1_value.0 .0);
+                self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::OR as u8);
+                1 << Opcode::OR as u64
+            }
+            "xor" => {
+                self.registers[dst_index] =
+                    GoldilocksField(self.registers[op0_index].0 ^ op1_value.0 .0);
+                self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::XOR as u8);
+                1 << Opcode::XOR as u64
+            }
+            _ => panic!("not match opcode:{}", opcode),
+        };
+
+        if !program.pre_exe_flag {
+            self.register_selector.dst = self.registers[dst_index];
+            self.register_selector.dst_reg_sel[dst_index] = GoldilocksField::from_canonical_u64(1);
+
+            program.trace.insert_bitwise_combined(
+                opcode,
+                self.register_selector.op0,
+                op1_value.0,
+                self.registers[dst_index],
+            );
+        }
+        self.pc += step;
+    }
+
+    fn execute_inst_gte(
+        &mut self,
+        program: &mut Program,
+        ops: &[&str],
+        step: u64,
+    ) -> Result<(), ProcessorError> {
+        let opcode = ops.first().unwrap().to_lowercase();
+        assert_eq!(
+            ops.len(),
+            4,
+            "{}",
+            format!("{} params len is 3", opcode.as_str())
+        );
+        let dst_index = self.get_reg_index(ops[1]);
+
+        let op0_index = self.get_reg_index(ops[2]);
+        let value = self.get_index_value(ops[3]);
+
+        self.register_selector.op0 = self.registers[op0_index];
+        self.register_selector.op1 = value.0;
+        self.register_selector.op0_reg_sel[op0_index] = GoldilocksField::from_canonical_u64(1);
+        if let ImmediateOrRegName::RegName(op1_index) = value.1 {
+            self.register_selector.op1_reg_sel[op1_index] = GoldilocksField::from_canonical_u64(1);
+        }
+
+        match opcode.as_str() {
+            "gte" => {
+                self.registers[dst_index] = GoldilocksField::from_canonical_u8(
+                    (self.registers[op0_index].to_canonical_u64() >= value.0.to_canonical_u64())
+                        as u8,
+                );
+                self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::GTE as u8);
+                ComparisonOperation::Gte
+            }
+            _ => panic!("not match opcode:{}", opcode),
+        };
+
+        if !program.pre_exe_flag {
+            self.register_selector.dst = self.registers[dst_index];
+            self.register_selector.dst_reg_sel[dst_index] = GoldilocksField::from_canonical_u64(1);
+
+            let abs_diff;
+            if self.register_selector.dst.is_one() {
+                abs_diff = self.register_selector.op0 - self.register_selector.op1;
+            } else {
+                abs_diff = self.register_selector.op1 - self.register_selector.op0;
+            }
+
+            if abs_diff.to_canonical_u64() > u32::MAX as u64 {
+                return Err(ProcessorError::U32RangeCheckFail);
+            }
+            program.trace.insert_rangecheck(
+                abs_diff,
+                (
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ONE,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                ),
+            );
+
+            program.trace.insert_cmp(
+                self.register_selector.op0,
+                value.0,
+                self.register_selector.dst,
+                abs_diff,
+                GoldilocksField::ONE,
+            );
+        }
+        self.pc += step;
+        Ok(())
+    }
+
+    fn execute_inst_end(
+        &mut self,
+        program: &mut Program,
+        pc_status: u64,
+        ctx_regs_status: &Address,
+        registers_status: &[GoldilocksField; REGISTER_NUM],
+        ctx_code_regs_status: &Address,
+    ) -> Result<Option<Step>, ProcessorError> {
+        self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::END as u8);
+
+        let len = self.tape.read(
+            self.tx_idx,
+            self.tp.to_canonical_u64() - 1,
+            self.clk,
+            GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
+            GoldilocksField::ZERO,
+        )?;
+
+        if len != GoldilocksField::ZERO {
+            let len = len.to_canonical_u64();
+            for i in 0..len {
+                program.trace.ret.push(self.tape.read(
+                    self.tx_idx,
+                    self.tp.to_canonical_u64() - len - 1 + i,
+                    self.clk,
+                    GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
+                    GoldilocksField::ZERO,
+                )?);
+            }
+        }
+        let mut end_step = None;
+        if !program.pre_exe_flag {
+            program.trace.insert_step(
+                self.clk,
+                pc_status,
+                self.tp,
+                self.instruction,
+                self.immediate_data,
+                self.op1_imm,
+                self.opcode,
+                ctx_regs_status.clone(),
+                registers_status.clone(),
+                self.register_selector.clone(),
+                GoldilocksField::ZERO,
+                GoldilocksField::ZERO,
+                GoldilocksField::ZERO,
+                ctx_code_regs_status.clone(),
+                self.tx_idx,
+                self.env_idx,
+                self.call_sc_cnt,
+                self.storage_access_idx,
+            );
+
+            if self.env_idx.ne(&GoldilocksField::ZERO) {
+                self.register_selector.aux0 = self.env_idx;
+                self.register_selector.aux1 = GoldilocksField::from_canonical_u64(self.clk as u64);
+                let register_selector = self.register_selector.clone();
+                end_step = Some(Step {
+                    tx_idx: self.tx_idx,
+                    env_idx: GoldilocksField::default(),
+                    call_sc_cnt: self.call_sc_cnt,
+                    tp: self.tp,
+                    addr_storage: Address::default(),
+                    addr_code: Address::default(),
+                    instruction: self.instruction,
+                    immediate_data: self.immediate_data,
+                    opcode: self.opcode,
+                    op1_imm: self.op1_imm,
+                    clk: 0,
+                    pc: pc_status,
+                    register_selector,
+                    is_ext_line: GoldilocksField::ONE,
+                    ext_cnt: GoldilocksField::ONE,
+                    regs: self.registers,
+                    filter_tape_looking: GoldilocksField::ZERO,
+                    storage_access_idx: self.storage_access_idx,
+                });
+            }
+        }
+        Ok(end_step)
+    }
+
     pub fn execute(
         &mut self,
         program: &mut Program,
@@ -981,238 +1230,17 @@ impl Process {
                 "ret" => self.execute_inst_ret(&ops)?,
                 "mstore" => self.execute_inst_mstore(&ops, step)?,
                 "mload" => self.execute_inst_mload(&ops, step)?,
-                "range" => {
-                    assert_eq!(
-                        ops.len(),
-                        2,
-                        "{}",
-                        format!("{} params len is 1", opcode.as_str())
-                    );
-                    let op1_index = self.get_reg_index(ops[1]);
-                    if self.registers[op1_index].to_canonical_u64() > u32::MAX as u64 {
-                        return Err(ProcessorError::U32RangeCheckFail);
-                    }
-
-                    if !program.pre_exe_flag {
-                        self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
-                        self.register_selector.op1 = self.registers[op1_index];
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-
-                        program.trace.insert_rangecheck(
-                            self.registers[op1_index],
-                            (
-                                GoldilocksField::ZERO,
-                                GoldilocksField::ONE,
-                                GoldilocksField::ZERO,
-                                GoldilocksField::ZERO,
-                                GoldilocksField::ZERO,
-                            ),
-                        );
-                    }
-                    self.pc += step;
-                }
-                "and" | "or" | "xor" => {
-                    assert_eq!(
-                        ops.len(),
-                        4,
-                        "{}",
-                        format!("{} params len is 3", opcode.as_str())
-                    );
-                    let dst_index = self.get_reg_index(ops[1]);
-                    let op0_index = self.get_reg_index(ops[2]);
-                    let op1_value = self.get_index_value(ops[3]);
-
-                    self.register_selector.op0 = self.registers[op0_index];
-                    self.register_selector.op1 = op1_value.0;
-                    self.register_selector.op0_reg_sel[op0_index] =
-                        GoldilocksField::from_canonical_u64(1);
-                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-                    }
-
-                    let opcode = match opcode.as_str() {
-                        "and" => {
-                            self.registers[dst_index] =
-                                GoldilocksField(self.registers[op0_index].0 & op1_value.0 .0);
-                            self.opcode =
-                                GoldilocksField::from_canonical_u64(1 << Opcode::AND as u8);
-                            1 << Opcode::AND as u64
-                        }
-                        "or" => {
-                            self.registers[dst_index] =
-                                GoldilocksField(self.registers[op0_index].0 | op1_value.0 .0);
-                            self.opcode =
-                                GoldilocksField::from_canonical_u64(1 << Opcode::OR as u8);
-                            1 << Opcode::OR as u64
-                        }
-                        "xor" => {
-                            self.registers[dst_index] =
-                                GoldilocksField(self.registers[op0_index].0 ^ op1_value.0 .0);
-                            self.opcode =
-                                GoldilocksField::from_canonical_u64(1 << Opcode::XOR as u8);
-                            1 << Opcode::XOR as u64
-                        }
-                        _ => panic!("not match opcode:{}", opcode),
-                    };
-
-                    if !program.pre_exe_flag {
-                        self.register_selector.dst = self.registers[dst_index];
-                        self.register_selector.dst_reg_sel[dst_index] =
-                            GoldilocksField::from_canonical_u64(1);
-
-                        program.trace.insert_bitwise_combined(
-                            opcode,
-                            self.register_selector.op0,
-                            op1_value.0,
-                            self.registers[dst_index],
-                        );
-                    }
-                    self.pc += step;
-                }
-                "gte" => {
-                    assert_eq!(
-                        ops.len(),
-                        4,
-                        "{}",
-                        format!("{} params len is 3", opcode.as_str())
-                    );
-                    let dst_index = self.get_reg_index(ops[1]);
-
-                    let op0_index = self.get_reg_index(ops[2]);
-                    let value = self.get_index_value(ops[3]);
-
-                    self.register_selector.op0 = self.registers[op0_index];
-                    self.register_selector.op1 = value.0;
-                    self.register_selector.op0_reg_sel[op0_index] =
-                        GoldilocksField::from_canonical_u64(1);
-                    if let ImmediateOrRegName::RegName(op1_index) = value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-                    }
-
-                    match opcode.as_str() {
-                        "gte" => {
-                            self.registers[dst_index] = GoldilocksField::from_canonical_u8(
-                                (self.registers[op0_index].to_canonical_u64()
-                                    >= value.0.to_canonical_u64())
-                                    as u8,
-                            );
-                            self.opcode =
-                                GoldilocksField::from_canonical_u64(1 << Opcode::GTE as u8);
-                            ComparisonOperation::Gte
-                        }
-                        _ => panic!("not match opcode:{}", opcode),
-                    };
-
-                    if !program.pre_exe_flag {
-                        self.register_selector.dst = self.registers[dst_index];
-                        self.register_selector.dst_reg_sel[dst_index] =
-                            GoldilocksField::from_canonical_u64(1);
-
-                        let abs_diff;
-                        if self.register_selector.dst.is_one() {
-                            abs_diff = self.register_selector.op0 - self.register_selector.op1;
-                        } else {
-                            abs_diff = self.register_selector.op1 - self.register_selector.op0;
-                        }
-
-                        if abs_diff.to_canonical_u64() > u32::MAX as u64 {
-                            return Err(ProcessorError::U32RangeCheckFail);
-                        }
-                        program.trace.insert_rangecheck(
-                            abs_diff,
-                            (
-                                GoldilocksField::ZERO,
-                                GoldilocksField::ZERO,
-                                GoldilocksField::ONE,
-                                GoldilocksField::ZERO,
-                                GoldilocksField::ZERO,
-                            ),
-                        );
-
-                        program.trace.insert_cmp(
-                            self.register_selector.op0,
-                            value.0,
-                            self.register_selector.dst,
-                            abs_diff,
-                            GoldilocksField::ONE,
-                        );
-                    }
-                    self.pc += step;
-                }
+                "range" => self.execute_inst_range(program, &ops, step)?,
+                "and" | "or" | "xor" => self.execute_inst_bitwise(program, &ops, step),
+                "gte" => self.execute_inst_gte(program, &ops, step)?,
                 "end" => {
-                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::END as u8);
-
-                    let len = self.tape.read(
-                        self.tx_idx,
-                        self.tp.to_canonical_u64() - 1,
-                        self.clk,
-                        GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
-                        GoldilocksField::ZERO,
+                    end_step = self.execute_inst_end(
+                        program,
+                        pc_status,
+                        &ctx_regs_status,
+                        &registers_status,
+                        &ctx_code_regs_status,
                     )?;
-
-                    if len != GoldilocksField::ZERO {
-                        let len = len.to_canonical_u64();
-                        for i in 0..len {
-                            program.trace.ret.push(self.tape.read(
-                                self.tx_idx,
-                                self.tp.to_canonical_u64() - len - 1 + i,
-                                self.clk,
-                                GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
-                                GoldilocksField::ZERO,
-                            )?);
-                        }
-                    }
-                    if !program.pre_exe_flag {
-                        program.trace.insert_step(
-                            self.clk,
-                            pc_status,
-                            self.tp,
-                            self.instruction,
-                            self.immediate_data,
-                            self.op1_imm,
-                            self.opcode,
-                            ctx_regs_status,
-                            registers_status,
-                            self.register_selector.clone(),
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                            ctx_code_regs_status,
-                            self.tx_idx,
-                            self.env_idx,
-                            self.call_sc_cnt,
-                            self.storage_access_idx,
-                        );
-                        if self.env_idx.ne(&GoldilocksField::ZERO) {
-                            self.register_selector.aux0 = self.env_idx;
-                            self.register_selector.aux1 =
-                                GoldilocksField::from_canonical_u64(self.clk as u64);
-                            let register_selector = self.register_selector.clone();
-                            end_step = Some(Step {
-                                tx_idx: self.tx_idx,
-                                env_idx: GoldilocksField::default(),
-                                call_sc_cnt: self.call_sc_cnt,
-                                tp: self.tp,
-                                addr_storage: Address::default(),
-                                addr_code: Address::default(),
-                                instruction: self.instruction,
-                                immediate_data: self.immediate_data,
-                                opcode: self.opcode,
-                                op1_imm: self.op1_imm,
-                                clk: 0,
-                                pc: pc_status,
-                                register_selector,
-                                is_ext_line: GoldilocksField::ONE,
-                                ext_cnt: GoldilocksField::ONE,
-                                regs: self.registers,
-                                filter_tape_looking: GoldilocksField::ZERO,
-                                storage_access_idx: self.storage_access_idx,
-                            });
-                        }
-                    }
                     break;
                 }
                 "sstore" => {
