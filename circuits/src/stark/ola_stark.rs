@@ -651,13 +651,18 @@ mod tests {
     use crate::stark::verifier::verify_proof;
     use anyhow::Result;
     use assembler::encoder::encode_asm_from_json_file;
+    use core::crypto::hash::Hasher;
+    use core::crypto::ZkHasher;
+    use core::merkle_tree::log::{StorageLog, WitnessStorageLog};
     use core::merkle_tree::tree::AccountTree;
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
     use core::types::account::Address;
+    use core::types::merkle_tree::{encode_addr, tree_key_default};
     use core::types::{Field, GoldilocksField};
     use core::vm::transaction::init_tx_context;
     use executor::load_tx::init_tape;
+    use executor::trace::{gen_storage_hash_table, gen_storage_table};
     use executor::Process;
     use itertools::Itertools;
     use log::{debug, LevelFilter};
@@ -821,7 +826,13 @@ mod tests {
         };
 
         let program = encode_asm_from_json_file(program_path).unwrap();
+        let hash = ZkHasher::default();
         let instructions = program.bytecode.split("\n");
+        let code: Vec<_> = instructions
+            .clone()
+            .map(|e| GoldilocksField::from_canonical_u64(u64::from_str_radix(&e[2..], 16).unwrap()))
+            .collect();
+        let code_hash = hash.hash_bytes(&code);
         let mut prophets = HashMap::new();
         for item in program.prophets {
             prophets.insert(item.host as u64, item);
@@ -839,18 +850,61 @@ mod tests {
 
         let mut process = Process::new();
         process.addr_storage = Address::default();
+
+        let tp_start = 0;
+
+        let callee: Address = [
+            GoldilocksField::from_canonical_u64(9),
+            GoldilocksField::from_canonical_u64(10),
+            GoldilocksField::from_canonical_u64(11),
+            GoldilocksField::from_canonical_u64(12),
+        ];
+        let caller_addr = [
+            GoldilocksField::from_canonical_u64(17),
+            GoldilocksField::from_canonical_u64(18),
+            GoldilocksField::from_canonical_u64(19),
+            GoldilocksField::from_canonical_u64(20),
+        ];
+        let callee_exe_addr = [
+            GoldilocksField::from_canonical_u64(13),
+            GoldilocksField::from_canonical_u64(14),
+            GoldilocksField::from_canonical_u64(15),
+            GoldilocksField::from_canonical_u64(16),
+        ];
+
         if let Some(calldata) = call_data {
-            process.tp = GoldilocksField::ZERO;
+            process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
 
             init_tape(
                 &mut process,
                 calldata,
-                Address::default(),
-                Address::default(),
-                Address::default(),
+                caller_addr,
+                callee,
+                callee_exe_addr,
                 &init_tx_context(),
             );
         }
+
+        process.addr_code = callee_exe_addr;
+        process.addr_storage = callee;
+        program
+            .trace
+            .addr_program_hash
+            .insert(encode_addr(&callee_exe_addr), code);
+
+        db.process_block(vec![WitnessStorageLog {
+            storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+            previous_value: tree_key_default(),
+        }]);
+        let _ = db.save();
+
+        let start = db.root_hash();
+
+        process.program_log.push(WitnessStorageLog {
+            storage_log: StorageLog::new_read_log(callee_exe_addr, code_hash),
+            previous_value: tree_key_default(),
+        });
+
         let res = process.execute(&mut program, &mut Some(prophets), &mut db);
         match res {
             Ok(_) => {}
@@ -859,6 +913,9 @@ mod tests {
                 return;
             }
         }
+        let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db);
+        gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
+        program.trace.start_end_roots = (start, db.root_hash());
 
         let inputs = GenerationInputs::default();
 
