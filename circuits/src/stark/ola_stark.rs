@@ -17,6 +17,8 @@ use crate::memory::memory_stark::{
     self, ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_cond, ctl_data_mem_sort_rc,
     ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_cond, ctl_filter_mem_sort_rc, MemoryStark,
 };
+use crate::program::prog_chunk_stark::{self, ProgChunkStark};
+use crate::program::program_stark::{self, ProgramStark};
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
@@ -34,6 +36,8 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub storage_access_stark: StorageAccessStark<F, D>,
     pub tape_stark: TapeStark<F, D>,
     pub sccall_stark: SCCallStark<F, D>,
+    pub program_stark: ProgramStark<F, D>,
+    pub prog_chunk_stark: ProgChunkStark<F, D>,
 
     pub cross_table_lookups: Vec<CrossTableLookup<F>>,
 }
@@ -51,6 +55,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
             storage_access_stark: StorageAccessStark::default(),
             tape_stark: TapeStark::default(),
             sccall_stark: SCCallStark::default(),
+            program_stark: ProgramStark::default(),
+            prog_chunk_stark: ProgChunkStark::default(),
             cross_table_lookups: all_cross_table_lookups(),
         }
     }
@@ -69,6 +75,8 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.storage_access_stark.num_permutation_batches(config),
             self.tape_stark.num_permutation_batches(config),
             self.sccall_stark.num_permutation_batches(config),
+            self.program_stark.num_permutation_batches(config),
+            self.prog_chunk_stark.num_permutation_batches(config),
         ]
     }
 
@@ -84,6 +92,8 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.storage_access_stark.permutation_batch_size(),
             self.tape_stark.permutation_batch_size(),
             self.sccall_stark.permutation_batch_size(),
+            self.program_stark.permutation_batch_size(),
+            self.prog_chunk_stark.permutation_batch_size(),
         ]
     }
 }
@@ -101,11 +111,11 @@ pub enum Table {
     StorageAccess = 7,
     Tape = 8,
     SCCall = 9,
-    // program table
-    // Program = 8,
+    Program = 10,
+    ProgChunk = 11,
 }
 
-pub(crate) const NUM_TABLES: usize = 10;
+pub(crate) const NUM_TABLES: usize = 12;
 
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     vec![
@@ -118,13 +128,16 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
         ctl_rangecheck_cpu(),
         ctl_cpu_poseidon_chunk(),
         ctl_poseidon_chunk_mem(),
-        ctl_poseidon_chunk_poseidon(),
+        ctl_chunk_poseidon(),
         ctl_cpu_poseidon_tree_key(),
         ctl_cpu_storage_access(),
         ctl_storage_access_poseidon(),
         ctl_cpu_tape(),
         ctl_cpu_sccall(),
         ctl_cpu_sccall_end(),
+        ctl_cpu_program(),
+        ctl_prog_chunk_prog(),
+        ctl_prog_chunk_storage(),
     ]
 }
 
@@ -235,13 +248,11 @@ fn ctl_memory_rc_region<F: Field>() -> CrossTableLookup<F> {
 // Cross_Lookup_Table(looking_table, looked_table)
 fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
-        vec![
-            TableWithColumns::new(
-                Table::Cpu,
-                cpu_stark::ctl_data_with_bitwise(),
-                Some(cpu_stark::ctl_filter_with_bitwise()),
-            ),
-        ],
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_bitwise(),
+            Some(cpu_stark::ctl_filter_with_bitwise()),
+        )],
         TableWithColumns::new(
             Table::Bitwise,
             bitwise_stark::ctl_data_with_cpu(),
@@ -336,13 +347,20 @@ fn ctl_poseidon_chunk_mem<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(all_lookers, mem_looked)
 }
 
-fn ctl_poseidon_chunk_poseidon<F: Field>() -> CrossTableLookup<F> {
+fn ctl_chunk_poseidon<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::PoseidonChunk,
-            poseidon_chunk_stark::ctl_data_with_poseidon(),
-            Some(poseidon_chunk_stark::ctl_filter_with_poseidon()),
-        )],
+        vec![
+            TableWithColumns::new(
+                Table::PoseidonChunk,
+                poseidon_chunk_stark::ctl_data_with_poseidon(),
+                Some(poseidon_chunk_stark::ctl_filter_with_poseidon()),
+            ),
+            TableWithColumns::new(
+                Table::ProgChunk,
+                prog_chunk_stark::ctl_data_to_poseidon(),
+                Some(prog_chunk_stark::ctl_filter_to_poseidon()),
+            ),
+        ],
         TableWithColumns::new(
             Table::Poseidon,
             poseidon_stark::ctl_data_with_poseidon_chunk(),
@@ -479,6 +497,62 @@ fn ctl_cpu_sccall_end<F: Field>() -> CrossTableLookup<F> {
             Table::SCCall,
             sccall_stark::ctl_data_sccall_end(),
             Some(sccall_stark::ctl_filter_sccall_end()),
+        ),
+    )
+}
+
+fn ctl_cpu_program<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![
+            TableWithColumns::new(
+                Table::Cpu,
+                cpu_stark::ctl_data_inst_to_program(),
+                Some(cpu_stark::ctl_filter_with_program_inst()),
+            ),
+            TableWithColumns::new(
+                Table::Cpu,
+                cpu_stark::ctl_data_imm_to_program(),
+                Some(cpu_stark::ctl_filter_with_program_imm()),
+            ),
+        ],
+        TableWithColumns::new(
+            Table::Program,
+            program_stark::ctl_data_by_cpu(),
+            Some(program_stark::ctl_filter_by_cpu()),
+        ),
+    )
+}
+
+fn ctl_prog_chunk_prog<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        (0..8)
+            .map(|i: usize| {
+                TableWithColumns::new(
+                    Table::ProgChunk,
+                    prog_chunk_stark::ctl_data_to_program(i),
+                    Some(prog_chunk_stark::ctl_filter_to_program(i)),
+                )
+            })
+            .collect(),
+        TableWithColumns::new(
+            Table::Program,
+            program_stark::ctl_data_by_program_chunk(),
+            Some(program_stark::ctl_filter_by_program_chunk()),
+        ),
+    )
+}
+
+fn ctl_prog_chunk_storage<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::ProgChunk,
+            prog_chunk_stark::ctl_data_to_storage_access(),
+            Some(prog_chunk_stark::ctl_filter_to_storage_access()),
+        )],
+        TableWithColumns::new(
+            Table::StorageAccess,
+            storage_access_stark::ctl_data_for_prog_chunk(),
+            Some(storage_access_stark::ctl_filter_for_prog_chunk()),
         ),
     )
 }
@@ -707,11 +781,7 @@ mod tests {
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        test_by_asm_json(
-            "vote.json".to_string(),
-            Some(init_calldata),
-            Some(db_name),
-        );
+        test_by_asm_json("vote.json".to_string(), Some(init_calldata), Some(db_name));
     }
 
     #[test]

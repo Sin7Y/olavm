@@ -1,15 +1,15 @@
 //use std::collections::HashMap;
 
 use core::program::Program;
+use core::types::merkle_tree::decode_addr;
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
+
 use std::sync::mpsc::channel;
 use std::thread;
 
 use eth_trie_utils::partial_trie::HashedPartialTrie;
 use ethereum_types::{Address, H256};
-use itertools::Itertools;
-use num::complex::ComplexFloat;
+
 //use eth_trie_utils::partial_trie::PartialTrie;
 use plonky2::field::extension::Extendable;
 use plonky2::field::polynomial::PolynomialValues;
@@ -81,8 +81,9 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
 ) -> ([Vec<PolynomialValues<F>>; NUM_TABLES], PublicValues) {
     let (cpu_tx, cpu_rx) = channel();
     let exec = std::mem::replace(&mut program.trace.exec, Vec::new());
+    let exec_for_cpu = exec.clone();
     thread::spawn(move || {
-        let cpu_rows = generate_cpu_trace::<F>(&exec);
+        let cpu_rows = generate_cpu_trace::<F>(&exec_for_cpu);
         cpu_tx.send(trace_to_poly_values(cpu_rows));
     });
 
@@ -156,10 +157,35 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         sccall_tx.send(trace_to_poly_values(sccall_rows));
     });
 
+    let (program_tx, program_rx) = channel();
+    let progs = program
+        .trace
+        .addr_program_hash
+        .into_iter()
+        .map(|(addr, hash)| (decode_addr(addr), hash))
+        .collect::<Vec<_>>();
+    let progs_for_program = progs.clone();
+    thread::spawn(move || {
+        let (program_rows, program_beta) =
+            prog::generate_prog_trace::<F>(&exec, progs_for_program, program.trace.start_end_roots);
+        program_tx.send((trace_to_poly_values(program_rows), program_beta));
+    });
+
+    let (prog_chunk_tx, prog_chunk_rx) = channel();
+    thread::spawn(move || {
+        let prog_chunk_rows = prog::generate_prog_chunk_trace::<F>(progs);
+        prog_chunk_tx.send(trace_to_poly_values(prog_chunk_rows));
+    });
+
     let (bitwise_trace, bitwise_beta) = bitwise_rx.recv().unwrap();
     ola_stark
         .bitwise_stark
         .set_compress_challenge(bitwise_beta)
+        .unwrap();
+    let (program_trace, program_beta) = program_rx.recv().unwrap();
+    ola_stark
+        .program_stark
+        .set_compress_challenge(program_beta)
         .unwrap();
 
     let traces = [
@@ -173,6 +199,8 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         storage_rx.recv().unwrap(),
         tape_rx.recv().unwrap(),
         sccall_rx.recv().unwrap(),
+        program_trace,
+        prog_chunk_rx.recv().unwrap(),
     ];
 
     // TODO: update trie_roots_before & trie_roots_after

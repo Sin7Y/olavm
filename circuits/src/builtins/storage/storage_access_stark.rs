@@ -37,7 +37,13 @@ pub fn ctl_data_with_cpu<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter_with_cpu_sstore<F: Field>() -> Column<F> {
-    Column::single(COL_ST_IS_LAYER_256)
+    Column::linear_combination_with_constant(
+        [
+            (COL_ST_IS_LAYER_256, F::ONE),
+            (COL_ST_FILTER_IS_FOR_PROG, F::NEG_ONE),
+        ],
+        F::ZERO,
+    )
 }
 
 pub fn ctl_data_with_poseidon_bit0<F: Field>() -> Vec<Column<F>> {

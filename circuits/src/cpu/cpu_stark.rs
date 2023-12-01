@@ -283,11 +283,15 @@ pub fn ctl_data_imm_to_program<F: Field>() -> Vec<Column<F>> {
     res
 }
 
-pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
+pub fn ctl_filter_with_program_inst<F: Field>() -> Column<F> {
     Column::linear_combination_with_constant(
         [(COL_IS_EXT_LINE, F::NEG_ONE), (COL_IS_PADDING, F::NEG_ONE)],
         F::ONE,
     )
+}
+
+pub fn ctl_filter_with_program_imm<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_LOOKING_PROG_IMM)
 }
 
 pub(crate) fn ctl_data_cpu_tape_sccall_caller<F: Field>(i: usize) -> Vec<Column<F>> {
@@ -909,6 +913,17 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
                         - wrapper.lv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]),
             );
         }
+        // filter imm to prog
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_PADDING] - wrapper.lv[COL_IS_EXT_LINE])
+                * wrapper.lv[COL_OP1_IMM]
+                * (P::ONES - wrapper.lv[COL_FILTER_LOOKING_PROG_IMM]),
+        );
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_PADDING] - wrapper.lv[COL_IS_EXT_LINE])
+                * (wrapper.lv[COL_S_MLOAD] + wrapper.lv[COL_S_MSTORE])
+                * (P::ONES - wrapper.lv[COL_FILTER_LOOKING_PROG_IMM]),
+        );
 
         Self::constraint_ext_lines(&wrapper, yield_constr);
         Self::constraint_env_idx(&wrapper, yield_constr);
