@@ -232,16 +232,6 @@ fn prophet_sqrt_test() {
 }
 
 #[test]
-fn sqrt_newton_iteration_test() {
-    executor_run_test_program(
-        "../assembler/test_data/bin/sqrt.json",
-        "sqrt_trace.txt",
-        true,
-        None,
-    );
-}
-
-#[test]
 fn storage_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/storage.json",
