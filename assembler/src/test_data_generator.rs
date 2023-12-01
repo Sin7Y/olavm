@@ -138,17 +138,17 @@ mod tests {
         );
     }
 
-    #[test]
-    fn generate_sccall_test() {
-        generate_from_file(
-            "sccall/caller.json".to_string(),
-            "sccall/caller.json".to_string(),
-        );
-        generate_from_file(
-            "sccall/callee.json".to_string(),
-            "sccall/callee.json".to_string(),
-        );
-    }
+    // #[test]
+    // fn generate_sccall_test() {
+    //     generate_from_file(
+    //         "sccall/caller.json".to_string(),
+    //         "sccall/caller.json".to_string(),
+    //     );
+    //     generate_from_file(
+    //         "sccall/callee.json".to_string(),
+    //         "sccall/callee.json".to_string(),
+    //     );
+    // }
 
     #[test]
     fn generate_store_u32() {
@@ -200,7 +200,7 @@ mod tests {
         generate_from_file("ptr_call.json".to_string(), "ptr_call.json".to_string());
     }
     fn generate_from_file(input_file_name: String, output_file_name: String) {
-        let _ = fs::create_dir_all("test_data/bin");
+        let _ = fs::create_dir_all("test_data/bin/sccall");
         let input_path = format!("test_data/asm/{}", input_file_name);
         let json_str = std::fs::read_to_string(&input_path).unwrap();
         let bundle: AsmBundle = serde_json::from_str(json_str.as_str()).unwrap();

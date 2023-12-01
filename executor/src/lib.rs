@@ -1076,13 +1076,16 @@ impl Process {
     ) -> Result<Option<Step>, ProcessorError> {
         self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::END as u8);
 
-        let len = self.tape.read(
-            self.tx_idx,
-            self.tp.to_canonical_u64() - 1,
-            self.clk,
-            GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
-            GoldilocksField::ZERO,
-        )?;
+        let mut len = GoldilocksField::ZERO;
+        if self.tp.to_canonical_u64() > 0 {
+            len = self.tape.read(
+                self.tx_idx,
+                self.tp.to_canonical_u64() - 1,
+                self.clk,
+                GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
+                GoldilocksField::ZERO,
+            )?;
+        }
 
         if len != GoldilocksField::ZERO {
             let len = len.to_canonical_u64();
@@ -1145,6 +1148,7 @@ impl Process {
                 });
             }
         }
+
         Ok(end_step)
     }
 
