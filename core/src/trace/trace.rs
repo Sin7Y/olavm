@@ -259,7 +259,14 @@ impl Display for PoseidonRow {
 }
 
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
-pub struct HashTrace(pub PoseidonRow, pub TreeValue, pub TreeValue, pub TreeValue, pub TreeValue, pub PoseidonRow);
+pub struct HashTrace(
+    pub PoseidonRow,
+    pub TreeValue,
+    pub TreeValue,
+    pub TreeValue,
+    pub TreeValue,
+    pub PoseidonRow,
+);
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct StorageRow {
@@ -337,6 +344,7 @@ pub struct Trace {
     pub builtin_program_hash: Vec<StorageHashRow>,
     pub tape: Vec<TapeRow>,
     pub sc_call: Vec<SCCallRow>,
+    pub ret: Vec<GoldilocksField>,
 }
 
 impl Trace {

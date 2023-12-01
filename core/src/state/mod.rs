@@ -120,6 +120,11 @@ where
             Vec::new(),
         ));
 
+        trace.ret.extend(std::mem::replace(
+            &mut self.txs_trace.get_mut(&0).unwrap().ret,
+            Vec::new(),
+        ));
+
         loop {
             let data = self.txs_trace.pop_first();
             match data {
