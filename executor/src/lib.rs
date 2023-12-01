@@ -1148,6 +1148,116 @@ impl Process {
         Ok(end_step)
     }
 
+    fn execute_inst_sstore(
+        &mut self,
+        program: &mut Program,
+        aux_steps: &mut Vec<Step>,
+        ops: &[&str],
+        step: u64,
+        ctx_regs_status: &Address,
+        registers_status: &[GoldilocksField; REGISTER_NUM],
+        ctx_code_regs_status: &Address,
+    ) -> Result<(), ProcessorError> {
+        self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u8);
+        let mut slot_key = [GoldilocksField::ZERO; 4];
+        let mut store_value = [GoldilocksField::ZERO; 4];
+        let mut register_selector_regs: RegisterSelector = Default::default();
+
+        let op0_index = self.get_reg_index(ops[1]);
+        let value = self.get_index_value(ops[2]);
+
+        self.register_selector.op0 = self.registers[op0_index];
+        self.register_selector.op1 = value.0;
+        self.register_selector.op0_reg_sel[op0_index] = GoldilocksField::from_canonical_u64(1);
+        if let ImmediateOrRegName::RegName(op1_index) = value.1 {
+            self.register_selector.op1_reg_sel[op1_index] = GoldilocksField::from_canonical_u64(1);
+        }
+        register_selector_regs.op0 = self.register_selector.op0;
+        register_selector_regs.op1 = self.register_selector.op1;
+
+        let key_mem_addr = self.registers[op0_index].to_canonical_u64();
+        let value_mem_addr = value.0.to_canonical_u64();
+
+        for index in 0..TREE_VALUE_LEN {
+            let mut mem_addr = key_mem_addr + index as u64;
+            memory_op!(self, mem_addr, slot_key[index], Opcode::SSTORE);
+            register_selector_regs.op0_reg_sel[index] =
+                GoldilocksField::from_canonical_u64(mem_addr);
+            register_selector_regs.op0_reg_sel[TREE_VALUE_LEN + index] = slot_key[index];
+
+            mem_addr = value_mem_addr + index as u64;
+            memory_op!(self, mem_addr, store_value[index], Opcode::SSTORE);
+            register_selector_regs.op1_reg_sel[index] =
+                GoldilocksField::from_canonical_u64(mem_addr);
+            register_selector_regs.op1_reg_sel[TREE_VALUE_LEN + index] = store_value[index];
+        }
+
+        let storage_key = StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
+        let (tree_key, hash_row) = storage_key.hashed_key();
+        register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
+
+        self.storage.write(
+            self.clk,
+            GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u64),
+            tree_key,
+            store_value,
+            tree_key_default(),
+            self.tx_idx,
+            self.env_idx,
+        );
+        self.storage_access_idx += GoldilocksField::ONE;
+
+        if !program.pre_exe_flag {
+            self.storage_log.push(WitnessStorageLog {
+                storage_log: StorageLog::new_write_log(tree_key, store_value),
+                previous_value: tree_key_default(),
+            });
+
+            program.trace.builtin_poseidon.push(hash_row);
+            let ext_cnt = GoldilocksField::ONE;
+            let filter_tape_looking = GoldilocksField::ZERO;
+
+            let ctx_regs_status = ctx_regs_status.clone();
+            let ctx_code_regs_status = ctx_code_regs_status.clone();
+            let registers_status = registers_status.clone();
+            aux_insert!(
+                self,
+                aux_steps,
+                ctx_regs_status,
+                ctx_code_regs_status,
+                registers_status,
+                register_selector_regs,
+                ext_cnt,
+                filter_tape_looking
+            );
+        }
+        self.pc += step;
+        let print_vm_state = false;
+        if print_vm_state {
+            println!("******************** sstore ********************");
+            println!(
+                "scaddr: {}, {}, {}, {}",
+                self.addr_storage[0],
+                self.addr_storage[1],
+                self.addr_storage[2],
+                self.addr_storage[3]
+            );
+            println!(
+                "storage_key: {}, {}, {}, {}",
+                slot_key[0], slot_key[1], slot_key[2], slot_key[3]
+            );
+            println!(
+                "tree_key: {}, {}, {}, {}",
+                tree_key[0], tree_key[1], tree_key[2], tree_key[3]
+            );
+            println!(
+                "value: {}, {}, {}, {}",
+                store_value[0], store_value[1], store_value[2], store_value[3]
+            );
+        }
+        Ok(())
+    }
+
     pub fn execute(
         &mut self,
         program: &mut Program,
@@ -1243,107 +1353,15 @@ impl Process {
                     )?;
                     break;
                 }
-                "sstore" => {
-                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u8);
-                    let mut slot_key = [GoldilocksField::ZERO; 4];
-                    let mut store_value = [GoldilocksField::ZERO; 4];
-                    let mut register_selector_regs: RegisterSelector = Default::default();
-
-                    let op0_index = self.get_reg_index(ops[1]);
-                    let value = self.get_index_value(ops[2]);
-
-                    self.register_selector.op0 = self.registers[op0_index];
-                    self.register_selector.op1 = value.0;
-                    self.register_selector.op0_reg_sel[op0_index] =
-                        GoldilocksField::from_canonical_u64(1);
-                    if let ImmediateOrRegName::RegName(op1_index) = value.1 {
-                        self.register_selector.op1_reg_sel[op1_index] =
-                            GoldilocksField::from_canonical_u64(1);
-                    }
-                    register_selector_regs.op0 = self.register_selector.op0;
-                    register_selector_regs.op1 = self.register_selector.op1;
-
-                    let key_mem_addr = self.registers[op0_index].to_canonical_u64();
-                    let value_mem_addr = value.0.to_canonical_u64();
-
-                    for index in 0..TREE_VALUE_LEN {
-                        let mut mem_addr = key_mem_addr + index as u64;
-                        memory_op!(self, mem_addr, slot_key[index], Opcode::SSTORE);
-                        register_selector_regs.op0_reg_sel[index] =
-                            GoldilocksField::from_canonical_u64(mem_addr);
-                        register_selector_regs.op0_reg_sel[TREE_VALUE_LEN + index] =
-                            slot_key[index];
-
-                        mem_addr = value_mem_addr + index as u64;
-                        memory_op!(self, mem_addr, store_value[index], Opcode::SSTORE);
-                        register_selector_regs.op1_reg_sel[index] =
-                            GoldilocksField::from_canonical_u64(mem_addr);
-                        register_selector_regs.op1_reg_sel[TREE_VALUE_LEN + index] =
-                            store_value[index];
-                    }
-
-                    let storage_key =
-                        StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
-                    let (tree_key, hash_row) = storage_key.hashed_key();
-                    register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN]
-                        .clone_from_slice(&tree_key);
-
-                    self.storage.write(
-                        self.clk,
-                        GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u64),
-                        tree_key,
-                        store_value,
-                        tree_key_default(),
-                        self.tx_idx,
-                        self.env_idx,
-                    );
-                    self.storage_access_idx += GoldilocksField::ONE;
-
-                    if !program.pre_exe_flag {
-                        self.storage_log.push(WitnessStorageLog {
-                            storage_log: StorageLog::new_write_log(tree_key, store_value),
-                            previous_value: tree_key_default(),
-                        });
-
-                        program.trace.builtin_poseidon.push(hash_row);
-                        let ext_cnt = GoldilocksField::ONE;
-                        let filter_tape_looking = GoldilocksField::ZERO;
-
-                        aux_insert!(
-                            self,
-                            aux_steps,
-                            ctx_regs_status,
-                            ctx_code_regs_status,
-                            registers_status,
-                            register_selector_regs,
-                            ext_cnt,
-                            filter_tape_looking
-                        );
-                    }
-                    self.pc += step;
-                    if print_vm_state {
-                        println!("******************** sstore ********************");
-                        println!(
-                            "scaddr: {}, {}, {}, {}",
-                            self.addr_storage[0],
-                            self.addr_storage[1],
-                            self.addr_storage[2],
-                            self.addr_storage[3]
-                        );
-                        println!(
-                            "storage_key: {}, {}, {}, {}",
-                            slot_key[0], slot_key[1], slot_key[2], slot_key[3]
-                        );
-                        println!(
-                            "tree_key: {}, {}, {}, {}",
-                            tree_key[0], tree_key[1], tree_key[2], tree_key[3]
-                        );
-                        println!(
-                            "value: {}, {}, {}, {}",
-                            store_value[0], store_value[1], store_value[2], store_value[3]
-                        );
-                    }
-                }
+                "sstore" => self.execute_inst_sstore(
+                    program,
+                    &mut aux_steps,
+                    &ops,
+                    step,
+                    &ctx_regs_status,
+                    &registers_status,
+                    &ctx_code_regs_status,
+                )?,
                 "sload" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u8);
                     let mut slot_key = [GoldilocksField::ZERO; 4];
