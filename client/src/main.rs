@@ -107,11 +107,7 @@ fn main() {
                 prophets.insert(item.host as u64, item);
             }
 
-            let mut program: Program = Program {
-                instructions: Vec::new(),
-                trace: Default::default(),
-                debug_info: BTreeMap::new(),
-            };
+            let mut program: Program = Program::default();
 
             for inst in instructions {
                 program.instructions.push(inst.to_string());
@@ -188,6 +184,7 @@ fn main() {
                 instructions: trace.raw_binary_instructions.clone(),
                 trace,
                 debug_info: BTreeMap::new(),
+                pre_exe_flag: false,
             };
 
             let inputs = GenerationInputs::default();

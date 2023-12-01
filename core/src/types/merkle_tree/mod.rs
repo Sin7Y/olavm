@@ -7,7 +7,7 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use web3::types::{U256, H256};
+use web3::types::{H256, U256};
 
 pub const TREE_VALUE_LEN: usize = 4;
 pub type TreeKey = [GoldilocksField; TREE_VALUE_LEN];

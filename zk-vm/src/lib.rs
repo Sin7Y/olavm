@@ -240,11 +240,7 @@ impl OlaVM {
             caller_addr,
             &self.ctx_info,
         );
-        let mut program = Arc::new(Mutex::new(Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-            debug_info: Default::default(),
-        }));
+        let mut program = Arc::new(Mutex::new(Program::default()));
 
         let mut caller_addr = caller_addr;
         let mut code_exe_addr = code_exe_addr;
@@ -283,11 +279,7 @@ impl OlaVM {
                     mutex_data!(process).env_idx = GoldilocksField::from_canonical_u64(sc_cnt);
                     mutex_data!(process).call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);
 
-                    program = Arc::new(Mutex::new(Program {
-                        instructions: Vec::new(),
-                        trace: Default::default(),
-                        debug_info: Default::default(),
-                    }));
+                    program = Arc::new(Mutex::new(Program::default()));
 
                     match ret {
                         SCCallType::Call(addr) => {
