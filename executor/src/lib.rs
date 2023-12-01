@@ -399,73 +399,148 @@ impl Process {
         Ok(())
     }
 
+    fn print_vm_state(&mut self, instruction: &str) {
+        println!(
+            "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ tp:{}, clk: {}, pc: {}, instruction: {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
+            self.tp, self.clk, self.pc, instruction
+        );
+        println!("--------------- registers ---------------");
+        println!(
+            "r0({}), r1({}), r2({}), r3({}), r4({}), r5({}), r6({}), r7({}), r8({}), r9({})",
+            self.registers[0],
+            self.registers[1],
+            self.registers[2],
+            self.registers[3],
+            self.registers[4],
+            self.registers[5],
+            self.registers[6],
+            self.registers[7],
+            self.registers[8],
+            self.registers[9]
+        );
+        println!("--------------- memory ---------------");
+        let mut tmp_cnt = 0;
+        self.memory.trace.iter().for_each(|(k, v)| {
+            tmp_cnt += 1;
+            print!("{:<22}\t: {:<22}\t", k, v.last().unwrap().value);
+            if tmp_cnt % 3 == 0 {
+                println!("\n");
+            }
+        });
+        if tmp_cnt % 3 != 0 {
+            println!("\n");
+        }
+        println!("--------------- tape ---------------");
+        tmp_cnt = 0;
+        self.tape.trace.iter().for_each(|(k, v)| {
+            tmp_cnt += 1;
+            print!("{}: {:<22}\t", k, v.last().unwrap().value);
+            if tmp_cnt % 5 == 0 {
+                println!("\n");
+            }
+        });
+        if tmp_cnt % 5 != 0 {
+            println!("\n");
+        }
+        println!("--------------- storage ---------------");
+        tmp_cnt = 0;
+        self.storage.trace.iter().for_each(|(_, v)| {
+            tmp_cnt += 1;
+            let cell = v.last().unwrap();
+            let tree_key = cell.addr;
+            let value = cell.value;
+            println!(
+                "[{:<22}\t,{:<22}\t,{:<22}\t,{:<22}\t]: [{:<22}\t,{:<22}\t,{:<22}\t,{:<22}\t]",
+                tree_key[0],
+                tree_key[1],
+                tree_key[2],
+                tree_key[3],
+                value[0],
+                value[1],
+                value[2],
+                value[3]
+            );
+            // if tmp_cnt % 5 == 0 {
+            //     println!("\n");
+            // }
+        });
+        if tmp_cnt % 5 != 0 {
+            println!("\n");
+        }
+    }
+
+    fn execute_decode(
+        &mut self,
+        program: &mut Program,
+        pc: u64,
+        instrs_len: u64,
+    ) -> Result<u64, ProcessorError> {
+        let instruct_line = program.instructions[pc as usize].trim();
+        program
+            .trace
+            .raw_binary_instructions
+            .push(instruct_line.to_string());
+
+        let mut immediate_data = GoldilocksField::ZERO;
+
+        let next_instr = if (instrs_len - 2) >= pc {
+            program.instructions[(pc + 1) as usize].trim()
+        } else {
+            ""
+        };
+
+        // Decode instruction from program into trace one.
+        let (txt_instruction, step) = decode_raw_instruction(instruct_line, next_instr)?;
+
+        let imm_flag = if step == IMM_INSTRUCTION_LEN {
+            let imm_u64 = next_instr.trim_start_matches("0x");
+            immediate_data =
+                GoldilocksField::from_canonical_u64(u64::from_str_radix(imm_u64, 16).unwrap());
+            program
+                .trace
+                .raw_binary_instructions
+                .push(next_instr.to_string());
+            1
+        } else {
+            0
+        };
+
+        let inst_u64 = instruct_line.trim_start_matches("0x");
+        let inst_encode =
+            GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
+        program.trace.instructions.insert(
+            pc,
+            (
+                txt_instruction.clone(),
+                imm_flag,
+                step,
+                inst_encode,
+                immediate_data,
+            ),
+        );
+        if !program.debug_info.is_empty() {
+            debug!("inst pc:{}", pc);
+            program
+                .trace
+                .raw_instructions
+                .insert(pc, program.debug_info.get(&(pc as usize)).unwrap().clone());
+        }
+        Ok(pc + step)
+    }
+
     pub fn execute(
         &mut self,
         program: &mut Program,
         prophets: &mut Option<HashMap<u64, OlaProphet>>,
         account_tree: &mut AccountTree,
     ) -> Result<VMState, ProcessorError> {
-        let print_vm_state = false;
-
         let instrs_len = program.instructions.len() as u64;
         // program.trace.raw_binary_instructions.clear();
         let start = Instant::now();
         let mut pc: u64 = 0;
-        if program.trace.raw_binary_instructions.len() == 0 {
+        if program.trace.raw_binary_instructions.is_empty() {
             while pc < instrs_len {
-                let instruct_line = program.instructions[pc as usize].trim();
-
-                program
-                    .trace
-                    .raw_binary_instructions
-                    .push(instruct_line.to_string());
-
-                let mut immediate_data = GoldilocksField::ZERO;
-
-                let next_instr = if (instrs_len - 2) >= pc {
-                    program.instructions[(pc + 1) as usize].trim()
-                } else {
-                    ""
-                };
-
-                // Decode instruction from program into trace one.
-                let (txt_instruction, step) = decode_raw_instruction(instruct_line, next_instr)?;
-
-                let imm_flag = if step == IMM_INSTRUCTION_LEN {
-                    let imm_u64 = next_instr.trim_start_matches("0x");
-                    immediate_data = GoldilocksField::from_canonical_u64(
-                        u64::from_str_radix(imm_u64, 16).unwrap(),
-                    );
-                    program
-                        .trace
-                        .raw_binary_instructions
-                        .push(next_instr.to_string());
-                    1
-                } else {
-                    0
-                };
-
-                let inst_u64 = instruct_line.trim_start_matches("0x");
-                let inst_encode =
-                    GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
-                program.trace.instructions.insert(
-                    pc,
-                    (
-                        txt_instruction.clone(),
-                        imm_flag,
-                        step,
-                        inst_encode,
-                        immediate_data,
-                    ),
-                );
-                if !program.debug_info.is_empty() {
-                    debug!("inst pc:{}", pc);
-                    program
-                        .trace
-                        .raw_instructions
-                        .insert(pc, program.debug_info.get(&(pc as usize)).unwrap().clone());
-                }
-                pc += step;
+                pc = self.execute_decode(program, pc, instrs_len).unwrap();
             }
         }
         let decode_time = start.elapsed();
@@ -510,73 +585,9 @@ impl Process {
                 return Err(ProcessorError::PcVistInv(self.pc));
             }
 
-            if print_vm_state {
-                println!(
-                "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ tp:{}, clk: {}, pc: {}, instruction: {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
-                self.tp, self.clk, self.pc, instruction.0);
-                println!("--------------- registers ---------------");
-                println!(
-                "r0({}), r1({}), r2({}), r3({}), r4({}), r5({}), r6({}), r7({}), r8({}), r9({})",
-                self.registers[0],
-                self.registers[1],
-                self.registers[2],
-                self.registers[3],
-                self.registers[4],
-                self.registers[5],
-                self.registers[6],
-                self.registers[7],
-                self.registers[8],
-                self.registers[9]);
-                println!("--------------- memory ---------------");
-                let mut tmp_cnt = 0;
-                self.memory.trace.iter().for_each(|(k, v)| {
-                    tmp_cnt += 1;
-                    print!("{:<22}\t: {:<22}\t", k, v.last().unwrap().value);
-                    if tmp_cnt % 3 == 0 {
-                        println!("\n");
-                    }
-                });
-                if tmp_cnt % 3 != 0 {
-                    println!("\n");
-                }
-                println!("--------------- tape ---------------");
-                tmp_cnt = 0;
-                self.tape.trace.iter().for_each(|(k, v)| {
-                    tmp_cnt += 1;
-                    print!("{}: {:<22}\t", k, v.last().unwrap().value);
-                    if tmp_cnt % 5 == 0 {
-                        println!("\n");
-                    }
-                });
-                if tmp_cnt % 5 != 0 {
-                    println!("\n");
-                }
-                println!("--------------- storage ---------------");
-                tmp_cnt = 0;
-                self.storage.trace.iter().for_each(|(_, v)| {
-                    tmp_cnt += 1;
-                    let cell = v.last().unwrap();
-                    let tree_key = cell.addr;
-                    let value = cell.value;
-                    println!(
-                    "[{:<22}\t,{:<22}\t,{:<22}\t,{:<22}\t]: [{:<22}\t,{:<22}\t,{:<22}\t,{:<22}\t]",
-                    tree_key[0],
-                    tree_key[1],
-                    tree_key[2],
-                    tree_key[3],
-                    value[0],
-                    value[1],
-                    value[2],
-                    value[3]
-                );
-                    // if tmp_cnt % 5 == 0 {
-                    //     println!("\n");
-                    // }
-                });
-                if tmp_cnt % 5 != 0 {
-                    println!("\n");
-                }
-            }
+            // Print vm state for debug only.
+            #[cfg(debug_assertions)]
+            self.print_vm_state(&instruction.0);
 
             let ops: Vec<&str> = instruction.0.split_whitespace().collect();
             let opcode = ops.first().unwrap().to_lowercase();
