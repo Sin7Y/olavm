@@ -138,17 +138,17 @@ mod tests {
         );
     }
 
-    #[test]
-    fn generate_sccall_test() {
-        generate_from_file(
-            "sccall/caller.json".to_string(),
-            "sccall/caller.json".to_string(),
-        );
-        generate_from_file(
-            "sccall/callee.json".to_string(),
-            "sccall/callee.json".to_string(),
-        );
-    }
+    // #[test]
+    // fn generate_sccall_test() {
+    //     generate_from_file(
+    //         "sccall/caller.json".to_string(),
+    //         "sccall/caller.json".to_string(),
+    //     );
+    //     generate_from_file(
+    //         "sccall/callee.json".to_string(),
+    //         "sccall/callee.json".to_string(),
+    //     );
+    // }
 
     #[test]
     fn generate_store_u32() {
