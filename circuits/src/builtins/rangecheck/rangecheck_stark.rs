@@ -184,11 +184,7 @@ mod tests {
             prophets.insert(item.host as u64, item);
         }
 
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-            debug_info: Default::default(),
-        };
+        let mut program: Program = Program::default();
 
         for inst in instructions {
             program.instructions.push(inst.to_string());

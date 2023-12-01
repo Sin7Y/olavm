@@ -992,22 +992,24 @@ impl Process {
                     if self.registers[op1_index].to_canonical_u64() > u32::MAX as u64 {
                         return Err(ProcessorError::U32RangeCheckFail);
                     }
-                    self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
-                    self.register_selector.op1 = self.registers[op1_index];
-                    self.register_selector.op1_reg_sel[op1_index] =
-                        GoldilocksField::from_canonical_u64(1);
 
-                    program.trace.insert_rangecheck(
-                        self.registers[op1_index],
-                        (
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ONE,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                        ),
-                    );
+                    if !program.pre_exe_flag {
+                        self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::RC as u8);
+                        self.register_selector.op1 = self.registers[op1_index];
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
 
+                        program.trace.insert_rangecheck(
+                            self.registers[op1_index],
+                            (
+                                GoldilocksField::ZERO,
+                                GoldilocksField::ONE,
+                                GoldilocksField::ZERO,
+                                GoldilocksField::ZERO,
+                                GoldilocksField::ZERO,
+                            ),
+                        );
+                    }
                     self.pc += step;
                 }
                 "and" | "or" | "xor" => {
@@ -1055,16 +1057,18 @@ impl Process {
                         _ => panic!("not match opcode:{}", opcode),
                     };
 
-                    self.register_selector.dst = self.registers[dst_index];
-                    self.register_selector.dst_reg_sel[dst_index] =
-                        GoldilocksField::from_canonical_u64(1);
+                    if !program.pre_exe_flag {
+                        self.register_selector.dst = self.registers[dst_index];
+                        self.register_selector.dst_reg_sel[dst_index] =
+                            GoldilocksField::from_canonical_u64(1);
 
-                    program.trace.insert_bitwise_combined(
-                        opcode,
-                        self.register_selector.op0,
-                        op1_value.0,
-                        self.registers[dst_index],
-                    );
+                        program.trace.insert_bitwise_combined(
+                            opcode,
+                            self.register_selector.op0,
+                            op1_value.0,
+                            self.registers[dst_index],
+                        );
+                    }
                     self.pc += step;
                 }
                 "gte" => {
@@ -1102,87 +1106,112 @@ impl Process {
                         _ => panic!("not match opcode:{}", opcode),
                     };
 
-                    self.register_selector.dst = self.registers[dst_index];
-                    self.register_selector.dst_reg_sel[dst_index] =
-                        GoldilocksField::from_canonical_u64(1);
+                    if !program.pre_exe_flag {
+                        self.register_selector.dst = self.registers[dst_index];
+                        self.register_selector.dst_reg_sel[dst_index] =
+                            GoldilocksField::from_canonical_u64(1);
 
-                    let abs_diff;
-                    if self.register_selector.dst.is_one() {
-                        abs_diff = self.register_selector.op0 - self.register_selector.op1;
-                    } else {
-                        abs_diff = self.register_selector.op1 - self.register_selector.op0;
-                    }
+                        let abs_diff;
+                        if self.register_selector.dst.is_one() {
+                            abs_diff = self.register_selector.op0 - self.register_selector.op1;
+                        } else {
+                            abs_diff = self.register_selector.op1 - self.register_selector.op0;
+                        }
 
-                    if abs_diff.to_canonical_u64() > u32::MAX as u64 {
-                        return Err(ProcessorError::U32RangeCheckFail);
-                    }
-                    program.trace.insert_rangecheck(
-                        abs_diff,
-                        (
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
+                        if abs_diff.to_canonical_u64() > u32::MAX as u64 {
+                            return Err(ProcessorError::U32RangeCheckFail);
+                        }
+                        program.trace.insert_rangecheck(
+                            abs_diff,
+                            (
+                                GoldilocksField::ZERO,
+                                GoldilocksField::ZERO,
+                                GoldilocksField::ONE,
+                                GoldilocksField::ZERO,
+                                GoldilocksField::ZERO,
+                            ),
+                        );
+
+                        program.trace.insert_cmp(
+                            self.register_selector.op0,
+                            value.0,
+                            self.register_selector.dst,
+                            abs_diff,
                             GoldilocksField::ONE,
-                            GoldilocksField::ZERO,
-                            GoldilocksField::ZERO,
-                        ),
-                    );
-
-                    program.trace.insert_cmp(
-                        self.register_selector.op0,
-                        value.0,
-                        self.register_selector.dst,
-                        abs_diff,
-                        GoldilocksField::ONE,
-                    );
+                        );
+                    }
                     self.pc += step;
                 }
                 "end" => {
                     self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::END as u8);
-                    program.trace.insert_step(
-                        self.clk,
-                        pc_status,
-                        self.tp,
-                        self.instruction,
-                        self.immediate_data,
-                        self.op1_imm,
-                        self.opcode,
-                        ctx_regs_status,
-                        registers_status,
-                        self.register_selector.clone(),
-                        GoldilocksField::ZERO,
-                        GoldilocksField::ZERO,
-                        GoldilocksField::ZERO,
-                        ctx_code_regs_status,
+
+                    let len = self.tape.read(
                         self.tx_idx,
-                        self.env_idx,
-                        self.call_sc_cnt,
-                        self.storage_access_idx,
-                    );
-                    if self.env_idx.ne(&GoldilocksField::ZERO) {
-                        self.register_selector.aux0 = self.env_idx;
-                        self.register_selector.aux1 =
-                            GoldilocksField::from_canonical_u64(self.clk as u64);
-                        let register_selector = self.register_selector.clone();
-                        end_step = Some(Step {
-                            tx_idx: self.tx_idx,
-                            env_idx: GoldilocksField::default(),
-                            call_sc_cnt: self.call_sc_cnt,
-                            tp: self.tp,
-                            addr_storage: Address::default(),
-                            addr_code: Address::default(),
-                            instruction: self.instruction,
-                            immediate_data: self.immediate_data,
-                            opcode: self.opcode,
-                            op1_imm: self.op1_imm,
-                            clk: 0,
-                            pc: pc_status,
-                            register_selector,
-                            is_ext_line: GoldilocksField::ONE,
-                            ext_cnt: GoldilocksField::ONE,
-                            regs: self.registers,
-                            filter_tape_looking: GoldilocksField::ZERO,
-                            storage_access_idx: self.storage_access_idx,
-                        });
+                        self.tp.to_canonical_u64() - 1,
+                        self.clk,
+                        GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
+                        GoldilocksField::ZERO,
+                    )?;
+
+                    if len != GoldilocksField::ZERO {
+                        let len = len.to_canonical_u64();
+                        for i in 0..len {
+                            program.trace.ret.push(self.tape.read(
+                                self.tx_idx,
+                                self.tp.to_canonical_u64() - len - 1 + i,
+                                self.clk,
+                                GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
+                                GoldilocksField::ZERO,
+                            )?);
+                        }
+                    }
+                    if !program.pre_exe_flag {
+                        program.trace.insert_step(
+                            self.clk,
+                            pc_status,
+                            self.tp,
+                            self.instruction,
+                            self.immediate_data,
+                            self.op1_imm,
+                            self.opcode,
+                            ctx_regs_status,
+                            registers_status,
+                            self.register_selector.clone(),
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
+                            ctx_code_regs_status,
+                            self.tx_idx,
+                            self.env_idx,
+                            self.call_sc_cnt,
+                            self.storage_access_idx,
+                        );
+                        if self.env_idx.ne(&GoldilocksField::ZERO) {
+                            self.register_selector.aux0 = self.env_idx;
+                            self.register_selector.aux1 =
+                                GoldilocksField::from_canonical_u64(self.clk as u64);
+                            let register_selector = self.register_selector.clone();
+                            end_step = Some(Step {
+                                tx_idx: self.tx_idx,
+                                env_idx: GoldilocksField::default(),
+                                call_sc_cnt: self.call_sc_cnt,
+                                tp: self.tp,
+                                addr_storage: Address::default(),
+                                addr_code: Address::default(),
+                                instruction: self.instruction,
+                                immediate_data: self.immediate_data,
+                                opcode: self.opcode,
+                                op1_imm: self.op1_imm,
+                                clk: 0,
+                                pc: pc_status,
+                                register_selector,
+                                is_ext_line: GoldilocksField::ONE,
+                                ext_cnt: GoldilocksField::ONE,
+                                regs: self.registers,
+                                filter_tape_looking: GoldilocksField::ZERO,
+                                storage_access_idx: self.storage_access_idx,
+                            });
+                        }
                     }
                     break;
                 }
@@ -1230,10 +1259,6 @@ impl Process {
                     let (tree_key, hash_row) = storage_key.hashed_key();
                     register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN]
                         .clone_from_slice(&tree_key);
-                    self.storage_log.push(WitnessStorageLog {
-                        storage_log: StorageLog::new_write_log(tree_key, store_value),
-                        previous_value: tree_key_default(),
-                    });
 
                     self.storage.write(
                         self.clk,
@@ -1244,22 +1269,29 @@ impl Process {
                         self.tx_idx,
                         self.env_idx,
                     );
-
-                    program.trace.builtin_poseidon.push(hash_row);
-
                     self.storage_access_idx += GoldilocksField::ONE;
-                    let ext_cnt = GoldilocksField::ONE;
-                    let filter_tape_looking = GoldilocksField::ZERO;
-                    aux_insert!(
-                        self,
-                        aux_steps,
-                        ctx_regs_status,
-                        ctx_code_regs_status,
-                        registers_status,
-                        register_selector_regs,
-                        ext_cnt,
-                        filter_tape_looking
-                    );
+
+                    if !program.pre_exe_flag {
+                        self.storage_log.push(WitnessStorageLog {
+                            storage_log: StorageLog::new_write_log(tree_key, store_value),
+                            previous_value: tree_key_default(),
+                        });
+
+                        program.trace.builtin_poseidon.push(hash_row);
+                        let ext_cnt = GoldilocksField::ONE;
+                        let filter_tape_looking = GoldilocksField::ZERO;
+
+                        aux_insert!(
+                            self,
+                            aux_steps,
+                            ctx_regs_status,
+                            ctx_code_regs_status,
+                            registers_status,
+                            register_selector_regs,
+                            ext_cnt,
+                            filter_tape_looking
+                        );
+                    }
                     self.pc += step;
                     if print_vm_state {
                         println!("******************** sstore ********************");
@@ -1350,11 +1382,6 @@ impl Process {
                             read_value[index];
                     }
 
-                    self.storage_log.push(WitnessStorageLog {
-                        storage_log: StorageLog::new_read_log(tree_key, read_value),
-                        previous_value: tree_key_default(),
-                    });
-
                     self.storage.read(
                         self.clk,
                         GoldilocksField::from_canonical_u64(1 << Opcode::SLOAD as u64),
@@ -1364,21 +1391,30 @@ impl Process {
                         self.tx_idx,
                         self.env_idx,
                     );
-                    program.trace.builtin_poseidon.push(hash_row);
 
                     self.storage_access_idx += GoldilocksField::ONE;
-                    let ext_cnt = GoldilocksField::ONE;
-                    let filter_tape_looking = GoldilocksField::ZERO;
-                    aux_insert!(
-                        self,
-                        aux_steps,
-                        ctx_regs_status,
-                        ctx_code_regs_status,
-                        registers_status,
-                        register_selector_regs,
-                        ext_cnt,
-                        filter_tape_looking
-                    );
+
+                    if !program.pre_exe_flag {
+                        self.storage_log.push(WitnessStorageLog {
+                            storage_log: StorageLog::new_read_log(tree_key, read_value),
+                            previous_value: tree_key_default(),
+                        });
+
+                        program.trace.builtin_poseidon.push(hash_row);
+
+                        let ext_cnt = GoldilocksField::ONE;
+                        let filter_tape_looking = GoldilocksField::ZERO;
+                        aux_insert!(
+                            self,
+                            aux_steps,
+                            ctx_regs_status,
+                            ctx_code_regs_status,
+                            registers_status,
+                            register_selector_regs,
+                            ext_cnt,
+                            filter_tape_looking
+                        );
+                    }
                     self.pc += step;
 
                     if print_vm_state {
@@ -1435,22 +1471,22 @@ impl Process {
                     let mut hash_pre = [GoldilocksField::ZERO; POSEIDON_INPUT_NUM];
                     let mut hash_cap = [GoldilocksField::ZERO; POSEIDON_OUTPUT_VALUE_LEN];
                     let mut hash_input_value = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
-
-                    program.trace.insert_poseidon_chunk(
-                        self.tx_idx,
-                        self.env_idx,
-                        self.clk,
-                        self.opcode,
-                        self.register_selector.dst,
-                        self.register_selector.op0,
-                        self.register_selector.op1,
-                        GoldilocksField::ZERO,
-                        hash_input_value,
-                        hash_cap,
-                        hash_pre,
-                        GoldilocksField::ZERO,
-                    );
-
+                    if !program.pre_exe_flag {
+                        program.trace.insert_poseidon_chunk(
+                            self.tx_idx,
+                            self.env_idx,
+                            self.clk,
+                            self.opcode,
+                            self.register_selector.dst,
+                            self.register_selector.op0,
+                            self.register_selector.op1,
+                            GoldilocksField::ZERO,
+                            hash_input_value,
+                            hash_cap,
+                            hash_pre,
+                            GoldilocksField::ZERO,
+                        );
+                    }
                     let tail_len: usize;
                     loop {
                         if read_ptr + 8 > input_len {
@@ -1467,24 +1503,26 @@ impl Process {
                         row.filter_looked_normal = true;
                         output.clone_from_slice(&row.output[0..POSEIDON_OUTPUT_VALUE_LEN]);
                         read_ptr += 8;
-                        hash_input_value.clone_from_slice(&input[0..POSEIDON_INPUT_VALUE_LEN]);
-                        hash_cap.clone_from_slice(&hash_pre[POSEIDON_INPUT_VALUE_LEN..]);
-                        program.trace.insert_poseidon_chunk(
-                            self.tx_idx,
-                            self.env_idx,
-                            self.clk,
-                            self.opcode,
-                            self.register_selector.dst,
-                            GoldilocksField::from_canonical_u64(src_mem_addr + read_ptr - 8),
-                            GoldilocksField::from_canonical_u64(input_len),
-                            GoldilocksField::from_canonical_u64(read_ptr),
-                            hash_input_value,
-                            hash_cap,
-                            row.output,
-                            GoldilocksField::ONE,
-                        );
-                        hash_pre.clone_from_slice(&row.output);
-                        program.trace.builtin_poseidon.push(row);
+                        if !program.pre_exe_flag {
+                            hash_input_value.clone_from_slice(&input[0..POSEIDON_INPUT_VALUE_LEN]);
+                            hash_cap.clone_from_slice(&hash_pre[POSEIDON_INPUT_VALUE_LEN..]);
+                            program.trace.insert_poseidon_chunk(
+                                self.tx_idx,
+                                self.env_idx,
+                                self.clk,
+                                self.opcode,
+                                self.register_selector.dst,
+                                GoldilocksField::from_canonical_u64(src_mem_addr + read_ptr - 8),
+                                GoldilocksField::from_canonical_u64(input_len),
+                                GoldilocksField::from_canonical_u64(read_ptr),
+                                hash_input_value,
+                                hash_cap,
+                                row.output,
+                                GoldilocksField::ONE,
+                            );
+                            hash_pre.clone_from_slice(&row.output);
+                            program.trace.builtin_poseidon.push(row);
+                        }
 
                         if read_ptr + 8 > input_len {
                             tail_len = (input_len - read_ptr) as usize;
@@ -1507,24 +1545,25 @@ impl Process {
                         let mut row = calculate_poseidon_and_generate_intermediate_trace(input);
                         row.filter_looked_normal = true;
                         output.clone_from_slice(&row.output[0..POSEIDON_OUTPUT_VALUE_LEN]);
-
-                        hash_input_value.clone_from_slice(&input[0..POSEIDON_INPUT_VALUE_LEN]);
-                        hash_cap.clone_from_slice(&hash_pre[POSEIDON_INPUT_VALUE_LEN..]);
-                        program.trace.insert_poseidon_chunk(
-                            self.tx_idx,
-                            self.env_idx,
-                            self.clk,
-                            self.opcode,
-                            self.register_selector.dst,
-                            GoldilocksField::from_canonical_u64(src_mem_addr + read_ptr),
-                            GoldilocksField::from_canonical_u64(input_len),
-                            GoldilocksField::from_canonical_u64(read_ptr + tail_len as u64),
-                            hash_input_value,
-                            hash_cap,
-                            row.output,
-                            GoldilocksField::ONE,
-                        );
-                        program.trace.builtin_poseidon.push(row);
+                        if !program.pre_exe_flag {
+                            hash_input_value.clone_from_slice(&input[0..POSEIDON_INPUT_VALUE_LEN]);
+                            hash_cap.clone_from_slice(&hash_pre[POSEIDON_INPUT_VALUE_LEN..]);
+                            program.trace.insert_poseidon_chunk(
+                                self.tx_idx,
+                                self.env_idx,
+                                self.clk,
+                                self.opcode,
+                                self.register_selector.dst,
+                                GoldilocksField::from_canonical_u64(src_mem_addr + read_ptr),
+                                GoldilocksField::from_canonical_u64(input_len),
+                                GoldilocksField::from_canonical_u64(read_ptr + tail_len as u64),
+                                hash_input_value,
+                                hash_cap,
+                                row.output,
+                                GoldilocksField::ONE,
+                            );
+                            program.trace.builtin_poseidon.push(row);
+                        }
                     }
 
                     for index in 0..POSEIDON_OUTPUT_VALUE_LEN {
@@ -1705,19 +1744,6 @@ impl Process {
                         );
                     }
 
-                    program.trace.insert_sccall(
-                        self.tx_idx,
-                        self.env_idx,
-                        self.addr_storage,
-                        self.addr_code,
-                        self.register_selector.op1,
-                        GoldilocksField::from_canonical_u64(self.clk as u64),
-                        GoldilocksField::from_canonical_u64((self.clk + 1) as u64),
-                        registers_status,
-                        self.register_selector.aux0,
-                        GoldilocksField::ZERO,
-                    );
-
                     let len;
                     if op1_value.0 == GoldilocksField::ONE {
                         len = load_ctx_addr_info(
@@ -1739,53 +1765,69 @@ impl Process {
                         panic!("not support")
                     }
 
-                    program.trace.insert_step(
-                        self.clk,
-                        pc_status,
-                        self.tp,
-                        self.instruction,
-                        self.immediate_data,
-                        self.op1_imm,
-                        self.opcode,
-                        ctx_regs_status,
-                        registers_status,
-                        self.register_selector.clone(),
-                        GoldilocksField::ZERO,
-                        GoldilocksField::ZERO,
-                        GoldilocksField::ZERO,
-                        ctx_code_regs_status,
-                        self.tx_idx,
-                        self.env_idx,
-                        self.call_sc_cnt,
-                        self.storage_access_idx,
-                    );
+                    if !program.pre_exe_flag {
+                        program.trace.insert_sccall(
+                            self.tx_idx,
+                            self.env_idx,
+                            self.addr_storage,
+                            self.addr_code,
+                            self.register_selector.op1,
+                            GoldilocksField::from_canonical_u64(self.clk as u64),
+                            GoldilocksField::from_canonical_u64((self.clk + 1) as u64),
+                            registers_status,
+                            self.register_selector.aux0,
+                            GoldilocksField::ZERO,
+                        );
 
-                    //aux
-                    let mut register_selector_regs: RegisterSelector = Default::default();
-                    register_selector_regs.op0_reg_sel[0..TREE_VALUE_LEN]
-                        .clone_from_slice(&ctx_regs_status);
-                    register_selector_regs.op0_reg_sel[TREE_VALUE_LEN..TREE_VALUE_LEN * 2]
-                        .clone_from_slice(&ctx_code_regs_status);
-                    program.trace.insert_step(
-                        self.clk,
-                        pc_status,
-                        self.tp,
-                        self.instruction,
-                        self.immediate_data,
-                        self.op1_imm,
-                        self.opcode,
-                        self.addr_storage,
-                        registers_status,
-                        register_selector_regs,
-                        GoldilocksField::ONE,
-                        GoldilocksField::ONE,
-                        GoldilocksField::ZERO,
-                        self.addr_code,
-                        self.tx_idx,
-                        self.env_idx,
-                        self.call_sc_cnt,
-                        self.storage_access_idx,
-                    );
+                        program.trace.insert_step(
+                            self.clk,
+                            pc_status,
+                            self.tp,
+                            self.instruction,
+                            self.immediate_data,
+                            self.op1_imm,
+                            self.opcode,
+                            ctx_regs_status,
+                            registers_status,
+                            self.register_selector.clone(),
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
+                            GoldilocksField::ZERO,
+                            ctx_code_regs_status,
+                            self.tx_idx,
+                            self.env_idx,
+                            self.call_sc_cnt,
+                            self.storage_access_idx,
+                        );
+
+                        //aux
+                        let mut register_selector_regs: RegisterSelector = Default::default();
+                        register_selector_regs.op0_reg_sel[0..TREE_VALUE_LEN]
+                            .clone_from_slice(&ctx_regs_status);
+                        register_selector_regs.op0_reg_sel[TREE_VALUE_LEN..TREE_VALUE_LEN * 2]
+                            .clone_from_slice(&ctx_code_regs_status);
+                        program.trace.insert_step(
+                            self.clk,
+                            pc_status,
+                            self.tp,
+                            self.instruction,
+                            self.immediate_data,
+                            self.op1_imm,
+                            self.opcode,
+                            self.addr_storage,
+                            registers_status,
+                            register_selector_regs,
+                            GoldilocksField::ONE,
+                            GoldilocksField::ONE,
+                            GoldilocksField::ZERO,
+                            self.addr_code,
+                            self.tx_idx,
+                            self.env_idx,
+                            self.call_sc_cnt,
+                            self.storage_access_idx,
+                        );
+                    }
+
                     self.pc += step;
                     self.clk += 1;
                     if op1_value.0 == GoldilocksField::ONE {
@@ -1812,31 +1854,33 @@ impl Process {
                 "pc:{}, tp:{}, call_sc_cnt:{}",
                 pc_status, tp_status, self.call_sc_cnt
             );
-            program.trace.insert_step(
-                self.clk,
-                pc_status,
-                tp_status,
-                self.instruction,
-                self.immediate_data,
-                self.op1_imm,
-                self.opcode,
-                ctx_regs_status,
-                registers_status,
-                self.register_selector.clone(),
-                GoldilocksField::ZERO,
-                GoldilocksField::ZERO,
-                GoldilocksField::ZERO,
-                ctx_code_regs_status,
-                self.tx_idx,
-                self.env_idx,
-                self.call_sc_cnt,
-                storage_acc_id_status,
-            );
 
-            if !aux_steps.is_empty() {
-                program.trace.exec.extend(aux_steps);
+            if !program.pre_exe_flag {
+                program.trace.insert_step(
+                    self.clk,
+                    pc_status,
+                    tp_status,
+                    self.instruction,
+                    self.immediate_data,
+                    self.op1_imm,
+                    self.opcode,
+                    ctx_regs_status,
+                    registers_status,
+                    self.register_selector.clone(),
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    ctx_code_regs_status,
+                    self.tx_idx,
+                    self.env_idx,
+                    self.call_sc_cnt,
+                    storage_acc_id_status,
+                );
+
+                if !aux_steps.is_empty() {
+                    program.trace.exec.extend(aux_steps);
+                }
             }
-
             if self.pc >= instrs_len {
                 break;
             }

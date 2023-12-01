@@ -185,9 +185,6 @@ pub fn calculate_arbitrary_poseidon_and_generate_intermediate_trace(
 }
 #[cfg(test)]
 mod test {
-    
-
-    
 
     #[test]
     fn test_poseidon() {

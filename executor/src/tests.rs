@@ -53,6 +53,7 @@ fn executor_run_test_program(
         instructions: Vec::new(),
         trace: Default::default(),
         debug_info: program.debug_info,
+        pre_exe_flag: false,
     };
 
     for inst in instructions {
@@ -193,6 +194,20 @@ fn fibo_use_loop_decode() {
         "fib_loop_trace.txt",
         true,
         None,
+    );
+}
+
+#[test]
+fn ptr_call() {
+    let calldata = vec![
+        GoldilocksField::from_canonical_u64(0),
+        GoldilocksField::from_canonical_u64(2657046596),
+    ];
+    executor_run_test_program(
+        "../assembler/test_data/bin/ptr_call.json",
+        "ptr_call_trace.txt",
+        true,
+        Some(calldata),
     );
 }
 
@@ -390,14 +405,25 @@ fn printf_test() {
         Some(calldata),
     );
 }
+#[test]
+fn callee_ret_test() {
+    let call_data = [5, 11, 2, 2062500454];
+
+    let calldata = call_data
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/sccall/sccall_callee.json",
+        "sccall_callee_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
 
 #[test]
 fn gen_storage_table_test() {
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-        debug_info: Default::default(),
-    };
+    let mut program: Program = Program::default();
     let mut hash = Vec::new();
     let mut process = Process::new();
 
