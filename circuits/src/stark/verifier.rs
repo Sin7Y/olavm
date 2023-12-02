@@ -80,6 +80,11 @@ where
             .set_compress_challenge(all_proof.compress_challenges[Table::Bitwise as usize])
             .unwrap();
     }
+    if program_stark.get_compress_challenge().is_none() {
+        program_stark
+            .set_compress_challenge(all_proof.compress_challenges[Table::Program as usize])
+            .unwrap();
+    }
 
     let ctl_vars_per_table = CtlCheckVars::from_proofs(
         &all_proof.stark_proofs,
