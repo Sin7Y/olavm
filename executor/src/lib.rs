@@ -17,6 +17,7 @@ use core::trace::trace::{FilterLockForMain, MemoryOperation, MemoryType};
 use core::types::account::AccountTreeId;
 
 use core::crypto::poseidon_trace::{
+    calculate_arbitrary_poseidon_and_generate_intermediate_trace,
     calculate_poseidon_and_generate_intermediate_trace, POSEIDON_INPUT_VALUE_LEN,
     POSEIDON_OUTPUT_VALUE_LEN,
 };
@@ -485,6 +486,24 @@ impl Process {
         // todo : why need clear?
         //self.storage_log.clear();
         let mut end_step = None;
+        let mut prog_hash_rows = calculate_arbitrary_poseidon_and_generate_intermediate_trace(
+            program
+                .instructions
+                .iter()
+                .map(|insts_str| {
+                    GoldilocksField::from_canonical_u64(
+                        u64::from_str_radix(insts_str.trim_start_matches("0x"), 16).unwrap(),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .as_slice(),
+        )
+        .1;
+        for row in &mut prog_hash_rows {
+            row.filter_looked_normal = true;
+        }
+        program.trace.builtin_poseidon.extend(prog_hash_rows);
+
         loop {
             self.register_selector = RegisterSelector::default();
             let registers_status = self.registers;
