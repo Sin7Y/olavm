@@ -224,7 +224,7 @@ fn fibo_recursive() {
 #[test]
 fn prophet_sqrt_test() {
     executor_run_test_program(
-        "../assembler/test_data/bin/prophet_sqrt.json",
+        "../assembler/test_data/bin/sqrt_prophet_asm.json",
         "prophet_sqrt_trace.txt",
         true,
         None,
