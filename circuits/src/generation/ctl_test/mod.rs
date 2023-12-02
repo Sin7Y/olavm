@@ -5,3 +5,4 @@ mod poseidon_chunk_mem;
 mod storage_access_poseidon;
 mod chunk_poseidon;
 mod cpu_program;
+mod prog_chunk_program;

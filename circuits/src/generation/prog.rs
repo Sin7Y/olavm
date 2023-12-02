@@ -116,7 +116,7 @@ pub fn generate_prog_trace<F: RichField>(
             }
             trace[COL_PROG_PC][prog_index] = F::from_canonical_u64(pc as u64);
             trace[COL_PROG_INST][prog_index] = F::from_canonical_u64(inst.0);
-            trace[COL_PROG_FILTER_PROG_CHUNK][exec_index] = F::ONE;
+            trace[COL_PROG_FILTER_PROG_CHUNK][prog_index] = F::ONE;
             trace[COL_PROG_COMP_PROG][prog_index] = compress(
                 [
                     trace[COL_PROG_CODE_ADDR_RANGE.start][prog_index],
