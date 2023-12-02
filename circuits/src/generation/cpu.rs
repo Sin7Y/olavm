@@ -167,8 +167,8 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> [Vec<F>; cpu::NUM_
             };
         trace[cpu::COL_FILTER_LOOKING_PROG_IMM][i] = if s.is_ext_line.0 == 1 {
             F::ZERO
-        } else if s.opcode.0 == OlaOpcode::SLOAD.binary_bit_mask()
-            || s.opcode.0 == OlaOpcode::SSTORE.binary_bit_mask()
+        } else if s.opcode.0 == OlaOpcode::MLOAD.binary_bit_mask()
+            || s.opcode.0 == OlaOpcode::MSTORE.binary_bit_mask()
         {
             F::ONE
         } else if s.op1_imm.0 == 1 {

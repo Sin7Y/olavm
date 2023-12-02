@@ -57,6 +57,9 @@ pub fn generate_prog_trace<F: RichField>(
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_PROG_COLS];
     let mut exec_index = 0;
     for e in execs {
+        if e.is_ext_line.0 == 1 {
+            continue;
+        }
         for j in 0..4 {
             trace[COL_PROG_EXEC_CODE_ADDR_RANGE.start + j][exec_index] =
                 F::from_canonical_u64(e.addr_code[j].0);
