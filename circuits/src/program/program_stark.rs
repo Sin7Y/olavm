@@ -104,7 +104,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ProgramStark<
     }
 
     fn constraint_degree(&self) -> usize {
-        2
+        3
     }
 
     fn permutation_pairs(&self) -> Vec<PermutationPair> {
