@@ -21,11 +21,13 @@ use crate::stark::{
 use super::columns::*;
 
 pub fn ctl_data_to_program<F: Field>(i: usize) -> Vec<Column<F>> {
-    Column::singles(COL_PROG_CHUNK_CODE_ADDR_RANGE.chain([
-        COL_PROG_CHUNK_START_PC + i,
-        COL_PROG_CHUNK_INST_RANGE.start + i,
-    ]))
-    .collect_vec()
+    let mut res = Column::singles(COL_PROG_CHUNK_CODE_ADDR_RANGE).collect_vec();
+    res.push(Column::linear_combination_with_constant(
+        [(COL_PROG_CHUNK_START_PC, F::ONE)],
+        F::from_canonical_usize(i),
+    ));
+    res.push(Column::single(COL_PROG_CHUNK_INST_RANGE.start + i));
+    res
 }
 
 pub fn ctl_filter_to_program<F: Field>(i: usize) -> Column<F> {
