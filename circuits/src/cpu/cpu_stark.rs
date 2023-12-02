@@ -274,7 +274,7 @@ pub fn ctl_data_inst_to_program<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_data_imm_to_program<F: Field>() -> Vec<Column<F>> {
-    let mut res = Column::singles(COL_ADDR_STORAGE_RANGE).collect_vec();
+    let mut res = Column::singles(COL_ADDR_CODE_RANGE).collect_vec();
     res.push(Column::linear_combination_with_constant(
         [(COL_PC, F::ONE)],
         F::ONE,
