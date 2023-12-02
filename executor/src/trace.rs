@@ -204,7 +204,7 @@ pub fn gen_storage_hash_table(
     let mut trace = std::mem::replace(&mut process.storage_log, Vec::new());
     trace.extend(std::mem::replace(&mut process.program_log, Vec::new()));
     let mut pre_root = account_tree.root_hash();
-    let hash_traces = account_tree.process_block(trace.iter());
+    let (hash_traces, _) = account_tree.process_block(trace.iter());
     let _ = account_tree.save();
 
     let mut root_hashes = Vec::new();

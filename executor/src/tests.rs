@@ -14,7 +14,6 @@ use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context;
-use itertools::Itertools;
 use log::{debug, LevelFilter};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
@@ -54,6 +53,7 @@ fn executor_run_test_program(
         instructions: Vec::new(),
         trace: Default::default(),
         debug_info: program.debug_info,
+        pre_exe_flag: false,
     };
 
     for inst in instructions {
@@ -95,7 +95,6 @@ fn executor_run_test_program(
             &init_tx_context(),
         );
     }
-
     process.addr_code = callee_exe_addr;
     process.addr_storage = callee;
     program
@@ -134,19 +133,6 @@ fn executor_run_test_program(
 
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();
 
-    println!(
-        "exec: {}, mem: {}, rc: {}, bitwise: {}, cmp: {}, psdn: {}, psdn_chunk: {}, storage: {}, tape: {}, sccall: {}",
-        program.trace.exec.len(),
-        program.trace.memory.len(),
-        program.trace.builtin_rangecheck.len(),
-        program.trace.builtin_bitwise_combined.len(),
-        program.trace.builtin_cmp.len(),
-        program.trace.builtin_poseidon.len(),
-        program.trace.builtin_poseidon_chunk.len(),
-        program.trace.builtin_storage_hash.len(),
-        program.trace.tape.len(),
-        program.trace.sc_call.len(),
-    );
     let mut file = File::create(trace_name).unwrap();
     file.write_all(trace_json_format.as_ref()).unwrap();
 }
@@ -212,6 +198,20 @@ fn fibo_use_loop_decode() {
 }
 
 #[test]
+fn ptr_call() {
+    let calldata = vec![
+        GoldilocksField::from_canonical_u64(0),
+        GoldilocksField::from_canonical_u64(2657046596),
+    ];
+    executor_run_test_program(
+        "../assembler/test_data/bin/ptr_call.json",
+        "ptr_call_trace.txt",
+        true,
+        Some(calldata),
+    );
+}
+
+#[test]
 fn fibo_recursive() {
     executor_run_test_program(
         "../assembler/test_data/bin/fibo_recursive.json",
@@ -223,54 +223,9 @@ fn fibo_recursive() {
 
 #[test]
 fn prophet_sqrt_test() {
-    let calldata = [1073741824u64, 7000u64, 2u64, 3509365327u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
     executor_run_test_program(
         "../assembler/test_data/bin/sqrt_prophet_asm.json",
-        "sqrt_prophet_asm.txt",
-        false,
-        Some(calldata),
-    );
-}
-
-#[test]
-fn fib_test() {
-    // fib_non_recursive
-    // let calldata = [5u64, 1u64, 2146118040u64]
-    //     .iter()
-    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
-    //     .collect_vec();
-    // fib_recursive
-    // let calldata = [5u64, 1u64, 229678162u64]
-    //     .iter()
-    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
-    //     .collect_vec();
-    // bench_fib_non_recursive
-    let calldata = [47u64, 300u64, 2u64, 4185064725u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
-    // bench_fib_recursive
-    // let calldata = [5u64, 1u64, 2u64, 3642896167u64]
-    //     .iter()
-    //     .map(|v| GoldilocksField::from_canonical_u64(*v))
-    //     .collect_vec();
-
-    executor_run_test_program(
-        "../assembler/test_data/bin/fib_asm.json",
-        "fib_asm.txt",
-        false,
-        Some(calldata),
-    );
-}
-
-#[test]
-fn sqrt_newton_iteration_test() {
-    executor_run_test_program(
-        "../assembler/test_data/bin/sqrt.json",
-        "sqrt_trace.txt",
+        "prophet_sqrt_trace.txt",
         true,
         None,
     );
@@ -317,28 +272,12 @@ fn malloc_test() {
 }
 
 #[test]
-fn vote_test() { 
-    let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
-    let vote_calldata = [2u64, 1u64, 2791810083u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
-    let winning_proposal_calldata = [0u64, 3186728800u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
-    let winning_name_calldata = [0u64, 363199787u64]
-        .iter()
-        .map(|v| GoldilocksField::from_canonical_u64(*v))
-        .collect_vec();
+fn vote_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/vote.json",
         "vote_trace.txt",
         false,
-        Some(vote_calldata),
+        None,
     );
 }
 
@@ -456,18 +395,17 @@ fn printf_test() {
         Some(calldata),
     );
 }
-
 #[test]
-fn book_test() {
-    let call_data = [60, 5, 111, 108, 97, 118, 109, 7, 120553111];
+fn callee_ret_test() {
+    let call_data = [5, 11, 2, 2062500454];
 
     let calldata = call_data
         .iter()
         .map(|e| GoldilocksField::from_canonical_u64(*e))
         .collect();
     executor_run_test_program(
-        "../assembler/test_data/bin/books.json",
-        "books_trace.txt",
+        "../assembler/test_data/bin/sccall/sccall_callee.json",
+        "sccall_callee_trace.txt",
         false,
         Some(calldata),
     );
@@ -475,11 +413,7 @@ fn book_test() {
 
 #[test]
 fn gen_storage_table_test() {
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-        debug_info: Default::default(),
-    };
+    let mut program: Program = Program::default();
     let mut hash = Vec::new();
     let mut process = Process::new();
 

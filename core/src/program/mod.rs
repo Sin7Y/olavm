@@ -19,6 +19,7 @@ pub struct Program {
     pub instructions: Vec<String>,
     pub trace: Trace,
     pub debug_info: BTreeMap<usize, String>,
+    pub pre_exe_flag: bool,
 }
 
 impl Program {}

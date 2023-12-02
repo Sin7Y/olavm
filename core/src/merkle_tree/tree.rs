@@ -4,6 +4,7 @@ use crate::merkle_tree::storage::Storage;
 use crate::merkle_tree::tree_config::TreeConfig;
 use crate::merkle_tree::utils::idx_to_merkle_path;
 use crate::merkle_tree::TreeError;
+use crate::trace::trace::HashTrace;
 use crate::trace::trace::PoseidonRow;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use crate::types::merkle_tree::{
@@ -99,35 +100,16 @@ impl AccountTree {
     /// be sealed. Returns tree metadata for the corresponding blocks.
     ///
     /// - `storage_logs` - an iterator of storage logs for a given block
-    pub fn process_block<I>(
-        &mut self,
-        storage_logs: I,
-    ) -> Vec<(
-        PoseidonRow,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        PoseidonRow,
-    )>
+    pub fn process_block<I>(&mut self, storage_logs: I) -> (Vec<HashTrace>, Option<TreeMetadata>)
     where
         I: IntoIterator,
         I::Item: Borrow<WitnessStorageLog>,
     {
-        self.process_blocks(once(storage_logs))
+        let (hash_traces, tree_metadata) = self.process_blocks(once(storage_logs));
+        (hash_traces, tree_metadata.last().cloned())
     }
 
-    pub fn process_blocks<I>(
-        &mut self,
-        blocks: I,
-    ) -> Vec<(
-        PoseidonRow,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        TreeValue,
-        PoseidonRow,
-    )>
+    pub fn process_blocks<I>(&mut self, blocks: I) -> (Vec<HashTrace>, Vec<TreeMetadata>)
     where
         I: IntoIterator,
         I::Item: IntoIterator,
@@ -177,17 +159,7 @@ impl AccountTree {
     fn apply_updates_batch(
         &mut self,
         updates_batch: Vec<Vec<(TreeKey, TreeOperation)>>,
-    ) -> Result<
-        Vec<(
-            PoseidonRow,
-            TreeValue,
-            TreeValue,
-            TreeValue,
-            TreeValue,
-            PoseidonRow,
-        )>,
-        TreeError,
-    > {
+    ) -> Result<(Vec<HashTrace>, Vec<TreeMetadata>), TreeError> {
         let total_blocks = updates_batch.len();
 
         let storage_logs_with_blocks: Vec<_> = updates_batch
@@ -237,7 +209,7 @@ impl AccountTree {
             .flat_map(|e| e)
             .collect();
 
-        let _tree_metadata: Vec<_> = {
+        let tree_metadata: Vec<_> = {
             let patch_metadata =
                 self.apply_patch(updates.0, &storage_logs_with_blocks, &leaf_indices);
 
@@ -278,7 +250,7 @@ impl AccountTree {
         };
 
         self.block_number += total_blocks as u32;
-        Ok(hash_trace)
+        Ok((hash_trace, tree_metadata))
     }
 
     /// Prepares all the data which will be needed to calculate new Merkle Trees

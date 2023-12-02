@@ -2,7 +2,7 @@ use super::iter_ext::IteratorExt;
 use super::TreeError;
 use crate::crypto::hash::Hasher;
 
-use crate::trace::trace::PoseidonRow;
+use crate::trace::trace::{HashTrace, PoseidonRow};
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use crate::types::merkle_tree::{
     tree_key_to_u256, u256_to_tree_key, NodeEntry, TreeKey, TreeKeyU256, TreeValue,
@@ -110,27 +110,7 @@ impl UpdatesBatch {
     pub fn calculate<H>(
         self,
         hasher: H,
-    ) -> Result<
-        (
-            TreePatch,
-            Arc<
-                Mutex<
-                    Vec<(
-                        usize,
-                        (
-                            PoseidonRow,
-                            TreeValue,
-                            TreeValue,
-                            TreeValue,
-                            TreeValue,
-                            PoseidonRow,
-                        ),
-                    )>,
-                >,
-            >,
-        ),
-        TreeError,
-    >
+    ) -> Result<(TreePatch, Arc<Mutex<Vec<(usize, HashTrace)>>>), TreeError>
     where
         H: Hasher<TreeValue> + Send + Sync,
     {
@@ -250,7 +230,7 @@ impl UpdatesBatch {
 
                                 hash_trace.lock().unwrap().push((
                                     *index,
-                                    (
+                                    HashTrace(
                                         hash.1,
                                         current_hash.clone(),
                                         nei_hash.clone(),

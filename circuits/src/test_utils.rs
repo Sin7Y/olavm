@@ -54,11 +54,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
         prophets.insert(item.host as u64, item);
     }
 
-    let mut program: Program = Program {
-        instructions: Vec::new(),
-        trace: Default::default(),
-        debug_info: program.debug_info,
-    };
+    let mut program: Program = Program::default();
 
     for inst in instructions {
         program.instructions.push(inst.to_string());
@@ -234,6 +230,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         instructions: Vec::new(),
         trace: Default::default(),
         debug_info: program.debug_info,
+        pre_exe_flag: false,
     };
 
     for inst in instructions {

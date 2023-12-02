@@ -819,6 +819,7 @@ mod tests {
             Some(name) => {
                 let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
                 db_path.push("../executor/db_test/");
+                db_path.push("../executor/db_test/");
                 db_path.push(name);
                 AccountTree::new_db_test(db_path.display().to_string())
             }
@@ -838,11 +839,7 @@ mod tests {
             prophets.insert(item.host as u64, item);
         }
 
-        let mut program: Program = Program {
-            instructions: Vec::new(),
-            trace: Default::default(),
-            debug_info: program.debug_info,
-        };
+        let mut program: Program = Program::default();
 
         for inst in instructions {
             program.instructions.push(inst.to_string());
