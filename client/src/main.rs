@@ -219,7 +219,7 @@ fn main() {
             let mut file = File::open(path).unwrap();
             let metadata = metadata(&path).expect("unable to read metadata");
             let mut buffer = vec![0; metadata.len() as usize];
-            file.read(&mut buffer).expect("buffer overflow");
+            let _ = file.read(&mut buffer).expect("buffer overflow");
 
             let mut de_buffer = Buffer::new(buffer);
             let de_proof = de_buffer.read_all_proof::<F, C, D>();
