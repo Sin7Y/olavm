@@ -52,6 +52,20 @@ impl TapeTree {
         }
     }
 
+    pub fn read_without_trace(&mut self, addr: u64) -> Result<GoldilocksField, ProcessorError> {
+        // look up the previous value in the appropriate address trace and add (clk,
+        // prev_value) to it; if this is the first time we access this address,
+        // return MemVistInv error because memory must be inited first.
+        // Return the last value in the address trace.
+        let read_res = self.trace.get_mut(&addr);
+        if let Some(tape_data) = read_res {
+            let last_value = tape_data.last().expect("empty address trace").value;
+            Ok(last_value)
+        } else {
+            Err(ProcessorError::TapeVistInv(addr))
+        }
+    }
+
     pub fn write(
         &mut self,
         tx_idx: GoldilocksField,
