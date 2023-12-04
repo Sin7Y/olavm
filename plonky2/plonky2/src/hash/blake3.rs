@@ -86,7 +86,7 @@ pub trait Blake3: PrimeField64 {
     ) -> [F; 16] {
         let mut block_words = [0u32; STATE_SIZE];
 
-        block_words[0] = u32::from_le_bytes(*array_ref!(block, 0 * 4, 4));
+        block_words[0] = u32::from_le_bytes(*array_ref!(block, 0, 4));
         block_words[1] = u32::from_le_bytes(*array_ref!(block, 1 * 4, 4));
         block_words[2] = u32::from_le_bytes(*array_ref!(block, 2 * 4, 4));
         block_words[3] = u32::from_le_bytes(*array_ref!(block, 3 * 4, 4));

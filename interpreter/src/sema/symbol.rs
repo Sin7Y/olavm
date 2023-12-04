@@ -38,7 +38,6 @@ impl SymbolTable {
         scope_level: u32,
         enclosing_scope: Option<Arc<RwLock<SymbolTable>>>,
     ) -> Self {
-        let scope_name = scope_name;
         let symbols = HashMap::new();
         let mut symbol_table = SymbolTable {
             scope_name,
@@ -58,7 +57,7 @@ impl SymbolTable {
     pub fn get(&self, name: &Token) -> Symbol {
         let symbol = self.lookup(&name.to_string());
         if symbol.is_some() {
-            return symbol.unwrap();
+            symbol.unwrap()
         } else {
             panic!("token {} not found", name)
         }
@@ -77,7 +76,7 @@ impl SymbolTable {
                     let scope = self.enclosing_scope.as_ref()?.read().unwrap();
                     scope.lookup(key)
                 } else {
-                    return None;
+                    None
                 }
             }
             Some(symbol) => Some(symbol.clone()),

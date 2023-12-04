@@ -78,7 +78,7 @@ impl SymTableGen {
             inf_var_insert!(output, current_scope);
         }
         drop(current_scope);
-        return gen;
+        gen
     }
 }
 
@@ -164,7 +164,7 @@ impl Traversal for SymTableGen {
         } = node
         {
             if self.current_scope.read().unwrap().lookup(&name).is_none() {
-                return Err(format!("identifier Undeclared variable {} found.", name));
+                Err(format!("identifier Undeclared variable {} found.", name))
             } else {
                 let value = self.travel(index)?;
                 Ok(value)
@@ -229,7 +229,7 @@ impl Traversal for SymTableGen {
         {
             let ident = self.current_scope.read().unwrap().lookup(&name);
             if ident.is_none() {
-                return Err(format!("identifier Undeclared variable {} found.", name));
+                Err(format!("identifier Undeclared variable {} found.", name))
             } else {
                 if let Some(IdentSymbol(_ident, BuiltIn(token), size)) = ident {
                     array_id!(name, node, size, IdentNode);
@@ -255,7 +255,7 @@ impl Traversal for SymTableGen {
         } = node
         {
             if self.current_scope.read().unwrap().lookup(&name).is_none() {
-                return Err(format!("identifier Undeclared variable {} found.", name));
+                Err(format!("identifier Undeclared variable {} found.", name))
             } else {
                 Ok(Single(Nil))
             }

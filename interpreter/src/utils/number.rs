@@ -83,9 +83,7 @@ impl NumberRet {
     pub fn get_multiple(self) -> Vec<Number> {
         match self {
             Single(_) => panic!("is single value"),
-            Multiple(values) => {
-                return values;
-            }
+            Multiple(values) => values,
         }
     }
 }
