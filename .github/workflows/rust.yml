@@ -16,8 +16,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
       - name: Install Rustfmt
-        run: rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu
+        run: rustup component add rustfmt --toolchain nightly
       - name: check
         run: cargo check --all-features
       - name: fmt-check
