@@ -457,7 +457,7 @@ impl Parser {
 
         let node = LoopStatNode::new(condition, consequences);
 
-        return Arc::new(RwLock::new(node));
+        Arc::new(RwLock::new(node))
     }
 
     fn identifier(&mut self) -> Arc<RwLock<dyn Node>> {
@@ -602,7 +602,7 @@ impl Parser {
             let node = BinOpNode::new(left, right, current_token);
             Arc::new(RwLock::new(node))
         } else {
-            return left;
+            left
         }
     }
 
