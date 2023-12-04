@@ -1,5 +1,7 @@
+use core::types::Field;
 use std::marker::PhantomData;
 
+use itertools::Itertools;
 use plonky2::{
     field::{
         extension::{Extendable, FieldExtension},
@@ -11,11 +13,52 @@ use plonky2::{
 
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    cross_table_lookup::Column,
     stark::Stark,
     vars::{StarkEvaluationTargets, StarkEvaluationVars},
 };
 
 use super::columns::*;
+
+pub fn ctl_data_to_program<F: Field>(i: usize) -> Vec<Column<F>> {
+    let mut res = Column::singles(COL_PROG_CHUNK_CODE_ADDR_RANGE).collect_vec();
+    res.push(Column::linear_combination_with_constant(
+        [(COL_PROG_CHUNK_START_PC, F::ONE)],
+        F::from_canonical_usize(i),
+    ));
+    res.push(Column::single(COL_PROG_CHUNK_INST_RANGE.start + i));
+    res
+}
+
+pub fn ctl_filter_to_program<F: Field>(i: usize) -> Column<F> {
+    Column::single(COL_PROG_CHUNK_FILTER_LOOKING_PROG_RANGE.start + i)
+}
+
+pub fn ctl_data_to_poseidon<F: Field>() -> Vec<Column<F>> {
+    Column::singles(
+        COL_PROG_CHUNK_INST_RANGE
+            .chain(COL_PROG_CHUNK_CAP_RANGE)
+            .chain(COL_PROG_CHUNK_HASH_RANGE),
+    )
+    .collect_vec()
+}
+
+pub fn ctl_filter_to_poseidon<F: Field>() -> Column<F> {
+    Column::linear_combination_with_constant([(COL_PROG_CHUNK_IS_PADDING_LINE, F::NEG_ONE)], F::ONE)
+}
+
+pub fn ctl_data_to_storage_access<F: Field>() -> Vec<Column<F>> {
+    let mut res: Vec<Column<F>> = vec![Column::zero()];
+    res.extend(
+        Column::singles(COL_PROG_CHUNK_CODE_ADDR_RANGE.chain(COL_PROG_CHUNK_HASH_RANGE.take(4)))
+            .collect_vec(),
+    );
+    res
+}
+pub fn ctl_filter_to_storage_access<F: Field>() -> Column<F> {
+    Column::single(COL_PROG_CHUNK_IS_RESULT_LINE)
+}
+
 #[derive(Copy, Clone, Default)]
 pub struct ProgChunkStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,

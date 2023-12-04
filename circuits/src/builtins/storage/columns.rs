@@ -28,7 +28,8 @@ pub(crate) const COL_ST_IS_LAYER_256: usize = COL_ST_IS_LAYER_192 + 1;
 pub(crate) const COL_ST_ACC_LAYER_MARKER: usize = COL_ST_IS_LAYER_256 + 1;
 pub(crate) const COL_ST_FILTER_IS_HASH_BIT_0: usize = COL_ST_ACC_LAYER_MARKER + 1;
 pub(crate) const COL_ST_FILTER_IS_HASH_BIT_1: usize = COL_ST_FILTER_IS_HASH_BIT_0 + 1;
-pub(crate) const COL_ST_IS_PADDING: usize = COL_ST_FILTER_IS_HASH_BIT_1 + 1;
+pub(crate) const COL_ST_FILTER_IS_FOR_PROG: usize = COL_ST_FILTER_IS_HASH_BIT_1 + 1;
+pub(crate) const COL_ST_IS_PADDING: usize = COL_ST_FILTER_IS_FOR_PROG + 1;
 pub(crate) const NUM_COL_ST: usize = COL_ST_IS_PADDING + 1;
 
 pub(crate) fn get_storage_access_col_name_map() -> BTreeMap<usize, String> {
@@ -84,6 +85,10 @@ pub(crate) fn get_storage_access_col_name_map() -> BTreeMap<usize, String> {
     m.insert(
         COL_ST_FILTER_IS_HASH_BIT_1,
         String::from("FILTER_IS_HASH_BIT_1"),
+    );
+    m.insert(
+        COL_ST_FILTER_IS_FOR_PROG,
+        String::from("FILTER_IS_FOR_PROG"),
     );
     m.insert(COL_ST_IS_PADDING, String::from("IS_PADDING"));
     m

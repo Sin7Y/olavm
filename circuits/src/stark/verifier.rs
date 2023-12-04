@@ -29,6 +29,8 @@ use crate::builtins::storage::storage_access_stark::StorageAccessStark;
 // use crate::builtins::tape::tape_stark::TapeStark;
 use crate::cpu::cpu_stark::CpuStark;
 use crate::memory::memory_stark::MemoryStark;
+use crate::program::prog_chunk_stark::ProgChunkStark;
+use crate::program::program_stark::ProgramStark;
 
 pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     ola_stark: OlaStark<F, D>,
@@ -47,6 +49,8 @@ where
     [(); StorageAccessStark::<F, D>::COLUMNS]:,
     // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
+    [(); ProgramStark::<F, D>::COLUMNS]:,
+    [(); ProgChunkStark::<F, D>::COLUMNS]:,
 {
     let AllProofChallenges {
         stark_challenges,
@@ -66,12 +70,19 @@ where
         storage_access_stark,
         tape_stark,
         sccall_stark,
+        mut program_stark,
+        prog_chunk_stark,
         cross_table_lookups,
     } = ola_stark;
 
     if bitwise_stark.get_compress_challenge().is_none() {
         bitwise_stark
             .set_compress_challenge(all_proof.compress_challenges[Table::Bitwise as usize])
+            .unwrap();
+    }
+    if program_stark.get_compress_challenge().is_none() {
+        program_stark
+            .set_compress_challenge(all_proof.compress_challenges[Table::Program as usize])
             .unwrap();
     }
 
@@ -157,6 +168,22 @@ where
         &all_proof.stark_proofs[Table::SCCall as usize],
         &stark_challenges[Table::SCCall as usize],
         &ctl_vars_per_table[Table::SCCall as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        program_stark,
+        &all_proof.stark_proofs[Table::Program as usize],
+        &stark_challenges[Table::Program as usize],
+        &ctl_vars_per_table[Table::Program as usize],
+        config,
+    )?;
+
+    verify_stark_proof_with_challenges(
+        prog_chunk_stark,
+        &all_proof.stark_proofs[Table::ProgChunk as usize],
+        &stark_challenges[Table::ProgChunk as usize],
+        &ctl_vars_per_table[Table::ProgChunk as usize],
         config,
     )?;
 
