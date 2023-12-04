@@ -36,13 +36,16 @@ pub enum LookupSelectors {
     StartEnd,
 }
 
-/// Returns selector polynomials for each LUT. We have two constraint domains (remember that gates are stored upside down):
+/// Returns selector polynomials for each LUT. We have two constraint domains
+/// (remember that gates are stored upside down):
 /// - [last_lut_row, first_lut_row] (Sum and RE transition contraints),
 /// - [last_lu_row, last_lut_row - 1] (LDC column transition constraints).
 /// We also add two more:
-/// - {first_lut_row + 1} where we check the initial values of sum and RE (which are 0),
+/// - {first_lut_row + 1} where we check the initial values of sum and RE (which
+///   are 0),
 /// - {last_lu_row} where we check that the last value of LDC is 0.
-/// Conceptually they're part of the selector ends lookups, but since we can have one polynomial for *all* LUTs it's here.
+/// Conceptually they're part of the selector ends lookups, but since we can
+/// have one polynomial for *all* LUTs it's here.
 pub(crate) fn selectors_lookup<F: RichField + Extendable<D>, const D: usize>(
     _gates: &[GateRef<F, D>],
     instances: &[GateInstance<F, D>],
@@ -73,7 +76,8 @@ pub(crate) fn selectors_lookup<F: RichField + Extendable<D>, const D: usize>(
 }
 
 /// Returns selectors for checking the validity of the LUTs.
-/// Each selector equals one on its respective LUT's `last_lut_row`, and 0 elsewhere.
+/// Each selector equals one on its respective LUT's `last_lut_row`, and 0
+/// elsewhere.
 pub(crate) fn selector_ends_lookups<F: RichField + Extendable<D>, const D: usize>(
     lookup_rows: &[LookupWire],
     instances: &[GateInstance<F, D>],

@@ -65,5 +65,5 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     yield_constr.constraint((P::ONES - lv_is_storage_op) * lv[COL_IS_STORAGE_EXT_LINE]);
     yield_constr.constraint(
         lv_is_storage_op * (P::ONES - lv[COL_IS_EXT_LINE]) * lv[COL_IS_STORAGE_EXT_LINE],
-)
+    )
 }

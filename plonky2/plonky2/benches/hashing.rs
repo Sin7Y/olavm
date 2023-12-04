@@ -5,12 +5,12 @@ mod allocator;
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::hash::blake3::Blake3_256;
 use plonky2::hash::hash_types::{BytesHash, RichField};
 use plonky2::hash::hashing::SPONGE_WIDTH;
 use plonky2::hash::keccak::KeccakHash;
 use plonky2::hash::poseidon::Poseidon;
 use plonky2::hash::poseidon2::Poseidon2;
-use plonky2::hash::blake3::Blake3_256;
 use plonky2::plonk::config::Hasher;
 use tynm::type_name;
 
@@ -59,7 +59,6 @@ pub(crate) fn bench_blake3<F: RichField>(c: &mut Criterion) {
         )
     });
 }
-
 
 fn criterion_benchmark(c: &mut Criterion) {
     bench_poseidon::<GoldilocksField>(c);
