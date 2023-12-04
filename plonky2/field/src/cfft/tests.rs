@@ -2,7 +2,7 @@ use std::{io::{Write, self, BufRead}, fs::File, path::Path, time::Instant, fmt};
 
 use plonky2_util::log2_strict;
 
-use crate::{goldilocks_field::GoldilocksField, types::{Field, PrimeField64}, extension::{quadratic::QuadraticExtension, FieldExtension}};
+use crate::{goldilocks_field::GoldilocksField, types::{Field, PrimeField64, Field64}, extension::{quadratic::QuadraticExtension, FieldExtension}};
 
 type F = GoldilocksField;
 
@@ -70,6 +70,73 @@ fn evaluate_poly_2_20() {
     let start = Instant::now();
 
     super::evaluate_poly(&mut points, &twiddles);
+
+    println!("evaluate_poly cost time = {:?}", start.elapsed());
+
+    let mut coeffs_file = std::fs::File::create("./coeffs_20.txt").unwrap();
+    let mut values_file = std::fs::File::create("./values_20.txt").unwrap();
+    let mut twiddles_file = std::fs::File::create("./twiddles_20.txt").unwrap();
+    for (coeff, point) in coeffs.into_iter().zip(points) {
+        // coeffs_file.write_all(coeff.0[0].to_string().as_bytes()).unwrap();
+        coeffs_file.write_all(format!("{} {}", coeff.0[0].to_string(), coeff.0[1].to_string()).as_bytes()).unwrap();
+        writeln!(coeffs_file).unwrap();
+        // values_file.write_all(point.0.to_string().as_bytes()).unwrap();
+        values_file.write_all(format!("{} {}", point.0[0].to_string(), point.0[1].to_string()).as_bytes()).unwrap();
+        writeln!(values_file).unwrap();
+    }
+    for twiddle in twiddles {
+        twiddles_file.write_all(format!("{} {}", twiddle.0[0].to_string(), twiddle.0[1].to_string()).as_bytes()).unwrap();
+        writeln!(twiddles_file).unwrap();
+    }
+}
+
+#[test]
+#[ignore]
+fn evaluate_poly_with_offset_2_20() {
+    type F = GoldilocksField;
+    type FE = QuadraticExtension<F>;
+    let degree: usize = 1 << 17;
+    let degree_padded = 1 << 20;
+    let o1 = F::order();
+    let o2 = FE::order();
+    let offset = FE::coset_shift();
+    let blowup_factor = 1 << 3;
+
+    // [1] sample points
+    // Create a vector of coeffs; the first degree of them are
+    // "random", the last degree_padded-degree of them are zero.
+    // let mut points = (0..degree)
+    //     .map(|i| F::from_canonical_usize(i * 2443 % 257))
+    //     .chain(std::iter::repeat(F::ZERO).take(degree_padded - degree))
+    //     .collect::<Vec<_>>();
+    let mut points = (0..degree)
+        .map(|i| {
+            let base = F::from_canonical_usize(i * 2443 % 257);
+            FE::from_basefield_array([base, base])
+        })
+        .chain(std::iter::repeat(FE::ZERO).take(degree_padded - degree))
+        .collect::<Vec<_>>();
+
+    // [2] read points from file
+    // let mut points = vec![F::ZERO; degree_padded];
+    // if let Ok(lines) = read_lines("./coeffs_20.txt") {
+    //     for (idx, line) in lines.enumerate() {
+    //         if let Ok(v) = line {
+    //             let val = u64::from_str_radix(v.as_str(), 10);
+    //             if let Ok(val) = val {
+    //                 points[idx] = F::from_canonical_u64(val);
+    //             }
+    //         }
+    //     }
+    // }
+
+    let coeffs = points.clone();
+    let twiddles = super::get_twiddles::<FE>(degree_padded);
+
+    let start = Instant::now();
+
+    super::evaluate_poly(&mut points, &twiddles);
+    // let points = super::evaluate_poly_with_offset(&points, &twiddles, offset, blowup_factor);
 
     println!("evaluate_poly cost time = {:?}", start.elapsed());
 
