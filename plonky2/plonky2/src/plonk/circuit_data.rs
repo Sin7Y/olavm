@@ -6,7 +6,6 @@ use plonky2_field::extension::Extendable;
 use plonky2_field::fft::FftRootTable;
 
 use super::circuit_builder::LookupWire;
-use crate::gates::lookup::{Lookup, BitwiseLookup};
 use crate::field::types::Field;
 use crate::fri::oracle::PolynomialBatch;
 use crate::fri::reduction_strategies::FriReductionStrategy;
@@ -16,6 +15,7 @@ use crate::fri::structure::{
 };
 use crate::fri::{FriConfig, FriParams};
 use crate::gates::gate::GateRef;
+use crate::gates::lookup::{BitwiseLookup, Lookup};
 use crate::gates::lookup_table::BitwiseLookupTable;
 use crate::gates::selectors::SelectorsInfo;
 use crate::hash::hash_types::{HashOutTarget, MerkleCapTarget, RichField};
@@ -281,7 +281,8 @@ pub struct ProverOnlyCircuitData<
     pub circuit_digest: <<C as GenericConfig<D>>::Hasher as Hasher<F>>::Hash,
     ///The concrete placement of the lookup gates for each lookup table index.
     pub lookup_rows: Vec<LookupWire>,
-    /// A vector of (looking_in, looking_out) pairs for for each lookup table index.
+    /// A vector of (looking_in, looking_out) pairs for for each lookup table
+    /// index.
     pub lut_to_lookups: Vec<BitwiseLookup>,
 }
 
@@ -392,7 +393,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         self.config.num_challenges..(self.num_partial_products + 1) * self.config.num_challenges
     }
 
-    /// Range of lookup polynomials in the `zs_partial_products_lookup_commitment`.
+    /// Range of lookup polynomials in the
+    /// `zs_partial_products_lookup_commitment`.
     pub fn lookup_range(&self) -> RangeFrom<usize> {
         self.num_zs_partial_products_polys()..
     }
@@ -499,7 +501,6 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         self.config.num_challenges * (1 + self.num_partial_products)
     }
 
-    
     /// Returns the total number of lookup polynomials.
     pub(crate) fn num_all_lookup_polys(&self) -> usize {
         self.config.num_challenges * self.num_lookup_polys
@@ -518,7 +519,8 @@ impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
         FriPolynomialInfo::from_range(PlonkOracle::QUOTIENT.index, 0..self.num_quotient_polys())
     }
 
-    /// Returns the information for lookup polynomials, i.e. the index within the oracle and the indices of the polynomials within the commitment.
+    /// Returns the information for lookup polynomials, i.e. the index within
+    /// the oracle and the indices of the polynomials within the commitment.
     fn fri_lookup_polys(&self) -> Vec<FriPolynomialInfo> {
         FriPolynomialInfo::from_range(
             PlonkOracle::ZS_PARTIAL_PRODUCTS.index,

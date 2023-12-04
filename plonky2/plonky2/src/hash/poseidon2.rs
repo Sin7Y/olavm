@@ -1,16 +1,15 @@
 //! Implementation of the Poseidon2 hash function, as described in
 //! https://eprint.iacr.org/2023/323.pdf
-//! 
 use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::types::{Field, PrimeField64};
 
 use crate::gates::poseidon2::Poseidon2Gate;
 use crate::hash::hash_types::{HashOut, RichField};
 use crate::hash::hashing::{compress, hash_n_to_hash_no_pad, PlonkyPermutation};
-use crate::plonk::config::{AlgebraicHasher, Hasher};
-use crate::iop::target::{BoolTarget, Target};
 use crate::iop::ext_target::ExtensionTarget;
+use crate::iop::target::{BoolTarget, Target};
 use crate::plonk::circuit_builder::CircuitBuilder;
+use crate::plonk::config::{AlgebraicHasher, Hasher};
 use unroll::unroll_for_loops;
 
 // The number offull rounds and partial rounds is given by the
@@ -27,11 +26,9 @@ pub const ROUNDS: usize = ROUND_F_END + ROUND_P;
 pub const WIDTH: usize = 12; // we only have width 8 and 12, and 12 is bigger. :)
 
 pub trait Poseidon2: PrimeField64 {
-
     const MAT_DIAG12_M_1: [u64; WIDTH];
     const RC12: [[u64; WIDTH]; ROUND_F_END];
-    const RC12_MID: [u64; ROUND_P];  
-
+    const RC12_MID: [u64; ROUND_P];
 
     // The more info of poseidon2 refer to the paper: https://eprint.iacr.org/2023/323.pdf
     // Paras:
@@ -39,20 +36,18 @@ pub trait Poseidon2: PrimeField64 {
     //      R_P = 22
     //      d = 7
     //      x -- input vector
-    // P2_output  = External_0(M_E * x) * External_1 * ... * External_{R_F / 2 -1}  -- 4
+    // P2_output  = External_0(M_E * x) * External_1 * ... * External_{R_F / 2 -1}
+    // -- 4
     //            * Internal_0 * Internal_1 * ... * Internal_{R_P} -- 22
     //            * External_{R_F/2} * ... * External_{R_F - 1} -- 4
     // Preprocess
     //      M_E * x
-    // External_i = M_E * ((x_0 + c_0 ^ {i}) ^ 7, (x_1 + c_1 ^ {i}) ^ 7, ..., (x_{t - 1}} + c_{t - 1} ^ {i}) ^ 7)
-    // Note:
-    //      x_0 + c_0^{i} -- Add roundconstant
-    //      _ ^ 7 -- Sbox
-    //      M_E * -- Linear layer
+    // External_i = M_E * ((x_0 + c_0 ^ {i}) ^ 7, (x_1 + c_1 ^ {i}) ^ 7, ..., (x_{t
+    // - 1}} + c_{t - 1} ^ {i}) ^ 7) Note: x_0 + c_0^{i} -- Add roundconstant _ ^ 7
+    //   -- Sbox M_E * -- Linear layer
     // Internal_I = M_I * ((x_0 + c_0 ^ {i}) ^ 7, x_1, x-2, ..., x_{t - 1})
     #[inline]
     fn poseidon2(input: [Self; WIDTH]) -> [Self; WIDTH] {
-
         // vector x
         let mut current_state = input;
 
@@ -84,7 +79,6 @@ pub trait Poseidon2: PrimeField64 {
         }
 
         current_state
-
     }
 
     #[inline]
@@ -122,7 +116,6 @@ pub trait Poseidon2: PrimeField64 {
     //     = [M4, M4, M4] * x + circ[M4,0,0] * X
     #[inline]
     fn matmul_external(input: &mut [Self]) {
-
         // Applying cheap 4x4 MDS matrix to each 4-element part of the state
         Self::matmul_m4(input);
 
@@ -142,10 +135,9 @@ pub trait Poseidon2: PrimeField64 {
             //input[i] += stored[i % 4];
             input[i] = input[i].add(stored[i % 4]);
         }
-
     }
 
-    // M_I * x = 
+    // M_I * x =
     //      [u_0,1,1,1,1,1,1,1,1,1,1,1]
     //      [1,u_1,1,1,1,1,1,1,1,1,1,1]
     //      [1,1,u_2,1,1,1,1,1,1,1,1,1]
@@ -158,12 +150,11 @@ pub trait Poseidon2: PrimeField64 {
     //      [1,1,1,1,1,1,1,1,1,u_9,1,1]
     //      [1,1,1,1,1,1,1,1,1,1,u_10,1]
     //      [1,1,1,1,1,1,1,1,1,1,1,u_11]
-    // = Sum_i (u_i - 1) * x_i + Sum(x_0 + x_1 +...+ x_11) 
+    // = Sum_i (u_i - 1) * x_i + Sum(x_0 + x_1 +...+ x_11)
     #[inline]
     fn matmul_internal(input: &mut [Self], mat_internal_diag_m_1: &[u64]) {
-        
         let mut state = [0u64; WIDTH];
-        
+
         for r in 0..WIDTH {
             state[r] = input[r].to_noncanonical_u64();
         }
@@ -183,14 +174,13 @@ pub trait Poseidon2: PrimeField64 {
 
     #[inline]
     fn matmul_m4(input: &mut [Self]) {
-
         let t4 = WIDTH / 4;
 
         for i in 0..t4 {
             let start_index = i * 4;
             let mut t_0 = input[start_index];
 
-            t_0= t_0.add(input[start_index + 1]);
+            t_0 = t_0.add(input[start_index + 1]);
             let mut t_1 = input[start_index + 2];
 
             t_1 = t_1.add(input[start_index + 3]);
@@ -240,14 +230,15 @@ pub trait Poseidon2: PrimeField64 {
             input[start_index + 1] = t_5;
             input[start_index + 2] = t_2.add(t_4);
             input[start_index + 3] = t_4;
-          
         }
     }
 
-    // -------------------------------------- field ------------------------------------------
+    // -------------------------------------- field
+    // ------------------------------------------
     #[inline]
-    fn matmul_external_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(input: &mut [F]) {
-
+    fn matmul_external_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(
+        input: &mut [F],
+    ) {
         // Applying cheap 4x4 MDS matrix to each 4-element part of the state
         Self::matmul_m4_field(input);
 
@@ -263,11 +254,13 @@ pub trait Poseidon2: PrimeField64 {
         for i in 0..input.len() {
             input[i] += stored[i % 4];
         }
-
     }
 
     #[inline]
-    fn matmul_internal_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(input: &mut [F], mat_internal_diag_m_1: &[u64]) {
+    fn matmul_internal_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(
+        input: &mut [F],
+        mat_internal_diag_m_1: &[u64],
+    ) {
         //let t: usize = WIDTH;
 
         /*// Compute input sum
@@ -299,14 +292,13 @@ pub trait Poseidon2: PrimeField64 {
     //  ]
     #[inline]
     fn matmul_m4_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(input: &mut [F]) {
-
         let t4 = WIDTH / 4;
 
         for i in 0..t4 {
             let start_index = i * 4;
             let mut t_0 = input[start_index];
 
-            t_0= t_0.add(input[start_index + 1]);
+            t_0 = t_0.add(input[start_index + 1]);
             let mut t_1 = input[start_index + 2];
 
             t_1 = t_1.add(input[start_index + 3]);
@@ -359,23 +351,25 @@ pub trait Poseidon2: PrimeField64 {
         }
     }
 
-    fn constant_layer_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(state: &mut [F; WIDTH], round_ctr: usize) {
+    fn constant_layer_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(
+        state: &mut [F; WIDTH],
+        round_ctr: usize,
+    ) {
         for i in 0..WIDTH {
             let round_constant = Self::RC12[round_ctr][i];
             state[i] += F::from_canonical_u64(round_constant);
         }
     }
 
-    fn sbox_layer_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(state: &mut [F; WIDTH]) {
-        
+    fn sbox_layer_field<F: FieldExtension<D, BaseField = Self>, const D: usize>(
+        state: &mut [F; WIDTH],
+    ) {
         for i in 0..WIDTH {
-
             state[i] = Self::sbox_monomial(state[i]);
-
         }
     }
-    // -------------------------------------- circuit ----------------------------------------
-    // matmul_external_circuit
+    // -------------------------------------- circuit
+    // ---------------------------------------- matmul_external_circuit
     fn matmul_external_circuit<const D: usize>(
         builder: &mut CircuitBuilder<Self, D>,
         input: &mut [ExtensionTarget<D>; WIDTH],
@@ -383,7 +377,6 @@ pub trait Poseidon2: PrimeField64 {
     where
         Self: RichField + Extendable<D>,
     {
-
         let mut result = [builder.zero_extension(); WIDTH];
 
         Self::matmul_m4_circuit(builder, input);
@@ -414,25 +407,25 @@ pub trait Poseidon2: PrimeField64 {
         Self: RichField + Extendable<D>,
     {
         for i in 0..3 {
-
-            let t_0 = builder.mul_const_add_extension(Self::ONE,input[i * 4 + 0],input[i * 4 + 1]);
-            let t_1 = builder.mul_const_add_extension(Self::ONE,input[i * 4 + 2],input[i * 4 + 3]);
-            let t_2 = builder.mul_const_add_extension(Self::TWO,input[i * 4 + 1],t_1);
-            let t_3 = builder.mul_const_add_extension(Self::TWO,input[i * 4 + 3],t_0);
+            let t_0 =
+                builder.mul_const_add_extension(Self::ONE, input[i * 4 + 0], input[i * 4 + 1]);
+            let t_1 =
+                builder.mul_const_add_extension(Self::ONE, input[i * 4 + 2], input[i * 4 + 3]);
+            let t_2 = builder.mul_const_add_extension(Self::TWO, input[i * 4 + 1], t_1);
+            let t_3 = builder.mul_const_add_extension(Self::TWO, input[i * 4 + 3], t_0);
 
             let four = Self::TWO + Self::TWO;
 
-            let t_4 = builder.mul_const_add_extension(four,t_1,t_3);
-            let t_5 = builder.mul_const_add_extension(four,t_0,t_2);
-            let t_6 = builder.mul_const_add_extension(Self::ONE,t_3,t_5);
-            let t_7 = builder.mul_const_add_extension(Self::ONE,t_2,t_4);
+            let t_4 = builder.mul_const_add_extension(four, t_1, t_3);
+            let t_5 = builder.mul_const_add_extension(four, t_0, t_2);
+            let t_6 = builder.mul_const_add_extension(Self::ONE, t_3, t_5);
+            let t_7 = builder.mul_const_add_extension(Self::ONE, t_2, t_4);
 
             input[i * 4 + 0] = t_6;
             input[i * 4 + 1] = t_5;
             input[i * 4 + 2] = t_7;
             input[i * 4 + 3] = t_4;
-        
-        }     
+        }
     }
 
     // add round_constant layer circuit
@@ -443,13 +436,10 @@ pub trait Poseidon2: PrimeField64 {
     ) where
         Self: RichField + Extendable<D>,
     {
-
         for i in 0..WIDTH {
-
             let round_constant = Self::Extension::from_canonical_u64(Self::RC12[rc_index][i]);
             let round_constant = builder.constant_extension(round_constant);
             input[i] = builder.add_extension(input[i], round_constant);
-
         }
     }
 
@@ -483,18 +473,16 @@ pub trait Poseidon2: PrimeField64 {
     ) where
         Self: RichField + Extendable<D>,
     {
-
-        let sum = builder.add_many_extension([input[0],input[1],input[2],input[3],
-                                            input[4],input[5],input[6],input[7],
-                                            input[8],input[9],input[10],input[11]]);
+        let sum = builder.add_many_extension([
+            input[0], input[1], input[2], input[3], input[4], input[5], input[6], input[7],
+            input[8], input[9], input[10], input[11],
+        ]);
 
         for i in 0..WIDTH {
-            
             let round_constant = Self::Extension::from_canonical_u64(Self::MAT_DIAG12_M_1[i] - 1);
             let round_constant = builder.constant_extension(round_constant);
 
             input[i] = builder.mul_add_extension(round_constant, input[i], sum);
-            
         }
     }
 }
@@ -522,7 +510,6 @@ impl<F: RichField> Hasher<F> for Poseidon2Hash {
         compress::<F, Self::Permutation>(left, right)
     }
 }
-
 
 impl<F: RichField> AlgebraicHasher<F> for Poseidon2Hash {
     fn permute_swapped<const D: usize>(
@@ -562,9 +549,8 @@ pub(crate) mod test_helpers {
 
     use crate::hash::poseidon2::{Poseidon2, WIDTH};
 
-    pub(crate) fn check_test_vectors<F: Field>(
-        test_vectors: Vec<([u64; WIDTH], [u64; WIDTH])>,
-    ) where
+    pub(crate) fn check_test_vectors<F: Field>(test_vectors: Vec<([u64; WIDTH], [u64; WIDTH])>)
+    where
         F: Poseidon2,
     {
         for (input_, _) in test_vectors.into_iter() {

@@ -28,7 +28,8 @@ use crate::plonk::vars::{
 pub type LookupTable = Arc<Vec<(u16, u16)>>;
 pub type BitwiseLookupTable = Arc<Vec<(u8, u8, u8)>>;
 
-/// A gate which stores the set of (input, output) value pairs of a lookup table, and their multiplicities.
+/// A gate which stores the set of (input, output) value pairs of a lookup
+/// table, and their multiplicities.
 #[derive(Debug, Clone)]
 pub struct LookupTableGate {
     /// Number of lookup entries per gate.
@@ -166,7 +167,6 @@ pub struct LookupTableGenerator<const D: usize> {
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for LookupTableGenerator<D> {
-
     fn dependencies(&self) -> Vec<Target> {
         vec![]
     }
@@ -192,8 +192,8 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for Lookup
     }
 }
 
-
-/// A gate which stores the set of (input, output) value pairs of a lookup table, and their multiplicities.
+/// A gate which stores the set of (input, output) value pairs of a lookup
+/// table, and their multiplicities.
 #[derive(Debug, Clone)]
 pub struct BitwiseLookupTableGate {
     /// Number of lookup entries per gate.
@@ -207,11 +207,21 @@ pub struct BitwiseLookupTableGate {
 }
 
 impl BitwiseLookupTableGate {
-
-    pub fn new_from_table(config: &CircuitConfig, lut: BitwiseLookupTable, last_lut_row: usize) -> Self {
+    pub fn new_from_table(
+        config: &CircuitConfig,
+        lut: BitwiseLookupTable,
+        last_lut_row: usize,
+    ) -> Self {
         let table_bytes = lut
             .iter()
-            .flat_map(|(input0, input1, output)| [input0.to_le_bytes(), input1.to_le_bytes(), output.to_le_bytes()].concat())
+            .flat_map(|(input0, input1, output)| {
+                [
+                    input0.to_le_bytes(),
+                    input1.to_le_bytes(),
+                    output.to_le_bytes(),
+                ]
+                .concat()
+            })
             .collect_vec();
 
         Self {
@@ -318,7 +328,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for BitwiseLookupT
     }
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D> for BitwiseLookupTableGate {
+impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D>
+    for BitwiseLookupTableGate
+{
     fn eval_unfiltered_base_packed<P: PackedField<Scalar = F>>(
         &self,
         _vars: EvaluationVarsBasePacked<P>,
@@ -336,8 +348,9 @@ pub struct BitwiseLookupTableGenerator<const D: usize> {
     last_lut_row: usize,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for BitwiseLookupTableGenerator<D> {
-
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
+    for BitwiseLookupTableGenerator<D>
+{
     fn dependencies(&self) -> Vec<Target> {
         vec![]
     }
@@ -346,12 +359,18 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for Bitwis
         let first_row = self.last_lut_row + ceil_div_usize(self.lut.len(), self.num_slots) - 1;
         let slot = (first_row - self.row) * self.num_slots + self.slot_nb;
 
-        let slot_input0_target =
-            Target::wire(self.row, BitwiseLookupTableGate::wire_ith_looked_inp0(self.slot_nb));
-        let slot_input1_target =
-            Target::wire(self.row, BitwiseLookupTableGate::wire_ith_looked_inp1(self.slot_nb));
-        let slot_output_target =
-            Target::wire(self.row, BitwiseLookupTableGate::wire_ith_looked_out(self.slot_nb));
+        let slot_input0_target = Target::wire(
+            self.row,
+            BitwiseLookupTableGate::wire_ith_looked_inp0(self.slot_nb),
+        );
+        let slot_input1_target = Target::wire(
+            self.row,
+            BitwiseLookupTableGate::wire_ith_looked_inp1(self.slot_nb),
+        );
+        let slot_output_target = Target::wire(
+            self.row,
+            BitwiseLookupTableGate::wire_ith_looked_out(self.slot_nb),
+        );
 
         if slot < self.lut.len() {
             let (input0, input1, output) = self.lut[slot];

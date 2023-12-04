@@ -7,7 +7,7 @@ use crate::gates::gate::Gate;
 use crate::gates::util::StridedConstraintConsumer;
 use crate::hash::hash_types::RichField;
 use crate::hash::poseidon2;
-use crate::hash::poseidon2::{Poseidon2, WIDTH, ROUND_F_BEGIN, ROUND_F_END, ROUND_P, ROUNDS};
+use crate::hash::poseidon2::{Poseidon2, ROUNDS, ROUND_F_BEGIN, ROUND_F_END, ROUND_P, WIDTH};
 use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
 use crate::iop::target::Target;
@@ -71,8 +71,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Poseidon2Gate<F, D> {
         Self::START_ROUND_F_BEGIN + WIDTH * (round - 1) + i
     }
 
-    const START_PARTIAL: usize =
-        Self::START_ROUND_F_BEGIN + WIDTH * (poseidon2::ROUND_F_BEGIN - 1);
+    const START_PARTIAL: usize = Self::START_ROUND_F_BEGIN + WIDTH * (poseidon2::ROUND_F_BEGIN - 1);
 
     /// A wire which stores the input of the S-box of the `round`-th round of
     /// the partial rounds.
@@ -95,7 +94,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Poseidon2Gate<F, D> {
     fn end() -> usize {
         Self::START_ROUND_F_END + WIDTH * poseidon2::ROUND_F_BEGIN
     }
-
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for Poseidon2Gate<F, D> {
@@ -104,7 +102,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for Poseidon2Gate<
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
-        
         let mut constraints = Vec::with_capacity(self.num_constraints());
 
         // Assert that `swap` is binary.
@@ -192,7 +189,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for Poseidon2Gate<
         vars: EvaluationVarsBase<F>,
         mut yield_constr: StridedConstraintConsumer<F>,
     ) {
-
         // Assert that `swap` is binary.
         let swap = vars.local_wires[Self::WIRE_SWAP];
         yield_constr.one(swap * swap.sub_one());
@@ -245,7 +241,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for Poseidon2Gate<
             state[0] = sbox_in;
             state[0] = <F as Poseidon2>::sbox_monomial(state[0]);
             // M_I * t_1
-            <F as Poseidon2>::matmul_internal(&mut state, &<F as Poseidon2>::MAT_DIAG12_M_1);      
+            <F as Poseidon2>::matmul_internal(&mut state, &<F as Poseidon2>::MAT_DIAG12_M_1);
         }
 
         // External_i, i in {R_F/2 = R/F - 1}
@@ -321,7 +317,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for Poseidon2Gate<
 
         // Internal_i
         for r in 0..poseidon2::ROUND_P {
-
             let round_constant = F::Extension::from_canonical_u64(<F as Poseidon2>::RC12_MID[r]);
             let round_constant = builder.constant_extension(round_constant);
             state[0] = builder.add_extension(state[0], round_constant);
@@ -376,11 +371,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for Poseidon2Gate<
     }
 
     fn num_constraints(&self) -> usize {
-        WIDTH * (poseidon2::ROUND_F_END - 1)
-            + poseidon2::ROUND_P
-            + WIDTH
-            + 1
-            + 4
+        WIDTH * (poseidon2::ROUND_F_END - 1) + poseidon2::ROUND_P + WIDTH + 1 + 4
     }
 }
 
@@ -390,9 +381,7 @@ struct Poseidon2Generator<F: RichField + Extendable<D> + Poseidon2, const D: usi
     _phantom: PhantomData<F>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
-    for Poseidon2Generator<F, D>
-{
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F> for Poseidon2Generator<F, D> {
     fn dependencies(&self) -> Vec<Target> {
         (0..WIDTH)
             .map(|i| Poseidon2Gate::<F, D>::wire_input(i))
@@ -452,7 +441,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
                 local_wire(Poseidon2Gate::<F, D>::wire_partial_round(r)),
                 state[0],
             );
-            state[0] = <F as Poseidon2>::sbox_monomial(state[0]);   
+            state[0] = <F as Poseidon2>::sbox_monomial(state[0]);
             <F as Poseidon2>::matmul_internal_field(&mut state, &<F as Poseidon2>::MAT_DIAG12_M_1);
         }
 
@@ -462,7 +451,10 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
 
             for i in 0..WIDTH {
                 out_buffer.set_wire(
-                    local_wire(Poseidon2Gate::<F, D>::wire_full_round_end(r - ROUND_F_BEGIN, i)),
+                    local_wire(Poseidon2Gate::<F, D>::wire_full_round_end(
+                        r - ROUND_F_BEGIN,
+                        i,
+                    )),
                     state[i],
                 );
             }
@@ -523,9 +515,7 @@ mod tests {
         let row = builder.add_gate(gate, vec![]);
         let circuit = builder.build_prover::<C>();
 
-        let permutation_inputs = (0..WIDTH)
-            .map(F::from_canonical_usize)
-            .collect::<Vec<_>>();
+        let permutation_inputs = (0..WIDTH).map(F::from_canonical_usize).collect::<Vec<_>>();
 
         let mut inputs = PartialWitness::new();
         inputs.set_wire(
@@ -547,8 +537,7 @@ mod tests {
 
         let witness = generate_partial_witness(inputs, &circuit.prover_only, &circuit.common);
 
-        let expected_outputs: [F; WIDTH] =
-            F::poseidon2(permutation_inputs.try_into().unwrap());
+        let expected_outputs: [F; WIDTH] = F::poseidon2(permutation_inputs.try_into().unwrap());
         for i in 0..WIDTH {
             let out = witness.get_wire(Wire {
                 row: 0,

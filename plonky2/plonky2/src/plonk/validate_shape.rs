@@ -49,7 +49,7 @@ where
         // validate_fri_proof_shape), so we ignore it here.
         opening_proof: _,
     } = proof;
-    
+
     let OpeningSet {
         constants,
         plonk_sigmas,

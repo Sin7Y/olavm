@@ -597,8 +597,8 @@ pub(crate) fn verify_cross_table_lookups_circuit<
 ) {
     let mut ctl_zs_openings = ctl_zs_lasts.iter().map(|v| v.iter()).collect::<Vec<_>>();
     for CrossTableLookup {
-            looking_tables,
-            looked_table,
+        looking_tables,
+        looked_table,
     } in cross_table_lookups.into_iter()
     {
         let extra_product_vec = &ctl_extra_looking_products[looked_table.table as usize];

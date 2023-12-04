@@ -313,5 +313,4 @@ pub fn generate_rc_trace<F: RichField>(
             v.len()
         )
     })
-
 }

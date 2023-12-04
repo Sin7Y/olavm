@@ -6,10 +6,9 @@
 
 use plonky2_field::goldilocks_field::GoldilocksField;
 
-use crate::hash::blake3::{Blake3, ROUND, STATE_SIZE, IV_SIZE};
+use crate::hash::blake3::{Blake3, IV_SIZE, ROUND, STATE_SIZE};
 
 impl Blake3 for GoldilocksField {
-
     const MSG_SCHEDULE: [[usize; STATE_SIZE]; ROUND] = [
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         [2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8],
@@ -19,16 +18,9 @@ impl Blake3 for GoldilocksField {
         [9, 14, 11, 5, 8, 12, 15, 1, 13, 3, 0, 10, 2, 6, 4, 7],
         [11, 15, 5, 0, 1, 9, 8, 6, 14, 10, 2, 12, 3, 4, 7, 13],
     ];
-    
+
     const IV: [u32; IV_SIZE] = [
-        0x6A09E667,
-        0xBB67AE85,
-        0x3C6EF372, 
-        0xA54FF53A, 
-        0x510E527F, 
-        0x9B05688C, 
-        0x1F83D9AB, 
+        0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB,
         0x5BE0CD19,
     ];
-    
 }

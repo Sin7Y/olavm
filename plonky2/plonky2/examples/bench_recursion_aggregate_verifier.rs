@@ -15,9 +15,7 @@ use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{
-            CircuitConfig, CommonCircuitData, VerifierOnlyCircuitData,
-        },
+        circuit_data::{CircuitConfig, CommonCircuitData, VerifierOnlyCircuitData},
         config::{GenericConfig, Hasher, Poseidon2GoldilocksConfig},
         proof::{CompressedProofWithPublicInputs, ProofWithPublicInputs},
         prover::prove,
@@ -106,9 +104,9 @@ fn benchmark() -> Result<()> {
 
     let config = CircuitConfig::standard_recursion_config();
 
-    let mut proofs:Vec<ProofWithPublicInputs<F, _, D>> = Vec::new();
-    let mut verifier_datas:Vec<VerifierOnlyCircuitData<_, D>> = Vec::new();
-    let mut circuit_datas:Vec<CommonCircuitData<F, _, D>> = Vec::new();
+    let mut proofs: Vec<ProofWithPublicInputs<F, _, D>> = Vec::new();
+    let mut verifier_datas: Vec<VerifierOnlyCircuitData<_, D>> = Vec::new();
+    let mut circuit_datas: Vec<CommonCircuitData<F, _, D>> = Vec::new();
 
     let (proof, vd, cd) = dummy_proof::<F, C, D>(&config, 4_000)?;
 
@@ -117,13 +115,19 @@ fn benchmark() -> Result<()> {
     circuit_datas.push(cd);
 
     let (proof, vd, cd) = dummy_proof::<F, C, D>(&config, 2_000)?;
-    
+
     proofs.push(proof);
     verifier_datas.push(vd);
     circuit_datas.push(cd);
 
-
-    let _ = recursive_aggregate_prove::<F, C, C, D>(proofs, verifier_datas, circuit_datas, &config, None, true);
+    let _ = recursive_aggregate_prove::<F, C, C, D>(
+        proofs,
+        verifier_datas,
+        circuit_datas,
+        &config,
+        None,
+        true,
+    );
 
     //test_serialization(proof, &verifier_datas[1], &circuit_datas[1])?;
 

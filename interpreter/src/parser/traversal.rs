@@ -1,4 +1,9 @@
-use crate::parser::node::{ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode, CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode, IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode, MultiAssignNode, Node, PrintfNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode};
+use crate::parser::node::{
+    ArrayIdentNode, ArrayNumNode, AssignNode, BinOpNode, BlockNode, CallNode, CompoundNode,
+    CondStatNode, ContextIdentNode, EntryBlockNode, EntryNode, FeltNumNode, FunctionNode,
+    IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode,
+    MultiAssignNode, Node, PrintfNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
+};
 use crate::utils::number::NumberResult;
 use std::sync::{Arc, RwLock};
 

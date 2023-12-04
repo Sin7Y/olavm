@@ -427,6 +427,6 @@ pub struct PrintfNode {
 
 impl PrintfNode {
     pub fn new(val_addr: Arc<RwLock<dyn Node>>, flag: Arc<RwLock<dyn Node>>) -> Self {
-        PrintfNode { val_addr,  flag}
+        PrintfNode { val_addr, flag }
     }
 }

@@ -1,7 +1,7 @@
+use alloc::sync::Arc;
 use std::cmp::max;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::time::Instant;
-use alloc::sync::Arc;
 
 use itertools::Itertools;
 use log::{debug, info, Level};
@@ -10,7 +10,7 @@ use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::fft::fft_root_table;
 use plonky2_field::polynomial::PolynomialValues;
 use plonky2_field::types::Field;
-use plonky2_util::{log2_ceil, log2_strict, ceil_div_usize};
+use plonky2_util::{ceil_div_usize, log2_ceil, log2_strict};
 
 use crate::fri::oracle::PolynomialBatch;
 use crate::fri::{FriConfig, FriParams};
@@ -21,6 +21,8 @@ use crate::gates::arithmetic_base::ArithmeticGate;
 use crate::gates::arithmetic_extension::ArithmeticExtensionGate;
 use crate::gates::constant::ConstantGate;
 use crate::gates::gate::{CurrentSlot, Gate, GateInstance, GateRef};
+use crate::gates::lookup::{BitwiseLookup, BitwiseLookupGate, Lookup, LookupGate};
+use crate::gates::lookup_table::{BitwiseLookupTable, LookupTable};
 use crate::gates::noop::NoopGate;
 use crate::gates::public_input::PublicInputGate;
 use crate::gates::selectors::{selector_ends_lookups, selector_polynomials, selectors_lookup};
@@ -46,9 +48,6 @@ use crate::util::context_tree::ContextTree;
 use crate::util::partial_products::num_partial_products;
 use crate::util::timing::TimingTree;
 use crate::util::{transpose, transpose_poly_values};
-use crate::gates::lookup::{Lookup, LookupGate, BitwiseLookup, BitwiseLookupGate};
-use crate::gates::lookup_table::{LookupTable, BitwiseLookupTable};
-
 
 /// Number of random coins needed for lookups (for each challenge).
 /// A coin is a randomly sampled extension field element from the verifier,
@@ -56,10 +55,11 @@ use crate::gates::lookup_table::{LookupTable, BitwiseLookupTable};
 pub const NUM_COINS_LOOKUP: usize = 4;
 
 /// Enum listing the different types of lookup challenges.
-/// `ChallengeA` is used for the linear combination of input and output pairs in Sum and LDC.
-/// `ChallengeB` is used for the linear combination of input and output pairs in the polynomial RE.
-/// `ChallengeAlpha` is used for the running sums: 1/(alpha - combo_i).
-/// `ChallengeDelta` is a challenge on which to evaluate the interpolated LUT function.
+/// `ChallengeA` is used for the linear combination of input and output pairs in
+/// Sum and LDC. `ChallengeB` is used for the linear combination of input and
+/// output pairs in the polynomial RE. `ChallengeAlpha` is used for the running
+/// sums: 1/(alpha - combo_i). `ChallengeDelta` is a challenge on which to
+/// evaluate the interpolated LUT function.
 pub enum LookupChallenges {
     ChallengeA = 0,
     ChallengeB = 1,
@@ -67,10 +67,11 @@ pub enum LookupChallenges {
     ChallengeDelta = 3,
 }
 
-/// Structure containing, for each lookup table, the indices of the last lookup row,
-/// the last lookup table row and the first lookup table row. Since the rows are in
-/// reverse order in the trace, they actually correspond, respectively, to: the indices
-/// of the first `LookupGate`, the first `LookupTableGate` and the last `LookupTableGate`.
+/// Structure containing, for each lookup table, the indices of the last lookup
+/// row, the last lookup table row and the first lookup table row. Since the
+/// rows are in reverse order in the trace, they actually correspond,
+/// respectively, to: the indices of the first `LookupGate`, the first
+/// `LookupTableGate` and the last `LookupTableGate`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LookupWire {
     /// Index of the last lookup row (i.e. the first `LookupGate`).
@@ -107,7 +108,8 @@ pub struct CircuitBuilder<F: RichField + Extendable<D>, const D: usize> {
     constants_to_targets: HashMap<F, Target>,
     targets_to_constants: HashMap<Target, F>,
 
-    /// Rows for each LUT: LookupWire contains: first `LookupGate`, first `LookupTableGate`, last `LookupTableGate`.
+    /// Rows for each LUT: LookupWire contains: first `LookupGate`, first
+    /// `LookupTableGate`, last `LookupTableGate`.
     lookup_rows: Vec<LookupWire>,
 
     /// For each LUT index, vector of `(looking_in, looking_out)` pairs.
@@ -525,7 +527,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         }
     }*/
 
-    /// Adds a table to the vector of LUTs in the circuit builder, given a list of inputs and table values.
+    /// Adds a table to the vector of LUTs in the circuit builder, given a list
+    /// of inputs and table values.
     /*pub fn update_luts_from_table(&mut self, inputs: &[u16], table: &[u16]) -> usize {
         assert!(
             inputs.len() == table.len(),
@@ -553,7 +556,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
 
     /// Adds a table to the vector of LUTs in the circuit builder.
     pub fn update_luts_from_pairs(&mut self, table: BitwiseLookupTable) -> usize {
-        // If the LUT `table` is already stored in `self.luts`, return its index. Otherwise, append `table` to `self.luts` and return its index.
+        // If the LUT `table` is already stored in `self.luts`, return its index.
+        // Otherwise, append `table` to `self.luts` and return its index.
         if let Some(idx) = self.is_stored(table.clone()) {
             idx
         } else {
@@ -579,7 +583,13 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     }
 
     /// Adds a looking (input, output) pair to the corresponding LUT.
-    pub fn update_lookups(&mut self, looking_in_0: Target, looking_in_1: Target, looking_out: Target, lut_index: usize) {
+    pub fn update_lookups(
+        &mut self,
+        looking_in_0: Target,
+        looking_in_1: Target,
+        looking_out: Target,
+        lut_index: usize,
+    ) {
         assert!(
             lut_index < self.lut_to_lookups.len(),
             "The LUT with index {} has not been created. The last LUT is at index {}",

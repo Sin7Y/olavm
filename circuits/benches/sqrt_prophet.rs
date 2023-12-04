@@ -15,7 +15,7 @@ use executor::load_tx::init_tape;
 use executor::Process;
 use itertools::Itertools;
 use log::{debug, error, info, logger, LevelFilter};
-use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig, Blake3GoldilocksConfig};
+use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
 use std::path::PathBuf;

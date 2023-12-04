@@ -15,7 +15,7 @@ use executor::load_tx::init_tape;
 use executor::Process;
 use itertools::Itertools;
 use log::{debug, error, info, logger, LevelFilter};
-use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig, Blake3GoldilocksConfig};
+use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -62,12 +62,20 @@ pub fn test_by_asm_json(path: String) {
         &mut Some(prophets),
         &mut AccountTree::new_test(),
     );
-    info!("exec time:{}, len:{}", now.elapsed().as_millis(), program.trace.exec.len());
+    info!(
+        "exec time:{}, len:{}",
+        now.elapsed().as_millis(),
+        program.trace.exec.len()
+    );
     let mut ola_stark = OlaStark::default();
     let now = Instant::now();
     let (traces, public_values) =
         generate_traces(program, &mut ola_stark, GenerationInputs::default());
-    info!("generate_traces time:{}, len{}", now.elapsed().as_millis(), traces[0].get(0).unwrap().values.len());
+    info!(
+        "generate_traces time:{}, len{}",
+        now.elapsed().as_millis(),
+        traces[0].get(0).unwrap().values.len()
+    );
     let now = Instant::now();
 
     let config = StarkConfig::standard_fast_config();
@@ -91,7 +99,7 @@ pub fn test_by_asm_json(path: String) {
 
 fn fib_loop_benchmark(c: &mut Criterion) {
     let _ = env_logger::builder()
-    .filter_level(LevelFilter::Info)
+        .filter_level(LevelFilter::Info)
         .try_init();
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("benches/asm/fib_asm.json");
