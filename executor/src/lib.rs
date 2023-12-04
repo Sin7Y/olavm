@@ -1079,25 +1079,18 @@ impl Process {
 
         let mut len = GoldilocksField::ZERO;
         if self.tp.to_canonical_u64() > 0 {
-            len = self.tape.read(
-                self.tx_idx,
-                self.tp.to_canonical_u64() - 1,
-                self.clk,
-                GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
-                GoldilocksField::ZERO,
-            )?;
+            len = self
+                .tape
+                .read_without_trace(self.tp.to_canonical_u64() - 1)?;
         }
 
         if len != GoldilocksField::ZERO {
             let len = len.to_canonical_u64();
             for i in 0..len {
-                program.trace.ret.push(self.tape.read(
-                    self.tx_idx,
-                    self.tp.to_canonical_u64() - len - 1 + i,
-                    self.clk,
-                    GoldilocksField::from_canonical_u64(1 << Opcode::END as u64),
-                    GoldilocksField::ZERO,
-                )?);
+                program.trace.ret.push(
+                    self.tape
+                        .read_without_trace(self.tp.to_canonical_u64() - len - 1 + i)?,
+                );
             }
         }
         let mut end_step = None;
