@@ -5,6 +5,7 @@ on:
     branches: ["peinlcy/prover", "dev/pierre"]
   pull_request:
     branches: ["peinlcy/prover", "dev/pierre", "main"]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -15,13 +16,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
       - name: Install Rustfmt
-        run: rustup component add rustfmt --toolchain nightly
+        run: rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu
       - name: check
         run: cargo check --all-features
       - name: fmt-check
