@@ -11,8 +11,8 @@ use crate::field::batch_util::batch_add_inplace;
 use crate::field::extension::{Extendable, FieldExtension};
 use crate::field::types::Field;
 use crate::field::zero_poly_coset::ZeroPolyOnCoset;
-use crate::gates::lookup::{LookupGate, BitwiseLookupGate};
-use crate::gates::lookup_table::{LookupTableGate, BitwiseLookupTableGate};
+use crate::gates::lookup::{BitwiseLookupGate, LookupGate};
+use crate::gates::lookup_table::{BitwiseLookupTableGate, LookupTableGate};
 use crate::gates::selectors::LookupSelectors;
 use crate::hash::hash_types::RichField;
 use crate::iop::ext_target::ExtensionTarget;
@@ -29,7 +29,11 @@ use crate::util::strided_view::PackedStridedView;
 use crate::with_context;
 
 /// Get the polynomial associated to a lookup table with current challenges.
-pub(crate) fn get_lut_poly<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+pub(crate) fn get_lut_poly<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     common_data: &CommonCircuitData<F, C, D>,
     lut_index: usize,
     deltas: &[F],
@@ -41,17 +45,26 @@ pub(crate) fn get_lut_poly<F: RichField + Extendable<D>, C: GenericConfig<D, F =
     // fix the compress function
     // input0 + input1 + b * ouput
     for (input0, input1, output) in common_data.luts[lut_index].iter() {
-        coeffs.push(F::from_canonical_u8(*input0) + F::from_canonical_u8(*input1) + b * F::from_canonical_u8(*output));
+        coeffs.push(
+            F::from_canonical_u8(*input0)
+                + F::from_canonical_u8(*input1)
+                + b * F::from_canonical_u8(*output),
+        );
     }
     coeffs.append(&mut vec![F::ZERO; degree - n]);
     coeffs.reverse();
     PolynomialCoeffs::new(coeffs)
 }
 
-/// Evaluate the vanishing polynomial at `x`. In this context, the vanishing polynomial is a random
-/// linear combination of gate constraints, plus some other terms relating to the permutation
-/// argument. All such terms should vanish on `H`.
-pub(crate) fn eval_vanishing_poly<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+/// Evaluate the vanishing polynomial at `x`. In this context, the vanishing
+/// polynomial is a random linear combination of gate constraints, plus some
+/// other terms relating to the permutation argument. All such terms should
+/// vanish on `H`.
+pub(crate) fn eval_vanishing_poly<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     common_data: &CommonCircuitData<F, C, D>,
     x: F::Extension,
     vars: EvaluationVars<F, D>,
@@ -163,7 +176,11 @@ pub(crate) fn eval_vanishing_poly<F: RichField + Extendable<D>, C: GenericConfig
 }
 
 /// Like `eval_vanishing_poly`, but specialized for base field points. Batched.
-pub(crate) fn eval_vanishing_poly_base_batch<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+pub(crate) fn eval_vanishing_poly_base_batch<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     common_data: &CommonCircuitData<F, C, D>,
     indices_batch: &[usize],
     xs_batch: &[F],
@@ -334,12 +351,20 @@ pub(crate) fn eval_vanishing_poly_base_batch<F: RichField + Extendable<D>, C: Ge
 ///
 /// There are three polynomials to check:
 /// - RE ensures the well formation of lookup tables;
-/// - Sum is a running sum of m_i/(X - (input_i + a * output_i)) where (input_i, output_i) are input pairs in the lookup table (LUT);
-/// - LDC is a running sum of 1/(X - (input_i + a * output_i)) where (input_i, output_i) are input pairs that look in the LUT.
-/// Sum and LDC are broken down in partial polynomials to lower the constraint degree, similarly to the permutation argument.
-/// They also share the same partial SLDC polynomials, so that the last SLDC value is Sum(end) - LDC(end). The final constraint
-/// Sum(end) = LDC(end) becomes simply SLDC(end) = 0, and we can remove the LDC initial constraint.
-pub fn check_lookup_constraints<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+/// - Sum is a running sum of m_i/(X - (input_i + a * output_i)) where (input_i,
+///   output_i) are input pairs in the lookup table (LUT);
+/// - LDC is a running sum of 1/(X - (input_i + a * output_i)) where (input_i,
+///   output_i) are input pairs that look in the LUT.
+/// Sum and LDC are broken down in partial polynomials to lower the constraint
+/// degree, similarly to the permutation argument. They also share the same
+/// partial SLDC polynomials, so that the last SLDC value is Sum(end) -
+/// LDC(end). The final constraint Sum(end) = LDC(end) becomes simply SLDC(end)
+/// = 0, and we can remove the LDC initial constraint.
+pub fn check_lookup_constraints<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     common_data: &CommonCircuitData<F, C, D>,
     vars: EvaluationVars<F, D>,
     local_lookup_zs: &[F::Extension],
@@ -366,7 +391,8 @@ pub fn check_lookup_constraints<F: RichField + Extendable<D>, C: GenericConfig<D
     let delta_challenge_a = F::Extension::from(deltas[LookupChallenges::ChallengeA as usize]);
     let delta_challenge_b = F::Extension::from(deltas[LookupChallenges::ChallengeB as usize]);
 
-    // Compute all current looked and looking combos, i.e. the combos we need for the SLDC polynomials.
+    // Compute all current looked and looking combos, i.e. the combos we need for
+    // the SLDC polynomials.
     let current_looked_combos: Vec<F::Extension> = (0..num_lut_slots)
         .map(|s| {
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
@@ -385,12 +411,13 @@ pub fn check_lookup_constraints<F: RichField + Extendable<D>, C: GenericConfig<D
         })
         .collect();
 
-    // Compute all current lookup combos, i.e. the combos used to check that the LUT is correct.
+    // Compute all current lookup combos, i.e. the combos used to check that the LUT
+    // is correct.
     let current_lookup_combos: Vec<F::Extension> = (0..num_lut_slots)
         .map(|s| {
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
-             let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
+            let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
             input_wire_0 + input_wire_1 + delta_challenge_b * output_wire
         })
         .collect();
@@ -402,7 +429,6 @@ pub fn check_lookup_constraints<F: RichField + Extendable<D>, C: GenericConfig<D
 
     // Check initial Sum constraint.
     constraints.push(lookup_selectors[LookupSelectors::InitSre as usize] * z_x_lookup_sldcs[0]);
-
 
     // Check initial RE constraint.
     constraints.push(lookup_selectors[LookupSelectors::InitSre as usize] * z_re);
@@ -490,34 +516,41 @@ pub fn check_lookup_constraints<F: RichField + Extendable<D>, C: GenericConfig<D
         let lut_sum_prods_with_mul = (poly * lut_degree
             ..min((poly + 1) * lut_degree, num_lut_slots))
             .fold(F::Extension::ZERO, |acc, i| {
-                acc + vars.local_wires[BitwiseLookupTableGate::wire_ith_multiplicity(i)] * lut_prod_i(i)
+                acc + vars.local_wires[BitwiseLookupTableGate::wire_ith_multiplicity(i)]
+                    * lut_prod_i(i)
             });
 
-        // The previous element is the previous poly of the current row or the last poly of the next row.
+        // The previous element is the previous poly of the current row or the last poly
+        // of the next row.
         let prev = if poly == 0 {
             z_gx_lookup_sldcs[num_sldc_polys - 1]
         } else {
             z_x_lookup_sldcs[poly - 1]
         };
 
-        // Check Sum row and col transitions. It's the same constraint, with a row transition happening for slot == 0.
+        // Check Sum row and col transitions. It's the same constraint, with a row
+        // transition happening for slot == 0.
         let unfiltered_sum_transition =
             lut_prod * (z_x_lookup_sldcs[poly] - prev) - lut_sum_prods_with_mul;
         constraints
             .push(lookup_selectors[LookupSelectors::TransSre as usize] * unfiltered_sum_transition);
-  
-        // Check LDC row and col transitions. It's the same constraint, with a row transition happening for slot == 0.
+
+        // Check LDC row and col transitions. It's the same constraint, with a row
+        // transition happening for slot == 0.
         let unfiltered_ldc_transition = lu_prod * (z_x_lookup_sldcs[poly] - prev) + lu_sum_prods;
         constraints
             .push(lookup_selectors[LookupSelectors::TransLdc as usize] * unfiltered_ldc_transition);
-
     }
 
     constraints
 }
 
 /// Same as `check_lookup_constraints`, but for the base field case.
-pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+pub fn check_lookup_constraints_batch<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     common_data: &CommonCircuitData<F, C, D>,
     vars: EvaluationVarsBase<F>,
     local_lookup_zs: &[F],
@@ -542,13 +575,16 @@ pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericCo
     let z_x_lookup_sldcs = &local_lookup_zs[1..num_sldc_polys + 1];
     let z_gx_lookup_sldcs = &next_lookup_zs[1..num_sldc_polys + 1];
 
-    // Compute all current looked and looking combos, i.e. the combos we need for the SLDC polynomials.
+    // Compute all current looked and looking combos, i.e. the combos we need for
+    // the SLDC polynomials.
     let current_looked_combos: Vec<F> = (0..num_lut_slots)
         .map(|s| {
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
-            input_wire_0 + input_wire_1 + deltas[LookupChallenges::ChallengeA as usize] * output_wire
+            input_wire_0
+                + input_wire_1
+                + deltas[LookupChallenges::ChallengeA as usize] * output_wire
         })
         .collect();
 
@@ -557,18 +593,23 @@ pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericCo
             let input_wire_0 = vars.local_wires[BitwiseLookupGate::wire_ith_looking_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupGate::wire_ith_looking_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupGate::wire_ith_looking_out(s)];
-            input_wire_0 + input_wire_1 + deltas[LookupChallenges::ChallengeA as usize] * output_wire
+            input_wire_0
+                + input_wire_1
+                + deltas[LookupChallenges::ChallengeA as usize] * output_wire
         })
         .collect();
 
-    // Compute all current lookup combos, i.e. the combos used to check that the LUT is correct.
+    // Compute all current lookup combos, i.e. the combos used to check that the LUT
+    // is correct.
     let current_lookup_combos: Vec<F> = (0..num_lut_slots)
         .map(|s| {
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
 
-            input_wire_0 + input_wire_1 + deltas[LookupChallenges::ChallengeB as usize] * output_wire
+            input_wire_0
+                + input_wire_1
+                + deltas[LookupChallenges::ChallengeB as usize] * output_wire
         })
         .collect();
 
@@ -583,7 +624,6 @@ pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericCo
     // Check initial RE constraint.
     constraints.push(lookup_selectors[LookupSelectors::InitSre as usize] * z_re);
 
-
     // Check final RE constraints for each different LUT.
     for r in LookupSelectors::StartEnd as usize..common_data.num_lookup_selectors {
         let cur_ends_selector = lookup_selectors[r];
@@ -592,7 +632,6 @@ pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericCo
         let re_poly_eval = lut_re_poly_evals[r - LookupSelectors::StartEnd as usize];
 
         constraints.push(cur_ends_selector * (z_re - re_poly_eval))
-
     }
 
     // Check RE row transition constraint.
@@ -650,38 +689,44 @@ pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericCo
         let lut_sum_prods_with_mul = (poly * lut_degree
             ..min((poly + 1) * lut_degree, num_lut_slots))
             .fold(F::ZERO, |acc, i| {
-                acc + vars.local_wires[BitwiseLookupTableGate::wire_ith_multiplicity(i)] * lut_prod_i(i)
+                acc + vars.local_wires[BitwiseLookupTableGate::wire_ith_multiplicity(i)]
+                    * lut_prod_i(i)
             });
 
-        // The previous element is the previous poly of the current row or the last poly of the next row.
+        // The previous element is the previous poly of the current row or the last poly
+        // of the next row.
         let prev = if poly == 0 {
             z_gx_lookup_sldcs[num_sldc_polys - 1]
         } else {
             z_x_lookup_sldcs[poly - 1]
         };
 
-        // Check Sum row and col transitions. It's the same constraint, with a row transition happening for slot == 0.
+        // Check Sum row and col transitions. It's the same constraint, with a row
+        // transition happening for slot == 0.
         let unfiltered_sum_transition =
             lut_prod * (z_x_lookup_sldcs[poly] - prev) - lut_sum_prods_with_mul;
         constraints
             .push(lookup_selectors[LookupSelectors::TransSre as usize] * unfiltered_sum_transition);
 
-
-        // Check LDC row and col transitions. It's the same constraint, with a row transition happening for slot == 0.
+        // Check LDC row and col transitions. It's the same constraint, with a row
+        // transition happening for slot == 0.
         let unfiltered_ldc_transition = lu_prod * (z_x_lookup_sldcs[poly] - prev) + lu_sum_prods;
         constraints
             .push(lookup_selectors[LookupSelectors::TransLdc as usize] * unfiltered_ldc_transition);
-
     }
     constraints
 }
 
 /// Evaluates all gate constraints.
 ///
-/// `num_gate_constraints` is the largest number of constraints imposed by any gate. It is not
-/// strictly necessary, but it helps performance by ensuring that we allocate a vector with exactly
-/// the capacity that we need.
-pub fn evaluate_gate_constraints<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+/// `num_gate_constraints` is the largest number of constraints imposed by any
+/// gate. It is not strictly necessary, but it helps performance by ensuring
+/// that we allocate a vector with exactly the capacity that we need.
+pub fn evaluate_gate_constraints<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     common_data: &CommonCircuitData<F, C, D>,
     vars: EvaluationVars<F, D>,
 ) -> Vec<F::Extension> {
@@ -709,10 +754,15 @@ pub fn evaluate_gate_constraints<F: RichField + Extendable<D>, C: GenericConfig<
 
 /// Evaluate all gate constraints in the base field.
 ///
-/// Returns a vector of `num_gate_constraints * vars_batch.len()` field elements. The constraints
-/// corresponding to `vars_batch[i]` are found in `result[i], result[vars_batch.len() + i],
-/// result[2 * vars_batch.len() + i], ...`.
-pub fn evaluate_gate_constraints_base_batch<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+/// Returns a vector of `num_gate_constraints * vars_batch.len()` field
+/// elements. The constraints corresponding to `vars_batch[i]` are found in
+/// `result[i], result[vars_batch.len() + i], result[2 * vars_batch.len() + i],
+/// ...`.
+pub fn evaluate_gate_constraints_base_batch<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     common_data: &CommonCircuitData<F, C, D>,
     vars_batch: EvaluationVarsBaseBatch<F>,
 ) -> Vec<F> {
@@ -740,7 +790,11 @@ pub fn evaluate_gate_constraints_base_batch<F: RichField + Extendable<D>, C: Gen
     constraints_batch
 }
 
-pub fn evaluate_gate_constraints_circuit<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+pub fn evaluate_gate_constraints_circuit<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     builder: &mut CircuitBuilder<F, D>,
     common_data: &CommonCircuitData<F, C, D>,
     vars: EvaluationTargets<D>,
@@ -766,7 +820,11 @@ pub fn evaluate_gate_constraints_circuit<F: RichField + Extendable<D>, C: Generi
     all_gate_constraints
 }
 
-pub(crate) fn get_lut_poly_circuit<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+pub(crate) fn get_lut_poly_circuit<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     builder: &mut CircuitBuilder<F, D>,
     common_data: &CommonCircuitData<F, C, D>,
     lut_index: usize,
@@ -797,13 +855,18 @@ pub(crate) fn get_lut_poly_circuit<F: RichField + Extendable<D>, C: GenericConfi
         })
 }
 
-/// Evaluate the vanishing polynomial at `x`. In this context, the vanishing polynomial is a random
-/// linear combination of gate constraints, plus some other terms relating to the permutation
-/// argument. All such terms should vanish on `H`.
+/// Evaluate the vanishing polynomial at `x`. In this context, the vanishing
+/// polynomial is a random linear combination of gate constraints, plus some
+/// other terms relating to the permutation argument. All such terms should
+/// vanish on `H`.
 ///
-/// Assumes `x != 1`; if `x` could be 1 then this is unsound. This is fine if `x` is a random
-/// variable drawn from a sufficiently large domain.
-pub(crate) fn eval_vanishing_poly_circuit<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+/// Assumes `x != 1`; if `x` could be 1 then this is unsound. This is fine if
+/// `x` is a random variable drawn from a sufficiently large domain.
+pub(crate) fn eval_vanishing_poly_circuit<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     builder: &mut CircuitBuilder<F, D>,
     common_data: &CommonCircuitData<F, C, D>,
     x: ExtensionTarget<D>,
@@ -939,7 +1002,11 @@ pub(crate) fn eval_vanishing_poly_circuit<F: RichField + Extendable<D>, C: Gener
 }
 
 /// Same as `check_lookup_constraints`, but for the recursive case.
-pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+pub fn check_lookup_constraints_circuit<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     builder: &mut CircuitBuilder<F, D>,
     common_data: &CommonCircuitData<F, C, D>,
     vars: EvaluationTargets<D>,
@@ -960,7 +1027,8 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
     let z_re = local_lookup_zs[0];
     let next_z_re = next_lookup_zs[0];
 
-    // Partial Sums and LDCs (i.e. the SLDC polynomials) are stored in the remaining polynomials.
+    // Partial Sums and LDCs (i.e. the SLDC polynomials) are stored in the remaining
+    // polynomials.
     let z_x_lookup_sldcs = &local_lookup_zs[1..num_sldc_polys + 1];
     let z_gx_lookup_sldcs = &next_lookup_zs[1..num_sldc_polys + 1];
 
@@ -970,7 +1038,8 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
         .map(|d| builder.convert_to_ext(*d))
         .collect::<Vec<_>>();
 
-    // Computing all current looked and looking combos, i.e. the combos we need for the SLDC polynomials.
+    // Computing all current looked and looking combos, i.e. the combos we need for
+    // the SLDC polynomials.
     let current_looked_combos = (0..num_lut_slots)
         .map(|s| {
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
@@ -1016,7 +1085,8 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
         })
         .collect::<Vec<_>>();
 
-    // Computing all current lookup combos, i.e. the combos used to check that the LUT is correct.
+    // Computing all current lookup combos, i.e. the combos used to check that the
+    // LUT is correct.
     let current_lookup_combos = (0..num_lut_slots)
         .map(|s| {
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
@@ -1129,7 +1199,8 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
                 )
             });
 
-        // The previous element is the previous poly of the current row or the last poly of the next row.
+        // The previous element is the previous poly of the current row or the last poly
+        // of the next row.
         let prev = if poly == 0 {
             z_gx_lookup_sldcs[num_sldc_polys - 1]
         } else {
@@ -1138,7 +1209,8 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
 
         let cur_sub = builder.sub_extension(z_x_lookup_sldcs[poly], prev);
 
-        // Check sum row and col transitions. It's the same constraint, with a row transition happening for slot == 0.
+        // Check sum row and col transitions. It's the same constraint, with a row
+        // transition happening for slot == 0.
         let unfiltered_sum_transition =
             builder.mul_sub_extension(lut_prod, cur_sub, lut_sum_prods_mul);
         constraints.push(builder.mul_extension(
@@ -1146,7 +1218,8 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
             unfiltered_sum_transition,
         ));
 
-        // Check ldc row and col transitions. It's the same constraint, with a row transition happening for slot == 0.
+        // Check ldc row and col transitions. It's the same constraint, with a row
+        // transition happening for slot == 0.
         let unfiltered_ldc_transition = builder.mul_add_extension(lu_prod, cur_sub, lu_sum_prods);
         constraints.push(builder.mul_extension(
             lookup_selectors[LookupSelectors::TransLdc as usize],

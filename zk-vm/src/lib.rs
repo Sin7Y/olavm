@@ -18,13 +18,13 @@ use ola_core::types::merkle_tree::{encode_addr, tree_key_default, TreeValue};
 use ola_core::types::GoldilocksField;
 use ola_core::types::{Field, PrimeField64};
 use ola_core::vm::error::ProcessorError;
-use ola_core::vm::transaction::{TxCtxInfo};
+use ola_core::vm::transaction::TxCtxInfo;
 use ola_core::vm::vm_state::{SCCallType, VMState};
 
 use ola_core::merkle_tree::log::{StorageLog, WitnessStorageLog};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
-use std::io::{BufReader};
+use std::io::BufReader;
 use std::ops::Not;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -162,7 +162,7 @@ impl OlaVM {
             program
                 .trace
                 .addr_program_hash
-                .insert(encode_addr(&exe_code_addr),  contract);
+                .insert(encode_addr(&exe_code_addr), contract);
         }
 
         let prophet = self.get_prophet(&code_hash).unwrap();

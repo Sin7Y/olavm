@@ -36,10 +36,7 @@ pub(crate) fn get_prog_col_name_map() -> BTreeMap<usize, String> {
         COL_PROG_EXEC_COMP_PROG_PERM,
         String::from("EXEC_COMP_PROG_PERM"),
     );
-    m.insert(
-        COL_PROG_FILTER_EXEC,
-        String::from("FILTER_EXEC"),
-    );
+    m.insert(COL_PROG_FILTER_EXEC, String::from("FILTER_EXEC"));
     m.insert(
         COL_PROG_FILTER_PROG_CHUNK,
         String::from("FILTER_PROG_CHUNK"),
