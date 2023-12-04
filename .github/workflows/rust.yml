@@ -16,14 +16,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Cache Rust toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.rustup
+          key: ${{ runner.os }}-rustup-${{ hashFiles('**/rust-toolchain') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-rustup-${{ hashFiles('**/rust-toolchain') }}-
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           profile: minimal
+          components: rustfmt, clippy
           override: true
-      - name: Install Rustfmt
-        run: rustup component add rustfmt --toolchain nightly
       - name: check
         run: cargo check --all-features
       - name: fmt-check
