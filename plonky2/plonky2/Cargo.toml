@@ -67,6 +67,10 @@ name = "poseidon2_prove"
 harness = false
 
 [[bench]]
+name = "blake3_prove"
+harness = false
+
+[[bench]]
 name = "ffts"
 harness = false
 

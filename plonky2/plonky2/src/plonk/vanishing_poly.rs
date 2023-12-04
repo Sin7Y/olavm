@@ -41,7 +41,7 @@ pub(crate) fn get_lut_poly<F: RichField + Extendable<D>, C: GenericConfig<D, F =
     // fix the compress function
     // input0 + input1 + b * ouput
     for (input0, input1, output) in common_data.luts[lut_index].iter() {
-        coeffs.push(F::from_canonical_u8(*input0) + F::from_canonical_u8(*input1) + b * F::from_canonical_u8(*output));
+        coeffs.push(F::from_canonical_u8(*input0) + b * b * F::from_canonical_u8(*input1) + b * F::from_canonical_u8(*output));
     }
     coeffs.append(&mut vec![F::ZERO; degree - n]);
     coeffs.reverse();
@@ -372,7 +372,9 @@ pub fn check_lookup_constraints<F: RichField + Extendable<D>, C: GenericConfig<D
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
-            input_wire_0 + input_wire_1 + delta_challenge_a * output_wire
+            input_wire_0 
+            + input_wire_1 * delta_challenge_a * delta_challenge_a
+            + delta_challenge_a * output_wire
         })
         .collect();
 
@@ -381,7 +383,9 @@ pub fn check_lookup_constraints<F: RichField + Extendable<D>, C: GenericConfig<D
             let input_wire_0 = vars.local_wires[BitwiseLookupGate::wire_ith_looking_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupGate::wire_ith_looking_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupGate::wire_ith_looking_out(s)];
-            input_wire_0 + input_wire_1 + delta_challenge_a * output_wire
+            input_wire_0 
+            + input_wire_1 * delta_challenge_a * delta_challenge_a
+            + delta_challenge_a * output_wire
         })
         .collect();
 
@@ -391,7 +395,9 @@ pub fn check_lookup_constraints<F: RichField + Extendable<D>, C: GenericConfig<D
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
              let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
-            input_wire_0 + input_wire_1 + delta_challenge_b * output_wire
+            input_wire_0 
+            + input_wire_1 * delta_challenge_b * delta_challenge_b
+            + delta_challenge_b * output_wire
         })
         .collect();
 
@@ -548,7 +554,9 @@ pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericCo
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
-            input_wire_0 + input_wire_1 + deltas[LookupChallenges::ChallengeA as usize] * output_wire
+            input_wire_0 
+            + input_wire_1 * deltas[LookupChallenges::ChallengeA as usize] * deltas[LookupChallenges::ChallengeA as usize]
+            + deltas[LookupChallenges::ChallengeA as usize] * output_wire
         })
         .collect();
 
@@ -557,7 +565,9 @@ pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericCo
             let input_wire_0 = vars.local_wires[BitwiseLookupGate::wire_ith_looking_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupGate::wire_ith_looking_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupGate::wire_ith_looking_out(s)];
-            input_wire_0 + input_wire_1 + deltas[LookupChallenges::ChallengeA as usize] * output_wire
+            input_wire_0 
+            + input_wire_1 * deltas[LookupChallenges::ChallengeA as usize] * deltas[LookupChallenges::ChallengeA as usize]
+            + deltas[LookupChallenges::ChallengeA as usize] * output_wire
         })
         .collect();
 
@@ -568,7 +578,9 @@ pub fn check_lookup_constraints_batch<F: RichField + Extendable<D>, C: GenericCo
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
 
-            input_wire_0 + input_wire_1 + deltas[LookupChallenges::ChallengeB as usize] * output_wire
+            input_wire_0 
+            + input_wire_1 * deltas[LookupChallenges::ChallengeB as usize] * deltas[LookupChallenges::ChallengeB as usize]
+            + deltas[LookupChallenges::ChallengeB as usize] * output_wire
         })
         .collect();
 
@@ -779,9 +791,13 @@ pub(crate) fn get_lut_poly_circuit<F: RichField + Extendable<D>, C: GenericConfi
     let mut coeffs: Vec<Target> = common_data.luts[lut_index]
         .iter()
         .map(|(input0, input1, output)| {
-            let temp = builder.mul_const(F::from_canonical_u8(*output), b);
-            builder.add_const(temp, F::from_canonical_u8(*input0));
-            builder.add_const(temp, F::from_canonical_u8(*input1))
+            // input0 + challenge_b * (out + challenge_b * input1)
+            let output_target = builder.constant(F::from_canonical_u8(*output));
+            let input_target = builder.constant(F::from_canonical_u8(*input0));
+            // (out + challenge_b * input1)
+            let temp = builder.mul_const_add(F::from_canonical_u8(*input1), b, output_target);
+            // input0 + challenge_b * (out + challenge_b * input1)
+            builder.mul_add(temp, b, input_target)
         })
         .collect();
     for _ in n..degree {
@@ -976,12 +992,16 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
+            // input0 + challenge_b * (out + challenge_a * input1)
             let temp = builder.mul_add_extension(
                 ext_deltas[LookupChallenges::ChallengeA as usize],
+                input_wire_1,
                 output_wire,
-                input_wire_0,
             );
-            builder.add_extension(temp, input_wire_1)
+            builder.mul_add_extension(
+                ext_deltas[LookupChallenges::ChallengeA as usize],
+                temp,
+                input_wire_0)
         })
         .collect::<Vec<_>>();
     let current_looking_combos = (0..num_lu_slots)
@@ -989,12 +1009,16 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
             let input_wire_0 = vars.local_wires[BitwiseLookupGate::wire_ith_looking_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupGate::wire_ith_looking_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupGate::wire_ith_looking_out(s)];
+            // input0 + challenge_b * (out + challenge_a * input1)
             let temp = builder.mul_add_extension(
                 ext_deltas[LookupChallenges::ChallengeA as usize],
+                input_wire_1,
                 output_wire,
-                input_wire_0,
             );
-            builder.add_extension(temp, input_wire_1)
+            builder.mul_add_extension(
+                ext_deltas[LookupChallenges::ChallengeA as usize],
+                temp,
+                input_wire_0)
         })
         .collect::<Vec<_>>();
 
@@ -1022,12 +1046,16 @@ pub fn check_lookup_constraints_circuit<F: RichField + Extendable<D>, C: Generic
             let input_wire_0 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp0(s)];
             let input_wire_1 = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_inp1(s)];
             let output_wire = vars.local_wires[BitwiseLookupTableGate::wire_ith_looked_out(s)];
+            // input0 + challenge_b * (out + challenge_b * input1)
             let temp = builder.mul_add_extension(
                 ext_deltas[LookupChallenges::ChallengeB as usize],
+                input_wire_1,
                 output_wire,
-                input_wire_0,
             );
-            builder.add_extension(temp, input_wire_1)
+            builder.mul_add_extension(
+                ext_deltas[LookupChallenges::ChallengeB as usize],
+                temp,
+                input_wire_0)
         })
         .collect::<Vec<_>>();
 

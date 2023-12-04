@@ -68,11 +68,7 @@ pub fn bench_poseidon<
 
             let data = builder.build::<C>();
 
-            //let start = Instant::now();
-
-            let proof = data.prove(pw);   
-
-            //println!("poseidon prover time = {:?}", start.elapsed().as_micros());
+            let _ = data.prove(pw);
 
             });
         }   
@@ -129,13 +125,7 @@ pub fn bench_poseidon_remove_prove<
             let evals_t = gate.eval_unfiltered_circuit(&mut builder, vars_t);
             pw.set_extension_targets(&evals_t, &evals);
 
-            let data = builder.build::<C>();
-
-            //let start = Instant::now();
-
-            //let proof = data.prove(pw);   
-
-            //println!("poseidon prover time = {:?}", start.elapsed().as_micros());
+            let _ = builder.build::<C>();
 
             });
         }   

@@ -4,12 +4,13 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::hash::poseidon::Poseidon;
 use crate::hash::poseidon2::Poseidon2;
+use crate::hash::blake3::Blake3;
 use crate::iop::target::Target;
 use crate::plonk::config::GenericHashOut;
 
 /// A prime order field with the features we need to use it as a base field in
 /// our argument system.
-pub trait RichField: PrimeField64 + Poseidon + Poseidon2 {}
+pub trait RichField: PrimeField64 + Poseidon + Poseidon2 + Blake3 {}
 
 impl RichField for GoldilocksField {}
 
