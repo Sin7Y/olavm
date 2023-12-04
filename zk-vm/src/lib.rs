@@ -177,10 +177,10 @@ impl OlaVM {
             &mut prophets.is_empty().not().then(|| prophets),
         );
         if let Ok(vm_state) = res {
-            return Ok(vm_state);
+            Ok(vm_state)
         } else {
             gen_dump_file(process, program);
-            return Err(StateError::VmExecError(format!("{:?}", res)));
+            Err(StateError::VmExecError(format!("{:?}", res)))
         }
     }
 
@@ -287,7 +287,7 @@ impl OlaVM {
                             code_exe_addr = addr.clone();
                         }
                         SCCallType::DelegateCall(addr) => {
-                            caller_addr = caller_addr;
+                            // caller_addr = caller_addr;
                             code_exe_addr = addr.clone();
                         }
                     }
