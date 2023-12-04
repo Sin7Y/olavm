@@ -269,12 +269,29 @@ pub fn ctl_filter_cpu_sccall_end<F: Field>() -> Column<F> {
 }
 
 // get the data source for Rangecheck in Cpu table
-pub fn ctl_data_with_program<F: Field>() -> Vec<Column<F>> {
-    Column::singles([COL_PC, COL_INST, COL_IMM_VAL]).collect_vec()
+pub fn ctl_data_inst_to_program<F: Field>() -> Vec<Column<F>> {
+    Column::singles(COL_ADDR_CODE_RANGE.chain([COL_PC, COL_INST])).collect_vec()
 }
 
-pub fn ctl_filter_with_program<F: Field>() -> Column<F> {
-    Column::single(COL_INST)
+pub fn ctl_data_imm_to_program<F: Field>() -> Vec<Column<F>> {
+    let mut res = Column::singles(COL_ADDR_CODE_RANGE).collect_vec();
+    res.push(Column::linear_combination_with_constant(
+        [(COL_PC, F::ONE)],
+        F::ONE,
+    ));
+    res.push(Column::single(COL_IMM_VAL));
+    res
+}
+
+pub fn ctl_filter_with_program_inst<F: Field>() -> Column<F> {
+    Column::linear_combination_with_constant(
+        [(COL_IS_EXT_LINE, F::NEG_ONE), (COL_IS_PADDING, F::NEG_ONE)],
+        F::ONE,
+    )
+}
+
+pub fn ctl_filter_with_program_imm<F: Field>() -> Column<F> {
+    Column::single(COL_FILTER_LOOKING_PROG_IMM)
 }
 
 pub(crate) fn ctl_data_cpu_tape_sccall_caller<F: Field>(i: usize) -> Vec<Column<F>> {
@@ -828,6 +845,7 @@ impl<
             + lv[COL_S_SSTORE]
             + lv[COL_S_TLOAD] * (lv[COL_OP0] * lv[COL_OP1] + (P::ONES - lv[COL_OP0]))
             + lv[COL_S_TSTORE] * lv[COL_OP1]
+            + lv[COL_S_TSTORE] * lv[COL_OP1]
             + lv[COL_S_CALL_SC]
             + lv[COL_S_END] * (P::ONES - lv_is_entry_sc);
         let is_crossing_inst = lv[COL_IS_NEXT_LINE_DIFF_INST];
@@ -896,6 +914,17 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for CpuStark<F, D
                         - wrapper.lv[COL_ADDR_CODE_RANGE.start + ctx_reg_idx]),
             );
         }
+        // filter imm to prog
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_PADDING] - wrapper.lv[COL_IS_EXT_LINE])
+                * wrapper.lv[COL_OP1_IMM]
+                * (P::ONES - wrapper.lv[COL_FILTER_LOOKING_PROG_IMM]),
+        );
+        yield_constr.constraint(
+            (P::ONES - wrapper.lv[COL_IS_PADDING] - wrapper.lv[COL_IS_EXT_LINE])
+                * (wrapper.lv[COL_S_MLOAD] + wrapper.lv[COL_S_MSTORE])
+                * (P::ONES - wrapper.lv[COL_FILTER_LOOKING_PROG_IMM]),
+        );
 
         Self::constraint_ext_lines(&wrapper, yield_constr);
         Self::constraint_env_idx(&wrapper, yield_constr);
@@ -1013,11 +1042,7 @@ mod tests {
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        test_cpu_with_asm_file_name(
-            "vote.json".to_string(),
-            Some(init_calldata),
-            Some(db_name),
-        );
+        test_cpu_with_asm_file_name("vote.json".to_string(), Some(init_calldata), Some(db_name));
     }
 
     #[allow(unused)]

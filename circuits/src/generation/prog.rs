@@ -57,13 +57,16 @@ pub fn generate_prog_trace<F: RichField>(
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_PROG_COLS];
     let mut exec_index = 0;
     for e in execs {
+        if e.is_ext_line.0 == 1 {
+            continue;
+        }
         for j in 0..4 {
             trace[COL_PROG_EXEC_CODE_ADDR_RANGE.start + j][exec_index] =
                 F::from_canonical_u64(e.addr_code[j].0);
         }
         trace[COL_PROG_EXEC_PC][exec_index] = F::from_canonical_u64(e.pc);
         trace[COL_PROG_EXEC_INST][exec_index] = F::from_canonical_u64(e.instruction.0);
-        trace[COL_PROG_FILTER_EXEC_OPERATION][exec_index] = F::ONE;
+        trace[COL_PROG_FILTER_EXEC][exec_index] = F::ONE;
         trace[COL_PROG_EXEC_COMP_PROG][exec_index] = compress(
             [
                 trace[COL_PROG_EXEC_CODE_ADDR_RANGE.start][exec_index],
@@ -88,7 +91,7 @@ pub fn generate_prog_trace<F: RichField>(
             }
             trace[COL_PROG_EXEC_PC][exec_index] = F::from_canonical_u64(e.pc + 1);
             trace[COL_PROG_EXEC_INST][exec_index] = F::from_canonical_u64(e.immediate_data.0);
-            trace[COL_PROG_FILTER_EXEC_IMM_VALUE][exec_index] = F::ONE;
+            trace[COL_PROG_FILTER_EXEC][exec_index] = F::ONE;
             trace[COL_PROG_EXEC_COMP_PROG][exec_index] = compress(
                 [
                     trace[COL_PROG_EXEC_CODE_ADDR_RANGE.start][exec_index],
@@ -113,7 +116,7 @@ pub fn generate_prog_trace<F: RichField>(
             }
             trace[COL_PROG_PC][prog_index] = F::from_canonical_u64(pc as u64);
             trace[COL_PROG_INST][prog_index] = F::from_canonical_u64(inst.0);
-            trace[COL_PROG_FILTER_PROG_CHUNK][exec_index] = F::ONE;
+            trace[COL_PROG_FILTER_PROG_CHUNK][prog_index] = F::ONE;
             trace[COL_PROG_COMP_PROG][prog_index] = compress(
                 [
                     trace[COL_PROG_CODE_ADDR_RANGE.start][prog_index],

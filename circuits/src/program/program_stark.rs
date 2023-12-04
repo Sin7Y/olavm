@@ -1,5 +1,7 @@
+use core::types::Field;
 use std::{marker::PhantomData, vec};
 
+use itertools::Itertools;
 use plonky2::{
     field::{
         extension::{Extendable, FieldExtension},
@@ -12,12 +14,30 @@ use plonky2::{
 use super::columns::*;
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    cross_table_lookup::Column,
     lookup::eval_lookups,
     permutation::PermutationPair,
     stark::Stark,
     vars::{StarkEvaluationTargets, StarkEvaluationVars},
 };
 use anyhow::Result;
+
+pub fn ctl_data_by_cpu<F: Field>() -> Vec<Column<F>> {
+    Column::singles(COL_PROG_EXEC_CODE_ADDR_RANGE.chain([COL_PROG_EXEC_PC, COL_PROG_EXEC_INST]))
+        .collect_vec()
+}
+
+pub fn ctl_filter_by_cpu<F: Field>() -> Column<F> {
+    Column::single(COL_PROG_FILTER_EXEC)
+}
+
+pub fn ctl_data_by_program_chunk<F: Field>() -> Vec<Column<F>> {
+    Column::singles(COL_PROG_CODE_ADDR_RANGE.chain([COL_PROG_PC, COL_PROG_INST])).collect_vec()
+}
+
+pub fn ctl_filter_by_program_chunk<F: Field>() -> Column<F> {
+    Column::single(COL_PROG_FILTER_PROG_CHUNK)
+}
 
 #[derive(Copy, Clone, Default)]
 pub struct ProgramStark<F, const D: usize> {
@@ -84,7 +104,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for ProgramStark<
     }
 
     fn constraint_degree(&self) -> usize {
-        2
+        3
     }
 
     fn permutation_pairs(&self) -> Vec<PermutationPair> {

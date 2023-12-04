@@ -345,7 +345,7 @@ fn storage_u32_test() {
         GoldilocksField::from_canonical_u64(2364819430),
     ];
     executor_run_test_program(
-        "../assembler/test_data/bin/storage_u32.json",
+        "/Users/Softcloud/develop/zk/sin7y/olavm/assembler/test_data/bin/storage_u32.json",
         "storage_u32_trace.txt",
         false,
         Some(calldata),

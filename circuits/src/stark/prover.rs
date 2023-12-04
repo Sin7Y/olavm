@@ -30,6 +30,8 @@ use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
 use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::sccall::sccall_stark::SCCallStark;
 use crate::builtins::storage::storage_access_stark::StorageAccessStark;
+use crate::program::prog_chunk_stark::ProgChunkStark;
+use crate::program::program_stark::ProgramStark;
 // use crate::builtins::tape::tape_stark::TapeStark;
 //use crate::columns::NUM_CPU_COLS;
 use super::config::StarkConfig;
@@ -63,12 +65,14 @@ where
     [(); MemoryStark::<F, D>::COLUMNS]:,
     [(); BitwiseStark::<F, D>::COLUMNS]:,
     [(); CmpStark::<F, D>::COLUMNS]:,
-    [(); RangeCheckStark::<F, D>::COLUMNS]:,
+    // [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
     [(); StorageAccessStark::<F, D>::COLUMNS]:,
     // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
+    [(); ProgramStark::<F, D>::COLUMNS]:,
+    [(); ProgChunkStark::<F, D>::COLUMNS]:,
 {
     let (traces, public_values) = generate_traces(program, ola_stark, inputs);
     prove_with_traces(ola_stark, config, traces, public_values, timing)
@@ -90,12 +94,14 @@ where
     [(); MemoryStark::<F, D>::COLUMNS]:,
     [(); BitwiseStark::<F, D>::COLUMNS]:,
     [(); CmpStark::<F, D>::COLUMNS]:,
-    [(); RangeCheckStark::<F, D>::COLUMNS]:,
+    // [(); RangeCheckStark::<F, D>::COLUMNS]:,
     [(); PoseidonStark::<F, D>::COLUMNS]:,
     [(); PoseidonChunkStark::<F, D>::COLUMNS]:,
     [(); StorageAccessStark::<F, D>::COLUMNS]:,
     // [(); TapeStark::<F, D>::COLUMNS]:,
     [(); SCCallStark::<F, D>::COLUMNS]:,
+    [(); ProgramStark::<F, D>::COLUMNS]:,
+    [(); ProgChunkStark::<F, D>::COLUMNS]:,
 {
     let rate_bits = config.fri_config.rate_bits;
     let cap_height = config.fri_config.cap_height;
@@ -262,6 +268,26 @@ where
         timing,
         &mut twiddle_map,
     )?;
+    let program_proof = prove_single_table(
+        &ola_stark.program_stark,
+        config,
+        &trace_poly_values[Table::Program as usize],
+        &trace_commitments[Table::Program as usize],
+        &ctl_data_per_table[Table::Program as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
+    let prog_chunk_proof = prove_single_table(
+        &ola_stark.prog_chunk_stark,
+        config,
+        &trace_poly_values[Table::ProgChunk as usize],
+        &trace_commitments[Table::ProgChunk as usize],
+        &ctl_data_per_table[Table::ProgChunk as usize],
+        &mut challenger,
+        timing,
+        &mut twiddle_map,
+    )?;
 
     #[cfg(feature = "benchmark")]
     info!("prove_other_table total time: {:?}", start.elapsed());
@@ -277,6 +303,8 @@ where
         storage_access_proof,
         tape_proof,
         sccall_proof,
+        program_proof,
+        prog_chunk_proof,
     ];
 
     let compress_challenges = [
@@ -289,6 +317,8 @@ where
         F::ZERO,
         F::ZERO,
         F::ZERO,
+        F::ZERO,
+        ola_stark.program_stark.get_compress_challenge().unwrap(),
         F::ZERO,
     ];
 
@@ -351,7 +381,10 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        info!("compute_permutation_z_polys total time: {:?}", start.elapsed());
+        info!(
+            "compute_permutation_z_polys total time: {:?}",
+            start.elapsed()
+        );
     }
 
     let num_permutation_zs = permutation_zs.as_ref().map(|v| v.len()).unwrap_or(0);
@@ -383,7 +416,10 @@ where
 
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        info!("permutation_ctl_zs_commitment total time: {:?}", start.elapsed());
+        info!(
+            "permutation_ctl_zs_commitment total time: {:?}",
+            start.elapsed()
+        );
     }
 
     let permutation_ctl_zs_cap = permutation_ctl_zs_commitment.merkle_tree.cap.clone();
@@ -457,7 +493,10 @@ where
     );
     #[cfg(feature = "benchmark")]
     if S::COLUMNS == 76 {
-        info!("compute quotient commitment total time: {:?}", start.elapsed());
+        info!(
+            "compute quotient commitment total time: {:?}",
+            start.elapsed()
+        );
     }
 
     let quotient_polys_cap = quotient_commitment.merkle_tree.cap.clone();

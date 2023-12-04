@@ -1,15 +1,12 @@
-use core::util::poseidon_utils::{
-    constant_layer_field, mds_layer_field, mds_partial_layer_fast_field, mds_partial_layer_init,
-    partial_first_constant_layer, sbox_layer_field, sbox_monomial, POSEIDON_STATE_WIDTH,
-};
-use core::vm::opcodes::OlaOpcode;
-use std::marker::PhantomData;
-
 use crate::builtins::poseidon::columns::*;
 use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::stark::cross_table_lookup::Column;
 use crate::stark::stark::Stark;
 use crate::stark::vars::{StarkEvaluationTargets, StarkEvaluationVars};
+use core::util::poseidon_utils::{
+    constant_layer_field, mds_layer_field, mds_partial_layer_fast_field, mds_partial_layer_init,
+    partial_first_constant_layer, sbox_layer_field, sbox_monomial, POSEIDON_STATE_WIDTH,
+};
 use itertools::Itertools;
 use plonky2::field::extension::{Extendable, FieldExtension};
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -18,6 +15,7 @@ use plonky2::field::types::Field;
 use plonky2::hash::poseidon::Poseidon;
 use plonky2::hash::{hash_types::RichField, poseidon};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
+use std::marker::PhantomData;
 
 #[derive(Copy, Clone, Default)]
 pub struct PoseidonStark<F, const D: usize> {

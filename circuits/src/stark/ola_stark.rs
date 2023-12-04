@@ -17,6 +17,8 @@ use crate::memory::memory_stark::{
     self, ctl_data as mem_ctl_data, ctl_data_mem_rc_diff_cond, ctl_data_mem_sort_rc,
     ctl_filter as mem_ctl_filter, ctl_filter_mem_rc_diff_cond, ctl_filter_mem_sort_rc, MemoryStark,
 };
+use crate::program::prog_chunk_stark::{self, ProgChunkStark};
+use crate::program::program_stark::{self, ProgramStark};
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
@@ -34,6 +36,8 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub storage_access_stark: StorageAccessStark<F, D>,
     pub tape_stark: TapeStark<F, D>,
     pub sccall_stark: SCCallStark<F, D>,
+    pub program_stark: ProgramStark<F, D>,
+    pub prog_chunk_stark: ProgChunkStark<F, D>,
 
     pub cross_table_lookups: Vec<CrossTableLookup<F>>,
 }
@@ -51,6 +55,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
             storage_access_stark: StorageAccessStark::default(),
             tape_stark: TapeStark::default(),
             sccall_stark: SCCallStark::default(),
+            program_stark: ProgramStark::default(),
+            prog_chunk_stark: ProgChunkStark::default(),
             cross_table_lookups: all_cross_table_lookups(),
         }
     }
@@ -69,6 +75,8 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.storage_access_stark.num_permutation_batches(config),
             self.tape_stark.num_permutation_batches(config),
             self.sccall_stark.num_permutation_batches(config),
+            self.program_stark.num_permutation_batches(config),
+            self.prog_chunk_stark.num_permutation_batches(config),
         ]
     }
 
@@ -84,6 +92,8 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
             self.storage_access_stark.permutation_batch_size(),
             self.tape_stark.permutation_batch_size(),
             self.sccall_stark.permutation_batch_size(),
+            self.program_stark.permutation_batch_size(),
+            self.prog_chunk_stark.permutation_batch_size(),
         ]
     }
 }
@@ -101,11 +111,11 @@ pub enum Table {
     StorageAccess = 7,
     Tape = 8,
     SCCall = 9,
-    // program table
-    // Program = 8,
+    Program = 10,
+    ProgChunk = 11,
 }
 
-pub(crate) const NUM_TABLES: usize = 10;
+pub(crate) const NUM_TABLES: usize = 12;
 
 pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
     vec![
@@ -118,13 +128,16 @@ pub(crate) fn all_cross_table_lookups<F: Field>() -> Vec<CrossTableLookup<F>> {
         ctl_rangecheck_cpu(),
         ctl_cpu_poseidon_chunk(),
         ctl_poseidon_chunk_mem(),
-        ctl_poseidon_chunk_poseidon(),
+        ctl_chunk_poseidon(),
         ctl_cpu_poseidon_tree_key(),
         ctl_cpu_storage_access(),
         ctl_storage_access_poseidon(),
         ctl_cpu_tape(),
         ctl_cpu_sccall(),
         ctl_cpu_sccall_end(),
+        ctl_cpu_program(),
+        ctl_prog_chunk_prog(),
+        ctl_prog_chunk_storage(),
     ]
 }
 
@@ -235,13 +248,11 @@ fn ctl_memory_rc_region<F: Field>() -> CrossTableLookup<F> {
 // Cross_Lookup_Table(looking_table, looked_table)
 fn ctl_bitwise_cpu<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
-        vec![
-            TableWithColumns::new(
-                Table::Cpu,
-                cpu_stark::ctl_data_with_bitwise(),
-                Some(cpu_stark::ctl_filter_with_bitwise()),
-            ),
-        ],
+        vec![TableWithColumns::new(
+            Table::Cpu,
+            cpu_stark::ctl_data_with_bitwise(),
+            Some(cpu_stark::ctl_filter_with_bitwise()),
+        )],
         TableWithColumns::new(
             Table::Bitwise,
             bitwise_stark::ctl_data_with_cpu(),
@@ -336,13 +347,20 @@ fn ctl_poseidon_chunk_mem<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(all_lookers, mem_looked)
 }
 
-fn ctl_poseidon_chunk_poseidon<F: Field>() -> CrossTableLookup<F> {
+fn ctl_chunk_poseidon<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
-        vec![TableWithColumns::new(
-            Table::PoseidonChunk,
-            poseidon_chunk_stark::ctl_data_with_poseidon(),
-            Some(poseidon_chunk_stark::ctl_filter_with_poseidon()),
-        )],
+        vec![
+            TableWithColumns::new(
+                Table::PoseidonChunk,
+                poseidon_chunk_stark::ctl_data_with_poseidon(),
+                Some(poseidon_chunk_stark::ctl_filter_with_poseidon()),
+            ),
+            TableWithColumns::new(
+                Table::ProgChunk,
+                prog_chunk_stark::ctl_data_to_poseidon(),
+                Some(prog_chunk_stark::ctl_filter_to_poseidon()),
+            ),
+        ],
         TableWithColumns::new(
             Table::Poseidon,
             poseidon_stark::ctl_data_with_poseidon_chunk(),
@@ -483,6 +501,62 @@ fn ctl_cpu_sccall_end<F: Field>() -> CrossTableLookup<F> {
     )
 }
 
+fn ctl_cpu_program<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![
+            TableWithColumns::new(
+                Table::Cpu,
+                cpu_stark::ctl_data_inst_to_program(),
+                Some(cpu_stark::ctl_filter_with_program_inst()),
+            ),
+            TableWithColumns::new(
+                Table::Cpu,
+                cpu_stark::ctl_data_imm_to_program(),
+                Some(cpu_stark::ctl_filter_with_program_imm()),
+            ),
+        ],
+        TableWithColumns::new(
+            Table::Program,
+            program_stark::ctl_data_by_cpu(),
+            Some(program_stark::ctl_filter_by_cpu()),
+        ),
+    )
+}
+
+fn ctl_prog_chunk_prog<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        (0..8)
+            .map(|i: usize| {
+                TableWithColumns::new(
+                    Table::ProgChunk,
+                    prog_chunk_stark::ctl_data_to_program(i),
+                    Some(prog_chunk_stark::ctl_filter_to_program(i)),
+                )
+            })
+            .collect(),
+        TableWithColumns::new(
+            Table::Program,
+            program_stark::ctl_data_by_program_chunk(),
+            Some(program_stark::ctl_filter_by_program_chunk()),
+        ),
+    )
+}
+
+fn ctl_prog_chunk_storage<F: Field>() -> CrossTableLookup<F> {
+    CrossTableLookup::new(
+        vec![TableWithColumns::new(
+            Table::ProgChunk,
+            prog_chunk_stark::ctl_data_to_storage_access(),
+            Some(prog_chunk_stark::ctl_filter_to_storage_access()),
+        )],
+        TableWithColumns::new(
+            Table::StorageAccess,
+            storage_access_stark::ctl_data_for_prog_chunk(),
+            Some(storage_access_stark::ctl_filter_for_prog_chunk()),
+        ),
+    )
+}
+
 // Cross_Lookup_Table(looking_table, looked_table)
 /*fn ctl_bitwise_bitwise_fixed_table<F: Field>() -> CrossTableLookup<F> {
     CrossTableLookup::new(
@@ -577,13 +651,18 @@ mod tests {
     use crate::stark::verifier::verify_proof;
     use anyhow::Result;
     use assembler::encoder::encode_asm_from_json_file;
+    use core::crypto::hash::Hasher;
+    use core::crypto::ZkHasher;
+    use core::merkle_tree::log::{StorageLog, WitnessStorageLog};
     use core::merkle_tree::tree::AccountTree;
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
     use core::types::account::Address;
+    use core::types::merkle_tree::{encode_addr, tree_key_default};
     use core::types::{Field, GoldilocksField};
     use core::vm::transaction::init_tx_context;
     use executor::load_tx::init_tape;
+    use executor::trace::{gen_storage_hash_table, gen_storage_table};
     use executor::Process;
     use itertools::Itertools;
     use log::{debug, LevelFilter};
@@ -707,11 +786,7 @@ mod tests {
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        test_by_asm_json(
-            "vote.json".to_string(),
-            Some(init_calldata),
-            Some(db_name),
-        );
+        test_by_asm_json("vote.json".to_string(), Some(init_calldata), Some(db_name));
     }
 
     #[test]
@@ -744,6 +819,7 @@ mod tests {
             Some(name) => {
                 let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
                 db_path.push("../executor/db_test/");
+                db_path.push("../executor/db_test/");
                 db_path.push(name);
                 AccountTree::new_db_test(db_path.display().to_string())
             }
@@ -751,7 +827,13 @@ mod tests {
         };
 
         let program = encode_asm_from_json_file(program_path).unwrap();
+        let hash = ZkHasher::default();
         let instructions = program.bytecode.split("\n");
+        let code: Vec<_> = instructions
+            .clone()
+            .map(|e| GoldilocksField::from_canonical_u64(u64::from_str_radix(&e[2..], 16).unwrap()))
+            .collect();
+        let code_hash = hash.hash_bytes(&code);
         let mut prophets = HashMap::new();
         for item in program.prophets {
             prophets.insert(item.host as u64, item);
@@ -765,18 +847,61 @@ mod tests {
 
         let mut process = Process::new();
         process.addr_storage = Address::default();
+
+        let tp_start = 0;
+
+        let callee: Address = [
+            GoldilocksField::from_canonical_u64(9),
+            GoldilocksField::from_canonical_u64(10),
+            GoldilocksField::from_canonical_u64(11),
+            GoldilocksField::from_canonical_u64(12),
+        ];
+        let caller_addr = [
+            GoldilocksField::from_canonical_u64(17),
+            GoldilocksField::from_canonical_u64(18),
+            GoldilocksField::from_canonical_u64(19),
+            GoldilocksField::from_canonical_u64(20),
+        ];
+        let callee_exe_addr = [
+            GoldilocksField::from_canonical_u64(13),
+            GoldilocksField::from_canonical_u64(14),
+            GoldilocksField::from_canonical_u64(15),
+            GoldilocksField::from_canonical_u64(16),
+        ];
+
         if let Some(calldata) = call_data {
-            process.tp = GoldilocksField::ZERO;
+            process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
 
             init_tape(
                 &mut process,
                 calldata,
-                Address::default(),
-                Address::default(),
-                Address::default(),
+                caller_addr,
+                callee,
+                callee_exe_addr,
                 &init_tx_context(),
             );
         }
+
+        process.addr_code = callee_exe_addr;
+        process.addr_storage = callee;
+        program
+            .trace
+            .addr_program_hash
+            .insert(encode_addr(&callee_exe_addr), code);
+
+        db.process_block(vec![WitnessStorageLog {
+            storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+            previous_value: tree_key_default(),
+        }]);
+        let _ = db.save();
+
+        let start = db.root_hash();
+
+        process.program_log.push(WitnessStorageLog {
+            storage_log: StorageLog::new_read_log(callee_exe_addr, code_hash),
+            previous_value: tree_key_default(),
+        });
+
         let res = process.execute(&mut program, &mut Some(prophets), &mut db);
         match res {
             Ok(_) => {}
@@ -785,6 +910,9 @@ mod tests {
                 return;
             }
         }
+        let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db);
+        gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
+        program.trace.start_end_roots = (start, db.root_hash());
 
         let inputs = GenerationInputs::default();
 
