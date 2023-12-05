@@ -1,6 +1,6 @@
+use maybe_rayon::current_num_threads;
 use maybe_rayon::{
-    current_num_threads, IndexedParallelIterator, MaybeParChunks, MaybeParChunksMut,
-    MaybeParIterMut, ParallelIterator,
+    IndexedParallelIterator, MaybeParChunks, MaybeParChunksMut, MaybeParIterMut, ParallelIterator,
 };
 use plonky2_util::log2_strict;
 
