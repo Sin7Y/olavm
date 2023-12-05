@@ -15,7 +15,16 @@ pub fn poseidon_hash_bytes(input: &[u8]) -> [u8; 32] {
 pub fn hash_bytes<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     input: &[u8],
 ) -> [u8; 32] {
-    let field_elements = bytes_to_u64s(input)
+    let u64_arr = if input.len() % GOLDILOCKS_FIELD_U8_LEN == 0 {
+        bytes_to_u64s(input)
+    } else {
+        let padding_count = GOLDILOCKS_FIELD_U8_LEN - input.len() % GOLDILOCKS_FIELD_U8_LEN;
+        let mut bytes = vec![0 as u8; padding_count];
+        bytes.extend_from_slice(input);
+        bytes_to_u64s(bytes.as_slice())
+    };
+
+    let field_elements = u64_arr
         .par_iter()
         .map(|&i| F::from_canonical_u64(i))
         .collect::<Vec<_>>();
