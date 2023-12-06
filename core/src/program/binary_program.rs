@@ -17,13 +17,14 @@ use crate::vm::{
 pub struct BinaryProgram {
     pub bytecode: String,
     pub prophets: Vec<OlaProphet>,
-    pub debug_info: BTreeMap<usize, String>,
+    pub debug_info: Option<BTreeMap<usize, String>>,
 }
 
 impl BinaryProgram {
     pub fn from_instructions(
         instructions: Vec<BinaryInstruction>,
-        debug_info: BTreeMap<usize, String>,
+        debug_info: Option<BTreeMap<usize, String>>,
+        debug_flag: bool,
     ) -> Result<BinaryProgram, String> {
         let mut prophets: Vec<OlaProphet> = vec![];
         let mut binary_instructions: Vec<String> = vec![];
@@ -41,11 +42,19 @@ impl BinaryProgram {
         }
 
         let bytecode = binary_instructions.join("\n");
-        Ok(BinaryProgram {
-            bytecode,
-            prophets,
-            debug_info,
-        })
+        if debug_flag {
+            Ok(BinaryProgram {
+                bytecode,
+                prophets,
+                debug_info,
+            })
+        } else {
+            Ok(BinaryProgram {
+                bytecode,
+                prophets,
+                debug_info: None,
+            })
+        }
     }
 
     pub fn bytecode_u64_array(&self) -> Result<Vec<u64>, ParseIntError> {

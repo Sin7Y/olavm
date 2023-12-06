@@ -183,7 +183,7 @@ fn main() {
             let program: Program = Program {
                 instructions: trace.raw_binary_instructions.clone(),
                 trace,
-                debug_info: BTreeMap::new(),
+                debug_info: None,
                 pre_exe_flag: false,
             };
 

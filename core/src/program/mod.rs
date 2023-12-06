@@ -18,7 +18,7 @@ pub const FIELD_ORDER: u64 = GoldilocksField::ORDER;
 pub struct Program {
     pub instructions: Vec<String>,
     pub trace: Trace,
-    pub debug_info: BTreeMap<usize, String>,
+    pub debug_info: Option<BTreeMap<usize, String>>,
     pub pre_exe_flag: bool,
 }
 
