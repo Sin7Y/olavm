@@ -519,13 +519,7 @@ impl Process {
                 immediate_data,
             ),
         );
-        if !program.debug_info.is_empty() {
-            debug!("inst pc:{}", pc);
-            program
-                .trace
-                .raw_instructions
-                .insert(pc, program.debug_info.get(&(pc as usize)).unwrap().clone());
-        }
+
         Ok(pc + step)
     }
 
@@ -1883,12 +1877,16 @@ impl Process {
             let instruction;
             if let Some(inst) = program.trace.instructions.get(&self.pc) {
                 instruction = inst.clone();
-                if !program.debug_info.is_empty() {
+                if program.debug_info.is_some() {
                     debug!(
                         "pc:{}, execute instruction: {:?}, asm:{:?}",
                         self.pc,
                         instruction,
-                        program.debug_info.get(&(self.pc as usize))
+                        program
+                            .debug_info
+                            .as_ref()
+                            .unwrap()
+                            .get(&(self.pc as usize))
                     );
                 }
             } else {

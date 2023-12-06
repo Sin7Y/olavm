@@ -153,7 +153,7 @@ impl OlaVM {
             if let Ok(debug_str) = self.get_debug_info(&code_hash) {
                 let debug_info =
                     serde_json::from_str::<BTreeMap<usize, String>>(&debug_str).unwrap();
-                program.debug_info = debug_info;
+                program.debug_info = Some(debug_info);
             }
             process.program_log.push(WitnessStorageLog {
                 storage_log: StorageLog::new_read_log(exe_code_addr, code_hash),
@@ -201,8 +201,8 @@ impl OlaVM {
         let prophets = serde_json::to_string(&program.prophets).unwrap();
 
         let code_hash = self.save_contract(&code).unwrap();
-        if !program.debug_info.is_empty() {
-            let debug_info = serde_json::to_string(&program.debug_info).unwrap();
+        if let Some(debug_info) = program.debug_info {
+            let debug_info = serde_json::to_string(&debug_info).unwrap();
             self.save_debug_info(&code_hash, &debug_info)?;
         }
 
