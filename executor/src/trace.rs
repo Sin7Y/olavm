@@ -9,6 +9,8 @@ use core::vm::error::ProcessorError;
 use core::vm::memory::MEM_SPAN_SIZE;
 use log::debug;
 use plonky2::field::types::{Field, Field64, PrimeField64};
+use core::merkle_tree::log::WitnessStorageLog;
+use core::vm::memory::HP_START_ADDR;
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -28,6 +30,7 @@ pub fn gen_memory_table(
     let mut first_row_flag = true;
     let mut first_heap_row_flag = true;
 
+    process.memory.trace.get_mut(&HP_START_ADDR).unwrap().remove(0);
     for (field_addr, cells) in process.memory.trace.iter() {
         let mut new_addr_flag = true;
 
@@ -193,6 +196,79 @@ pub fn gen_memory_table(
         origin_addr = canonical_addr;
     }
     Ok(())
+}
+
+pub fn storage_hash_table_gen(
+    storage_logs: Vec<WitnessStorageLog>,
+    storage_log_len: usize,
+    program: &mut Program,
+    account_tree: &mut AccountTree,
+) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
+    let mut pre_root = account_tree.root_hash();
+    let (hash_traces, _) = account_tree.process_block(storage_logs.iter());
+    let _ = account_tree.save();
+
+    let mut root_hashes = Vec::new();
+
+    for (chunk, log) in hash_traces.chunks(ROOT_TREE_DEPTH).enumerate().zip(storage_logs) {
+        let is_write = GoldilocksField::from_canonical_u64(log.storage_log.kind as u64);
+        let mut root_hash = [GoldilocksField::ZERO; TREE_VALUE_LEN];
+        root_hash.clone_from_slice(&chunk.1.last().unwrap().0.output[0..4]);
+        root_hashes.push(root_hash);
+        let mut acc = GoldilocksField::ZERO;
+        let key = tree_key_to_u256(&log.storage_log.key);
+        let mut hash_type = GoldilocksField::ZERO;
+        let rows: Vec<_> = chunk
+            .1
+            .iter()
+            .rev()
+            .enumerate()
+            .map(|item| {
+                let layer_bit = ((key >> (LEAF_LAYER - item.0)) & TreeKeyU256::one()).as_u64();
+                let layer = (item.0 + 1) as u64;
+
+                if item.0 == LEAF_LAYER {
+                    hash_type = GoldilocksField::ONE;
+                }
+
+                acc = acc * GoldilocksField::from_canonical_u64(2)
+                    + GoldilocksField::from_canonical_u64(layer_bit);
+
+                let mut hash = [GoldilocksField::ZERO; 4];
+                hash.clone_from_slice(&item.1 .0.output[0..4]);
+                let row = StorageHashRow {
+                    storage_access_idx: (chunk.0 + 1) as u64,
+                    pre_root,
+                    root: root_hash,
+                    is_write,
+                    hash_type,
+                    pre_hash: item.1 .3,
+                    hash,
+                    layer,
+                    layer_bit,
+                    addr_acc: acc,
+                    addr: log.storage_log.key,
+                    pre_path: item.1 .4,
+                    path: item.1 .1,
+                    sibling: item.1 .2,
+                };
+                if layer % 64 == 0 {
+                    acc = GoldilocksField::ZERO;
+                }
+                program.trace.builtin_poseidon.push(item.1 .0);
+                program.trace.builtin_poseidon.push(item.1 .5);
+                row
+            })
+            .collect();
+        pre_root = root_hash;
+        program.trace.builtin_storage_hash.extend(rows);
+    }
+    program.trace.builtin_program_hash = program
+        .trace
+        .builtin_storage_hash
+        .drain(storage_log_len * ROOT_TREE_DEPTH..)
+        .collect();
+    root_hashes
 }
 
 pub fn gen_storage_hash_table(

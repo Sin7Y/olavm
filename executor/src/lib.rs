@@ -1843,6 +1843,7 @@ impl Process {
         if prophets.is_some() {
             prophets_insert = prophets.clone().unwrap();
         }
+
         // todo : why need clear?
         //self.storage_log.clear();
         let mut end_step = None;
@@ -1863,6 +1864,21 @@ impl Process {
             row.filter_looked_normal = true;
         }
         program.trace.builtin_poseidon.extend(prog_hash_rows);
+
+        // init heap ptr
+        self.memory.write(
+            HP_START_ADDR,
+            0, //write， clk is 0
+            GoldilocksField::from_canonical_u64(0 as u64),
+            GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+            GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
+            GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
+            GoldilocksField::from_canonical_u64(0_u64),
+            GoldilocksField::from_canonical_u64(1_u64),
+            GoldilocksField(HP_START_ADDR + 1),
+            self.tx_idx,
+            self.env_idx,
+        );
 
         loop {
             self.register_selector = RegisterSelector::default();
