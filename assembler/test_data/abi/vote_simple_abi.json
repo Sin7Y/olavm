@@ -1,0 +1,50 @@
+[
+  {
+    "name": "contract_init",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "proposalNames_",
+        "type": "u32[]",
+        "internalType": "u32[]"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "vote_proposal",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "proposal_",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "winningProposal",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "winningProposal_",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ]
+  },
+  {
+    "name": "getWinnerName",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ]
+  }
+]

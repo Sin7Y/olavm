@@ -231,13 +231,6 @@ mod tests {
         generate_from_file(
             "system/ContractDeployer_asm.json".to_string(),
             "ContractDeployer.json".to_string(),
-        )
-    }
-    #[test]
-    fn generate_sys() {
-        generate_all_dir(
-            "test_data/asm/sys".to_string(),
-            "test_data/bin/sys".to_string(),
         );
     }
 
@@ -250,6 +243,12 @@ mod tests {
     fn generate_ecdsa() {
         generate_from_file("ecdsa_asm.json".to_string(), "ecdsa.json".to_string());
     }
+
+    #[test]
+    fn generate_vote_simple() {
+        generate_from_file("vote_simple_asm.json".to_string(), "vote_simple.json".to_string());
+    }
+
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin/sccall");
