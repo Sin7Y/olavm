@@ -1,4 +1,5 @@
 use crate::{GoldilocksField, MemRangeType, Process};
+use core::merkle_tree::log::WitnessStorageLog;
 use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
 use core::trace::dump::{DumpMemoryRow, DumpStep, DumpTapeRow, DumpTrace};
@@ -6,11 +7,10 @@ use core::trace::trace::{MemoryTraceCell, StorageHashRow, TapeRow};
 use core::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use core::types::merkle_tree::{tree_key_to_u256, TreeKeyU256, TREE_VALUE_LEN};
 use core::vm::error::ProcessorError;
+use core::vm::memory::HP_START_ADDR;
 use core::vm::memory::MEM_SPAN_SIZE;
 use log::debug;
 use plonky2::field::types::{Field, Field64, PrimeField64};
-use core::merkle_tree::log::WitnessStorageLog;
-use core::vm::memory::HP_START_ADDR;
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -30,7 +30,12 @@ pub fn gen_memory_table(
     let mut first_row_flag = true;
     let mut first_heap_row_flag = true;
 
-    process.memory.trace.get_mut(&HP_START_ADDR).unwrap().remove(0);
+    process
+        .memory
+        .trace
+        .get_mut(&HP_START_ADDR)
+        .unwrap()
+        .remove(0);
     for (field_addr, cells) in process.memory.trace.iter() {
         let mut new_addr_flag = true;
 
@@ -210,7 +215,11 @@ pub fn storage_hash_table_gen(
 
     let mut root_hashes = Vec::new();
 
-    for (chunk, log) in hash_traces.chunks(ROOT_TREE_DEPTH).enumerate().zip(storage_logs) {
+    for (chunk, log) in hash_traces
+        .chunks(ROOT_TREE_DEPTH)
+        .enumerate()
+        .zip(storage_logs)
+    {
         let is_write = GoldilocksField::from_canonical_u64(log.storage_log.kind as u64);
         let mut root_hash = [GoldilocksField::ZERO; TREE_VALUE_LEN];
         root_hash.clone_from_slice(&chunk.1.last().unwrap().0.output[0..4]);
