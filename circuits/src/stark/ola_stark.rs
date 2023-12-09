@@ -762,6 +762,15 @@ mod tests {
     }
 
     #[test]
+    fn test_ola_global() {
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(4171824493),
+        ];
+        test_by_asm_json("global.json".to_string(), Some(call_data), None);
+    }
+
+    #[test]
     fn test_ola_malloc() {
         test_by_asm_json("malloc.json".to_string(), None, None);
     }
