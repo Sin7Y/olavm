@@ -1018,6 +1018,16 @@ mod tests {
     }
 
     #[test]
+    fn test_global() {
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(4171824493),
+        ];
+        let program_path = "global.json";
+        test_cpu_with_asm_file_name(program_path.to_string(), Some(call_data), None);
+    }
+
+    #[test]
     fn test_malloc() {
         let program_path = "malloc.json";
         test_cpu_with_asm_file_name(program_path.to_string(), None, None);

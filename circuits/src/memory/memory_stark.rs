@@ -78,6 +78,9 @@ pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
     Column::single(COL_MEM_S_POSEIDON)
 }
 
+const ADDR_HEAP_PTR: u64 = 18446744060824649731u64;
+const INIT_VALUE_HEAP_PTR: u64 = ADDR_HEAP_PTR + 1;
+
 #[derive(Copy, Clone, Default)]
 pub struct MemoryStark<F, const D: usize> {
     pub f: PhantomData<F>,
@@ -110,6 +113,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
 
         let p = P::ZEROS;
         let span = P::Scalar::from_canonical_u64(2_u64.pow(32).sub(1));
+        let addr_heap_ptr = P::Scalar::from_canonical_u64(ADDR_HEAP_PTR);
+        let init_value_heap_ptr = P::Scalar::from_canonical_u64(INIT_VALUE_HEAP_PTR);
 
         let is_rw = lv[COL_MEM_IS_RW];
         let region_prophet = lv[COL_MEM_REGION_PROPHET];
@@ -129,7 +134,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let nv_rw_addr_unchanged = nv[COL_MEM_RW_ADDR_UNCHANGED];
         let diff_addr_cond = lv[COL_MEM_DIFF_ADDR_COND];
         let value = lv[COL_MEM_VALUE];
-        let nv_value = lv[COL_MEM_VALUE];
+        let nv_value = nv[COL_MEM_VALUE];
         let diff_clk = lv[COL_MEM_DIFF_CLK];
         let rc_value = lv[COL_MEM_RC_VALUE];
         let filter_looking_rc = lv[COL_MEM_FILTER_LOOKING_RC];
@@ -267,16 +272,40 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         // * (nv[COL_MEM_ENV_IDX] - lv[COL_MEM_ENV_IDX]
 
         // read/write constraint:
-        // 1. first operation for each addr must be write;
-        // 2. next value does not change if it is read.
-        yield_constr.constraint_first_row(P::ONES - is_write);
+        // 1. first operation for each addr must be write(except heap ptr);
+        // 2. next value does not change if it is read(except heap ptr).
+        // 3. if heap ptr first op is read, it must be heap_ptr + 1.
+        yield_constr.constraint_first_row(is_rw * (P::ONES - is_write) * (addr - addr_heap_ptr));
         yield_constr.constraint(
             (nv[COL_MEM_TX_IDX] - lv[COL_MEM_TX_IDX])
                 * (nv[COL_MEM_ENV_IDX] - lv[COL_MEM_ENV_IDX])
-                * (P::ONES - nv_is_write),
+                * nv[COL_MEM_IS_RW]
+                * (P::ONES - nv_is_write)
+                * (nv_addr - addr_heap_ptr),
         );
-        yield_constr.constraint((nv_addr - addr) * (P::ONES - nv_is_write));
-        yield_constr.constraint((P::ONES - nv_is_write) * (nv_value - value));
+        yield_constr
+            .constraint((nv_addr - addr) * (P::ONES - nv_is_write) * (nv_addr - addr_heap_ptr));
+        yield_constr
+            .constraint((P::ONES - nv_is_write) * (nv_value - value) * (nv_addr - addr_heap_ptr));
+
+        let is_next_addr_heap_ptr = if (nv_addr - P::Scalar::from_canonical_u64(ADDR_HEAP_PTR))
+            .as_slice()
+            .iter()
+            .all(|item| item.is_zero())
+        {
+            P::ONES
+        } else {
+            P::ZEROS
+        };
+        yield_constr.constraint(
+            is_next_addr_heap_ptr * (nv_addr - P::Scalar::from_canonical_u64(ADDR_HEAP_PTR)),
+        );
+        yield_constr.constraint(
+            (addr - P::Scalar::from_canonical_u64(ADDR_HEAP_PTR))
+                * is_next_addr_heap_ptr
+                * (P::ONES - nv_is_write)
+                * (nv_value - P::Scalar::from_canonical_u64(INIT_VALUE_HEAP_PTR)),
+        );
 
         // rc_value constraint:
         yield_constr.constraint_transition(
@@ -370,6 +399,16 @@ mod tests {
             GoldilocksField::from_canonical_u64(1239976900),
         ];
         let program_path = "poseidon_hash.json";
+        test_memory_with_asm_file_name(program_path.to_string(), Some(call_data));
+    }
+
+    #[test]
+    fn test_memory_global() {
+        let call_data = vec![
+            GoldilocksField::ZERO,
+            GoldilocksField::from_canonical_u64(4171824493),
+        ];
+        let program_path = "global.json";
         test_memory_with_asm_file_name(program_path.to_string(), Some(call_data));
     }
 
