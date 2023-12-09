@@ -21,7 +21,7 @@ use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use ola_lang_abi::Abi;
+use ola_lang_abi::{Abi, Value};
 
 fn executor_run_test_program(
     bin_file_path: &str,
@@ -105,8 +105,8 @@ fn executor_run_test_program(
         .trace
         .addr_program_hash
         .insert(encode_addr(&callee_exe_addr), code);
-    let mut account_tree = AccountTree::new_test();
-    //let mut account_tree =AccountTree::new_db_test("./".to_string()),
+    //let mut account_tree = AccountTree::new_test();
+    let mut account_tree =AccountTree::new_db_test("../assembler/test_data/db".to_string());
 
     account_tree.process_block(vec![WitnessStorageLog {
         storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
@@ -465,30 +465,59 @@ fn array_test() {
 
 
 #[test]
-fn vote_refactor_memory_test() {
+fn vote_simple_test() {
 
     let abi: Abi = {
-        let file = File::open("../assembler/test_data/abi/vote_abi.json").expect("failed to open ABI file");
+        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
 
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
-    let func = abi.functions[0].clone();
-    let mut input = abi.encode_input_values(&[]).unwrap();
+    let func_0 = abi.functions[0].clone();
+    let mut input_0 = abi.encode_input_values(&[Value::U32(1), Value::U32(2), Value::U32(3)]).unwrap();
     // encode input and function selector
-    input.extend(&[func.method_id()]);
+    input_0.extend(&[func_0.method_id()]);
 
-    let calldata = input
+    let calldata_0 = input_0
         .iter()
         .map(|e| GoldilocksField::from_canonical_u64(*e))
         .collect();
     executor_run_test_program(
-        "../assembler/test_data/bin/vote.json",
-        "vote_trace.txt",
+        "../assembler/test_data/bin/vote_simple.json",
+        "vote_simple_trace.txt",
         false,
-        Some(calldata),
+        Some(calldata_0),
     );
+
 }
 
+#[test]
+fn vote_simple_test_1() {
+
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    let func_1 = abi.functions[1].clone();
+
+    let mut input_1 = abi.encode_input_values(&[Value::U32(2)]).unwrap();
+    // encode input and function selector
+    input_1.extend(&[func_1.method_id()]);
+
+    println!("input_1:{:?}", input_1);
+
+    let calldata_1 = input_1
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/vote_simple.json",
+        "vote_simple_trace.txt",
+        false,
+        Some(calldata_1),
+    );
+}
 
 
 #[test]
