@@ -23,7 +23,7 @@ pub fn generate_sccall_trace<F: RichField>(cells: &[SCCallRow]) -> [Vec<F>; NUM_
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_COL_SCCALL];
     for (i, c) in cells.iter().enumerate() {
         // trace[COL_TAPE_TX_IDX][i] = F::from_canonical_u64(c.tx_idx);
-        trace[COL_SCCALL_TX_IDX][i] = F::from_canonical_u64(c.tx_idx.to_canonical_u64());
+        trace[COL_SCCALL_TX_IDX][i] = F::ZERO;
         trace[COL_SCCALL_CALLER_ENV_IDX][i] =
             F::from_canonical_u64(c.caller_env_idx.to_canonical_u64());
         for j in 0..CTX_REGISTER_NUM {
