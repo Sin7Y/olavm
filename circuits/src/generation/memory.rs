@@ -49,7 +49,7 @@ pub fn generate_memory_trace<F: RichField>(
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; memory::NUM_MEM_COLS];
     for (i, c) in cells.iter().enumerate() {
-        trace[memory::COL_MEM_TX_IDX][i] = F::from_canonical_u64(c.tx_idx.to_canonical_u64());
+        trace[memory::COL_MEM_TX_IDX][i] = F::ZERO;
         trace[memory::COL_MEM_ENV_IDX][i] = F::from_canonical_u64(c.env_idx.to_canonical_u64());
         trace[memory::COL_MEM_IS_RW][i] = F::from_canonical_u64(c.is_rw.to_canonical_u64());
         trace[memory::COL_MEM_ADDR][i] = F::from_canonical_u64(c.addr.to_canonical_u64());

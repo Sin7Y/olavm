@@ -21,7 +21,7 @@ pub fn generate_tape_trace<F: RichField>(cells: &[TapeRow]) -> [Vec<F>; NUM_COL_
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_COL_TAPE];
     for (i, c) in cells.iter().enumerate() {
-        trace[COL_TAPE_TX_IDX][i] = F::from_canonical_u64(c.tx_idx.to_canonical_u64());
+        trace[COL_TAPE_TX_IDX][i] = F::ZERO;
         trace[COL_TAPE_IS_INIT_SEG][i] = if c.is_init { F::ONE } else { F::ZERO };
         trace[COL_TAPE_OPCODE][i] = F::from_canonical_u64(c.opcode.to_canonical_u64());
         trace[COL_TAPE_ADDR][i] = F::from_canonical_u64(c.addr.to_canonical_u64());
