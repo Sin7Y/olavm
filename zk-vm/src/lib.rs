@@ -219,7 +219,6 @@ impl OlaVM {
 
     pub fn execute_tx(
         &mut self,
-        tx_idx: GoldilocksField,
         caller_addr: TreeValue,
         code_exe_addr: TreeValue,
         calldata: Vec<GoldilocksField>,
@@ -227,7 +226,6 @@ impl OlaVM {
         let mut env_idx = 0;
         let mut sc_cnt = 0;
         let mut process = Arc::new(Mutex::new(Process::new()));
-        mutex_data!(process).tx_idx = tx_idx;
         mutex_data!(process).env_idx = GoldilocksField::from_canonical_u64(env_idx);
         mutex_data!(process).call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);
         mutex_data!(process).addr_storage = caller_addr;
@@ -275,7 +273,6 @@ impl OlaVM {
                     process = Arc::new(Mutex::new(Process::new()));
                     mutex_data!(process).tape = tape_tree;
                     mutex_data!(process).tp = tp.clone();
-                    mutex_data!(process).tx_idx = tx_idx;
                     mutex_data!(process).env_idx = GoldilocksField::from_canonical_u64(sc_cnt);
                     mutex_data!(process).call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);
 

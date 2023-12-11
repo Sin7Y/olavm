@@ -62,7 +62,6 @@ pub fn gen_memory_table(
             if first_row_flag {
                 let rc_value = GoldilocksField::ZERO;
                 let trace_cell = MemoryTraceCell {
-                    tx_idx: cell.tx_idx,
                     env_idx: cell.env_idx,
                     addr: GoldilocksField::from_canonical_u64(canonical_addr),
                     clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
@@ -115,7 +114,6 @@ pub fn gen_memory_table(
                 }
                 diff_clk = GoldilocksField::ZERO;
                 let trace_cell = MemoryTraceCell {
-                    tx_idx: cell.tx_idx,
                     env_idx: cell.env_idx,
                     addr: GoldilocksField::from_canonical_u64(canonical_addr),
                     clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
@@ -156,7 +154,6 @@ pub fn gen_memory_table(
                 }
 
                 let trace_cell = MemoryTraceCell {
-                    tx_idx: cell.tx_idx,
                     env_idx: cell.env_idx,
                     addr: GoldilocksField::from_canonical_u64(canonical_addr),
                     clk: GoldilocksField::from_canonical_u64(cell.clk as u64),
@@ -377,7 +374,6 @@ pub fn gen_storage_table(
             root,
             item.1.addr,
             item.1.value,
-            item.1.tx_idx,
             item.1.env_idx,
         );
 
@@ -399,7 +395,6 @@ pub fn gen_tape_table(process: &mut Process, program: &mut Program) -> Result<()
     for (addr, cells) in process.tape.trace.iter() {
         for tape_row in cells {
             program.trace.tape.push(TapeRow {
-                tx_idx: tape_row.tx_idx,
                 is_init: tape_row.is_init.is_one(),
                 opcode: tape_row.op,
                 addr: GoldilocksField::from_canonical_u64(*addr),

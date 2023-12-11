@@ -11,7 +11,6 @@ pub const HP_START_ADDR: u64 = GoldilocksField::ORDER - 2 * MEM_SPAN_SIZE;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct MemoryCell {
-    pub tx_idx: GoldilocksField,
     pub env_idx: GoldilocksField,
     pub clk: u32,
     pub is_rw: GoldilocksField,
@@ -41,7 +40,6 @@ impl MemoryTree {
         filter_looked_for_main: GoldilocksField,
         region_prophet: GoldilocksField,
         region_heap: GoldilocksField,
-        tx_idx: GoldilocksField,
         env_idx: GoldilocksField,
     ) -> Result<GoldilocksField, ProcessorError> {
         // look up the previous value in the appropriate address trace and add (clk,
@@ -52,7 +50,6 @@ impl MemoryTree {
         if let Some(mem_data) = read_mem_res {
             let last_value = mem_data.last().expect("empty address trace").value;
             let new_value = MemoryCell {
-                tx_idx,
                 env_idx,
                 is_rw,
                 clk,
@@ -81,7 +78,6 @@ impl MemoryTree {
         region_prophet: GoldilocksField,
         region_heap: GoldilocksField,
         value: GoldilocksField,
-        tx_idx: GoldilocksField,
         env_idx: GoldilocksField,
     ) {
         // add a memory access to the appropriate address trace; if this is the first
@@ -95,7 +91,6 @@ impl MemoryTree {
             region_prophet,
             region_heap,
             value,
-            tx_idx,
             env_idx,
         };
         self.trace
