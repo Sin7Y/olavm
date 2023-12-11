@@ -4,14 +4,17 @@ use maybe_rayon::*;
 
 use crate::{types::Field, goldilocks_field::GoldilocksField};
 
-// #[allow(improper_ctypes)]
-// #[cfg(feature = "cuda")]
-// extern "C" {
-//     fn evaluate_poly(vec: *mut u64, N: u64);
-//     fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64,result: *mut u64, result_len: u64);
-//     fn interpolate_poly(vec: *mut u64, N: u64);
-//     fn interpolate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64);
-// }
+mod domain;
+
+#[allow(improper_ctypes)]
+#[cfg(feature = "cuda")]
+extern "C" {
+    fn evaluate_poly(vec: *mut u64, result: *mut u64, N: u64, puserNTTParamFB: *mut NTTParamFB);
+    fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64,result: *mut u64, result_len: u64, puserNTTParamFB: *mut NTTParamFB);
+    fn interpolate_poly(vec: *mut u64, result: *mut u64, N: u64, puserNTTParamFB: *mut NTTParamFB);
+    fn interpolate_poly_with_offset(vec: *mut u64, result: *mut u64, N: u64, domain_offset: u64, puserNTTParamFB: *mut NTTParamFB);
+    fn GPU_init(n: u64, pNTTParamGroup: *mut NTTParamGroup);
+}
 
 #[cfg(feature = "cuda")]
 lazy_static! {
@@ -20,6 +23,9 @@ lazy_static! {
     // .enable_all()
     // .build().unwrap();
     static ref GPU_LOCK: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
+    let group = NTTParamGroup::new();
+    let n = 1 << 20;
+    GPU_init(n, *mut group);
 }
 
 // only support GoldilocksField(u64), adapting to other fields if needed
