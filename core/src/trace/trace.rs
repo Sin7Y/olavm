@@ -65,7 +65,6 @@ pub enum ComparisonOperation {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct MemoryTraceCell {
-    pub tx_idx: GoldilocksField,
     pub env_idx: GoldilocksField,
     pub addr: GoldilocksField,
     pub clk: GoldilocksField,
@@ -108,7 +107,6 @@ pub struct BuiltinSelector {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Step {
-    pub tx_idx: GoldilocksField,
     pub env_idx: GoldilocksField,
     pub call_sc_cnt: GoldilocksField,
     pub clk: u32,
@@ -180,7 +178,6 @@ pub struct CmpRow {
 
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
 pub struct PoseidonChunkRow {
-    pub tx_idx: GoldilocksField,
     pub env_idx: GoldilocksField,
     pub clk: u32,
     pub opcode: GoldilocksField,
@@ -270,7 +267,6 @@ pub struct HashTrace(
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct StorageRow {
-    pub tx_idx: GoldilocksField,
     pub env_idx: GoldilocksField,
     pub clk: u32,
     pub diff_clk: u32,
@@ -300,7 +296,6 @@ pub struct StorageHashRow {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct TapeRow {
-    pub tx_idx: GoldilocksField,
     pub is_init: bool,
     pub opcode: GoldilocksField,
     pub addr: GoldilocksField,
@@ -310,7 +305,6 @@ pub struct TapeRow {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct SCCallRow {
-    pub tx_idx: GoldilocksField,
     pub caller_env_idx: GoldilocksField,
     pub addr_storage: Address,
     pub addr_code: Address,
@@ -446,7 +440,6 @@ impl Trace {
         ext_cnt: GoldilocksField,
         filter_tape_looking: GoldilocksField,
         addr_code: Address,
-        tx_idx: GoldilocksField,
         env_idx: GoldilocksField,
         call_sc_cnt: GoldilocksField,
         storage_access_idx: GoldilocksField,
@@ -466,7 +459,6 @@ impl Trace {
             ext_cnt,
             filter_tape_looking,
             addr_code,
-            tx_idx,
             env_idx,
             call_sc_cnt,
             storage_access_idx,
@@ -482,7 +474,6 @@ impl Trace {
         root: [GoldilocksField; 4],
         addr: [GoldilocksField; 4],
         value: [GoldilocksField; 4],
-        tx_idx: GoldilocksField,
         env_idx: GoldilocksField,
     ) {
         self.builtin_storage.push(StorageRow {
@@ -492,14 +483,12 @@ impl Trace {
             root,
             addr,
             value,
-            tx_idx,
             env_idx,
         });
     }
 
     pub fn insert_sccall(
         &mut self,
-        tx_idx: GoldilocksField,
         caller_env_idx: GoldilocksField,
         addr_storage: Address,
         addr_code: Address,
@@ -511,7 +500,6 @@ impl Trace {
         clk_callee_end: GoldilocksField,
     ) {
         self.sc_call.push(SCCallRow {
-            tx_idx,
             caller_env_idx,
             addr_storage,
             addr_code,
@@ -526,7 +514,6 @@ impl Trace {
 
     pub fn insert_poseidon_chunk(
         &mut self,
-        tx_idx: GoldilocksField,
         env_idx: GoldilocksField,
         clk: u32,
         opcode: GoldilocksField,
@@ -540,7 +527,6 @@ impl Trace {
         is_ext_line: GoldilocksField,
     ) {
         self.builtin_poseidon_chunk.push(PoseidonChunkRow {
-            tx_idx,
             env_idx,
             clk,
             opcode,

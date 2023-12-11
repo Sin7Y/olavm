@@ -99,7 +99,6 @@ macro_rules! memory_op {
             GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
             region_prophet,
             region_heap,
-            $v.tx_idx,
             $v.env_idx,
         )?;
     };
@@ -118,7 +117,6 @@ macro_rules! memory_op {
             region_prophet,
             region_heap,
             $value,
-            $v.tx_idx,
             $v.env_idx,
         );
     };
@@ -142,7 +140,6 @@ macro_rules! aux_insert {
             ext_cnt: $ext_cnt,
             filter_tape_looking: $filter_tape_looking,
             addr_code: $ctx_code_regs_status,
-            tx_idx: $v.tx_idx,
             env_idx: $v.env_idx,
             call_sc_cnt: $v.call_sc_cnt,
             storage_access_idx: $v.storage_access_idx,
@@ -193,7 +190,6 @@ enum MemRangeType {
 }
 #[derive(Debug)]
 pub struct Process {
-    pub tx_idx: GoldilocksField,
     pub env_idx: GoldilocksField,
     pub call_sc_cnt: GoldilocksField,
     pub clk: u32,
@@ -221,7 +217,6 @@ pub struct Process {
 impl Process {
     pub fn new() -> Self {
         Self {
-            tx_idx: Default::default(),
             env_idx: Default::default(),
             call_sc_cnt: Default::default(),
             clk: 0,
@@ -311,7 +306,6 @@ impl Process {
                     GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
                     GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
-                    self.tx_idx,
                     self.env_idx,
                 )?
                 .to_canonical_u64();
@@ -329,7 +323,6 @@ impl Process {
                     GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
                     GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
-                    self.tx_idx,
                     self.env_idx,
                 )?
                 .to_canonical_u64();
@@ -389,7 +382,6 @@ impl Process {
                             GoldilocksField::from_canonical_u64(1_u64),
                             GoldilocksField::from_canonical_u64(0_u64),
                             GoldilocksField(value.get_number() as u64),
-                            self.tx_idx,
                             self.env_idx,
                         );
                         self.psp += GoldilocksField::ONE;
@@ -1104,7 +1096,6 @@ impl Process {
                 GoldilocksField::ZERO,
                 GoldilocksField::ZERO,
                 ctx_code_regs_status.clone(),
-                self.tx_idx,
                 self.env_idx,
                 self.call_sc_cnt,
                 self.storage_access_idx,
@@ -1115,7 +1106,6 @@ impl Process {
                 self.register_selector.aux1 = GoldilocksField::from_canonical_u64(self.clk as u64);
                 let register_selector = self.register_selector.clone();
                 end_step = Some(Step {
-                    tx_idx: self.tx_idx,
                     env_idx: GoldilocksField::default(),
                     call_sc_cnt: self.call_sc_cnt,
                     tp: self.tp,
@@ -1194,7 +1184,6 @@ impl Process {
             tree_key,
             store_value,
             tree_key_default(),
-            self.tx_idx,
             self.env_idx,
         );
         self.storage_access_idx += GoldilocksField::ONE;
@@ -1326,7 +1315,6 @@ impl Process {
             tree_key,
             tree_key_default(),
             read_value,
-            self.tx_idx,
             self.env_idx,
         );
 
@@ -1419,7 +1407,6 @@ impl Process {
         let mut hash_input_value = [GoldilocksField::ZERO; POSEIDON_INPUT_VALUE_LEN];
         if !program.pre_exe_flag {
             program.trace.insert_poseidon_chunk(
-                self.tx_idx,
                 self.env_idx,
                 self.clk,
                 self.opcode,
@@ -1453,7 +1440,6 @@ impl Process {
                 hash_input_value.clone_from_slice(&input[0..POSEIDON_INPUT_VALUE_LEN]);
                 hash_cap.clone_from_slice(&hash_pre[POSEIDON_INPUT_VALUE_LEN..]);
                 program.trace.insert_poseidon_chunk(
-                    self.tx_idx,
                     self.env_idx,
                     self.clk,
                     self.opcode,
@@ -1495,7 +1481,6 @@ impl Process {
                 hash_input_value.clone_from_slice(&input[0..POSEIDON_INPUT_VALUE_LEN]);
                 hash_cap.clone_from_slice(&hash_pre[POSEIDON_INPUT_VALUE_LEN..]);
                 program.trace.insert_poseidon_chunk(
-                    self.tx_idx,
                     self.env_idx,
                     self.clk,
                     self.opcode,
@@ -1587,7 +1572,6 @@ impl Process {
         let registers_status = registers_status.clone();
         tape_copy!(self,
             let value = self.tape.read(
-                self.tx_idx,
                 tape_addr,
                 self.clk,
                 GoldilocksField::from_canonical_u64(1 << Opcode::TLOAD as u64),
@@ -1603,7 +1587,6 @@ impl Process {
                 region_prophet,
                 region_heap,
                 value,
-                self.tx_idx,
                 self.env_idx
             ), ctx_regs_status, ctx_code_regs_status, registers_status, zone_length,  mem_base_addr, tape_base_addr, aux_steps,
             mem_addr, tape_addr, is_rw, region_prophet, region_heap, value);
@@ -1663,11 +1646,9 @@ impl Process {
                 GoldilocksField::from_canonical_u64(FilterLockForMain::True as u64),
                 region_prophet,
                 region_heap,
-                self.tx_idx,
                 self.env_idx
             )?,
                 self.tape.write(
-                self.tx_idx,
                 tape_addr,
                 self.clk,
                 GoldilocksField::from_canonical_u64(1 << Opcode::TSTORE as u64),
@@ -1743,7 +1724,6 @@ impl Process {
 
         if !program.pre_exe_flag {
             program.trace.insert_sccall(
-                self.tx_idx,
                 self.env_idx,
                 self.addr_storage,
                 self.addr_code,
@@ -1770,7 +1750,6 @@ impl Process {
                 GoldilocksField::ZERO,
                 GoldilocksField::ZERO,
                 ctx_code_regs_status.clone(),
-                self.tx_idx,
                 self.env_idx,
                 self.call_sc_cnt,
                 self.storage_access_idx,
@@ -1796,7 +1775,6 @@ impl Process {
                 GoldilocksField::ONE,
                 GoldilocksField::ZERO,
                 self.addr_code,
-                self.tx_idx,
                 self.env_idx,
                 self.call_sc_cnt,
                 self.storage_access_idx,
@@ -1876,7 +1854,6 @@ impl Process {
             GoldilocksField::from_canonical_u64(0_u64),
             GoldilocksField::from_canonical_u64(1_u64),
             GoldilocksField(HP_START_ADDR + 1),
-            self.tx_idx,
             self.env_idx,
         );
 
@@ -2028,7 +2005,6 @@ impl Process {
                     GoldilocksField::ZERO,
                     GoldilocksField::ZERO,
                     ctx_code_regs_status,
-                    self.tx_idx,
                     self.env_idx,
                     self.call_sc_cnt,
                     storage_acc_id_status,

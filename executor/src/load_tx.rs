@@ -10,7 +10,6 @@ use serde_derive::{Deserialize, Serialize};
 pub fn load_tx_calldata(process: &mut Process, calldate: &Vec<GoldilocksField>) {
     for data in calldate {
         process.tape.write(
-            process.tx_idx,
             process.tp.to_canonical_u64(),
             0,
             GoldilocksField::from_canonical_u64(0),
@@ -52,7 +51,6 @@ macro_rules! load_ctx_to_tape {
                     .read_u64::<LittleEndian>()
                     .expect("failed to deserialize value");
                 process.tape.write(
-                    process.tx_idx,
                     tp + addr as u64,
                     0,
                     GoldilocksField::from_canonical_u64(0),

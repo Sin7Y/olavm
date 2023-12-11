@@ -25,6 +25,7 @@ pub struct RocksDB {
 pub enum Database {
     MerkleTree,
     StateKeeper,
+    Sequencer,
 }
 
 #[derive(Debug)]
@@ -40,6 +41,13 @@ pub enum StateKeeperColumnFamily {
     Prophets,
     Debugs,
     ContractMap,
+    FactoryDeps,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum SequencerColumnFamily {
+    State,
+    Contracts,
     FactoryDeps,
 }
 
@@ -59,6 +67,12 @@ impl StateKeeperColumnFamily {
             Self::ContractMap,
             Self::FactoryDeps,
         ]
+    }
+}
+
+impl SequencerColumnFamily {
+    fn all() -> &'static [Self] {
+        &[Self::State, Self::Contracts, Self::FactoryDeps]
     }
 }
 
@@ -86,6 +100,17 @@ impl std::fmt::Display for StateKeeperColumnFamily {
     }
 }
 
+impl std::fmt::Display for SequencerColumnFamily {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        let value = match self {
+            Self::State => "state",
+            Self::Contracts => "contracts",
+            Self::FactoryDeps => "factory_deps",
+        };
+        write!(formatter, "{}", value)
+    }
+}
+
 impl RocksDB {
     pub fn new<P: AsRef<Path>>(database: Database, path: P, tune_options: bool) -> Self {
         let options = Self::rocksdb_options(tune_options);
@@ -98,6 +123,12 @@ impl RocksDB {
             }
             Database::StateKeeper => {
                 let cfs = StateKeeperColumnFamily::all().iter().map(|cf| {
+                    ColumnFamilyDescriptor::new(cf.to_string(), Self::rocksdb_options(tune_options))
+                });
+                DB::open_cf_descriptors(&options, path, cfs).expect("failed to init rocksdb")
+            }
+            Database::Sequencer => {
+                let cfs = SequencerColumnFamily::all().iter().map(|cf| {
                     ColumnFamilyDescriptor::new(cf.to_string(), Self::rocksdb_options(tune_options))
                 });
                 DB::open_cf_descriptors(&options, path, cfs).expect("failed to init rocksdb")
