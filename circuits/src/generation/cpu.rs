@@ -61,7 +61,7 @@ pub fn generate_cpu_trace<F: RichField>(steps: &Vec<Step>) -> [Vec<F>; cpu::NUM_
 
     for (i, s) in steps.iter().enumerate() {
         // env related columns.
-        trace[cpu::COL_TX_IDX][i] = F::from_canonical_u64(s.tx_idx.0);
+        trace[cpu::COL_TX_IDX][i] = F::ZERO;
         trace[cpu::COL_ENV_IDX][i] = F::from_canonical_u64(s.env_idx.0);
         trace[cpu::COL_CALL_SC_CNT][i] = F::from_canonical_u64(s.call_sc_cnt.0);
 

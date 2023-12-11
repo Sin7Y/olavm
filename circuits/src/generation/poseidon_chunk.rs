@@ -19,7 +19,7 @@ pub fn generate_poseidon_chunk_trace<F: RichField>(
     };
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; NUM_POSEIDON_CHUNK_COLS];
     for (i, c) in cells.iter().enumerate() {
-        trace[COL_POSEIDON_CHUNK_TX_IDX][i] = F::from_canonical_u64(c.tx_idx.0);
+        trace[COL_POSEIDON_CHUNK_TX_IDX][i] = F::ZERO;
         trace[COL_POSEIDON_CHUNK_ENV_IDX][i] = F::from_canonical_u64(c.env_idx.0);
         trace[COL_POSEIDON_CHUNK_CLK][i] = F::from_canonical_u32(c.clk);
         trace[COL_POSEIDON_CHUNK_OPCODE][i] = F::from_canonical_u64(c.opcode.0);
