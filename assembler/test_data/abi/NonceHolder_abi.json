@@ -1,0 +1,66 @@
+[
+  {
+    "name": "onlyEntrypointCall",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "isNonceUsed",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_nonce",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ]
+  },
+  {
+    "name": "setNonce",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_nonce",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "usedNonces",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ]
+  }
+]

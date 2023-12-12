@@ -14,6 +14,7 @@ use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context_mock;
+use std::vec;
 use log::{debug, LevelFilter};
 use num::{BigInt, BigUint, Num};
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -465,7 +466,7 @@ fn array_test() {
 
 
 #[test]
-fn vote_simple_test() {
+fn vote_init() {
 
     let abi: Abi = {
         let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
@@ -473,10 +474,12 @@ fn vote_simple_test() {
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
     let func_0 = abi.functions[0].clone();
-    let mut input_0 = abi.encode_input_values(&[Value::U32(1), Value::U32(2), Value::U32(3)]).unwrap();
+    let input_0 = abi.encode_input_values(&[Value::Array(vec![Value::U32(22), Value::U32(33), Value::U32(44)], ola_lang_abi::Type::U32)]).unwrap();
     // encode input and function selector
+    let mut input_0 = input_0[1..input_0.len()].to_vec();
+    input_0.extend(&[input_0.len() as u64]);
     input_0.extend(&[func_0.method_id()]);
-
+    println!("input_0:{:?}", input_0);
     let calldata_0 = input_0
         .iter()
         .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -490,8 +493,9 @@ fn vote_simple_test() {
 
 }
 
+
 #[test]
-fn vote_simple_test_1() {
+fn vote_proposal() {
 
     let abi: Abi = {
         let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
@@ -501,8 +505,10 @@ fn vote_simple_test_1() {
 
     let func_1 = abi.functions[1].clone();
 
-    let mut input_1 = abi.encode_input_values(&[Value::U32(2)]).unwrap();
+    let input_1 = abi.encode_input_values(&[Value::U32(2)]).unwrap();
     // encode input and function selector
+    let mut input_1 = input_1[1..input_1.len()].to_vec();
+    input_1.extend(&[input_1.len() as u64]);
     input_1.extend(&[func_1.method_id()]);
 
     println!("input_1:{:?}", input_1);
@@ -518,6 +524,68 @@ fn vote_simple_test_1() {
         Some(calldata_1),
     );
 }
+
+
+#[test]
+fn vote_get_winner_proposal() {
+
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    let func_2 = abi.functions[2].clone();
+
+    // encode input and function selector
+    let mut input_2 = vec![];
+    input_2.extend(&[input_2.len() as u64]);
+    input_2.extend(&[func_2.method_id()]);
+
+    println!("input_2:{:?}", input_2);
+
+    let calldata_1 = input_2
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/vote_simple.json",
+        "vote_simple_trace.txt",
+        false,
+        Some(calldata_1),
+    );
+}
+
+
+#[test]
+fn vote_get_winner_name() {
+
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    let func_3 = abi.functions[3].clone();
+    // encode input and function selector
+    let mut input_2 = vec![];
+    input_2.extend(&[input_2.len() as u64]);
+    input_2.extend(&[func_3.method_id()]);
+
+    println!("input_2:{:?}", input_2);
+
+    let calldata_1 = input_2
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/vote_simple.json",
+        "vote_simple_trace.txt",
+        false,
+        Some(calldata_1),
+    );
+}
+
 
 
 #[test]

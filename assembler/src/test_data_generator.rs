@@ -248,6 +248,38 @@ mod tests {
     fn generate_vote_simple() {
         generate_from_file("vote_simple_asm.json".to_string(), "vote_simple.json".to_string());
     }
+    
+    #[test]
+    fn generate_account_code_storage() {
+        generate_from_file("AccountCodeStorage_asm.json".to_string(), "AccountCodeStorage.json".to_string());
+    }
+
+    #[test]
+    fn generate_contract_deployer() {
+        generate_from_file("ContractDeployer_asm.json".to_string(), "ContractDeployer.json".to_string());
+    }
+
+    #[test]
+    fn generate_default_account() {
+        generate_from_file("DefaultAccount_asm.json".to_string(), "DefaultAccount.json".to_string());
+    }
+
+    #[test]
+    fn generate_entry_point() {
+        generate_from_file("Entrypoint_asm.json".to_string(), "Entrypoint.json".to_string());
+    }
+
+    #[test]
+    fn generate_know_code_storage() {
+        generate_from_file("KnownCodeStorage_asm.json".to_string(), "KnownCodeStorage.json".to_string());
+    }
+
+    #[test]
+    fn generate_nonce_holder() {
+        generate_from_file("NonceHolder_asm.json".to_string(), "NonceHolder.json".to_string());
+    }
+
+
 
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {
