@@ -1,0 +1,38 @@
+[
+  {
+    "name": "onlyEntrypointCall",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "isCodehashKnown",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_hash",
+        "type": "hash",
+        "internalType": "hash"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ]
+  },
+  {
+    "name": "markCodehashKnown",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_hash",
+        "type": "hash",
+        "internalType": "hash"
+      }
+    ],
+    "outputs": []
+  }
+]

@@ -1,0 +1,531 @@
+[
+  {
+    "name": "system_entrance",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "internalType": "struct Entrypoint.Transaction",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "version",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "chainid",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "data",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "signature",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codeHash",
+            "type": "hash",
+            "internalType": "hash"
+          }
+        ]
+      },
+      {
+        "name": "_isETHCall",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validateTxStructure",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "internalType": "struct Entrypoint.Transaction",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "version",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "chainid",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "data",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "signature",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codeHash",
+            "type": "hash",
+            "internalType": "hash"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "callTx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "internalType": "struct Entrypoint.Transaction",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "version",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "chainid",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "data",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "signature",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codeHash",
+            "type": "hash",
+            "internalType": "hash"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "fields",
+        "internalType": "fields"
+      }
+    ]
+  },
+  {
+    "name": "sendTx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "internalType": "struct Entrypoint.Transaction",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "version",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "chainid",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "data",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "signature",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codeHash",
+            "type": "hash",
+            "internalType": "hash"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validateTx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "internalType": "struct Entrypoint.Transaction",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "version",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "chainid",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "data",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "signature",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codeHash",
+            "type": "hash",
+            "internalType": "hash"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validateDeployment",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "internalType": "struct Entrypoint.Transaction",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "version",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "chainid",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "data",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "signature",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codeHash",
+            "type": "hash",
+            "internalType": "hash"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "getSignedHash",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "internalType": "struct Entrypoint.Transaction",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "version",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "chainid",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "data",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "signature",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codeHash",
+            "type": "hash",
+            "internalType": "hash"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash",
+        "internalType": "hash"
+      }
+    ]
+  },
+  {
+    "name": "getTransactionHash",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_signedHash",
+        "type": "hash",
+        "internalType": "hash"
+      },
+      {
+        "name": "signature",
+        "type": "fields",
+        "internalType": "fields"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash",
+        "internalType": "hash"
+      }
+    ]
+  },
+  {
+    "name": "validate_sender",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validate_nonce",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_nonce",
+        "type": "u32",
+        "internalType": "u32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validate_tx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_txHash",
+        "type": "hash",
+        "internalType": "hash"
+      },
+      {
+        "name": "_signedHash",
+        "type": "hash",
+        "internalType": "hash"
+      },
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "internalType": "struct Entrypoint.Transaction",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "version",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "chainid",
+            "type": "u32",
+            "internalType": "u32"
+          },
+          {
+            "name": "data",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "signature",
+            "type": "fields",
+            "internalType": "fields"
+          },
+          {
+            "name": "codeHash",
+            "type": "hash",
+            "internalType": "hash"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "hashL2Bytecode",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_bytecode",
+        "type": "fields",
+        "internalType": "fields"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash",
+        "internalType": "hash"
+      }
+    ]
+  }
+]

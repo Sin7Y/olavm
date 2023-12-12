@@ -1,0 +1,43 @@
+[
+  {
+    "name": "onlyDeployer",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "getCodeHash",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash",
+        "internalType": "hash"
+      }
+    ]
+  },
+  {
+    "name": "storeCodeHash",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_hash",
+        "type": "hash",
+        "internalType": "hash"
+      }
+    ],
+    "outputs": []
+  }
+]

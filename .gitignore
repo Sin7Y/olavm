@@ -4,8 +4,8 @@
 *.xlsx
 /**/.DS_Store
 /.vscode
-./assembler/test_data/bin/*
-../assembler/test_data/db/*
+/assembler/test_data/bin/*
+/assembler/test_data/db/*
 executor/*.json
 db_test/*
 executor/db_test/*
