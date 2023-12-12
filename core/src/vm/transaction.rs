@@ -14,7 +14,7 @@ pub struct TxCtxInfo {
     pub tx_hash: [GoldilocksField; 4],
 }
 
-pub fn init_tx_context() -> TxCtxInfo {
+pub fn init_tx_context_mock() -> TxCtxInfo {
     TxCtxInfo {
         block_number: GoldilocksField::from_canonical_u64(3),
         block_timestamp: GoldilocksField::from_canonical_u64(1692846754),

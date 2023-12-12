@@ -660,7 +660,7 @@ mod tests {
     use core::types::account::Address;
     use core::types::merkle_tree::{encode_addr, tree_key_default};
     use core::types::{Field, GoldilocksField};
-    use core::vm::transaction::init_tx_context;
+    use core::vm::transaction::init_tx_context_mock;
     use executor::load_tx::init_tape;
     use executor::trace::{gen_storage_hash_table, gen_storage_table};
     use executor::Process;
@@ -687,7 +687,7 @@ mod tests {
 
     #[test]
     fn fibo_loop_test() {
-        let calldata = [10u64, 1u64, 2u64, 4185064725u64]
+        let calldata = [4185064725u64, 2u64, 10u64, 1u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
@@ -731,7 +731,7 @@ mod tests {
 
     #[test]
     fn test_ola_prophet_sqrt() {
-        let calldata = [144u64, 10u64, 2u64, 3509365327u64]
+        let calldata = [3509365327u64, 2u64, 144u64, 10u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
@@ -779,19 +779,19 @@ mod tests {
     fn test_ola_vote() {
         let db_name = "vote_test".to_string();
 
-        let init_calldata = [3u64, 1u64, 2u64, 3u64, 4u64, 2817135588u64]
+        let init_calldata = [2817135588u64, 4u64, 3u64, 1u64, 2u64, 3u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        let vote_calldata = [2u64, 1u64, 2791810083u64]
+        let vote_calldata = [2791810083u64, 1u64, 2u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        let winning_proposal_calldata = [0u64, 3186728800u64]
+        let winning_proposal_calldata = [3186728800u64, 0u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        let winning_name_calldata = [0u64, 363199787u64]
+        let winning_name_calldata = [363199787u64, 0u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
@@ -887,7 +887,7 @@ mod tests {
                 caller_addr,
                 callee,
                 callee_exe_addr,
-                &init_tx_context(),
+                &init_tx_context_mock(),
             );
         }
 
@@ -911,7 +911,8 @@ mod tests {
             previous_value: tree_key_default(),
         });
 
-        let res = process.execute(&mut program, &mut Some(prophets), &mut db);
+        program.prophets = prophets;
+        let res = process.execute(&mut program, &mut db);
         match res {
             Ok(_) => {}
             Err(e) => {

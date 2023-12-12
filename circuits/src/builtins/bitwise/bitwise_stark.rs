@@ -450,13 +450,10 @@ mod tests {
             program.instructions.push(inst.to_string());
         }
 
+        program.prophets = prophets;
         let mut process = Process::new();
         process.addr_storage = Address::default();
-        let _ = process.execute(
-            &mut program,
-            &mut Some(prophets),
-            &mut AccountTree::new_test(),
-        );
+        let _ = process.execute(&mut program, &mut AccountTree::new_test());
 
         let (rows, bitwise_beta) =
             generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);

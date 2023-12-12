@@ -6,7 +6,7 @@ pub mod tests {
     use ola_core::types::merkle_tree::TreeValue;
     use ola_core::types::Field;
     use ola_core::types::GoldilocksField;
-    use ola_core::vm::transaction::init_tx_context;
+    use ola_core::vm::transaction::init_tx_context_mock;
     use std::fs::File;
     use std::io::Write;
     use tempfile::TempDir;
@@ -46,7 +46,7 @@ pub mod tests {
             TempDir::new()
                 .expect("failed get temporary directory for RocksDB")
                 .path(),
-            init_tx_context(),
+            init_tx_context_mock(),
         );
         let _code_hash = node
             .manual_deploy(
