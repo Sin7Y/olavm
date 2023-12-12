@@ -1,4 +1,199 @@
 {
-  "program": "main:\n.LBL0_0:\nadd r9 r9 4\nmstore [r9,-2] r9\nmov r1 10\ncall fib_non_recursive\nadd r9 r9 -4\nend\nfib_non_recursive:\n.LBL2_0:\nadd r9 r9 5\nmov r0 r1\nmstore [r9,-1] r0\nmov r0 0\nmstore [r9,-2] r0\nmov r0 1\nmstore [r9,-3] r0\nmov r0 1\nmstore [r9,-4] r0\nmov r0 2\nmstore [r9,-5] r0\njmp .LBL2_1\n.LBL2_1:\nmload r0 [r9,-5]\nmload r1 [r9,-1]\ngte r0 r1 r0\ncjmp r0 .LBL2_2\njmp .LBL2_4\n.LBL2_2:\nmload r1 [r9,-2]\nmload r2 [r9,-3]\nadd r0 r1 r2\nmstore [r9,-4] r0\nmload r0 [r9,-3]\nmstore [r9,-2] r0\nmload r0 [r9,-4]\nmstore [r9,-3] r0\njmp .LBL2_3\n.LBL2_3:\nmload r1 [r9,-5]\nadd r0 r1 1\nmstore [r9,-5] r0\njmp .LBL2_1\n.LBL2_4:\nmload r0 [r9,-4]\nadd r9 r9 -5\nret",
-  "prophets": []
+  "program": "chain_id:\n.LBL8_0:\n  add r9 r9 2\n  mov r0 7\n  mstore [r9,-1] r0\n  mload r0 [r9,-1]\n  add r1 r9 -2\n  mov r2 0\n  tload r1 r2 r0\n  mload r0 [r9,-2]\n  add r9 r9 -2\n  ret\nexe_address:\n.LBL9_0:\n  add r9 r9 6\n  mov r0 8\n  mstore [r9,-1] r0\n  mload r1 [r9,-1]\n.PROPHET9_0:\n  mov r0 psp\n  mload r0 [r0]\n  mstore [r9,-6] r0\n  mload r0 [r9,-6]\n  mload r1 [r9,-1]\n  mov r2 1\n  tload r0 r2 r1\n  mload r0 [r9,-6]\n  mload r0 [r0]\n  mstore [r9,-5] r0\n  mload r0 [r9,-6]\n  mload r0 [r0,+1]\n  mstore [r9,-4] r0\n  mload r0 [r9,-6]\n  mload r0 [r0,+2]\n  mstore [r9,-3] r0\n  mload r0 [r9,-6]\n  mload r0 [r0,+3]\n  mstore [r9,-2] r0\n  mload r0 [r9,-6]\n  add r9 r9 -6\n  ret\nfib_non_recursive:\n.LBL10_0:\n  add r9 r9 5\n  mov r0 r1\n  mstore [r9,-1] r0\n  mload r0 [r9,-1]\n  eq r0 r0 0\n  gte r1 r0 0\n  neq r0 r0 0\n  and r1 r1 r0\n  cjmp r1 .LBL10_1\n  jmp .LBL10_2\n.LBL10_1:\n  mov r0 0\n  add r9 r9 -5\n  ret\n.LBL10_2:\n  jmp .LBL10_3\n.LBL10_3:\n  mov r0 0\n  mstore [r9,-2] r0\n  mov r0 1\n  mstore [r9,-3] r0\n  mov r0 2\n  mstore [r9,-4] r0\n  mov r0 2\n  mstore [r9,-5] r0\n  jmp .LBL10_4\n.LBL10_4:\n  mload r0 [r9,-5]\n  mload r1 [r9,-1]\n  gte r0 r1 r0\n  gte r1 r0 0\n  neq r0 r0 0\n  and r1 r1 r0\n  cjmp r1 .LBL10_5\n  jmp .LBL10_6\n.LBL10_5:\n  mload r1 [r9,-2]\n  mload r2 [r9,-3]\n  add r0 r1 r2\n  mstore [r9,-4] r0\n  mload r1 [r9,-4]\n  mov r2 3\n.PROPHET10_0:\n  mload r0 [r9,-3]\n  mstore [r9,-2] r0\n  mload r0 [r9,-4]\n  mstore [r9,-3] r0\n  mload r1 [r9,-5]\n  mov r2 3\n.PROPHET10_1:\n  mload r0 [r9,-5]\n  add r3 r0 1\n  mstore [r9,-5] r3\n  jmp .LBL10_4\n.LBL10_6:\n  mload r0 [r9,-4]\n  add r9 r9 -5\n  ret\nbench_fib_non_recursive:\n.LBL11_0:\n  add r9 r9 11\n  mstore [r9,-2] r9\n  mov r0 r1\n  mov r1 r2\n  mstore [r9,-3] r0\n  mstore [r9,-4] r1\n  mov r0 0\n  mstore [r9,-5] r0\n  mload r1 [r9,-3]\n  mov r2 3\n.PROPHET11_0:\n  mload r1 [r9,-4]\n  mov r2 3\n.PROPHET11_1:\n  mov r0 0\n  mstore [r9,-6] r0\n  jmp .LBL11_1\n.LBL11_1:\n  mload r0 [r9,-6]\n  mload r1 [r9,-4]\n  gte r2 r1 r0\n  neq r0 r0 r1\n  and r2 r2 r0\n  gte r0 r2 0\n  neq r1 r2 0\n  and r0 r0 r1\n  cjmp r0 .LBL11_2\n  jmp .LBL11_3\n.LBL11_2:\n  mload r1 [r9,-3]\n  call fib_non_recursive\n  mstore [r9,-7] r0\n  mload r1 [r9,-7]\n  mov r2 3\n.PROPHET11_2:\n  mload r0 [r9,-5]\n  add r0 r0 1\n  mstore [r9,-9] r0\n  mload r0 [r9,-9]\n  mstore [r9,-5] r0\n  mload r1 [r9,-5]\n  mov r2 3\n.PROPHET11_3:\n  mload r0 [r9,-6]\n  add r0 r0 1\n  mstore [r9,-8] r0\n  mload r0 [r9,-8]\n  mstore [r9,-6] r0\n  jmp .LBL11_1\n.LBL11_3:\n  mload r0 [r9,-5]\n  add r9 r9 -11\n  ret\nmain:\n.LBL12_0:\n  add r9 r9 10\n  mstore [r9,-2] r9\n  mov r0 14\n  mstore [r9,-3] r0\n  mov r0 1\n  mstore [r9,-8] r0\n  mload r0 [r9,-3]\n  mstore [r9,-5] r0\n  mload r1 [r9,-5]\n.PROPHET12_0:\n  mov r0 psp\n  mload r0 [r0]\n  mstore [r9,-6] r0\n  mload r0 [r9,-6]\n  mload r1 [r9,-5]\n  mov r3 0\n  not r1 r1\n  add r1 r1 1\n  add r1 r3 r1\n  add r0 r0 r1\n  mstore [r9,-7] r0\n  mload r0 [r9,-7]\n  mload r1 [r9,-5]\n  mov r3 1\n  tload r0 r3 r1\n  mload r0 [r9,-7]\n  mload r0 [r0]\n  mstore [r9,-5] r0\n  mload r0 [r9,-7]\n  add r0 r0 1\n  mstore [r9,-7] r0\n  mload r0 [r9,-7]\n  mload r0 [r0]\n  mstore [r9,-4] r0\n  mload r0 [r9,-5]\n  mload r1 [r9,-3]\n  add r2 r0 r1\n  mstore [r9,-5] r2\n  mload r1 [r9,-5]\n.PROPHET12_1:\n  mov r0 psp\n  mload r0 [r0]\n  mstore [r9,-6] r0\n  mload r0 [r9,-6]\n  mload r1 [r9,-5]\n  mov r2 0\n  not r1 r1\n  add r1 r1 1\n  add r1 r2 r1\n  add r0 r0 r1\n  mstore [r9,-7] r0\n  mload r0 [r9,-7]\n  mload r1 [r9,-5]\n  mov r2 1\n  tload r0 r2 r1\n  mload r0 [r9,-4]\n  eq r1 r0 1015130275\n  cjmp r1 .LBL12_1\n  jmp .LBL12_2\n.LBL12_1:\n  mload r0 [r9,-7]\n  mload r1 [r0,+0]\n  mload r0 [r9,-7]\n  mload r2 [r0,+1]\n  call bench_fib_non_recursive\n  mov r2 r0\n  mov r1 2\n.PROPHET12_2:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 1\n  mstore [r0,-1] r1\n  mstore [r0,-2] r2\n  add r0 r0 -2\n  tstore r0 2\n  jmp .LBL12_3\n.LBL12_2:\n  jmp .LBL12_3\n.LBL12_3:\n  mov r0 0\n  add r9 r9 -10\n  end\n",
+  "prophets": [
+    {
+      "label": ".PROPHET9_0",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET10_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET10_1",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET11_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET11_1",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET11_2",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET11_3",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET12_0",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET12_1",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET12_2",
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    }
+  ]
 }

@@ -14,17 +14,19 @@ use ola_core::state::NodeState;
 use ola_core::storage::db::{Database, RocksDB};
 use ola_core::trace::trace::Trace;
 use ola_core::types::account::Address;
-use ola_core::types::merkle_tree::{encode_addr, tree_key_default, TreeValue};
+use ola_core::types::merkle_tree::{encode_addr, tree_key_default, tree_key_to_u8_arr, TreeValue};
 use ola_core::types::GoldilocksField;
 use ola_core::types::{Field, PrimeField64};
 use ola_core::vm::error::ProcessorError;
 use ola_core::vm::transaction::TxCtxInfo;
 use ola_core::vm::vm_state::{SCCallType, VMState};
 
+use ola_core::crypto::hash::Hasher;
 use ola_core::merkle_tree::log::{StorageLog, WitnessStorageLog};
+use ola_core::types::storage::field_arr_to_u8_arr;
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Write};
 use std::ops::Not;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -78,6 +80,14 @@ impl OlaVM {
         self.ola_state.save_contract(contract)
     }
 
+    pub fn save_program(
+        &mut self,
+        code_hash: &TreeValue,
+        contract: &Vec<u8>,
+    ) -> Result<(), StateError> {
+        self.ola_state.save_program(code_hash, contract)
+    }
+
     pub fn save_prophet(&mut self, code_hash: &TreeValue, prophet: &str) -> Result<(), StateError> {
         self.ola_state.save_prophet(code_hash, prophet)
     }
@@ -88,6 +98,10 @@ impl OlaVM {
         debug_info: &str,
     ) -> Result<(), StateError> {
         self.ola_state.save_debug_info(code_hash, debug_info)
+    }
+
+    pub fn get_program(&mut self, code_hashes: &TreeValue) -> Result<Vec<u8>, StateError> {
+        self.ola_state.get_program(code_hashes)
     }
 
     pub fn get_contracts(
@@ -127,9 +141,8 @@ impl OlaVM {
         &mut self,
         process: &mut Process,
         program: &mut Program,
-        prophets: &mut Option<HashMap<u64, OlaProphet>>,
     ) -> Result<VMState, ProcessorError> {
-        process.execute(program, prophets, &mut self.account_tree)
+        process.execute(program, &mut self.account_tree)
     }
 
     pub fn contract_run(
@@ -143,39 +156,40 @@ impl OlaVM {
         let code_hash = self.get_contract_map(&exe_code_addr)?;
 
         if get_code {
-            let contract = self.get_contract(&code_hash)?;
-            for inst in &contract {
-                program
-                    .instructions
-                    .push(format!("0x{:x}", inst.to_canonical_u64()));
+            let contract = self.get_program(&code_hash)?;
+            let bin_program: BinaryProgram =
+                serde_json::from_str(std::str::from_utf8(&contract.to_vec()).unwrap()).unwrap();
+
+            let instructions = bin_program.bytecode.split("\n");
+            let code: Vec<_> = instructions
+                .clone()
+                .map(|e| {
+                    GoldilocksField::from_canonical_u64(u64::from_str_radix(&e[2..], 16).unwrap())
+                })
+                .collect();
+            let mut prophets = HashMap::new();
+            for item in bin_program.prophets {
+                prophets.insert(item.host as u64, item);
+            }
+            program.debug_info = bin_program.debug_info;
+            program.prophets = prophets;
+
+            for inst in instructions {
+                program.instructions.push(inst.to_string());
             }
 
-            if let Ok(debug_str) = self.get_debug_info(&code_hash) {
-                let debug_info =
-                    serde_json::from_str::<BTreeMap<usize, String>>(&debug_str).unwrap();
-                program.debug_info = Some(debug_info);
-            }
             process.program_log.push(WitnessStorageLog {
                 storage_log: StorageLog::new_read_log(exe_code_addr, code_hash),
                 previous_value: tree_key_default(),
             });
+
             program
                 .trace
                 .addr_program_hash
-                .insert(encode_addr(&exe_code_addr), contract);
+                .insert(encode_addr(&exe_code_addr), code);
         }
 
-        let prophet = self.get_prophet(&code_hash).unwrap();
-        let mut prophets = HashMap::new();
-        for item in serde_json::from_str::<Vec<OlaProphet>>(&prophet)? {
-            prophets.insert(item.host as u64, item);
-        }
-
-        let res = self.vm_run(
-            process,
-            program,
-            &mut prophets.is_empty().not().then(|| prophets),
-        );
+        let res = self.vm_run(process, program);
         if let Ok(vm_state) = res {
             Ok(vm_state)
         } else {

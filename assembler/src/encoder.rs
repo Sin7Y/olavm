@@ -110,7 +110,7 @@ pub(crate) fn encode_to_binary(bundle: RelocatedAsmBundle) -> Result<BinaryProgr
         binary_instructions.push(instruction);
         binary_counter += asm.binary_length() as usize;
     }
-    BinaryProgram::from_instructions(binary_instructions, Some(origin_asm), false)
+    BinaryProgram::from_instructions(binary_instructions, Some(origin_asm), true)
 }
 
 fn is_adjusted_operand(asm: &OlaAsmInstruction) -> bool {

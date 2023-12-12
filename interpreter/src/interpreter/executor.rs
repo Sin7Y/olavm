@@ -18,7 +18,7 @@ use crate::utils::number::NumberRet::{Multiple, Single};
 use crate::utils::number::{Number, NumberResult, NumberRet};
 use core::types::PrimeField64;
 use core::vm::memory::MemoryTree;
-use log::debug;
+use log::{debug, info};
 
 #[macro_export]
 macro_rules! ident_lookup {

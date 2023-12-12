@@ -180,3 +180,10 @@ pub fn tree_key_to_leaf_index(value: &TreeKey) -> LevelIndex {
     let index = tree_key_to_u256(value);
     LevelIndex((ROOT_TREE_DEPTH as u16, index))
 }
+
+pub fn field_arr_to_u8_arr(value: &Vec<GoldilocksField>) -> Vec<u8> {
+    value.iter().fold(Vec::new(), |mut key_vec, item| {
+        key_vec.extend(item.0.to_le_bytes().to_vec());
+        key_vec
+    })
+}
