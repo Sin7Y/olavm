@@ -14,7 +14,7 @@ use plonky2_util::log2_strict;
 
 use crate::stark::{constraint_consumer::ConstraintConsumer, vars::StarkEvaluationVars};
 use core::merkle_tree::tree::AccountTree;
-use core::vm::transaction::init_tx_context;
+use core::vm::transaction::init_tx_context_mock;
 
 pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     path: String,
@@ -93,7 +93,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
             caller_addr,
             callee,
             callee_exe_addr,
-            &init_tx_context(),
+            &init_tx_context_mock(),
         );
     }
 
@@ -117,7 +117,8 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
         previous_value: tree_key_default(),
     });
 
-    let res = process.execute(&mut program, &mut Some(prophets), &mut db);
+    program.prophets = prophets;
+    let res = process.execute(&mut program, &mut db);
     match res {
         Ok(_) => {}
         Err(e) => {
@@ -230,6 +231,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         instructions: Vec::new(),
         trace: Default::default(),
         debug_info: program.debug_info,
+        prophets,
         pre_exe_flag: false,
     };
 
@@ -270,7 +272,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
             caller_addr,
             callee,
             callee_exe_addr,
-            &init_tx_context(),
+            &init_tx_context_mock(),
         );
     }
 
@@ -294,7 +296,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         previous_value: tree_key_default(),
     });
 
-    let res = process.execute(&mut program, &mut Some(prophets), &mut db);
+    let res = process.execute(&mut program, &mut db);
     match res {
         Ok(_) => {}
         Err(e) => {

@@ -13,7 +13,7 @@ use core::program::Program;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
-use core::vm::transaction::init_tx_context;
+use core::vm::transaction::init_tx_context_mock;
 use log::{debug, LevelFilter};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
@@ -27,9 +27,9 @@ fn executor_run_test_program(
     print_trace: bool,
     call_data: Option<Vec<GoldilocksField>>,
 ) {
-    // let _ = env_logger::builder()
-    //     .filter_level(LevelFilter::Debug)
-    //     .try_init();
+    let _ = env_logger::builder()
+        .filter_level(LevelFilter::Info)
+        .try_init();
     let file = File::open(bin_file_path).unwrap();
 
     let reader = BufReader::new(file);
@@ -53,6 +53,7 @@ fn executor_run_test_program(
         instructions: Vec::new(),
         trace: Default::default(),
         debug_info: program.debug_info,
+        prophets: prophets,
         pre_exe_flag: false,
     };
 
@@ -92,7 +93,7 @@ fn executor_run_test_program(
             caller_addr,
             callee,
             callee_exe_addr,
-            &init_tx_context(),
+            &init_tx_context_mock(),
         );
     }
     process.addr_code = callee_exe_addr;
@@ -117,7 +118,7 @@ fn executor_run_test_program(
         previous_value: tree_key_default(),
     });
 
-    let res = process.execute(&mut program, &mut Some(prophets), &mut account_tree);
+    let res = process.execute(&mut program, &mut account_tree);
 
     if res.is_err() {
         gen_dump_file(&mut process, &mut program);
@@ -189,11 +190,18 @@ fn call_test() {
 
 #[test]
 fn fibo_use_loop_decode() {
+    let calldata = vec![
+        GoldilocksField::from_canonical_u64(10),
+        GoldilocksField::from_canonical_u64(1),
+        GoldilocksField::from_canonical_u64(2),
+        GoldilocksField::from_canonical_u64(1015130275),
+    ];
+
     executor_run_test_program(
         "../assembler/test_data/bin/fibo_loop.json",
         "fib_loop_trace.txt",
         true,
-        None,
+        Some(calldata),
     );
 }
 
@@ -454,7 +462,6 @@ fn gen_storage_table_test() {
         store_val,
         tree_key_default(),
         GoldilocksField::ZERO,
-        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
     store_val[3] = GoldilocksField::from_canonical_u64(5);
@@ -464,7 +471,6 @@ fn gen_storage_table_test() {
         store_addr,
         store_val,
         tree_key_default(),
-        GoldilocksField::ZERO,
         GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
@@ -476,7 +482,6 @@ fn gen_storage_table_test() {
         tree_key_default(),
         tree_key_default(),
         GoldilocksField::ZERO,
-        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 
@@ -486,7 +491,6 @@ fn gen_storage_table_test() {
         store_addr,
         tree_key_default(),
         tree_key_default(),
-        GoldilocksField::ZERO,
         GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
@@ -501,7 +505,6 @@ fn gen_storage_table_test() {
         store_val,
         tree_key_default(),
         GoldilocksField::ZERO,
-        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 
@@ -513,7 +516,6 @@ fn gen_storage_table_test() {
         store_val,
         tree_key_default(),
         GoldilocksField::ZERO,
-        GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());
 
@@ -523,7 +525,6 @@ fn gen_storage_table_test() {
         store_addr,
         tree_key_default(),
         tree_key_default(),
-        GoldilocksField::ZERO,
         GoldilocksField::ZERO,
     );
     hash.push(tree_key_default());

@@ -8,7 +8,7 @@ use circuits::stark::verifier::verify_proof;
 use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
 use core::types::{Field, GoldilocksField};
-use core::vm::transaction::init_tx_context;
+use core::vm::transaction::init_tx_context_mock;
 use core::vm::vm_state::Address;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::load_tx::init_tape;
@@ -42,7 +42,7 @@ pub fn test_by_asm_json(path: String) {
     let mut process = Process::new();
     let now = Instant::now();
 
-    let calldata = [1073741824u64, 16000u64, 2u64, 3509365327u64]
+    let calldata = [3509365327u64, 2u64, 1073741824u64, 16000u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();
@@ -53,14 +53,11 @@ pub fn test_by_asm_json(path: String) {
         Address::default(),
         Address::default(),
         Address::default(),
-        &init_tx_context(),
+        &init_tx_context_mock(),
     );
 
-    let _ = process.execute(
-        &mut program,
-        &mut Some(prophets),
-        &mut AccountTree::new_test(),
-    );
+    program.prophets = prophets;
+    let _ = process.execute(&mut program, &mut AccountTree::new_test());
     info!("exec time:{}", now.elapsed().as_millis());
     let mut ola_stark = OlaStark::default();
     let now = Instant::now();

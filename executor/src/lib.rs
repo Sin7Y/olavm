@@ -1795,7 +1795,6 @@ impl Process {
     pub fn execute(
         &mut self,
         program: &mut Program,
-        prophets: &mut Option<HashMap<u64, OlaProphet>>,
         account_tree: &mut AccountTree,
     ) -> Result<VMState, ProcessorError> {
         let instrs_len = program.instructions.len() as u64;
@@ -1806,6 +1805,19 @@ impl Process {
             while pc < instrs_len {
                 pc = self.execute_decode(program, pc, instrs_len).unwrap();
             }
+            // init heap ptr
+            self.memory.write(
+                HP_START_ADDR,
+                0, //write， clk is 0
+                GoldilocksField::from_canonical_u64(0 as u64),
+                GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
+                GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
+                GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
+                GoldilocksField::from_canonical_u64(0_u64),
+                GoldilocksField::from_canonical_u64(1_u64),
+                GoldilocksField(HP_START_ADDR + 1),
+                self.env_idx,
+            );
         }
         let decode_time = start.elapsed();
         debug!("decode_time: {}", decode_time.as_secs());
@@ -1816,11 +1828,6 @@ impl Process {
         );
 
         let mut start = Instant::now();
-
-        let mut prophets_insert = HashMap::new();
-        if prophets.is_some() {
-            prophets_insert = prophets.clone().unwrap();
-        }
 
         // todo : why need clear?
         //self.storage_log.clear();
@@ -1842,20 +1849,6 @@ impl Process {
             row.filter_looked_normal = true;
         }
         program.trace.builtin_poseidon.extend(prog_hash_rows);
-
-        // init heap ptr
-        self.memory.write(
-            HP_START_ADDR,
-            0, //write， clk is 0
-            GoldilocksField::from_canonical_u64(0 as u64),
-            GoldilocksField::from_canonical_u64(MemoryType::ReadWrite as u64),
-            GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
-            GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
-            GoldilocksField::from_canonical_u64(0_u64),
-            GoldilocksField::from_canonical_u64(1_u64),
-            GoldilocksField(HP_START_ADDR + 1),
-            self.env_idx,
-        );
 
         loop {
             self.register_selector = RegisterSelector::default();
@@ -1975,8 +1968,8 @@ impl Process {
                 _ => panic!("not match opcode:{}", opcode),
             }
 
-            if prophets_insert.get(&pc_status).is_some() {
-                self.prophet(&mut prophets_insert[&pc_status].clone())?
+            if program.prophets.get(&pc_status).is_some() {
+                self.prophet(&mut program.prophets[&pc_status].clone())?
             }
 
             if print_vm_state {

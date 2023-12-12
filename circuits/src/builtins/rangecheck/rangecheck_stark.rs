@@ -185,18 +185,14 @@ mod tests {
         }
 
         let mut program: Program = Program::default();
-
+        program.prophets = prophets;
         for inst in instructions {
             program.instructions.push(inst.to_string());
         }
 
         let mut process = Process::new();
         process.addr_storage = Address::default();
-        let _ = process.execute(
-            &mut program,
-            &mut Some(prophets),
-            &mut AccountTree::new_test(),
-        );
+        let _ = process.execute(&mut program, &mut AccountTree::new_test());
 
         let rows = generate_rc_trace::<F>(&program.trace.builtin_rangecheck);
         let len = rows[0].len();

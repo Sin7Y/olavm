@@ -15,7 +15,7 @@ use core::{
     crypto::{hash::Hasher, ZkHasher},
     merkle_tree::log::{StorageLog, WitnessStorageLog},
     types::merkle_tree::{encode_addr, tree_key_default},
-    vm::transaction::init_tx_context,
+    vm::transaction::init_tx_context_mock,
 };
 use executor::{
     load_tx::init_tape,
@@ -221,7 +221,7 @@ pub fn get_exec_trace(
             caller_addr,
             callee,
             callee_exe_addr,
-            &init_tx_context(),
+            &init_tx_context_mock(),
         );
     }
 
@@ -245,7 +245,8 @@ pub fn get_exec_trace(
         previous_value: tree_key_default(),
     });
 
-    let res = process.execute(&mut program, &mut Some(prophets), &mut db);
+    program.prophets = prophets;
+    let res = process.execute(&mut program, &mut db);
     match res {
         Ok(_) => {}
         Err(e) => {

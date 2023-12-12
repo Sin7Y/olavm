@@ -12,7 +12,7 @@ use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::Program;
 use core::trace::trace::Trace;
-use core::vm::transaction::init_tx_context;
+use core::vm::transaction::init_tx_context_mock;
 use core::vm::vm_state::Address;
 use executor::load_tx::init_tape;
 use executor::Process;
@@ -108,6 +108,7 @@ fn main() {
             }
 
             let mut program: Program = Program::default();
+            program.prophets = prophets;
 
             for inst in instructions {
                 program.instructions.push(inst.to_string());
@@ -115,10 +116,8 @@ fn main() {
 
             let now = Instant::now();
             let mut process = Process::new();
-            let mut args: Vec<_> = calldata.drain(2..).collect();
-            calldata.reverse();
-            args.extend(calldata);
-            if args.len() < 2 {
+
+            if calldata.len() < 2 {
                 panic!("args length must larger than 2");
             }
 
@@ -146,17 +145,16 @@ fn main() {
             ];
             init_tape(
                 &mut process,
-                args,
+                calldata,
                 caller_addr,
                 callee,
                 callee_exe_addr,
-                &init_tx_context(),
+                &init_tx_context_mock(),
             );
 
             process
                 .execute(
                     &mut program,
-                    &mut Some(prophets),
                     &mut AccountTree::new_db_test("./db_test".to_string()),
                 )
                 .expect("OlaVM execute fail");
@@ -184,6 +182,7 @@ fn main() {
                 instructions: trace.raw_binary_instructions.clone(),
                 trace,
                 debug_info: None,
+                prophets: HashMap::new(),
                 pre_exe_flag: false,
             };
 

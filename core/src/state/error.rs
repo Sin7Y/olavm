@@ -8,4 +8,6 @@ pub enum StateError {
     VmExecError(String),
     #[error("VM json serde error")]
     JsonSerdeError(#[from] serde_json::Error),
+    #[error("VM json serde error")]
+    GetProgramError(String),
 }

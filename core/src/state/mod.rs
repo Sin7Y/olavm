@@ -56,6 +56,19 @@ where
         return Ok(code_hash);
     }
 
+    pub fn save_program(
+        &mut self,
+        code_hash: &TreeValue,
+        contract: &Vec<u8>,
+    ) -> Result<(), StateError> {
+        self.state_storage.save_program(&code_hash, &contract)?;
+        Ok(())
+    }
+
+    pub fn get_program(&self, code_hashes: &TreeValue) -> Result<Vec<u8>, StateError> {
+        self.state_storage.get_program(code_hashes)
+    }
+
     pub fn get_contracts(
         &self,
         code_hashes: &Vec<TreeValue>,

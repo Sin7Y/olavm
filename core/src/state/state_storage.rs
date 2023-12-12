@@ -47,6 +47,39 @@ impl StateStorage {
         self.db.write(batch).map_err(StateError::StorageIoError)
     }
 
+    pub fn save_program(
+        &mut self,
+        code_hash: &TreeValue,
+        code: &Vec<u8>,
+    ) -> Result<(), StateError> {
+        let mut batch = WriteBatch::default();
+        let cf = self
+            .db
+            .cf_state_keeper_handle(StateKeeperColumnFamily::Contracts);
+        let code_key = tree_key_to_u8_arr(code_hash);
+
+        batch.put_cf(cf, &code_key, code);
+        self.db.write(batch).map_err(StateError::StorageIoError)
+    }
+
+    pub fn get_program(&self, code_hash: &TreeValue) -> Result<Vec<u8>, StateError> {
+        let cf = self
+            .db
+            .cf_state_keeper_handle(StateKeeperColumnFamily::Contracts);
+
+        let mut res = self.db.get_cf(cf, tree_key_to_u8_arr(code_hash));
+
+        if let Ok(res) = res {
+            if res.is_some() {
+                return Ok(res.unwrap());
+            } else {
+                return Err(StateError::GetProgramError("program empty".to_string()));
+            }
+        }
+
+        Err(StateError::GetProgramError(res.err().unwrap().to_string()))
+    }
+
     pub fn get_contracts(
         &self,
         code_hashes: &Vec<TreeValue>,

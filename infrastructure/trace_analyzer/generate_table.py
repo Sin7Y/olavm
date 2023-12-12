@@ -34,7 +34,6 @@ class OpcodeValue(Enum):
 
 
 class JsonMainTraceColumnType(Enum):
-    TX_IDX = 'tx_idx'
     ENV_IDX = 'env_idx'
     SC_CNT = 'call_sc_cnt'
     CLK = 'clk'
@@ -77,7 +76,6 @@ class JsonMainTraceColumnType(Enum):
     SEL_SLOAD = 'sel_sload'
 
 class MainTraceColumnType(Enum):
-    TX_IDX = 'tx_idx'
     ENV_IDX = 'env_idx'
     SC_CNT = 'call_sc_cnt'
     CLK = 'clk'
@@ -180,7 +178,6 @@ class MainTraceColumnType(Enum):
 
 
 class MemoryTraceColumnType(Enum):
-    TX_IDX = 'tx_idx'
     ENV_IDX = 'env_idx'
     ADDR = 'addr'
     CLK = 'clk'
@@ -238,7 +235,6 @@ class ComparisonTraceColumnType(Enum):
     FILTER_LOOKING_FOR_RANGE_CHECK = 'filter_looking_rc'
 
 class StorageTraceColumnType(Enum):
-    TX_IDX = 'tx_idx'
     ENV_IDX = 'env_idx'
     CLK = 'clk'
     OP = 'opcode'
@@ -296,7 +292,6 @@ class PoseidonHashTraceColumnType(Enum):
     FILTER_LOOKED_STORAGE_BRANCH = 'filter_looked_storage_branch'
 
 class PoseidonChunkTraceColumnType(Enum):
-    TX_IDX = 'tx_idx'
     ENV_IDX = 'env_idx'
     CLK = 'clk'
     OPCODE = "opcode"
@@ -310,7 +305,6 @@ class PoseidonChunkTraceColumnType(Enum):
     IS_EXT_LINE = 'is_ext_line'
 
 class TapeTraceColumnType(Enum):
-    TX_IDX = 'tx_idx'
     IS_INIT = "is_init"
     OPCODE = "opcode"
     ADDR = "addr"
@@ -429,8 +423,8 @@ def main():
                     worksheet.write(row_index, col, reg)
                     col += 1
             elif data.value == 'asm':
-                if trace_json["raw_instructions"] != {}:
-                    worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
+                # if trace_json["raw_instructions"] != {}:
+                #     worksheet.write(row_index, col, '{0}'.format(trace_json["raw_instructions"]['{0}'.format(row["pc"])]))
                 col += 1
             else:
                 if data.value == "instruction" or data.value == "opcode" or data.value == "aux0":

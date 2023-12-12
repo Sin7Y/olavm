@@ -121,7 +121,7 @@ mod tests {
     use crate::program::columns::NUM_PROG_COLS;
     use crate::{program::program_stark::ProgramStark, stark::stark::Stark};
     use assembler::encoder::encode_asm_from_json_file;
-    use core::vm::transaction::init_tx_context;
+    use core::vm::transaction::init_tx_context_mock;
     use core::{
         merkle_tree::tree::AccountTree,
         program::Program,
@@ -181,15 +181,12 @@ mod tests {
                 Address::default(),
                 Address::default(),
                 Address::default(),
-                &init_tx_context(),
+                &init_tx_context_mock(),
             );
         }
 
-        let _ = process.execute(
-            &mut program,
-            &mut Some(prophets),
-            &mut AccountTree::new_test(),
-        );
+        program.prophets = prophets;
+        let _ = process.execute(&mut program, &mut AccountTree::new_test());
         let insts = program
             .instructions
             .iter()
