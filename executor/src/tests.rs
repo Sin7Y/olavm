@@ -191,10 +191,10 @@ fn call_test() {
 #[test]
 fn fibo_use_loop_decode() {
     let calldata = vec![
+        GoldilocksField::from_canonical_u64(1015130275),
+        GoldilocksField::from_canonical_u64(2),
         GoldilocksField::from_canonical_u64(10),
         GoldilocksField::from_canonical_u64(1),
-        GoldilocksField::from_canonical_u64(2),
-        GoldilocksField::from_canonical_u64(1015130275),
     ];
 
     executor_run_test_program(
@@ -208,8 +208,8 @@ fn fibo_use_loop_decode() {
 #[test]
 fn ptr_call() {
     let calldata = vec![
-        GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(2657046596),
+        GoldilocksField::from_canonical_u64(0),
     ];
     executor_run_test_program(
         "../assembler/test_data/bin/ptr_call.json",
@@ -332,10 +332,10 @@ fn tape_test() {
 #[test]
 fn sc_input_test() {
     let calldata = vec![
+        GoldilocksField::from_canonical_u64(253268590),
+        GoldilocksField::from_canonical_u64(2),
         GoldilocksField::from_canonical_u64(10),
         GoldilocksField::from_canonical_u64(20),
-        GoldilocksField::from_canonical_u64(2),
-        GoldilocksField::from_canonical_u64(253268590),
     ];
 
     executor_run_test_program(
@@ -349,8 +349,8 @@ fn sc_input_test() {
 #[test]
 fn storage_u32_test() {
     let calldata = vec![
-        GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(2364819430),
+        GoldilocksField::from_canonical_u64(0),
     ];
     executor_run_test_program(
         "/Users/Softcloud/develop/zk/sin7y/olavm/assembler/test_data/bin/storage_u32.json",
@@ -363,8 +363,8 @@ fn storage_u32_test() {
 #[test]
 fn poseidon_hash_test() {
     let calldata = vec![
-        GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(1239976900),
+        GoldilocksField::from_canonical_u64(0),
     ];
     executor_run_test_program(
         "../assembler/test_data/bin/poseidon_hash.json",
@@ -377,8 +377,8 @@ fn poseidon_hash_test() {
 #[test]
 fn context_fetch_test() {
     let calldata = vec![
-        GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(3458276513),
+        GoldilocksField::from_canonical_u64(0),
     ];
     executor_run_test_program(
         "../assembler/test_data/bin/context_fetch.json",
@@ -390,7 +390,7 @@ fn context_fetch_test() {
 
 #[test]
 fn printf_test() {
-    let call_data = [5, 111, 108, 97, 118, 109, 11, 12, 8, 3238128773];
+    let call_data = [3238128773, 8, 5, 111, 108, 97, 118, 109, 11, 12];
 
     let calldata = call_data
         .iter()
@@ -405,7 +405,7 @@ fn printf_test() {
 }
 #[test]
 fn callee_ret_test() {
-    let call_data = [5, 11, 2, 2062500454];
+    let call_data = [2062500454, 2, 5, 11];
 
     let calldata = call_data
         .iter()
@@ -421,7 +421,7 @@ fn callee_ret_test() {
 
 #[test]
 fn global_test() {
-    let call_data = [0, 4171824493];
+    let call_data = [4171824493, 0];
 
     let calldata = call_data
         .iter()
