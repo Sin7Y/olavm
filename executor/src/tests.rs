@@ -14,16 +14,15 @@ use core::state::state_storage::StateStorage;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
-use core::vm::transaction::init_tx_context_mock;
-use std::vec;
+use core::vm::transaction::init_tx_context;
 use log::{debug, LevelFilter};
-use num::{BigInt, BigUint, Num};
+use ola_lang_abi::{Abi, Value, FixedArray4};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use ola_lang_abi::{Abi, Value};
+use std::vec;
 
 fn executor_run_test_program(
     bin_file_path: &str,
@@ -108,7 +107,7 @@ fn executor_run_test_program(
         .addr_program_hash
         .insert(encode_addr(&callee_exe_addr), code);
     //let mut account_tree = AccountTree::new_test();
-    let mut account_tree =AccountTree::new_db_test("../assembler/test_data/db".to_string());
+    let mut account_tree = AccountTree::new_db_test("../assembler/test_data/db".to_string());
 
     account_tree.process_block(vec![WitnessStorageLog {
         storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
@@ -462,14 +461,19 @@ fn hash_test() {
 
 #[test]
 fn vote_init() {
-
     let abi: Abi = {
-        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
+        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json")
+            .expect("failed to open ABI file");
 
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
     let func_0 = abi.functions[0].clone();
-    let input_0 = abi.encode_input_values(&[Value::Array(vec![Value::U32(22), Value::U32(33), Value::U32(44)], ola_lang_abi::Type::U32)]).unwrap();
+    let input_0 = abi
+        .encode_input_values(&[Value::Array(
+            vec![Value::U32(22), Value::U32(33), Value::U32(44)],
+            ola_lang_abi::Type::U32,
+        )])
+        .unwrap();
     // encode input and function selector
     let mut input_0 = input_0[1..input_0.len()].to_vec();
     input_0.extend(&[input_0.len() as u64]);
@@ -485,15 +489,13 @@ fn vote_init() {
         false,
         Some(calldata_0),
     );
-
 }
-
 
 #[test]
 fn vote_proposal() {
-
     let abi: Abi = {
-        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
+        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json")
+            .expect("failed to open ABI file");
 
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
@@ -520,12 +522,11 @@ fn vote_proposal() {
     );
 }
 
-
 #[test]
 fn vote_get_winner_proposal() {
-
     let abi: Abi = {
-        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
+        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json")
+            .expect("failed to open ABI file");
 
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
@@ -551,12 +552,11 @@ fn vote_get_winner_proposal() {
     );
 }
 
-
 #[test]
 fn vote_get_winner_name() {
-
     let abi: Abi = {
-        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json").expect("failed to open ABI file");
+        let file = File::open("../assembler/test_data/abi/vote_simple_abi.json")
+            .expect("failed to open ABI file");
 
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
@@ -580,6 +580,107 @@ fn vote_get_winner_name() {
         Some(calldata_1),
     );
 }
+
+#[test]
+fn account_code_storage_func_0_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/AccountCodeStorage_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_0 = abi.functions[0].clone();
+        // encode input and function selector
+        let mut input_0 = vec![];
+        input_0.extend(&[input_0.len() as u64]);
+        input_0.extend(&[func_0.method_id()]);
+
+        println!("input_0:{:?}", input_0);
+
+        let calldata_0 = input_0
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/AccountCodeStorage.json",
+            "account_code_storage_trace.txt",
+            false,
+            Some(calldata_0),
+        );
+    }
+
+
+}
+
+#[test]
+fn account_code_storage_func_1_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/AccountCodeStorage_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_1 = abi.functions[1].clone();
+        // encode input and function selector
+        let input_1 = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4]))]).unwrap();
+        let mut input_1 = input_1[1..input_1.len()].to_vec();
+        input_1.extend(&[input_1.len() as u64]);
+        input_1.extend(&[func_1.method_id()]);
+    
+        println!("input_1:{:?}", input_1);
+    
+        let calldata_1 = input_1
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/AccountCodeStorage.json",
+            "account_code_storage_trace.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+
+}
+
+
+#[test]
+fn account_code_storage_func_2_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/AccountCodeStorage_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[2].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/AccountCodeStorage.json",
+            "account_code_storage_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
 
 
 
