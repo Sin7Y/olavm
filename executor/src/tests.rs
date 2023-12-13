@@ -13,7 +13,8 @@ use core::program::Program;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
-use core::vm::transaction::init_tx_context;
+use core::vm::transaction::init_tx_context_mock;
+use std::slice::SliceIndex;
 use log::{debug, LevelFilter};
 use ola_lang_abi::{Abi, Value, FixedArray4};
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -68,23 +69,26 @@ fn executor_run_test_program(
 
     let tp_start = 0;
 
+    // code address
     let callee: Address = [
         GoldilocksField::from_canonical_u64(9),
         GoldilocksField::from_canonical_u64(10),
         GoldilocksField::from_canonical_u64(11),
         GoldilocksField::from_canonical_u64(12),
     ];
+    // caller address
     let caller_addr = [
         GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(32769),
     ];
+    // current address
     let callee_exe_addr = [
-        GoldilocksField::from_canonical_u64(13),
-        GoldilocksField::from_canonical_u64(14),
-        GoldilocksField::from_canonical_u64(15),
-        GoldilocksField::from_canonical_u64(16),
+        GoldilocksField::from_canonical_u64(9),
+        GoldilocksField::from_canonical_u64(10),
+        GoldilocksField::from_canonical_u64(11),
+        GoldilocksField::from_canonical_u64(12),
     ];
 
     if let Some(calldata) = call_data {
@@ -686,7 +690,384 @@ fn account_code_storage_func_2_test() {
 }
 
 
+#[test]
+fn contract_deployer_func_0_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/ContractDeployer_abi.json")
+            .expect("failed to open ABI file");
 
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[0].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/ContractDeployer.json",
+            "contract_deployer_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+#[test]
+fn contract_deployer_func_1_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/ContractDeployer_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[1].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/ContractDeployer.json",
+            "contract_deployer_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+
+#[test]
+fn contract_deployer_func_2_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/ContractDeployer_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[2].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/ContractDeployer.json",
+            "contract_deployer_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+
+#[test]
+fn contract_deployer_func_3_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/ContractDeployer_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[3].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/ContractDeployer.json",
+            "contract_deployer_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+
+#[test]
+fn contract_deployer_func_4_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/ContractDeployer_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[4].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/ContractDeployer.json",
+            "contract_deployer_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+#[test]
+fn contract_deployer_func_5_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/ContractDeployer_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[5].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/ContractDeployer.json",
+            "contract_deployer_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+
+
+#[test]
+fn contract_deployer_func_6_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/ContractDeployer_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[6].clone();
+        // encode input and function selector
+        let sender = Value::Address(FixedArray4([77,88,99,100]));
+        let newAddress = Value::Address(FixedArray4([110,120,130,140]));
+        let bytecodeHash = Value::Hash(FixedArray4([150, 160, 170, 180]));
+        let input = Value::Fields(vec![190, 200]);
+        let isSystem = Value::Bool(true);
+        let callConstructor = Value::Bool(true);
+        let input = abi.encode_input_values(&[sender, newAddress, bytecodeHash, input, isSystem, callConstructor]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/ContractDeployer.json",
+            "contract_deployer_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+
+#[test]
+fn default_account_func_0_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/DefaultAccount_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[0].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/AccountCodeStorage.json",
+            "account_code_storage_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+
+
+#[test]
+fn default_account_func_1_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/DefaultAccount_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[1].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/DefaultAccount.json",
+            "default_account_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+
+#[test]
+fn default_account_func_2_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/DefaultAccount_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[2].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/DefaultAccount.json",
+            "default_account_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
+
+
+#[test]
+fn default_account_func_3_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/DefaultAccount_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[3].clone();
+        // encode input and function selector
+        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let mut input = input[1..input.len()].to_vec();
+        input.extend(&[input.len() as u64]);
+        input.extend(&[func.method_id()]);
+    
+        println!("input:{:?}", input);
+    
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/DefaultAccount.json",
+            "default_account_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+
+}
 
 #[test]
 fn gen_storage_table_test() {
