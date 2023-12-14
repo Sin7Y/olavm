@@ -30,4 +30,4 @@ secp256k1 = { version = "0.28.1", default-features = false, features = ["hashes-
 num = "0.4.1"
 
 [dev-dependencies]
-ola-lang-abi = "1.0.2"
+ola-lang-abi = "1.0.3"

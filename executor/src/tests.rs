@@ -451,9 +451,8 @@ fn array_test() {
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
     let func = abi.functions[0].clone();
-    let mut input = abi.encode_input_values(&[]).unwrap();
+    let input = abi.encode_input_with_signature(func.signature().as_str(), &[]).unwrap();
     // encode input and function selector
-    input.extend(&[func.method_id()]);
 
     let calldata = input
         .iter()
@@ -476,16 +475,13 @@ fn vote_init() {
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
     let func_0 = abi.functions[0].clone();
-    let input_0 = abi
-        .encode_input_values(&[Value::Array(
+    let input_0 = abi.encode_input_with_signature(func_0.signature().as_str(), &[Value::Array(
             vec![Value::U32(22), Value::U32(33), Value::U32(44)],
             ola_lang_abi::Type::U32,
         )])
         .unwrap();
     // encode input and function selector
-    let mut input_0 = input_0[1..input_0.len()].to_vec();
-    input_0.extend(&[input_0.len() as u64]);
-    input_0.extend(&[func_0.method_id()]);
+
     println!("input_0:{:?}", input_0);
     let calldata_0 = input_0
         .iter()
@@ -510,11 +506,7 @@ fn vote_proposal() {
 
     let func_1 = abi.functions[1].clone();
 
-    let input_1 = abi.encode_input_values(&[Value::U32(2)]).unwrap();
-    // encode input and function selector
-    let mut input_1 = input_1[1..input_1.len()].to_vec();
-    input_1.extend(&[input_1.len() as u64]);
-    input_1.extend(&[func_1.method_id()]);
+    let input_1 = abi.encode_input_with_signature(func_1.signature().as_str(), &[Value::U32(2)]).unwrap();
 
     println!("input_1:{:?}", input_1);
 
@@ -542,13 +534,11 @@ fn vote_get_winner_proposal() {
     let func_2 = abi.functions[2].clone();
 
     // encode input and function selector
-    let mut input_2 = vec![];
-    input_2.extend(&[input_2.len() as u64]);
-    input_2.extend(&[func_2.method_id()]);
+    let input_2 = abi.encode_input_with_signature(func_2.signature().as_str(), &[]).unwrap();
 
     println!("input_2:{:?}", input_2);
 
-    let calldata_1 = input_2
+    let calldata_2 = input_2
         .iter()
         .map(|e| GoldilocksField::from_canonical_u64(*e))
         .collect();
@@ -556,7 +546,7 @@ fn vote_get_winner_proposal() {
         "../assembler/test_data/bin/vote_simple.json",
         "vote_simple_trace.txt",
         false,
-        Some(calldata_1),
+        Some(calldata_2),
     );
 }
 
@@ -571,13 +561,12 @@ fn vote_get_winner_name() {
 
     let func_3 = abi.functions[3].clone();
     // encode input and function selector
-    let mut input_2 = vec![];
-    input_2.extend(&[input_2.len() as u64]);
-    input_2.extend(&[func_3.method_id()]);
+    let input_3 = abi.encode_input_with_signature(func_3.signature().as_str(), &[]).unwrap();
 
-    println!("input_2:{:?}", input_2);
 
-    let calldata_1 = input_2
+    println!("input_3:{:?}", input_3);
+
+    let calldata_3 = input_3
         .iter()
         .map(|e| GoldilocksField::from_canonical_u64(*e))
         .collect();
@@ -585,7 +574,7 @@ fn vote_get_winner_name() {
         "../assembler/test_data/bin/vote_simple.json",
         "vote_simple_trace.txt",
         false,
-        Some(calldata_1),
+        Some(calldata_3),
     );
 }
 
@@ -601,9 +590,7 @@ fn account_code_storage_func_0_test() {
     {
         let func_0 = abi.functions[0].clone();
         // encode input and function selector
-        let mut input_0 = vec![];
-        input_0.extend(&[input_0.len() as u64]);
-        input_0.extend(&[func_0.method_id()]);
+        let input_0 = abi.encode_input_with_signature(func_0.signature().as_str(), &[]).unwrap();
 
         println!("input_0:{:?}", input_0);
 
@@ -633,11 +620,9 @@ fn account_code_storage_func_1_test() {
 
     {
         let func_1 = abi.functions[1].clone();
+
         // encode input and function selector
-        let input_1 = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4]))]).unwrap();
-        let mut input_1 = input_1[1..input_1.len()].to_vec();
-        input_1.extend(&[input_1.len() as u64]);
-        input_1.extend(&[func_1.method_id()]);
+        let input_1 = abi.encode_input_with_signature(func_1.signature().as_str(), &[Value::Address(FixedArray4([1,2,3,4]))]).unwrap();
     
         println!("input_1:{:?}", input_1);
     
@@ -668,11 +653,8 @@ fn account_code_storage_func_2_test() {
     {
         let func = abi.functions[2].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
-    
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+
         println!("input:{:?}", input);
     
         let calldata = input
@@ -911,10 +893,7 @@ fn contract_deployer_func_6_test() {
         let input = Value::Fields(vec![190, 200]);
         let isSystem = Value::Bool(true);
         let callConstructor = Value::Bool(true);
-        let input = abi.encode_input_values(&[sender, newAddress, bytecodeHash, input, isSystem, callConstructor]).unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[sender, newAddress, bytecodeHash, input, isSystem, callConstructor]).unwrap();
     
         println!("input:{:?}", input);
     
