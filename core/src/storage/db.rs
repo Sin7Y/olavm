@@ -40,7 +40,7 @@ pub enum StateKeeperColumnFamily {
     Contracts,
     Prophets,
     Debugs,
-    ContractMap,
+    // ContractMap,
     FactoryDeps,
 }
 
@@ -49,6 +49,7 @@ pub enum SequencerColumnFamily {
     State,
     Contracts,
     FactoryDeps,
+    ContractMap,
 }
 
 impl MerkleTreeColumnFamily {
@@ -64,7 +65,6 @@ impl StateKeeperColumnFamily {
             Self::Contracts,
             Self::Prophets,
             Self::Debugs,
-            Self::ContractMap,
             Self::FactoryDeps,
         ]
     }
@@ -72,7 +72,7 @@ impl StateKeeperColumnFamily {
 
 impl SequencerColumnFamily {
     fn all() -> &'static [Self] {
-        &[Self::State, Self::Contracts, Self::FactoryDeps]
+        &[Self::State, Self::Contracts, Self::FactoryDeps, Self::ContractMap]
     }
 }
 
@@ -93,7 +93,6 @@ impl std::fmt::Display for StateKeeperColumnFamily {
             StateKeeperColumnFamily::Contracts => "contracts",
             StateKeeperColumnFamily::Prophets => "prophets",
             StateKeeperColumnFamily::Debugs => "debugs",
-            StateKeeperColumnFamily::ContractMap => "contract_map",
             StateKeeperColumnFamily::FactoryDeps => "factory_deps",
         };
         write!(formatter, "{}", value)
@@ -106,6 +105,7 @@ impl std::fmt::Display for SequencerColumnFamily {
             Self::State => "state",
             Self::Contracts => "contracts",
             Self::FactoryDeps => "factory_deps",
+            Self::ContractMap => "contract_map",
         };
         write!(formatter, "{}", value)
     }
