@@ -2125,9 +2125,15 @@ dependencies = [
 
 [[package]]
 name = "ola-lang-abi"
+<<<<<<< HEAD
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "635f703fa64be2ec8afddd62c5d128db606f1ba538a1d2c0151f0ae780a88389"
+=======
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ab19eccec2725d049af75afd49c5ff86655a004f3d961c7f2d32adcf054dc19"
+>>>>>>> 953f73a (refacotr input encode.)
 dependencies = [
  "anyhow",
  "nom",
