@@ -45,7 +45,7 @@ pub enum StateKeeperColumnFamily {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum SequencerColumnFamily {
+pub enum SequencerColumnFamily {
     State,
     Contracts,
     FactoryDeps,
@@ -201,6 +201,12 @@ impl RocksDB {
 
     /// Returns column family handle for State Keeper database
     pub fn cf_state_keeper_handle(&self, cf: StateKeeperColumnFamily) -> &ColumnFamily {
+        self.db
+            .cf_handle(&cf.to_string())
+            .unwrap_or_else(|| panic!("Column family '{}' doesn't exist", cf))
+    }
+
+    pub fn cf_sequencer_handle(&self, cf: SequencerColumnFamily) -> &ColumnFamily {
         self.db
             .cf_handle(&cf.to_string())
             .unwrap_or_else(|| panic!("Column family '{}' doesn't exist", cf))

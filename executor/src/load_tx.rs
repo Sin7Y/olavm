@@ -76,12 +76,9 @@ pub fn init_tape(
     callee_exe_addr: Address,
     ctx_info: &TxCtxInfo,
 ) {
-    let mut args: Vec<_> = calldata.drain(2..).collect();
-    calldata.reverse();
-    args.extend(calldata);
     let tp_start = load_tx_context(process, ctx_info);
     process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
-    load_tx_calldata(process, &args);
+    load_tx_calldata(process, &calldata);
     let ctx_addr_len = load_ctx_addr_info(
         process,
         &init_ctx_addr_info(caller_exe_addr, callee_addr, callee_exe_addr),

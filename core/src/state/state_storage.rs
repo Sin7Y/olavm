@@ -1,5 +1,5 @@
 use crate::state::error::StateError;
-use crate::storage::db::{RocksDB, StateKeeperColumnFamily};
+use crate::storage::db::{RocksDB, SequencerColumnFamily, StateKeeperColumnFamily};
 use crate::types::merkle_tree::{tree_key_to_u8_arr, u8_arr_to_tree_key, TreeValue};
 use crate::types::storage::{field_arr_to_u8_arr, u8_arr_to_field_arr};
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -47,27 +47,22 @@ impl StateStorage {
         self.db.write(batch).map_err(StateError::StorageIoError)
     }
 
-    pub fn save_program(
-        &mut self,
-        code_hash: &TreeValue,
-        code: &Vec<u8>,
-    ) -> Result<(), StateError> {
+    pub fn save_program(&mut self, code_hash: &Vec<u8>, code: &Vec<u8>) -> Result<(), StateError> {
         let mut batch = WriteBatch::default();
         let cf = self
             .db
-            .cf_state_keeper_handle(StateKeeperColumnFamily::Contracts);
-        let code_key = tree_key_to_u8_arr(code_hash);
+            .cf_sequencer_handle(SequencerColumnFamily::FactoryDeps);
 
-        batch.put_cf(cf, &code_key, code);
+        batch.put_cf(cf, code_hash, code);
         self.db.write(batch).map_err(StateError::StorageIoError)
     }
 
-    pub fn get_program(&self, code_hash: &TreeValue) -> Result<Vec<u8>, StateError> {
+    pub fn get_program(&self, code_hash: &Vec<u8>) -> Result<Vec<u8>, StateError> {
         let cf = self
             .db
-            .cf_state_keeper_handle(StateKeeperColumnFamily::Contracts);
+            .cf_sequencer_handle(SequencerColumnFamily::FactoryDeps);
 
-        let mut res = self.db.get_cf(cf, tree_key_to_u8_arr(code_hash));
+        let mut res = self.db.get_cf(cf, code_hash);
 
         if let Ok(res) = res {
             if res.is_some() {
@@ -122,20 +117,19 @@ impl StateStorage {
     pub fn save_contract_map(
         &mut self,
         contract_addr: &TreeValue,
-        code_hash: &TreeValue,
+        code_hash: &Vec<u8>,
     ) -> Result<(), StateError> {
         let mut batch = WriteBatch::default();
         let cf = self
             .db
             .cf_state_keeper_handle(StateKeeperColumnFamily::ContractMap);
         let code_key = tree_key_to_u8_arr(contract_addr);
-        let code_hash = tree_key_to_u8_arr(code_hash);
         batch.put_cf(cf, &code_key, code_hash);
 
         self.db.write(batch).map_err(StateError::StorageIoError)
     }
 
-    pub fn get_contract_map(&self, contract_addr: &TreeValue) -> Result<TreeValue, StateError> {
+    pub fn get_contract_map(&self, contract_addr: &TreeValue) -> Result<Vec<u8>, StateError> {
         let cf = self
             .db
             .cf_state_keeper_handle(StateKeeperColumnFamily::ContractMap);
@@ -143,7 +137,7 @@ impl StateStorage {
         let res = self.db.get_cf(cf, addr_key);
 
         if let Ok(code) = res {
-            return Ok(u8_arr_to_tree_key(&code.unwrap()));
+            return Ok(code.unwrap());
         } else {
             return Err(StateError::StorageIoError(res.err().unwrap()));
         }
