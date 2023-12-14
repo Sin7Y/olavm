@@ -122,7 +122,7 @@ impl StateStorage {
         let mut batch = WriteBatch::default();
         let cf = self
             .db
-            .cf_state_keeper_handle(StateKeeperColumnFamily::ContractMap);
+            .cf_sequencer_handle(SequencerColumnFamily::ContractMap);
         let code_key = tree_key_to_u8_arr(contract_addr);
         batch.put_cf(cf, &code_key, code_hash);
 
@@ -132,7 +132,7 @@ impl StateStorage {
     pub fn get_contract_map(&self, contract_addr: &TreeValue) -> Result<Vec<u8>, StateError> {
         let cf = self
             .db
-            .cf_state_keeper_handle(StateKeeperColumnFamily::ContractMap);
+            .cf_sequencer_handle(SequencerColumnFamily::ContractMap);
         let addr_key = tree_key_to_u8_arr(contract_addr);
         let res = self.db.get_cf(cf, addr_key);
 
