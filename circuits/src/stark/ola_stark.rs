@@ -687,7 +687,7 @@ mod tests {
 
     #[test]
     fn fibo_loop_test() {
-        let calldata = [4185064725u64, 2u64, 10u64, 1u64]
+        let calldata = [10u64, 1u64, 2, 4185064725u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
@@ -731,7 +731,7 @@ mod tests {
 
     #[test]
     fn test_ola_prophet_sqrt() {
-        let calldata = [3509365327u64, 2u64, 144u64, 10u64]
+        let calldata = [144u64, 10u64, 2, 3509365327u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
@@ -779,19 +779,19 @@ mod tests {
     fn test_ola_vote() {
         let db_name = "vote_test".to_string();
 
-        let init_calldata = [2817135588u64, 4u64, 3u64, 1u64, 2u64, 3u64]
+        let init_calldata = [3u64, 1u64, 2u64, 3u64, 4, 2817135588u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        let vote_calldata = [2791810083u64, 1u64, 2u64]
+        let vote_calldata = [2u64, 1, 2791810083u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        let winning_proposal_calldata = [3186728800u64, 0u64]
+        let winning_proposal_calldata = [0u64, 3186728800u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();
-        let winning_name_calldata = [363199787u64, 0u64]
+        let winning_name_calldata = [0u64, 363199787u64]
             .iter()
             .map(|v| GoldilocksField::from_canonical_u64(*v))
             .collect_vec();

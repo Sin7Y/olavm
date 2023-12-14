@@ -43,7 +43,7 @@ pub fn test_by_asm_json(path: String) {
     let mut process = Process::new();
     let now = Instant::now();
 
-    let calldata = [4185064725u64, 2u64, 47u64, 1000u64]
+    let calldata = [47u64, 1000u64, 2u64, 4185064725u64]
         .iter()
         .map(|v| GoldilocksField::from_canonical_u64(*v))
         .collect_vec();

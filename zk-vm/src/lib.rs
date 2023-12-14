@@ -14,7 +14,9 @@ use ola_core::state::NodeState;
 use ola_core::storage::db::{Database, RocksDB};
 use ola_core::trace::trace::Trace;
 use ola_core::types::account::Address;
-use ola_core::types::merkle_tree::{encode_addr, tree_key_default, tree_key_to_u8_arr, TreeValue};
+use ola_core::types::merkle_tree::{
+    encode_addr, tree_key_default, tree_key_to_u8_arr, u8_arr_to_tree_key, TreeValue,
+};
 use ola_core::types::GoldilocksField;
 use ola_core::types::{Field, PrimeField64};
 use ola_core::vm::error::ProcessorError;
@@ -49,7 +51,7 @@ impl OlaVM {
     pub fn new(tree_db_path: &Path, state_db_path: &Path, ctx_info: TxCtxInfo) -> Self {
         let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
         let account_tree = AccountTree::new(acc_db);
-        let state_db = RocksDB::new(Database::StateKeeper, state_db_path, false);
+        let state_db = RocksDB::new(Database::Sequencer, state_db_path, false);
         let ola_state = NodeState::new(
             Contracts {
                 contracts: HashMap::new(),
@@ -82,7 +84,7 @@ impl OlaVM {
 
     pub fn save_program(
         &mut self,
-        code_hash: &TreeValue,
+        code_hash: &Vec<u8>,
         contract: &Vec<u8>,
     ) -> Result<(), StateError> {
         self.ola_state.save_program(code_hash, contract)
@@ -100,7 +102,7 @@ impl OlaVM {
         self.ola_state.save_debug_info(code_hash, debug_info)
     }
 
-    pub fn get_program(&mut self, code_hashes: &TreeValue) -> Result<Vec<u8>, StateError> {
+    pub fn get_program(&mut self, code_hashes: &Vec<u8>) -> Result<Vec<u8>, StateError> {
         self.ola_state.get_program(code_hashes)
     }
 
@@ -128,12 +130,12 @@ impl OlaVM {
     pub fn save_contract_map(
         &mut self,
         contract_addr: &TreeValue,
-        code_hash: &TreeValue,
+        code_hash: &Vec<u8>,
     ) -> Result<(), StateError> {
         self.ola_state.save_contract_map(contract_addr, code_hash)
     }
 
-    pub fn get_contract_map(&mut self, contract_addr: &TreeValue) -> Result<TreeValue, StateError> {
+    pub fn get_contract_map(&mut self, contract_addr: &TreeValue) -> Result<Vec<u8>, StateError> {
         self.ola_state.get_contract_map(contract_addr)
     }
 
@@ -179,7 +181,10 @@ impl OlaVM {
             }
 
             process.program_log.push(WitnessStorageLog {
-                storage_log: StorageLog::new_read_log(exe_code_addr, code_hash),
+                storage_log: StorageLog::new_read_log(
+                    exe_code_addr,
+                    u8_arr_to_tree_key(&code_hash),
+                ),
                 previous_value: tree_key_default(),
             });
 
@@ -221,7 +226,7 @@ impl OlaVM {
         }
 
         self.save_prophet(&code_hash, &prophets)?;
-        self.save_contract_map(addr, &code_hash)?;
+        self.save_contract_map(addr, &tree_key_to_u8_arr(&code_hash))?;
 
         self.account_tree.process_block(vec![WitnessStorageLog {
             storage_log: StorageLog::new_write_log(addr.clone(), code_hash),
