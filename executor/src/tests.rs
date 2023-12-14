@@ -684,10 +684,7 @@ fn contract_deployer_func_0_test() {
     {
         let func = abi.functions[0].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4]))]).unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[Value::Address(FixedArray4([1,2,3,4]))]).unwrap();
     
         println!("input:{:?}", input);
     
@@ -717,10 +714,11 @@ fn contract_deployer_func_1_test() {
     {
         let func = abi.functions[1].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
+        let slat = Value::Hash(FixedArray4([1,2,3,4]));
+        let bytecode_hash = Value::Hash(FixedArray4([5,6,7,8]));
+        let input = Value::Fields(vec![10, 11]);
+
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[slat, bytecode_hash, input]).unwrap();
     
         println!("input:{:?}", input);
     
@@ -751,10 +749,12 @@ fn contract_deployer_func_2_test() {
     {
         let func = abi.functions[2].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
+        let slat = Value::Hash(FixedArray4([1,2,3,4]));
+        let bytecode_hash = Value::Hash(FixedArray4([5,6,7,8]));
+        let input = Value::Fields(vec![10, 11]);
+        let aaVersion = Value::U32(1);
+
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[slat, bytecode_hash, input, aaVersion]).unwrap();
     
         println!("input:{:?}", input);
     
