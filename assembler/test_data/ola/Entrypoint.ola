@@ -92,7 +92,8 @@ contract Entrypoint {
 
         // call the executeTransaction function of sender.
         // CR: for Deployment
-        _tx.sender.call(_tx.data);
+        // _tx.sender.call(_tx.data);
+        print(_tx.data);
 
         // Update the nonce
         address NONCE_HOLDER_ADDRESS = address(0x8003);

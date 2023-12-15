@@ -1016,17 +1016,28 @@ fn default_account_func_3_test() {
     };
 
     {
-        let func = abi.functions[1].clone();
-        // encode input and function selector
-        let input = abi
-            .encode_input_values(&[
-                Value::Address(FixedArray4([1, 2, 3, 4])),
-                Value::Address(FixedArray4([5, 6, 7, 8])),
-            ])
-            .unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
+        let func = abi.functions[3].clone();
+        let txHash = Value::Hash(FixedArray4([1, 2, 3, 4]));
+        let signedHash = Value::Hash(FixedArray4([5, 6, 7, 8]));
+        let sender = Value::Address(FixedArray4([77, 88, 99, 100]));
+        let nonce = Value::U32(1);
+        let version = Value::U32(1);
+        let chainId = Value::U32(1);
+        let data = Value::Fields(vec![190, 200, 210, 220, 230, 240]);
+        let code = Value::Fields(vec![250, 260, 270, 280, 290, 300]);
+        let signature = Value::Fields(vec![310, 320, 330, 340, 350, 360]);
+        let hash = Value::Hash(FixedArray4([370, 380, 390, 400]));
+        let tx = Value::Tuple(vec![
+            ("sender".to_string(), sender),
+            ("nonce".to_string(), nonce),
+            ("version".to_string(), version),
+            ("chainId".to_string(), chainId),
+            ("data".to_string(), data),
+            ("code".to_string(), code),
+            ("signature".to_string(), signature),
+            ("hash".to_string(), hash),
+        ]);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[txHash, signedHash, tx]).unwrap();
 
         println!("input:{:?}", input);
 
@@ -1042,6 +1053,235 @@ fn default_account_func_3_test() {
         );
     }
 }
+
+
+#[test]
+fn entry_point_func_0_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/Entrypoint_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[3].clone();
+        let sender = Value::Address(FixedArray4([77, 88, 99, 100]));
+        let nonce = Value::U32(1);
+        let version = Value::U32(3);
+        let chainId = Value::U32(1);
+        let data = Value::Fields(vec![190, 200, 210, 220, 230, 240]);
+        let code = Value::Fields(vec![250, 260, 270, 280, 290, 300]);
+        let signature = Value::Fields(vec![310, 320, 330, 340, 350, 360]);
+        let hash = Value::Hash(FixedArray4([370, 380, 390, 400]));
+        let tx = Value::Tuple(vec![
+            ("sender".to_string(), sender),
+            ("nonce".to_string(), nonce),
+            ("version".to_string(), version),
+            ("chainId".to_string(), chainId),
+            ("data".to_string(), data),
+            ("code".to_string(), code),
+            ("signature".to_string(), signature),
+            ("hash".to_string(), hash),
+        ]);
+        let isETHCall = Value::Bool(false);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx, isETHCall]).unwrap();
+
+        println!("input:{:?}", input);
+
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/Entrypoint.json",
+            "entry_point_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+}
+
+
+#[test]
+fn known_code_storage_func_1_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/KnownCodeStorage_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_1 = abi.functions[1].clone();
+
+        // encode input and function selector
+        let input_1 = abi
+            .encode_input_with_signature(
+                func_1.signature().as_str(),
+                &[Value::Hash(FixedArray4([1, 2, 3, 4]))],
+            )
+            .unwrap();
+
+        println!("input_1:{:?}", input_1);
+
+        let calldata_1 = input_1
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/KnownCodeStorage.json",
+            "known_code_storage.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
+
+#[test]
+fn known_code_storage_func_2_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/KnownCodeStorage_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_1 = abi.functions[2].clone();
+
+        // encode input and function selector
+        let input_1 = abi
+            .encode_input_with_signature(
+                func_1.signature().as_str(),
+                &[Value::Hash(FixedArray4([1, 2, 3, 4]))],
+            )
+            .unwrap();
+
+        println!("input_1:{:?}", input_1);
+
+        let calldata_1 = input_1
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/KnownCodeStorage.json",
+            "known_code_storage.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
+
+#[test]
+fn nonce_holder_func_1_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/NonceHolder_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_1 = abi.functions[1].clone();
+
+        // encode input and function selector
+        let input_1 = abi
+            .encode_input_with_signature(
+                func_1.signature().as_str(),
+                &[Value::Address(FixedArray4([1, 2, 3, 4])), Value::U32(1)],
+            )
+            .unwrap();
+
+        println!("input_1:{:?}", input_1);
+
+        let calldata_1 = input_1
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/NonceHolder.json",
+            "nonce_holder.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
+
+#[test]
+fn nonce_holder_func_2_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/NonceHolder_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_1 = abi.functions[2].clone();
+
+        // encode input and function selector
+        let input_1 = abi
+            .encode_input_with_signature(
+                func_1.signature().as_str(),
+                &[Value::Address(FixedArray4([1, 2, 3, 4])), Value::U32(1)],
+            )
+            .unwrap();
+
+        println!("input_1:{:?}", input_1);
+
+        let calldata_1 = input_1
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/NonceHolder.json",
+            "nonce_holder.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
+
+#[test]
+fn nonce_holder_func_3_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/NonceHolder_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_1 = abi.functions[3].clone();
+
+        // encode input and function selector
+        let input_1 = abi
+            .encode_input_with_signature(
+                func_1.signature().as_str(),
+                &[Value::Address(FixedArray4([1, 2, 3, 4]))],
+            )
+            .unwrap();
+
+        println!("input_1:{:?}", input_1);
+
+        let calldata_1 = input_1
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/NonceHolder.json",
+            "nonce_holder.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
 
 #[test]
 fn gen_storage_table_test() {
