@@ -841,8 +841,8 @@ fn default_account_func_2_test() {
             .map(|e| GoldilocksField::from_canonical_u64(*e))
             .collect();
         executor_run_test_program(
-            "../assembler/test_data/bin/AccountCodeStorage.json",
-            "account_code_storage_trace.txt",
+            "../assembler/test_data/bin/DefaultAccount.json",
+            "default_account_trace.txt",
             false,
             Some(calldata),
         );
