@@ -24,20 +24,21 @@ contract DefaultAccount {
     }
 
     fn validateTransaction(hash _txHash, hash _signedHash, Transaction _tx) -> (field) {
-        print(_txHash);
-        print(_signedHash);
-        print(_tx);
-        onlyEntrypointCall();
-        ignoreDelegateCall();
+        // print(_txHash);
+        // print(_signedHash);
+        // print(_tx);
+        // onlyEntrypointCall();
+        // ignoreDelegateCall();
 
-        // TODO: add signature verification.
+        // // TODO: add signature verification.
 
-        // TODO: selector is not supported right now.
-        // return DefaultAccount.validateTransaction.selector;
-        // we use hash to represent this for now. hash has 8 u32.
-        hash magic = poseidon_hash("validateTransaction(hash,hash,Transaction)");
-        fields hash_magic = fields(magic);
-        return hash_magic[0];
+        // // TODO: selector is not supported right now.
+        // // return DefaultAccount.validateTransaction.selector;
+        // // we use hash to represent this for now. hash has 8 u32.
+        // hash magic = poseidon_hash("validateTransaction(hash,hash,Transaction)");
+        // fields hash_magic = fields(magic);
+        // return hash_magic[0];
+        return 0;
     }
 
     fn executeTransaction(hash _txHash, hash _signedHash, Transaction _tx) -> (fields) {
