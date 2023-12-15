@@ -14,14 +14,14 @@ use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context_mock;
-use std::slice::SliceIndex;
 use log::{debug, LevelFilter};
-use ola_lang_abi::{Abi, Value, FixedArray4};
+use ola_lang_abi::{Abi, FixedArray4, Value};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
+use std::slice::SliceIndex;
 use std::vec;
 
 fn executor_run_test_program(
@@ -451,7 +451,9 @@ fn array_test() {
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
     let func = abi.functions[0].clone();
-    let input = abi.encode_input_with_signature(func.signature().as_str(), &[]).unwrap();
+    let input = abi
+        .encode_input_with_signature(func.signature().as_str(), &[])
+        .unwrap();
     // encode input and function selector
 
     let calldata = input
@@ -475,10 +477,14 @@ fn vote_init() {
         serde_json::from_reader(file).expect("failed to parse ABI")
     };
     let func_0 = abi.functions[0].clone();
-    let input_0 = abi.encode_input_with_signature(func_0.signature().as_str(), &[Value::Array(
-            vec![Value::U32(22), Value::U32(33), Value::U32(44)],
-            ola_lang_abi::Type::U32,
-        )])
+    let input_0 = abi
+        .encode_input_with_signature(
+            func_0.signature().as_str(),
+            &[Value::Array(
+                vec![Value::U32(22), Value::U32(33), Value::U32(44)],
+                ola_lang_abi::Type::U32,
+            )],
+        )
         .unwrap();
     // encode input and function selector
 
@@ -506,7 +512,9 @@ fn vote_proposal() {
 
     let func_1 = abi.functions[1].clone();
 
-    let input_1 = abi.encode_input_with_signature(func_1.signature().as_str(), &[Value::U32(2)]).unwrap();
+    let input_1 = abi
+        .encode_input_with_signature(func_1.signature().as_str(), &[Value::U32(2)])
+        .unwrap();
 
     println!("input_1:{:?}", input_1);
 
@@ -534,7 +542,9 @@ fn vote_get_winner_proposal() {
     let func_2 = abi.functions[2].clone();
 
     // encode input and function selector
-    let input_2 = abi.encode_input_with_signature(func_2.signature().as_str(), &[]).unwrap();
+    let input_2 = abi
+        .encode_input_with_signature(func_2.signature().as_str(), &[])
+        .unwrap();
 
     println!("input_2:{:?}", input_2);
 
@@ -561,8 +571,9 @@ fn vote_get_winner_name() {
 
     let func_3 = abi.functions[3].clone();
     // encode input and function selector
-    let input_3 = abi.encode_input_with_signature(func_3.signature().as_str(), &[]).unwrap();
-
+    let input_3 = abi
+        .encode_input_with_signature(func_3.signature().as_str(), &[])
+        .unwrap();
 
     println!("input_3:{:?}", input_3);
 
@@ -590,7 +601,9 @@ fn account_code_storage_func_0_test() {
     {
         let func_0 = abi.functions[0].clone();
         // encode input and function selector
-        let input_0 = abi.encode_input_with_signature(func_0.signature().as_str(), &[]).unwrap();
+        let input_0 = abi
+            .encode_input_with_signature(func_0.signature().as_str(), &[])
+            .unwrap();
 
         println!("input_0:{:?}", input_0);
 
@@ -605,8 +618,6 @@ fn account_code_storage_func_0_test() {
             Some(calldata_0),
         );
     }
-
-
 }
 
 #[test]
@@ -622,10 +633,15 @@ fn account_code_storage_func_1_test() {
         let func_1 = abi.functions[1].clone();
 
         // encode input and function selector
-        let input_1 = abi.encode_input_with_signature(func_1.signature().as_str(), &[Value::Address(FixedArray4([1,2,3,4]))]).unwrap();
-    
+        let input_1 = abi
+            .encode_input_with_signature(
+                func_1.signature().as_str(),
+                &[Value::Address(FixedArray4([1, 2, 3, 4]))],
+            )
+            .unwrap();
+
         println!("input_1:{:?}", input_1);
-    
+
         let calldata_1 = input_1
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -637,9 +653,7 @@ fn account_code_storage_func_1_test() {
             Some(calldata_1),
         );
     }
-
 }
-
 
 #[test]
 fn account_code_storage_func_2_test() {
@@ -653,10 +667,18 @@ fn account_code_storage_func_2_test() {
     {
         let func = abi.functions[2].clone();
         // encode input and function selector
-        let input = abi.encode_input_with_signature(func.signature().as_str(), &[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let input = abi
+            .encode_input_with_signature(
+                func.signature().as_str(),
+                &[
+                    Value::Address(FixedArray4([1, 2, 3, 4])),
+                    Value::Address(FixedArray4([5, 6, 7, 8])),
+                ],
+            )
+            .unwrap();
 
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -668,9 +690,7 @@ fn account_code_storage_func_2_test() {
             Some(calldata),
         );
     }
-
 }
-
 
 #[test]
 fn contract_deployer_func_0_test() {
@@ -684,10 +704,15 @@ fn contract_deployer_func_0_test() {
     {
         let func = abi.functions[0].clone();
         // encode input and function selector
-        let input = abi.encode_input_with_signature(func.signature().as_str(), &[Value::Address(FixedArray4([1,2,3,4]))]).unwrap();
-    
+        let input = abi
+            .encode_input_with_signature(
+                func.signature().as_str(),
+                &[Value::Address(FixedArray4([1, 2, 3, 4]))],
+            )
+            .unwrap();
+
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -699,7 +724,6 @@ fn contract_deployer_func_0_test() {
             Some(calldata),
         );
     }
-
 }
 
 #[test]
@@ -714,14 +738,16 @@ fn contract_deployer_func_1_test() {
     {
         let func = abi.functions[1].clone();
         // encode input and function selector
-        let slat = Value::Hash(FixedArray4([1,2,3,4]));
-        let bytecode_hash = Value::Hash(FixedArray4([5,6,7,8]));
+        let slat = Value::Hash(FixedArray4([1, 2, 3, 4]));
+        let bytecode_hash = Value::Hash(FixedArray4([5, 6, 7, 8]));
         let input = Value::Fields(vec![10, 11]);
 
-        let input = abi.encode_input_with_signature(func.signature().as_str(), &[slat, bytecode_hash, input]).unwrap();
-    
+        let input = abi
+            .encode_input_with_signature(func.signature().as_str(), &[slat, bytecode_hash, input])
+            .unwrap();
+
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -733,9 +759,7 @@ fn contract_deployer_func_1_test() {
             Some(calldata),
         );
     }
-
 }
-
 
 #[test]
 fn contract_deployer_func_2_test() {
@@ -749,15 +773,20 @@ fn contract_deployer_func_2_test() {
     {
         let func = abi.functions[2].clone();
         // encode input and function selector
-        let slat = Value::Hash(FixedArray4([1,2,3,4]));
-        let bytecode_hash = Value::Hash(FixedArray4([5,6,7,8]));
+        let slat = Value::Hash(FixedArray4([1, 2, 3, 4]));
+        let bytecode_hash = Value::Hash(FixedArray4([5, 6, 7, 8]));
         let input = Value::Fields(vec![10, 11]);
         let aaVersion = Value::U32(1);
 
-        let input = abi.encode_input_with_signature(func.signature().as_str(), &[slat, bytecode_hash, input, aaVersion]).unwrap();
-    
+        let input = abi
+            .encode_input_with_signature(
+                func.signature().as_str(),
+                &[slat, bytecode_hash, input, aaVersion],
+            )
+            .unwrap();
+
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -769,9 +798,7 @@ fn contract_deployer_func_2_test() {
             Some(calldata),
         );
     }
-
 }
-
 
 #[test]
 fn contract_deployer_func_3_test() {
@@ -785,13 +812,18 @@ fn contract_deployer_func_3_test() {
     {
         let func = abi.functions[3].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let input = abi
+            .encode_input_values(&[
+                Value::Address(FixedArray4([1, 2, 3, 4])),
+                Value::Address(FixedArray4([5, 6, 7, 8])),
+            ])
+            .unwrap();
         let mut input = input[1..input.len()].to_vec();
         input.extend(&[input.len() as u64]);
         input.extend(&[func.method_id()]);
-    
+
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -803,9 +835,7 @@ fn contract_deployer_func_3_test() {
             Some(calldata),
         );
     }
-
 }
-
 
 #[test]
 fn contract_deployer_func_4_test() {
@@ -819,13 +849,18 @@ fn contract_deployer_func_4_test() {
     {
         let func = abi.functions[4].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let input = abi
+            .encode_input_values(&[
+                Value::Address(FixedArray4([1, 2, 3, 4])),
+                Value::Address(FixedArray4([5, 6, 7, 8])),
+            ])
+            .unwrap();
         let mut input = input[1..input.len()].to_vec();
         input.extend(&[input.len() as u64]);
         input.extend(&[func.method_id()]);
-    
+
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -837,7 +872,6 @@ fn contract_deployer_func_4_test() {
             Some(calldata),
         );
     }
-
 }
 
 #[test]
@@ -852,13 +886,18 @@ fn contract_deployer_func_5_test() {
     {
         let func = abi.functions[5].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let input = abi
+            .encode_input_values(&[
+                Value::Address(FixedArray4([1, 2, 3, 4])),
+                Value::Address(FixedArray4([5, 6, 7, 8])),
+            ])
+            .unwrap();
         let mut input = input[1..input.len()].to_vec();
         input.extend(&[input.len() as u64]);
         input.extend(&[func.method_id()]);
-    
+
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -870,10 +909,7 @@ fn contract_deployer_func_5_test() {
             Some(calldata),
         );
     }
-
 }
-
-
 
 #[test]
 fn contract_deployer_func_6_test() {
@@ -887,16 +923,28 @@ fn contract_deployer_func_6_test() {
     {
         let func = abi.functions[6].clone();
         // encode input and function selector
-        let sender = Value::Address(FixedArray4([77,88,99,100]));
-        let newAddress = Value::Address(FixedArray4([110,120,130,140]));
+        let sender = Value::Address(FixedArray4([77, 88, 99, 100]));
+        let newAddress = Value::Address(FixedArray4([110, 120, 130, 140]));
         let bytecodeHash = Value::Hash(FixedArray4([150, 160, 170, 180]));
         let input = Value::Fields(vec![190, 200]);
         let isSystem = Value::Bool(true);
         let callConstructor = Value::Bool(true);
-        let input = abi.encode_input_with_signature(func.signature().as_str(), &[sender, newAddress, bytecodeHash, input, isSystem, callConstructor]).unwrap();
-    
+        let input = abi
+            .encode_input_with_signature(
+                func.signature().as_str(),
+                &[
+                    sender,
+                    newAddress,
+                    bytecodeHash,
+                    input,
+                    isSystem,
+                    callConstructor,
+                ],
+            )
+            .unwrap();
+
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -908,78 +956,7 @@ fn contract_deployer_func_6_test() {
             Some(calldata),
         );
     }
-
 }
-
-
-#[test]
-fn default_account_func_0_test() {
-    let abi: Abi = {
-        let file = File::open("../assembler/test_data/abi/DefaultAccount_abi.json")
-            .expect("failed to open ABI file");
-
-        serde_json::from_reader(file).expect("failed to parse ABI")
-    };
-
-    {
-        let func = abi.functions[0].clone();
-        // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
-    
-        println!("input:{:?}", input);
-    
-        let calldata = input
-            .iter()
-            .map(|e| GoldilocksField::from_canonical_u64(*e))
-            .collect();
-        executor_run_test_program(
-            "../assembler/test_data/bin/AccountCodeStorage.json",
-            "account_code_storage_trace.txt",
-            false,
-            Some(calldata),
-        );
-    }
-
-}
-
-
-
-#[test]
-fn default_account_func_1_test() {
-    let abi: Abi = {
-        let file = File::open("../assembler/test_data/abi/DefaultAccount_abi.json")
-            .expect("failed to open ABI file");
-
-        serde_json::from_reader(file).expect("failed to parse ABI")
-    };
-
-    {
-        let func = abi.functions[1].clone();
-        // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
-    
-        println!("input:{:?}", input);
-    
-        let calldata = input
-            .iter()
-            .map(|e| GoldilocksField::from_canonical_u64(*e))
-            .collect();
-        executor_run_test_program(
-            "../assembler/test_data/bin/DefaultAccount.json",
-            "default_account_trace.txt",
-            false,
-            Some(calldata),
-        );
-    }
-
-}
-
 
 #[test]
 fn default_account_func_2_test() {
@@ -993,27 +970,41 @@ fn default_account_func_2_test() {
     {
         let func = abi.functions[2].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
-        let mut input = input[1..input.len()].to_vec();
-        input.extend(&[input.len() as u64]);
-        input.extend(&[func.method_id()]);
-    
+        let txHash = Value::Hash(FixedArray4([1, 2, 3, 4]));
+        let signedHash = Value::Hash(FixedArray4([5, 6, 7, 8]));
+        let sender = Value::Address(FixedArray4([77, 88, 99, 100]));
+        let nonce = Value::U32(1);
+        let version = Value::U32(1);
+        let chainId = Value::U32(1);
+        let data = Value::Fields(vec![190, 200, 210, 220, 230, 240]);
+        let code = Value::Fields(vec![250, 260, 270, 280, 290, 300]);
+        let signature = Value::Fields(vec![310, 320, 330, 340, 350, 360]);
+        let hash = Value::Hash(FixedArray4([370, 380, 390, 400]));
+        let tx = Value::Tuple(vec![
+            ("sender".to_string(), sender),
+            ("nonce".to_string(), nonce),
+            ("version".to_string(), version),
+            ("chainId".to_string(), chainId),
+            ("data".to_string(), data),
+            ("code".to_string(), code),
+            ("signature".to_string(), signature),
+            ("hash".to_string(), hash),
+        ]);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[txHash, signedHash, tx]).unwrap();
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
             .collect();
         executor_run_test_program(
-            "../assembler/test_data/bin/DefaultAccount.json",
-            "default_account_trace.txt",
+            "../assembler/test_data/bin/AccountCodeStorage.json",
+            "account_code_storage_trace.txt",
             false,
             Some(calldata),
         );
     }
-
 }
-
 
 #[test]
 fn default_account_func_3_test() {
@@ -1025,15 +1016,20 @@ fn default_account_func_3_test() {
     };
 
     {
-        let func = abi.functions[3].clone();
+        let func = abi.functions[1].clone();
         // encode input and function selector
-        let input = abi.encode_input_values(&[Value::Address(FixedArray4([1,2,3,4])), Value::Address(FixedArray4([5,6,7,8]))]).unwrap();
+        let input = abi
+            .encode_input_values(&[
+                Value::Address(FixedArray4([1, 2, 3, 4])),
+                Value::Address(FixedArray4([5, 6, 7, 8])),
+            ])
+            .unwrap();
         let mut input = input[1..input.len()].to_vec();
         input.extend(&[input.len() as u64]);
         input.extend(&[func.method_id()]);
-    
+
         println!("input:{:?}", input);
-    
+
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -1045,7 +1041,6 @@ fn default_account_func_3_test() {
             Some(calldata),
         );
     }
-
 }
 
 #[test]

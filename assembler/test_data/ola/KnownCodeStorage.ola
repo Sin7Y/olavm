@@ -1,0 +1,20 @@
+contract KnownCodeStorage {
+    mapping(hash => bool) knownHashes;
+
+    fn onlyEntrypointCall() {
+        address ENTRY_POINT_ADDRESS = address(0x8001);
+        //assert(caller_address() == ENTRY_POINT_ADDRESS, "Only Entrypoint system contract can call this function.");
+    }
+
+    fn isCodehashKnown(hash _hash) -> (bool) {
+        return knownHashes[_hash];
+    }
+
+    fn markCodehashKnown(hash _hash) {
+        onlyEntrypointCall();
+
+        knownHashes[_hash] = true;
+
+        // CR: event
+    }
+}

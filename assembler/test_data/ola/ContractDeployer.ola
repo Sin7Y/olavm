@@ -1,0 +1,201 @@
+contract ContractDeployer {
+    // TODO: disable this for version 0.
+    // address MAX_SYSTEM_CONTRACT_ADDRESS = address(0xffff);
+    // address ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT = address(0x8002);
+    // address NONCE_HOLDER_ADDRESS = address(0x8003);
+
+    struct AccountInfo {
+        // 0 for normal contract, 1 for AA
+        u32 supportedAAVersion;
+        // 0 for `Sequential`, increase 1 by each transaction;
+        // 1 for `Arbitrary`, if nonce is not used before, it is allowed to use.
+        u32 nonceOrdering;
+    }
+
+    mapping(address => AccountInfo) accountInfos;
+
+    fn extendedAccountVersion(address _address) -> (u32) {
+        // MOCK_TEST:
+        // assert(_address == 0x0000000000000008000000000000000800000000000000080000000000000008address);
+        // _address is AA.
+        AccountInfo info = accountInfos[_address];
+        if (info.supportedAAVersion != 0) {
+            return info.supportedAAVersion;
+        }
+
+        // It is an EOA, it is still an account(the default account of AA).
+        address ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT = address(0x8002);
+        print(ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT);
+        fields get_codeHash_calldata = abi.encodeWithSignature("getCodeHash(address)", _address);
+        print(get_codeHash_calldata);
+        // fields get_codeHash_bytes = ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT.call(get_codeHash_calldata);
+        // hash codeHash = abi.decode(get_codeHash_bytes, (hash));
+        // // CR: compare codeHash with 0.
+        // if (codeHash == hash(0)) {
+        //     return 1;
+        // }
+
+        // _address is normal contract
+        return 0;
+    }
+
+    fn create2(
+        hash _salt,
+        hash _bytecodeHash,
+        fields _input
+    ) -> (address) {
+        return create2Account(_salt, _bytecodeHash, _input, 0);
+    }
+
+    fn create2Account(
+        hash _salt,
+        
+        hash _bytecodeHash,
+        fields _input,
+        u32 _aaVersion
+    ) -> (address) {
+        address newAddress = getNewAddressCreate2(caller_address(), _bytecodeHash, _salt, _input);
+        print(newAddress);
+        _nonSystemDeployOnAddress(_bytecodeHash, newAddress, _aaVersion, _input);
+        return newAddress;
+    }
+
+    fn getNewAddressCreate2(
+        address _sender,
+        hash _bytecodeHash,
+        hash _salt,
+        fields _input
+    ) -> (address) {
+        // TODO: constant is not supported yet.
+        hash CREATE2_PREFIX = poseidon_hash("OlaCreate2");
+        hash constructorInputHash = poseidon_hash(_input);
+        hash _hash = poseidon_hash(
+            abi.encode(CREATE2_PREFIX, _sender, _salt, _bytecodeHash, constructorInputHash));
+
+        return address(_hash);
+    }
+
+    fn _nonSystemDeployOnAddress(
+        hash _bytecodeHash,
+        address _newAddress,
+        u32 _aaVersion,
+        fields _input
+    ) {
+        assert(_bytecodeHash != hash(0x0), "BytecodeHash can not be zero");
+
+        address MAX_SYSTEM_CONTRACT_ADDRESS = address(0xffff);
+        assert(_newAddress > MAX_SYSTEM_CONTRACT_ADDRESS, "Can not deploy contracts in kernel space");
+
+        // We do not allow deploying twice on the same address.
+        address ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT = address(0x8002);
+        print(ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT);
+        fields get_codeHash_calldata = abi.encodeWithSignature("getCodeHash(address)", _newAddress);
+        print(get_codeHash_calldata);
+        // fields get_codeHash_bytes = ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT.call(get_codeHash_calldata);
+        // hash codeHash = abi.decode(get_codeHash_bytes, (hash));
+        // assert(codeHash == hash(0x0), "New address already deployed code");
+
+        // Do not allow deploying contracts to default accounts that have already executed transactions.
+        address NONCE_HOLDER_ADDRESS = address(0x8003);
+        fields deploy_nonce_calldata = abi.encodeWithSignature("usedNonces(address)", _newAddress);
+        print(deploy_nonce_calldata);
+        // fields deploy_nonce_bytes = NONCE_HOLDER_ADDRESS.call(deploy_nonce_calldata);
+        // u32 deploy_nonce = abi.decode(deploy_nonce_bytes, (u32));
+        // assert(deploy_nonce == 0, "Account is occupied");
+
+        _performDeployOnAddress(_bytecodeHash, _newAddress, _aaVersion, _input);
+    }
+
+    fn _performDeployOnAddress(
+        hash _bytecodeHash,
+        address _newAddress,
+        u32 _aaVersion,
+        fields _input
+    ) {
+        // Check the bytecodeHash is known(deployed)
+        address KNOWN_CODE_STORAGE_CONTRACT = address(0x8004);
+        fields is_codehash_known_calldata = abi.encodeWithSignature("isCodehashKnown(hash)", _bytecodeHash);
+        print(is_codehash_known_calldata);
+        // fields is_codehash_known_bytes = KNOWN_CODE_STORAGE_CONTRACT.call(is_codehash_known_calldata);
+        // bool is_codehash_known = abi.decode(is_codehash_known_bytes, (bool));
+        // assert(is_codehash_known, "The code hash is not known");
+
+        AccountInfo newAccountInfo;
+        newAccountInfo.supportedAAVersion = _aaVersion;
+        // Accounts have sequential nonces by default.
+        newAccountInfo.nonceOrdering = 0;
+        accountInfos[_newAddress] = newAccountInfo;
+
+        _constructContract(caller_address(), _newAddress, _bytecodeHash, _input, false, true);
+        
+        // TODO: event is not supported yet.
+        // emit ContractDeployed(caller_address(), _bytecodeHash, _newAddress);
+    }
+
+    fn _constructContract(
+        address _sender,
+        address _newAddress,
+        hash _bytecodeHash,
+        fields _input,
+        bool _isSystem,
+        bool _callConstructor
+    ) {
+        address ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT = address(0x8002);
+        print(_sender);
+        print(_newAddress);
+        print(_bytecodeHash);
+        print(_input);
+        print(_isSystem);
+        print(_callConstructor);
+        if (_callConstructor) {
+            // TODO: disable this for version 0.
+            // Set constructing flag for newAddress
+            // _storeConstructingByteCodeHashOnAddress(_newAddress, _bytecodeHash);
+
+            // Call construct of new deployed contract
+            // TODO: we need a constructor.
+            // CR: 
+            //_newAddress.call(_input);
+            
+            // TODO: disable this for version 0.
+            // Set newAddress constructed and save the codeHash.
+            // bytes constructed_calldata = abi.encodeWithSignature("markAccountCodeHashAsConstructed(address)", _newAddress);
+            fields constructed_calldata = abi.encodeWithSignature("storeCodeHash(address,hash)", _newAddress, _bytecodeHash);
+            print(constructed_calldata);
+            // ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT.call(constructed_calldata);
+        } else {
+            // TODO: disable this for version 0.
+            // If we do not call the constructor, we need to set the constructed code hash.
+            // bytes constructed_calldata = abi.encodeWithSignature("storeAccountConstructedCodeHash(address, hash)", _newAddress, _bytecodeHash);
+            fields constructed_calldata = abi.encodeWithSignature("storeCodeHash(address,hash)", _newAddress, _bytecodeHash);
+            print(constructed_calldata);
+            // ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT.call(constructed_calldata);
+        }
+    }
+
+    // TODO: disable this for version 0.
+    // // Bit mask of bytecode hash "isConstructor" marker
+    // hash constant IS_CONSTRUCTOR_BYTECODE_HASH_BIT_MASK =
+    //     0x00ff000000000000000000000000000000000000000000000000000000000000;
+
+    // // Bit mask to set the "isConstructor" marker in the bytecode hash
+    // hash constant SET_IS_CONSTRUCTOR_MARKER_BIT_MASK =
+    //     0x0001000000000000000000000000000000000000000000000000000000000000;
+        
+    // fn constructingBytecodeHash(hash _bytecodeHash) returns (hash) {
+    //     // Clear the "isConstructor" marker and set it to 0x01.
+    //     // TODO: hash bitwise operation is not supported yet.
+    //     return constructedBytecodeHash(_bytecodeHash) | SET_IS_CONSTRUCTOR_MARKER_BIT_MASK;
+    // }
+
+    // fn constructedBytecodeHash(hash _bytecodeHash) returns (hash) {
+    //     return _bytecodeHash & ~IS_CONSTRUCTOR_BYTECODE_HASH_BIT_MASK;
+    // }
+
+    // fn _storeConstructingByteCodeHashOnAddress(address _newAddress, hash _bytecodeHash) {
+    //     // Set the "isConstructor" flag to the bytecode hash
+    //     hash constructingBytecodeHash = constructingBytecodeHash(_bytecodeHash);
+    //     bytes store_codehash_calldata = abi.encodeWithSignature("storeCodeHash(address,hash)", _newAddress, constructingBytecodeHash);
+    //     ACCOUNT_CODE_STORAGE_SYSTEM_CONTRACT.call(store_codehash_calldata);
+    // }
+}

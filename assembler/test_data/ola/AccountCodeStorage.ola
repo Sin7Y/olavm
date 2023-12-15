@@ -1,0 +1,64 @@
+contract AccountCodeStorage {
+    mapping(address => hash) codeHashes;
+
+    // TODO: disable this for version 0.
+    // address DEPLOYER_SYSTEM_CONTRACT = address(0x8005);
+
+    // TODO: disable this for version 0.
+    // TODO: library is not supported yet, just copy same methods between contracts for now.
+    // Bit mask of bytecode hash "isConstructor" marker
+    // hash IS_CONSTRUCTOR_BYTECODE_HASH_BIT_MASK =
+    //     hash(0x00ff000000000000000000000000000000000000000000000000000000000000);
+
+    fn onlyDeployer() {
+        address DEPLOYER_SYSTEM_CONTRACT = address(0x8005);
+        assert(caller_address() == DEPLOYER_SYSTEM_CONTRACT, "Callable only by the deployer system contract");
+    }
+
+    fn getCodeHash(address _address) -> (hash) {
+        return codeHashes[_address];
+    }
+
+    fn storeCodeHash(address _address, hash _hash) {
+        onlyDeployer();
+
+        codeHashes[_address] = _hash;
+    }
+
+    // TODO: disable this for version 0.
+    // fn markAccountCodeHashAsConstructed(address _address) {
+    //     onlyDeployer();
+
+    //     hash codeHash = getCodeHash(_address);
+
+    //     assert(isContractConstructing(codeHash), "Code hash is not for a contract on constructor");
+
+    //     // Get the bytecode hash with "isConstructor" flag equal to false
+    //     hash constructedBytecodeHash = constructedBytecodeHash(codeHash);
+
+    //     storeCodeHash(_address, constructedBytecodeHash);
+    // }
+
+    // fn storeAccountConstructedCodeHash(address _address, hash _hash) {
+    //     onlyDeployer();
+    
+    //     // Check that code hash corresponds to the deploying smart contract
+    //     assert(isContractConstructed(_hash), "Code hash is not for a contract on constructor");
+    //     storeCodeHash(_address, _hash);
+    // }
+
+    // // TODO: hash is not array, so we can't use it as a bit mask
+    // fn isContractConstructing(hash _bytecodeHash) -> (bool) {
+    //     return _bytecodeHash[1] == hash(0x01);
+    // }
+
+    //  // TODO: hash is not array, so we can't use it as a bit mask
+    // fn isContractConstructed(hash _bytecodeHash) -> (bool) {
+    //     return _bytecodeHash[1] == hash(0x00);
+    // }
+
+    //  // TODO: hash is not array, so we can't use it as a bit mask
+    // fn constructedBytecodeHash(hash _bytecodeHash) -> (hash) {
+    //     return _bytecodeHash & ~IS_CONSTRUCTOR_BYTECODE_HASH_BIT_MASK;
+    // }
+}

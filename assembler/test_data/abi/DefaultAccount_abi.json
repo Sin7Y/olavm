@@ -17,58 +17,47 @@
     "inputs": [
       {
         "name": "_txHash",
-        "type": "hash",
-        "internalType": "hash"
+        "type": "hash"
       },
       {
         "name": "_signedHash",
-        "type": "hash",
-        "internalType": "hash"
+        "type": "hash"
       },
       {
         "name": "_tx",
         "type": "tuple",
-        "internalType": "struct DefaultAccount.Transaction",
         "components": [
           {
             "name": "sender",
-            "type": "address",
-            "internalType": "address"
+            "type": "address"
           },
           {
             "name": "nonce",
-            "type": "u32",
-            "internalType": "u32"
+            "type": "u32"
           },
           {
             "name": "version",
-            "type": "u32",
-            "internalType": "u32"
+            "type": "u32"
           },
           {
             "name": "chainid",
-            "type": "u32",
-            "internalType": "u32"
+            "type": "u32"
           },
           {
             "name": "data",
-            "type": "fields",
-            "internalType": "fields"
+            "type": "fields"
           },
           {
             "name": "codes",
-            "type": "fields",
-            "internalType": "fields"
+            "type": "fields"
           },
           {
             "name": "signature",
-            "type": "fields",
-            "internalType": "fields"
+            "type": "fields"
           },
           {
             "name": "codeHash",
-            "type": "hash",
-            "internalType": "hash"
+            "type": "hash"
           }
         ]
       }
@@ -76,8 +65,7 @@
     "outputs": [
       {
         "name": "",
-        "type": "field",
-        "internalType": "field"
+        "type": "field"
       }
     ]
   },
@@ -87,58 +75,47 @@
     "inputs": [
       {
         "name": "_txHash",
-        "type": "hash",
-        "internalType": "hash"
+        "type": "hash"
       },
       {
         "name": "_signedHash",
-        "type": "hash",
-        "internalType": "hash"
+        "type": "hash"
       },
       {
         "name": "_tx",
         "type": "tuple",
-        "internalType": "struct DefaultAccount.Transaction",
         "components": [
           {
             "name": "sender",
-            "type": "address",
-            "internalType": "address"
+            "type": "address"
           },
           {
             "name": "nonce",
-            "type": "u32",
-            "internalType": "u32"
+            "type": "u32"
           },
           {
             "name": "version",
-            "type": "u32",
-            "internalType": "u32"
+            "type": "u32"
           },
           {
             "name": "chainid",
-            "type": "u32",
-            "internalType": "u32"
+            "type": "u32"
           },
           {
             "name": "data",
-            "type": "fields",
-            "internalType": "fields"
+            "type": "fields"
           },
           {
             "name": "codes",
-            "type": "fields",
-            "internalType": "fields"
+            "type": "fields"
           },
           {
             "name": "signature",
-            "type": "fields",
-            "internalType": "fields"
+            "type": "fields"
           },
           {
             "name": "codeHash",
-            "type": "hash",
-            "internalType": "hash"
+            "type": "hash"
           }
         ]
       }
@@ -146,8 +123,7 @@
     "outputs": [
       {
         "name": "",
-        "type": "fields",
-        "internalType": "fields"
+        "type": "fields"
       }
     ]
   }
