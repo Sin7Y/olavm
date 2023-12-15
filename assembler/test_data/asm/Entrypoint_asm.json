@@ -1,0 +1,513 @@
+{
+  "program": "heap_malloc:\n.LBL14_0:\n  add r9 r9 1\n  mstore [r9,-1] r1\n  mload r1 [r9,-1]\n  mov r3 18446744060824649731\n  mload r0 [r3]\n  add r2 r0 r1\n  mov r1 18446744060824649731\n  mstore [r1] r2\n  add r9 r9 -1\n  ret\nvector_new:\n.LBL15_0:\n  add r9 r9 1\n  mstore [r9,-1] r1\n  mload r1 [r9,-1]\n  mov r4 18446744060824649731\n  mload r0 [r4]\n  add r2 r1 1\n  add r3 r0 r2\n  mov r2 18446744060824649731\n  mstore [r2] r3\n  mstore [r0] r1\n  add r9 r9 -1\n  ret\nmemcpy:\n.LBL16_0:\n  add r9 r9 4\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-3] r2\n  mload r2 [r9,-3]\n  mstore [r9,-2] r3\n  mload r3 [r9,-2]\n  mov r4 0\n  mstore [r9,-1] r4\n  jmp .LBL16_1\n.LBL16_1:\n  mload r4 [r9,-1]\n  gte r5 r3 r4\n  neq r6 r4 r3\n  and r5 r5 r6\n  cjmp r5 .LBL16_2\n  jmp .LBL16_3\n.LBL16_2:\n  mload r6 [r1,r4]\n  mstore [r2,r4] r6\n  add r5 r4 1\n  mstore [r9,-1] r5\n  jmp .LBL16_1\n.LBL16_3:\n  add r9 r9 -4\n  ret\nmemcmp_eq:\n.LBL17_0:\n  add r9 r9 5\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-3] r2\n  mload r2 [r9,-3]\n  mstore [r9,-2] r3\n  mload r3 [r9,-2]\n  mov r4 0\n  mstore [r9,-1] r4\n  jmp .LBL17_1\n.LBL17_1:\n  mload r4 [r9,-1]\n  gte r5 r3 r4\n  neq r6 r4 r3\n  and r5 r5 r6\n  cjmp r5 .LBL17_2\n  mov r0 1\n  jmp .LBL17_3\n.LBL17_2:\n  mload r6 [r1,r4]\n  mload r7 [r2,r4]\n  mstore [r9,-5] r7\n  add r5 r4 1\n  mstore [r9,-1] r5\n  mload r4 [r9,-5]\n  eq r4 r6 r4\n  cjmp r4 .LBL17_1\n  mov r0 0\n  jmp .LBL17_3\n.LBL17_3:\n  add r9 r9 -5\n  ret\nmemcmp_ugt:\n.LBL18_0:\n  add r9 r9 5\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-3] r2\n  mload r2 [r9,-3]\n  mstore [r9,-2] r3\n  mload r3 [r9,-2]\n  mov r4 0\n  mstore [r9,-1] r4\n  jmp .LBL18_1\n.LBL18_1:\n  mload r4 [r9,-1]\n  gte r5 r3 r4\n  neq r6 r4 r3\n  and r5 r5 r6\n  cjmp r5 .LBL18_2\n  mov r0 1\n  jmp .LBL18_3\n.LBL18_2:\n  mload r6 [r1,r4]\n  mload r7 [r2,r4]\n  mstore [r9,-5] r7\n  add r5 r4 1\n  mstore [r9,-1] r5\n  mload r4 [r9,-5]\n  gte r4 r6 r4\n  mload r5 [r9,-5]\n  neq r5 r6 r5\n  and r4 r4 r5\n  cjmp r4 .LBL18_1\n  mov r0 0\n  jmp .LBL18_3\n.LBL18_3:\n  add r9 r9 -5\n  ret\nmemcmp_uge:\n.LBL19_0:\n  add r9 r9 5\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-3] r2\n  mload r2 [r9,-3]\n  mstore [r9,-2] r3\n  mload r3 [r9,-2]\n  mov r4 0\n  mstore [r9,-1] r4\n  jmp .LBL19_1\n.LBL19_1:\n  mload r4 [r9,-1]\n  gte r5 r3 r4\n  neq r6 r4 r3\n  and r5 r5 r6\n  cjmp r5 .LBL19_2\n  mov r0 1\n  jmp .LBL19_3\n.LBL19_2:\n  mload r6 [r1,r4]\n  mload r7 [r2,r4]\n  mstore [r9,-5] r7\n  add r5 r4 1\n  mstore [r9,-1] r5\n  mload r4 [r9,-5]\n  gte r4 r6 r4\n  cjmp r4 .LBL19_1\n  mov r0 0\n  jmp .LBL19_3\n.LBL19_3:\n  add r9 r9 -5\n  ret\nu32_div_mod:\n.LBL20_0:\n  add r9 r9 9\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-7] r1\n  mstore [r9,-3] r2\n  mload r1 [r9,-3]\n  mstore [r9,-8] r1\n  mstore [r9,-2] r3\n  mload r3 [r9,-2]\n  mstore [r9,-1] r4\n  mload r4 [r9,-1]\n  mload r1 [r9,-8]\n  mov r2 r1\n  mload r1 [r9,-7]\n.PROPHET20_0:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 r0\n  mstore [r9,-9] r1\n  mload r1 [r9,-9]\n  range r1\n  mload r1 [r9,-9]\n  add r5 r1 1\n  not r7 r5\n  add r7 r7 1\n  mload r1 [r9,-8]\n  add r6 r1 r7\n  range r6\n  mload r1 [r9,-8]\n  mov r2 r1\n  mload r1 [r9,-7]\n.PROPHET20_1:\n  mov r0 psp\n  mload r0 [r0]\n  mov r1 r0\n  range r3\n  mload r2 [r9,-8]\n  mul r2 r1 r2\n  mstore [r9,-5] r2\n  mload r2 [r9,-5]\n  mload r5 [r9,-9]\n  add r2 r2 r5\n  mstore [r9,-6] r2\n  mload r2 [r9,-6]\n  mload r5 [r9,-7]\n  eq r2 r2 r5\n  assert r2\n  mstore [r3] r1\n  mload r1 [r9,-9]\n  mstore [r4] r1\n  add r9 r9 -9\n  ret\nu32_power:\n.LBL21_0:\n  add r9 r9 2\n  mstore [r9,-2] r1\n  mload r1 [r9,-2]\n  mstore [r9,-1] r2\n  mload r2 [r9,-1]\n  mov r0 1\n  mov r3 0\n  jmp .LBL21_1\n.LBL21_1:\n  add r5 r3 1\n  mul r4 r0 r1\n  gte r3 r2 r5\n  cjmp r3 .LBL21_1\n  mov r0 r4\n  mov r3 r5\n  jmp .LBL21_2\n.LBL21_2:\n  range r0\n  add r9 r9 -2\n  ret\nfields_concat:\n.LBL22_0:\n  add r9 r9 11\n  mstore [r9,-2] r9\n  mstore [r9,-3] r2\n  mload r2 [r1]\n  mstore [r9,-4] r2\n  mload r1 [r1]\n  mstore [r9,-5] r1\n  mload r1 [r9,-4]\n  mload r2 [r9,-5]\n  add r3 r1 r2\n  mov r1 r3\n  call vector_new\n  mov r1 r0\n  mstore [r9,-7] r1\n  mload r3 [r9,-4]\n  mload r1 [r9,-7]\n  add r1 r1 1\n  mstore [r9,-9] r1\n  mload r2 [r9,-9]\n  mload r1 [r9,-3]\n  add r1 r1 1\n  call memcpy\n  mload r3 [r9,-5]\n  mload r1 [r9,-4]\n  mload r2 [r9,-9]\n  add r2 r2 r1\n  mload r1 [r9,-3]\n  add r1 r1 1\n  call memcpy\n  mload r0 [r9,-7]\n  add r9 r9 -11\n  ret\nsystem_entrance:\n.LBL23_0:\n  add r9 r9 5\n  mstore [r9,-2] r9\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-5] r1\n  mstore [r9,-3] r2\n  mload r1 [r9,-5]\n  call validateTxStructure\n  mload r1 [r9,-3]\n  cjmp r1 .LBL23_1\n  jmp .LBL23_2\n.LBL23_1:\n  mload r1 [r9,-5]\n  call callTx\n  jmp .LBL23_3\n.LBL23_2:\n  mload r1 [r9,-5]\n  call sendTx\n  jmp .LBL23_3\n.LBL23_3:\n  add r9 r9 -5\n  ret\nvalidateTxStructure:\n.LBL24_0:\n  add r9 r9 8\n  mstore [r9,-2] r9\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-5] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  mov r2 0\n  mstore [r1,+1] r2\n  mov r2 0\n  mstore [r1,+2] r2\n  mov r2 65535\n  mstore [r1,+3] r2\n  mstore [r9,-3] r1\n  mload r1 [r9,-5]\n  mload r1 [r1]\n  mload r2 [r9,-3]\n  mov r3 4\n  call memcmp_ugt\n  mov r1 r0\n  assert r1\n  mload r1 [r9,-5]\n  mload r1 [r1,+3]\n  mstore [r9,-7] r1\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  tload r1 r2 7\n  mload r1 [r1]\n  mload r2 [r9,-7]\n  eq r1 r2 r1\n  assert r1\n  mload r1 [r9,-5]\n  mload r1 [r1,+4]\n  mload r1 [r1]\n  neq r1 r1 0\n  assert r1\n  mload r1 [r9,-5]\n  mload r1 [r1,+6]\n  mload r1 [r1]\n  neq r1 r1 0\n  assert r1\n  add r9 r9 -8\n  ret\ncallTx:\n.LBL25_0:\n  add r9 r9 1\n  mstore [r9,-1] r1\n  mload r3 [r9,-1]\n  mov r2 2\n  add r1 r3 0\n.PROPHET25_0:\n  mload r1 [r3,+1]\n  mov r2 3\n.PROPHET25_1:\n  mload r1 [r3,+2]\n  mov r2 3\n.PROPHET25_2:\n  mload r1 [r3,+3]\n  mov r2 3\n.PROPHET25_3:\n  mov r2 0\n  add r1 r3 4\n.PROPHET25_4:\n  mov r2 0\n  add r1 r3 5\n.PROPHET25_5:\n  mov r2 0\n  add r1 r3 6\n.PROPHET25_6:\n  mov r2 2\n  add r1 r3 7\n.PROPHET25_7:\n  mload r0 [r3,+4]\n  add r9 r9 -1\n  ret\nsendTx:\n.LBL26_0:\n  add r9 r9 9\n  mstore [r9,-2] r9\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-5] r1\n  mload r1 [r9,-5]\n  call validateTx\n  mload r1 [r9,-5]\n  call validateDeployment\n  mload r1 [r9,-5]\n  mload r1 [r1,+4]\n  mov r2 0\n.PROPHET26_0:\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  mov r2 0\n  mstore [r1,+1] r2\n  mov r2 0\n  mstore [r1,+2] r2\n  mov r2 32771\n  mstore [r1,+3] r2\n  mstore [r9,-3] r1\n  mload r1 [r9,-5]\n  mload r1 [r1]\n  mstore [r9,-9] r1\n  mload r1 [r9,-5]\n  mload r1 [r1,+1]\n  mstore [r9,-8] r1\n  mov r1 7\n  call vector_new\n  mov r1 r0\n  mload r2 [r9,-9]\n  mload r2 [r2]\n  mstore [r1,+1] r2\n  mload r2 [r9,-9]\n  mload r2 [r2,+1]\n  mstore [r1,+2] r2\n  mload r2 [r9,-9]\n  mload r2 [r2,+2]\n  mstore [r1,+3] r2\n  mload r2 [r9,-9]\n  mload r2 [r2,+3]\n  mstore [r1,+4] r2\n  mload r2 [r9,-8]\n  mstore [r1,+5] r2\n  mov r2 5\n  mstore [r1,+6] r2\n  mov r2 1093482716\n  mstore [r1,+7] r2\n  mov r2 0\n.PROPHET26_1:\n  add r9 r9 -9\n  ret\nvalidateTx:\n.LBL27_0:\n  add r9 r9 9\n  mstore [r9,-2] r9\n  mstore [r9,-5] r1\n  mload r1 [r9,-5]\n  mstore [r9,-6] r1\n  mload r1 [r9,-6]\n  call getSignedHash\n  mov r1 r0\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mload r2 [r9,-6]\n  mload r2 [r2,+6]\n  call getTransactionHash\n  mov r1 r0\n  mstore [r9,-3] r1\n  mload r1 [r9,-6]\n  mload r1 [r1]\n  call validate_sender\n  mload r1 [r9,-6]\n  mload r1 [r1]\n  mload r2 [r9,-6]\n  mload r2 [r2,+1]\n  call validate_nonce\n  mload r1 [r9,-3]\n  mload r2 [r9,-4]\n  mload r3 [r9,-6]\n  call validate_tx\n  add r9 r9 -9\n  ret\nvalidateDeployment:\n.LBL28_0:\n  add r9 r9 27\n  mstore [r9,-2] r9\n  mstore [r9,-8] r1\n  mload r1 [r9,-8]\n  mstore [r9,-10] r1\n  mload r1 [r9,-10]\n  mload r1 [r1,+5]\n  mload r1 [r1]\n  mstore [r9,-7] r1\n  mload r1 [r9,-7]\n  neq r1 r1 0\n  cjmp r1 .LBL28_1\n  jmp .LBL28_2\n.LBL28_1:\n  mload r1 [r9,-10]\n  mload r1 [r1,+5]\n  call hashL2Bytecode\n  mov r1 r0\n  mstore [r9,-6] r1\n  mload r1 [r9,-6]\n  mov r2 2\n.PROPHET28_0:\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  mov r2 0\n  mstore [r1,+1] r2\n  mov r2 0\n  mstore [r1,+2] r2\n  mov r2 32772\n  mstore [r1,+3] r2\n  mstore [r9,-5] r1\n  mload r1 [r9,-6]\n  mstore [r9,-21] r1\n  mov r1 6\n  call vector_new\n  mov r1 r0\n  mload r2 [r9,-21]\n  mload r2 [r2]\n  mstore [r1,+1] r2\n  mload r2 [r9,-21]\n  mload r2 [r2,+1]\n  mstore [r1,+2] r2\n  mload r2 [r9,-21]\n  mload r2 [r2,+2]\n  mstore [r1,+3] r2\n  mload r2 [r9,-21]\n  mload r2 [r2,+3]\n  mstore [r1,+4] r2\n  mov r2 4\n  mstore [r1,+5] r2\n  mov r2 4199620571\n  mstore [r1,+6] r2\n  mov r2 0\n.PROPHET28_1:\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  mov r2 0\n  mstore [r1,+1] r2\n  mov r2 0\n  mstore [r1,+2] r2\n  mov r2 32773\n  mstore [r1,+3] r2\n  mstore [r9,-4] r1\n  mload r1 [r9,-10]\n  mload r1 [r1,+4]\n  mstore [r9,-26] r1\n  mload r1 [r9,-26]\n  mload r1 [r1]\n  not r7 1\n  add r7 r7 1\n  add r2 r1 r7\n  mstore [r9,-9] r2\n  not r7 0\n  add r7 r7 1\n  mload r2 [r9,-9]\n  add r2 r2 r7\n  mstore [r9,-11] r2\n  mload r2 [r9,-11]\n  range r2\n  not r7 4\n  add r7 r7 1\n  add r1 r1 r7\n  mstore [r9,-12] r1\n  mload r1 [r9,-12]\n  range r1\n  range 4\n  mov r1 4\n  call vector_new\n  mov r1 r0\n  mstore [r9,-27] r1\n  mov r3 4\n  mload r1 [r9,-27]\n  add r2 r1 1\n  mload r1 [r9,-26]\n  add r1 r1 1\n  call memcpy\n  mload r1 [r9,-27]\n  mload r1 [r1]\n  mload r1 [r9,-27]\n  add r1 r1 1\n  mstore [r9,-3] r1\n  mload r1 [r9,-3]\n  mov r2 2\n.PROPHET28_2:\n  mload r1 [r9,-3]\n  mload r2 [r9,-4]\n  mov r3 4\n  call memcmp_eq\n  mov r1 r0\n  assert r1\n  jmp .LBL28_2\n.LBL28_2:\n  add r9 r9 -27\n  ret\ngetSignedHash:\n.LBL29_0:\n  add r9 r9 276\n  mstore [r9,-2] r9\n  mstore [r9,-8] r1\n  mload r1 [r9,-8]\n  mstore [r9,-11] r1\n  mov r1 11881\n  call vector_new\n  mov r1 r0\n  mstore [r9,-28] r1\n  mload r1 [r9,-28]\n  add r1 r1 1\n  mov r2 84\n  mstore [r1] r2\n  mov r2 114\n  mstore [r1,+1] r2\n  mov r2 97\n  mstore [r1,+2] r2\n  mov r2 110\n  mstore [r1,+3] r2\n  mov r2 115\n  mstore [r1,+4] r2\n  mov r2 97\n  mstore [r1,+5] r2\n  mov r2 99\n  mstore [r1,+6] r2\n  mov r2 116\n  mstore [r1,+7] r2\n  mov r2 105\n  mstore [r1,+8] r2\n  mov r2 111\n  mstore [r1,+9] r2\n  mov r2 110\n  mstore [r1,+10] r2\n  mov r2 40\n  mstore [r1,+11] r2\n  mov r2 97\n  mstore [r1,+12] r2\n  mov r2 100\n  mstore [r1,+13] r2\n  mov r2 100\n  mstore [r1,+14] r2\n  mov r2 114\n  mstore [r1,+15] r2\n  mov r2 101\n  mstore [r1,+16] r2\n  mov r2 115\n  mstore [r1,+17] r2\n  mov r2 115\n  mstore [r1,+18] r2\n  mov r2 32\n  mstore [r1,+19] r2\n  mov r2 115\n  mstore [r1,+20] r2\n  mov r2 101\n  mstore [r1,+21] r2\n  mov r2 110\n  mstore [r1,+22] r2\n  mov r2 100\n  mstore [r1,+23] r2\n  mov r2 101\n  mstore [r1,+24] r2\n  mov r2 114\n  mstore [r1,+25] r2\n  mov r2 44\n  mstore [r1,+26] r2\n  mov r2 32\n  mstore [r1,+27] r2\n  mov r2 117\n  mstore [r1,+28] r2\n  mov r2 51\n  mstore [r1,+29] r2\n  mov r2 50\n  mstore [r1,+30] r2\n  mov r2 32\n  mstore [r1,+31] r2\n  mov r2 110\n  mstore [r1,+32] r2\n  mov r2 111\n  mstore [r1,+33] r2\n  mov r2 110\n  mstore [r1,+34] r2\n  mov r2 99\n  mstore [r1,+35] r2\n  mov r2 101\n  mstore [r1,+36] r2\n  mov r2 44\n  mstore [r1,+37] r2\n  mov r2 32\n  mstore [r1,+38] r2\n  mov r2 102\n  mstore [r1,+39] r2\n  mov r2 105\n  mstore [r1,+40] r2\n  mov r2 101\n  mstore [r1,+41] r2\n  mov r2 108\n  mstore [r1,+42] r2\n  mov r2 100\n  mstore [r1,+43] r2\n  mov r2 115\n  mstore [r1,+44] r2\n  mov r2 32\n  mstore [r1,+45] r2\n  mov r2 100\n  mstore [r1,+46] r2\n  mov r2 97\n  mstore [r1,+47] r2\n  mov r2 116\n  mstore [r1,+48] r2\n  mov r2 97\n  mstore [r1,+49] r2\n  mov r2 44\n  mstore [r1,+50] r2\n  mov r2 32\n  mstore [r1,+51] r2\n  mov r2 117\n  mstore [r1,+52] r2\n  mov r2 51\n  mstore [r1,+53] r2\n  mov r2 50\n  mstore [r1,+54] r2\n  mov r2 32\n  mstore [r1,+55] r2\n  mov r2 99\n  mstore [r1,+56] r2\n  mov r2 104\n  mstore [r1,+57] r2\n  mov r2 97\n  mstore [r1,+58] r2\n  mov r2 105\n  mstore [r1,+59] r2\n  mov r2 110\n  mstore [r1,+60] r2\n  mov r2 105\n  mstore [r1,+61] r2\n  mov r2 100\n  mstore [r1,+62] r2\n  mov r2 44\n  mstore [r1,+63] r2\n  mov r2 32\n  mstore [r1,+64] r2\n  mov r2 117\n  mstore [r1,+65] r2\n  mov r2 51\n  mstore [r1,+66] r2\n  mov r2 50\n  mstore [r1,+67] r2\n  mov r2 32\n  mstore [r1,+68] r2\n  mov r2 118\n  mstore [r1,+69] r2\n  mov r2 101\n  mstore [r1,+70] r2\n  mov r2 114\n  mstore [r1,+71] r2\n  mov r2 115\n  mstore [r1,+72] r2\n  mov r2 105\n  mstore [r1,+73] r2\n  mov r2 111\n  mstore [r1,+74] r2\n  mov r2 110\n  mstore [r1,+75] r2\n  mov r2 44\n  mstore [r1,+76] r2\n  mov r2 32\n  mstore [r1,+77] r2\n  mov r2 102\n  mstore [r1,+78] r2\n  mov r2 105\n  mstore [r1,+79] r2\n  mov r2 101\n  mstore [r1,+80] r2\n  mov r2 108\n  mstore [r1,+81] r2\n  mov r2 100\n  mstore [r1,+82] r2\n  mov r2 115\n  mstore [r1,+83] r2\n  mov r2 32\n  mstore [r1,+84] r2\n  mov r2 99\n  mstore [r1,+85] r2\n  mov r2 111\n  mstore [r1,+86] r2\n  mov r2 100\n  mstore [r1,+87] r2\n  mov r2 101\n  mstore [r1,+88] r2\n  mov r2 115\n  mstore [r1,+89] r2\n  mov r2 44\n  mstore [r1,+90] r2\n  mov r2 32\n  mstore [r1,+91] r2\n  mov r2 102\n  mstore [r1,+92] r2\n  mov r2 105\n  mstore [r1,+93] r2\n  mov r2 101\n  mstore [r1,+94] r2\n  mov r2 108\n  mstore [r1,+95] r2\n  mov r2 100\n  mstore [r1,+96] r2\n  mov r2 115\n  mstore [r1,+97] r2\n  mov r2 32\n  mstore [r1,+98] r2\n  mov r2 115\n  mstore [r1,+99] r2\n  mov r2 105\n  mstore [r1,+100] r2\n  mov r2 103\n  mstore [r1,+101] r2\n  mov r2 110\n  mstore [r1,+102] r2\n  mov r2 97\n  mstore [r1,+103] r2\n  mov r2 116\n  mstore [r1,+104] r2\n  mov r2 117\n  mstore [r1,+105] r2\n  mov r2 114\n  mstore [r1,+106] r2\n  mov r2 101\n  mstore [r1,+107] r2\n  mov r2 41\n  mstore [r1,+108] r2\n  mload r1 [r9,-28]\n  mload r1 [r1]\n  mstore [r9,-34] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-28]\n  add r2 r2 1\n  mload r3 [r9,-34]\n  poseidon r1 r2 r3\n  mstore [r9,-7] r1\n  mload r1 [r9,-7]\n  mov r2 2\n.PROPHET29_0:\n  mload r1 [r9,-7]\n  mstore [r9,-55] r1\n  mload r1 [r9,-11]\n  mload r1 [r1]\n  mstore [r9,-40] r1\n  mload r1 [r9,-11]\n  mload r1 [r1,+1]\n  mstore [r9,-45] r1\n  mload r1 [r9,-11]\n  mload r1 [r1,+2]\n  mstore [r9,-51] r1\n  mload r1 [r9,-11]\n  mload r1 [r1,+3]\n  mstore [r9,-39] r1\n  mload r1 [r9,-11]\n  mload r1 [r1,+4]\n  mstore [r9,-42] r1\n  mload r1 [r9,-42]\n  mload r1 [r1]\n  mstore [r9,-47] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mstore [r9,-76] r1\n  mload r1 [r9,-42]\n  add r1 r1 1\n  mload r2 [r9,-47]\n  poseidon r1 r1 r2\n  mstore [r9,-76] r1\n  mload r1 [r9,-11]\n  mload r1 [r1,+5]\n  mstore [r9,-64] r1\n  mload r1 [r9,-64]\n  mload r1 [r1]\n  mstore [r9,-71] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mstore [r9,-80] r1\n  mload r1 [r9,-64]\n  add r1 r1 1\n  mload r2 [r9,-71]\n  poseidon r1 r1 r2\n  mstore [r9,-80] r1\n  mov r1 19\n  call vector_new\n  mov r1 r0\n  mstore [r9,-102] r1\n  mload r1 [r9,-55]\n  mload r1 [r1]\n  mload r2 [r9,-102]\n  mstore [r2,+1] r1\n  mload r1 [r9,-55]\n  mload r1 [r1,+1]\n  mload r2 [r9,-102]\n  mstore [r2,+2] r1\n  mload r1 [r9,-55]\n  mload r1 [r1,+2]\n  mload r2 [r9,-102]\n  mstore [r2,+3] r1\n  mload r1 [r9,-55]\n  mload r1 [r1,+3]\n  mload r2 [r9,-102]\n  mstore [r2,+4] r1\n  mload r1 [r9,-40]\n  mload r1 [r1]\n  mload r2 [r9,-102]\n  mstore [r2,+5] r1\n  mload r1 [r9,-40]\n  mload r1 [r1,+1]\n  mload r2 [r9,-102]\n  mstore [r2,+6] r1\n  mload r1 [r9,-40]\n  mload r1 [r1,+2]\n  mload r2 [r9,-102]\n  mstore [r2,+7] r1\n  mload r1 [r9,-40]\n  mload r1 [r1,+3]\n  mload r2 [r9,-102]\n  mstore [r2,+8] r1\n  mload r1 [r9,-45]\n  mload r2 [r9,-102]\n  mstore [r2,+9] r1\n  mload r1 [r9,-51]\n  mload r2 [r9,-102]\n  mstore [r2,+10] r1\n  mload r1 [r9,-39]\n  mload r2 [r9,-102]\n  mstore [r2,+11] r1\n  mload r1 [r9,-76]\n  mload r1 [r1]\n  mload r2 [r9,-102]\n  mstore [r2,+12] r1\n  mload r1 [r9,-76]\n  mload r1 [r1,+1]\n  mload r2 [r9,-102]\n  mstore [r2,+13] r1\n  mload r1 [r9,-76]\n  mload r1 [r1,+2]\n  mload r2 [r9,-102]\n  mstore [r2,+14] r1\n  mload r1 [r9,-76]\n  mload r1 [r1,+3]\n  mload r2 [r9,-102]\n  mstore [r2,+15] r1\n  mload r1 [r9,-80]\n  mload r1 [r1]\n  mload r2 [r9,-102]\n  mstore [r2,+16] r1\n  mload r1 [r9,-80]\n  mload r1 [r1,+1]\n  mload r2 [r9,-102]\n  mstore [r2,+17] r1\n  mload r1 [r9,-80]\n  mload r1 [r1,+2]\n  mload r2 [r9,-102]\n  mstore [r2,+18] r1\n  mload r1 [r9,-80]\n  mload r1 [r1,+3]\n  mload r2 [r9,-102]\n  mstore [r2,+19] r1\n  mov r2 0\n  mload r1 [r9,-102]\n.PROPHET29_1:\n  mload r1 [r9,-102]\n  mload r1 [r1]\n  mstore [r9,-105] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-102]\n  add r2 r2 1\n  mload r3 [r9,-105]\n  poseidon r1 r2 r3\n  mstore [r9,-6] r1\n  mload r1 [r9,-6]\n  mov r2 2\n.PROPHET29_2:\n  mov r1 2704\n  call vector_new\n  mov r1 r0\n  mstore [r9,-132] r1\n  mload r1 [r9,-132]\n  add r1 r1 1\n  mov r2 69\n  mstore [r1] r2\n  mov r2 73\n  mstore [r1,+1] r2\n  mov r2 80\n  mstore [r1,+2] r2\n  mov r2 55\n  mstore [r1,+3] r2\n  mov r2 49\n  mstore [r1,+4] r2\n  mov r2 50\n  mstore [r1,+5] r2\n  mov r2 68\n  mstore [r1,+6] r2\n  mov r2 111\n  mstore [r1,+7] r2\n  mov r2 109\n  mstore [r1,+8] r2\n  mov r2 97\n  mstore [r1,+9] r2\n  mov r2 105\n  mstore [r1,+10] r2\n  mov r2 110\n  mstore [r1,+11] r2\n  mov r2 40\n  mstore [r1,+12] r2\n  mov r2 115\n  mstore [r1,+13] r2\n  mov r2 116\n  mstore [r1,+14] r2\n  mov r2 114\n  mstore [r1,+15] r2\n  mov r2 105\n  mstore [r1,+16] r2\n  mov r2 110\n  mstore [r1,+17] r2\n  mov r2 103\n  mstore [r1,+18] r2\n  mov r2 32\n  mstore [r1,+19] r2\n  mov r2 110\n  mstore [r1,+20] r2\n  mov r2 97\n  mstore [r1,+21] r2\n  mov r2 109\n  mstore [r1,+22] r2\n  mov r2 101\n  mstore [r1,+23] r2\n  mov r2 44\n  mstore [r1,+24] r2\n  mov r2 115\n  mstore [r1,+25] r2\n  mov r2 116\n  mstore [r1,+26] r2\n  mov r2 114\n  mstore [r1,+27] r2\n  mov r2 105\n  mstore [r1,+28] r2\n  mov r2 110\n  mstore [r1,+29] r2\n  mov r2 103\n  mstore [r1,+30] r2\n  mov r2 32\n  mstore [r1,+31] r2\n  mov r2 118\n  mstore [r1,+32] r2\n  mov r2 101\n  mstore [r1,+33] r2\n  mov r2 114\n  mstore [r1,+34] r2\n  mov r2 115\n  mstore [r1,+35] r2\n  mov r2 105\n  mstore [r1,+36] r2\n  mov r2 111\n  mstore [r1,+37] r2\n  mov r2 110\n  mstore [r1,+38] r2\n  mov r2 44\n  mstore [r1,+39] r2\n  mov r2 117\n  mstore [r1,+40] r2\n  mov r2 51\n  mstore [r1,+41] r2\n  mov r2 50\n  mstore [r1,+42] r2\n  mov r2 32\n  mstore [r1,+43] r2\n  mov r2 99\n  mstore [r1,+44] r2\n  mov r2 104\n  mstore [r1,+45] r2\n  mov r2 97\n  mstore [r1,+46] r2\n  mov r2 105\n  mstore [r1,+47] r2\n  mov r2 110\n  mstore [r1,+48] r2\n  mov r2 73\n  mstore [r1,+49] r2\n  mov r2 100\n  mstore [r1,+50] r2\n  mov r2 41\n  mstore [r1,+51] r2\n  mload r1 [r9,-132]\n  mload r1 [r1]\n  mstore [r9,-126] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-132]\n  add r2 r2 1\n  mload r3 [r9,-126]\n  poseidon r1 r2 r3\n  mstore [r9,-5] r1\n  mload r1 [r9,-5]\n  mov r2 2\n.PROPHET29_3:\n  mload r1 [r9,-5]\n  mstore [r9,-140] r1\n  mov r1 9\n  call vector_new\n  mov r1 r0\n  mstore [r9,-161] r1\n  mload r1 [r9,-161]\n  add r1 r1 1\n  mov r2 79\n  mstore [r1] r2\n  mov r2 108\n  mstore [r1,+1] r2\n  mov r2 97\n  mstore [r1,+2] r2\n  mload r1 [r9,-161]\n  mload r1 [r1]\n  mstore [r9,-151] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mstore [r9,-170] r1\n  mload r1 [r9,-161]\n  add r1 r1 1\n  mload r2 [r9,-151]\n  poseidon r1 r1 r2\n  mstore [r9,-170] r1\n  mov r1 1\n  call vector_new\n  mov r1 r0\n  mstore [r9,-181] r1\n  mload r1 [r9,-181]\n  add r1 r1 1\n  mov r2 49\n  mstore [r1] r2\n  mload r1 [r9,-181]\n  mload r1 [r1]\n  mstore [r9,-179] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mstore [r9,-196] r1\n  mload r1 [r9,-181]\n  add r1 r1 1\n  mload r2 [r9,-179]\n  poseidon r1 r1 r2\n  mstore [r9,-196] r1\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  tload r1 r2 7\n  mload r1 [r1]\n  mstore [r9,-214] r1\n  mov r1 13\n  call vector_new\n  mov r1 r0\n  mstore [r9,-234] r1\n  mload r1 [r9,-140]\n  mload r1 [r1]\n  mload r2 [r9,-234]\n  mstore [r2,+1] r1\n  mload r1 [r9,-140]\n  mload r1 [r1,+1]\n  mload r2 [r9,-234]\n  mstore [r2,+2] r1\n  mload r1 [r9,-140]\n  mload r1 [r1,+2]\n  mload r2 [r9,-234]\n  mstore [r2,+3] r1\n  mload r1 [r9,-140]\n  mload r1 [r1,+3]\n  mload r2 [r9,-234]\n  mstore [r2,+4] r1\n  mload r1 [r9,-170]\n  mload r1 [r1]\n  mload r2 [r9,-234]\n  mstore [r2,+5] r1\n  mload r1 [r9,-170]\n  mload r1 [r1,+1]\n  mload r2 [r9,-234]\n  mstore [r2,+6] r1\n  mload r1 [r9,-170]\n  mload r1 [r1,+2]\n  mload r2 [r9,-234]\n  mstore [r2,+7] r1\n  mload r1 [r9,-170]\n  mload r1 [r1,+3]\n  mload r2 [r9,-234]\n  mstore [r2,+8] r1\n  mload r1 [r9,-196]\n  mload r1 [r1]\n  mload r2 [r9,-234]\n  mstore [r2,+9] r1\n  mload r1 [r9,-196]\n  mload r1 [r1,+1]\n  mload r2 [r9,-234]\n  mstore [r2,+10] r1\n  mload r1 [r9,-196]\n  mload r1 [r1,+2]\n  mload r2 [r9,-234]\n  mstore [r2,+11] r1\n  mload r1 [r9,-196]\n  mload r1 [r1,+3]\n  mload r2 [r9,-234]\n  mstore [r2,+12] r1\n  mload r1 [r9,-214]\n  mload r2 [r9,-234]\n  mstore [r2,+13] r1\n  mload r1 [r9,-234]\n  mload r1 [r1]\n  mstore [r9,-227] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-234]\n  add r2 r2 1\n  mload r3 [r9,-227]\n  poseidon r1 r2 r3\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mov r2 2\n.PROPHET29_4:\n  mov r1 4\n  call vector_new\n  mov r1 r0\n  mstore [r9,-252] r1\n  mload r1 [r9,-252]\n  add r1 r1 1\n  mov r2 25\n  mstore [r1] r2\n  mov r2 1\n  mstore [r1,+1] r2\n  mload r1 [r9,-4]\n  mstore [r9,-254] r1\n  mload r1 [r9,-6]\n  mstore [r9,-260] r1\n  mload r1 [r9,-252]\n  mload r1 [r1]\n  add r1 r1 1\n  mstore [r9,-12] r1\n  mload r1 [r9,-12]\n  add r1 r1 4\n  mstore [r9,-17] r1\n  mload r1 [r9,-17]\n  add r1 r1 4\n  mstore [r9,-9] r1\n  mload r1 [r9,-9]\n  call vector_new\n  mov r1 r0\n  mstore [r9,-264] r1\n  mload r1 [r9,-252]\n  mload r1 [r1]\n  add r1 r1 1\n  mstore [r9,-20] r1\n  mload r3 [r9,-20]\n  mload r2 [r9,-264]\n  mload r1 [r9,-252]\n  add r1 r1 1\n  call memcpy\n  mload r1 [r9,-254]\n  mload r1 [r1]\n  mload r2 [r9,-20]\n  add r2 r2 1\n  mstore [r9,-10] r2\n  mload r2 [r9,-10]\n  mload r3 [r9,-264]\n  mstore [r3,r2] r1\n  mload r1 [r9,-254]\n  mload r1 [r1,+1]\n  mload r2 [r9,-10]\n  add r2 r2 1\n  mstore [r9,-21] r2\n  mload r2 [r9,-21]\n  mload r3 [r9,-264]\n  mstore [r3,r2] r1\n  mload r1 [r9,-254]\n  mload r1 [r1,+2]\n  mload r2 [r9,-21]\n  add r2 r2 1\n  mstore [r9,-18] r2\n  mload r2 [r9,-18]\n  mload r3 [r9,-264]\n  mstore [r3,r2] r1\n  mload r1 [r9,-254]\n  mload r1 [r1,+3]\n  mload r2 [r9,-18]\n  add r2 r2 1\n  mstore [r9,-15] r2\n  mload r2 [r9,-15]\n  mload r3 [r9,-264]\n  mstore [r3,r2] r1\n  mload r1 [r9,-260]\n  mload r1 [r1]\n  mov r2 4\n  mload r3 [r9,-10]\n  add r2 r2 r3\n  mstore [r9,-19] r2\n  mload r2 [r9,-19]\n  mload r3 [r9,-264]\n  mstore [r3,r2] r1\n  mload r1 [r9,-260]\n  mload r1 [r1,+1]\n  mload r2 [r9,-19]\n  add r2 r2 1\n  mstore [r9,-16] r2\n  mload r2 [r9,-16]\n  mload r3 [r9,-264]\n  mstore [r3,r2] r1\n  mload r1 [r9,-260]\n  mload r1 [r1,+2]\n  mload r2 [r9,-16]\n  add r2 r2 1\n  mstore [r9,-14] r2\n  mload r2 [r9,-14]\n  mload r3 [r9,-264]\n  mstore [r3,r2] r1\n  mload r1 [r9,-260]\n  mload r1 [r1,+3]\n  mload r2 [r9,-14]\n  add r2 r2 1\n  mstore [r9,-13] r2\n  mload r2 [r9,-13]\n  mload r3 [r9,-264]\n  mstore [r3,r2] r1\n  mload r1 [r9,-264]\n  mload r1 [r1]\n  mstore [r9,-275] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-264]\n  add r2 r2 1\n  mload r3 [r9,-275]\n  poseidon r1 r2 r3\n  mstore [r9,-3] r1\n  mload r1 [r9,-3]\n  mov r2 2\n.PROPHET29_5:\n  mload r0 [r9,-3]\n  add r9 r9 -276\n  ret\ngetTransactionHash:\n.LBL30_0:\n  add r9 r9 14\n  mstore [r9,-2] r9\n  mstore [r9,-5] r1\n  mstore [r9,-4] r2\n  mload r1 [r9,-4]\n  mstore [r9,-6] r1\n  mload r1 [r9,-5]\n  mstore [r9,-7] r1\n  mov r1 4\n  call vector_new\n  mov r1 r0\n  mstore [r9,-10] r1\n  mload r1 [r9,-7]\n  mload r1 [r1]\n  mload r2 [r9,-10]\n  mstore [r2] r1\n  mload r1 [r9,-7]\n  mload r1 [r1,+1]\n  mload r2 [r9,-10]\n  mstore [r2,+1] r1\n  mload r1 [r9,-7]\n  mload r1 [r1,+2]\n  mload r2 [r9,-10]\n  mstore [r2,+2] r1\n  mload r1 [r9,-7]\n  mload r1 [r1,+3]\n  mload r2 [r9,-10]\n  mstore [r2,+3] r1\n  mload r1 [r9,-6]\n  mload r1 [r1]\n  mstore [r9,-9] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mstore [r9,-11] r1\n  mload r1 [r9,-6]\n  add r1 r1 1\n  mload r2 [r9,-9]\n  poseidon r1 r1 r2\n  mstore [r9,-11] r1\n  mov r1 4\n  call vector_new\n  mov r2 r0\n  mload r1 [r9,-11]\n  mload r1 [r1]\n  mstore [r2] r1\n  mload r1 [r9,-11]\n  mload r1 [r1,+1]\n  mstore [r2,+1] r1\n  mload r1 [r9,-11]\n  mload r1 [r1,+2]\n  mstore [r2,+2] r1\n  mload r1 [r9,-11]\n  mload r1 [r1,+3]\n  mstore [r2,+3] r1\n  mload r1 [r9,-10]\n  call fields_concat\n  mov r1 r0\n  mstore [r9,-14] r1\n  mload r1 [r9,-14]\n  mload r1 [r1]\n  mstore [r9,-13] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-14]\n  add r2 r2 1\n  mload r3 [r9,-13]\n  poseidon r1 r2 r3\n  mstore [r9,-3] r1\n  mload r0 [r9,-3]\n  add r9 r9 -14\n  ret\nvalidate_sender:\n.LBL31_0:\n  add r9 r9 5\n  mstore [r9,-2] r9\n  mstore [r9,-4] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  mov r2 0\n  mstore [r1,+1] r2\n  mov r2 0\n  mstore [r1,+2] r2\n  mov r2 32773\n  mstore [r1,+3] r2\n  mstore [r9,-3] r1\n  mload r1 [r9,-4]\n  mstore [r9,-5] r1\n  mov r1 6\n  call vector_new\n  mov r1 r0\n  mload r2 [r9,-5]\n  mload r2 [r2]\n  mstore [r1,+1] r2\n  mload r2 [r9,-5]\n  mload r2 [r2,+1]\n  mstore [r1,+2] r2\n  mload r2 [r9,-5]\n  mload r2 [r2,+2]\n  mstore [r1,+3] r2\n  mload r2 [r9,-5]\n  mload r2 [r2,+3]\n  mstore [r1,+4] r2\n  mov r2 4\n  mstore [r1,+5] r2\n  mov r2 3138377232\n  mstore [r1,+6] r2\n  mov r2 0\n.PROPHET31_0:\n  add r9 r9 -5\n  ret\nvalidate_nonce:\n.LBL32_0:\n  add r9 r9 7\n  mstore [r9,-2] r9\n  mstore [r9,-5] r1\n  mstore [r9,-4] r2\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  mov r2 0\n  mstore [r1,+1] r2\n  mov r2 0\n  mstore [r1,+2] r2\n  mov r2 32771\n  mstore [r1,+3] r2\n  mstore [r9,-3] r1\n  mload r1 [r9,-3]\n  mov r2 2\n.PROPHET32_0:\n  mload r1 [r9,-5]\n  mstore [r9,-6] r1\n  mload r1 [r9,-4]\n  mstore [r9,-7] r1\n  mov r1 7\n  call vector_new\n  mov r1 r0\n  mload r2 [r9,-6]\n  mload r2 [r2]\n  mstore [r1,+1] r2\n  mload r2 [r9,-6]\n  mload r2 [r2,+1]\n  mstore [r1,+2] r2\n  mload r2 [r9,-6]\n  mload r2 [r2,+2]\n  mstore [r1,+3] r2\n  mload r2 [r9,-6]\n  mload r2 [r2,+3]\n  mstore [r1,+4] r2\n  mload r2 [r9,-7]\n  mstore [r1,+5] r2\n  mov r2 5\n  mstore [r1,+6] r2\n  mov r2 3775522898\n  mstore [r1,+7] r2\n  mov r2 0\n.PROPHET32_1:\n  add r9 r9 -7\n  ret\nvalidate_tx:\n.LBL33_0:\n  add r9 r9 89\n  mstore [r9,-2] r9\n  mstore [r9,-6] r1\n  mstore [r9,-5] r2\n  mstore [r9,-4] r3\n  mload r1 [r9,-4]\n  mstore [r9,-21] r1\n  mload r1 [r9,-6]\n  mstore [r9,-13] r1\n  mload r1 [r9,-5]\n  mstore [r9,-25] r1\n  mload r1 [r9,-21]\n  mload r1 [r1,+4]\n  mload r2 [r9,-21]\n  mload r2 [r2,+5]\n  mload r3 [r9,-21]\n  mload r3 [r3,+6]\n  mov r7 8\n  mstore [r9,-88] r7\n  mov r7 7\n  mstore [r9,-89] r7\n  add r4 r1 1\n  mload r1 [r9,-89]\n  add r6 r1 r4\n  add r5 r2 1\n  add r1 r6 r5\n  mstore [r9,-83] r1\n  add r1 r3 1\n  mstore [r9,-84] r1\n  mload r1 [r9,-83]\n  mload r2 [r9,-84]\n  add r1 r1 r2\n  mstore [r9,-85] r1\n  mload r1 [r9,-85]\n  add r1 r1 4\n  mstore [r9,-86] r1\n  mload r1 [r9,-86]\n  mload r2 [r9,-88]\n  add r1 r2 r1\n  mstore [r9,-17] r1\n  mload r1 [r9,-17]\n  add r1 r1 2\n  mstore [r9,-87] r1\n  mload r1 [r9,-87]\n  call vector_new\n  mov r1 r0\n  mstore [r9,-38] r1\n  mload r1 [r9,-13]\n  mload r1 [r1]\n  mload r2 [r9,-38]\n  mstore [r2,+1] r1\n  mload r1 [r9,-13]\n  mload r1 [r1,+1]\n  mload r2 [r9,-38]\n  mstore [r2,+2] r1\n  mload r1 [r9,-13]\n  mload r1 [r1,+2]\n  mload r2 [r9,-38]\n  mstore [r2,+3] r1\n  mload r1 [r9,-13]\n  mload r1 [r1,+3]\n  mload r2 [r9,-38]\n  mstore [r2,+4] r1\n  mload r1 [r9,-25]\n  mload r1 [r1]\n  mload r2 [r9,-38]\n  mstore [r2,+5] r1\n  mload r1 [r9,-25]\n  mload r1 [r1,+1]\n  mload r2 [r9,-38]\n  mstore [r2,+6] r1\n  mload r1 [r9,-25]\n  mload r1 [r1,+2]\n  mload r2 [r9,-38]\n  mstore [r2,+7] r1\n  mload r1 [r9,-25]\n  mload r1 [r1,+3]\n  mload r2 [r9,-38]\n  mstore [r2,+8] r1\n  mload r1 [r9,-21]\n  mload r1 [r1]\n  mload r2 [r1]\n  mload r3 [r9,-38]\n  mstore [r3,+9] r2\n  mload r2 [r1,+1]\n  mload r3 [r9,-38]\n  mstore [r3,+10] r2\n  mload r2 [r1,+2]\n  mload r3 [r9,-38]\n  mstore [r3,+11] r2\n  mload r1 [r1,+3]\n  mload r2 [r9,-38]\n  mstore [r2,+12] r1\n  mload r1 [r9,-21]\n  mload r1 [r1,+1]\n  mload r2 [r9,-38]\n  mstore [r2,+13] r1\n  mload r1 [r9,-21]\n  mload r1 [r1,+2]\n  mload r2 [r9,-38]\n  mstore [r2,+14] r1\n  mload r1 [r9,-21]\n  mload r1 [r1,+3]\n  mload r2 [r9,-38]\n  mstore [r2,+15] r1\n  mload r1 [r9,-21]\n  mload r1 [r1,+4]\n  mload r2 [r1]\n  add r2 r2 1\n  mstore [r9,-15] r2\n  mload r3 [r9,-15]\n  mload r2 [r9,-38]\n  add r1 r1 1\n  call memcpy\n  mload r1 [r9,-21]\n  mload r1 [r1,+5]\n  mload r2 [r1]\n  add r2 r2 1\n  mstore [r9,-14] r2\n  mload r3 [r9,-14]\n  mload r2 [r9,-38]\n  add r1 r1 1\n  call memcpy\n  mload r1 [r9,-21]\n  mload r1 [r1,+6]\n  mload r2 [r1]\n  add r2 r2 1\n  mstore [r9,-10] r2\n  mload r3 [r9,-10]\n  mload r2 [r9,-38]\n  add r1 r1 1\n  call memcpy\n  mload r1 [r9,-21]\n  mload r1 [r1,+7]\n  mload r2 [r1]\n  mload r3 [r9,-15]\n  add r3 r3 16\n  mstore [r9,-9] r3\n  mload r3 [r9,-9]\n  mload r4 [r9,-14]\n  add r3 r4 r3\n  mstore [r9,-20] r3\n  mload r3 [r9,-10]\n  mload r4 [r9,-20]\n  add r3 r3 r4\n  mstore [r9,-12] r3\n  mload r3 [r9,-12]\n  mload r4 [r9,-38]\n  mstore [r4,r3] r2\n  mload r2 [r1,+1]\n  mload r3 [r9,-12]\n  add r3 r3 1\n  mstore [r9,-8] r3\n  mload r3 [r9,-8]\n  mload r4 [r9,-38]\n  mstore [r4,r3] r2\n  mload r2 [r1,+2]\n  mload r3 [r9,-8]\n  add r3 r3 1\n  mstore [r9,-23] r3\n  mload r3 [r9,-23]\n  mload r4 [r9,-38]\n  mstore [r4,r3] r2\n  mload r1 [r1,+3]\n  mload r2 [r9,-23]\n  add r2 r2 1\n  mstore [r9,-18] r2\n  mload r2 [r9,-18]\n  mload r3 [r9,-38]\n  mstore [r3,r2] r1\n  mov r1 4\n  mload r2 [r9,-15]\n  add r2 r2 7\n  mstore [r9,-11] r2\n  mload r2 [r9,-11]\n  mload r3 [r9,-14]\n  add r2 r3 r2\n  mstore [r9,-24] r2\n  mload r2 [r9,-10]\n  mload r3 [r9,-24]\n  add r2 r2 r3\n  mstore [r9,-16] r2\n  mload r2 [r9,-16]\n  add r1 r1 r2\n  mstore [r9,-7] r1\n  mload r1 [r9,-7]\n  add r1 r1 9\n  mstore [r9,-19] r1\n  mload r1 [r9,-17]\n  mload r2 [r9,-19]\n  mload r3 [r9,-38]\n  mstore [r3,r2] r1\n  mload r1 [r9,-19]\n  add r1 r1 1\n  mstore [r9,-22] r1\n  mov r1 3738116221\n  mload r2 [r9,-22]\n  mload r3 [r9,-38]\n  mstore [r3,r2] r1\n  mov r2 0\n  mload r1 [r9,-38]\n.PROPHET33_0:\n  mov r1 1764\n  call vector_new\n  mov r1 r0\n  mstore [r9,-80] r1\n  mload r1 [r9,-80]\n  add r1 r1 1\n  mov r2 118\n  mstore [r1] r2\n  mov r2 97\n  mstore [r1,+1] r2\n  mov r2 108\n  mstore [r1,+2] r2\n  mov r2 105\n  mstore [r1,+3] r2\n  mov r2 100\n  mstore [r1,+4] r2\n  mov r2 97\n  mstore [r1,+5] r2\n  mov r2 116\n  mstore [r1,+6] r2\n  mov r2 101\n  mstore [r1,+7] r2\n  mov r2 84\n  mstore [r1,+8] r2\n  mov r2 114\n  mstore [r1,+9] r2\n  mov r2 97\n  mstore [r1,+10] r2\n  mov r2 110\n  mstore [r1,+11] r2\n  mov r2 115\n  mstore [r1,+12] r2\n  mov r2 97\n  mstore [r1,+13] r2\n  mov r2 99\n  mstore [r1,+14] r2\n  mov r2 116\n  mstore [r1,+15] r2\n  mov r2 105\n  mstore [r1,+16] r2\n  mov r2 111\n  mstore [r1,+17] r2\n  mov r2 110\n  mstore [r1,+18] r2\n  mov r2 40\n  mstore [r1,+19] r2\n  mov r2 104\n  mstore [r1,+20] r2\n  mov r2 97\n  mstore [r1,+21] r2\n  mov r2 115\n  mstore [r1,+22] r2\n  mov r2 104\n  mstore [r1,+23] r2\n  mov r2 44\n  mstore [r1,+24] r2\n  mov r2 104\n  mstore [r1,+25] r2\n  mov r2 97\n  mstore [r1,+26] r2\n  mov r2 115\n  mstore [r1,+27] r2\n  mov r2 104\n  mstore [r1,+28] r2\n  mov r2 44\n  mstore [r1,+29] r2\n  mov r2 84\n  mstore [r1,+30] r2\n  mov r2 114\n  mstore [r1,+31] r2\n  mov r2 97\n  mstore [r1,+32] r2\n  mov r2 110\n  mstore [r1,+33] r2\n  mov r2 115\n  mstore [r1,+34] r2\n  mov r2 97\n  mstore [r1,+35] r2\n  mov r2 99\n  mstore [r1,+36] r2\n  mov r2 116\n  mstore [r1,+37] r2\n  mov r2 105\n  mstore [r1,+38] r2\n  mov r2 111\n  mstore [r1,+39] r2\n  mov r2 110\n  mstore [r1,+40] r2\n  mov r2 41\n  mstore [r1,+41] r2\n  mload r1 [r9,-80]\n  mload r1 [r1]\n  mstore [r9,-81] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-80]\n  add r2 r2 1\n  mload r3 [r9,-81]\n  poseidon r1 r2 r3\n  mstore [r9,-3] r1\n  mload r1 [r9,-3]\n  mstore [r9,-82] r1\n  mov r1 4\n  call vector_new\n  mov r1 r0\n  mload r2 [r9,-82]\n  mload r2 [r2]\n  mstore [r1] r2\n  mload r2 [r9,-82]\n  mload r2 [r2,+1]\n  mstore [r1,+1] r2\n  mload r2 [r9,-82]\n  mload r2 [r2,+2]\n  mstore [r1,+2] r2\n  mload r2 [r9,-82]\n  mload r2 [r2,+3]\n  mstore [r1,+3] r2\n  mov r2 0\n.PROPHET33_1:\n  add r9 r9 -89\n  ret\nhashL2Bytecode:\n.LBL34_0:\n  add r9 r9 6\n  mstore [r9,-2] r9\n  mstore [r9,-4] r1\n  mload r1 [r9,-4]\n  mstore [r9,-6] r1\n  mload r1 [r9,-6]\n  mload r1 [r1]\n  mstore [r9,-5] r1\n  mov r1 4\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-6]\n  add r2 r2 1\n  mload r3 [r9,-5]\n  poseidon r1 r2 r3\n  mstore [r9,-3] r1\n  mload r0 [r9,-3]\n  add r9 r9 -6\n  ret\nfunction_dispatch:\n.LBL35_0:\n  add r9 r9 99\n  mstore [r9,-2] r9\n  mov r2 r3\n  mstore [r9,-3] r2\n  mload r2 [r9,-3]\n  eq r8 r1 948084220\n  cjmp r8 .LBL35_2\n  eq r8 r1 1249840025\n  cjmp r8 .LBL35_3\n  eq r8 r1 3257286500\n  cjmp r8 .LBL35_4\n  eq r8 r1 2868538108\n  cjmp r8 .LBL35_5\n  eq r8 r1 3836602602\n  cjmp r8 .LBL35_6\n  eq r8 r1 1989631117\n  cjmp r8 .LBL35_7\n  eq r8 r1 61057063\n  cjmp r8 .LBL35_8\n  eq r8 r1 1928909022\n  cjmp r8 .LBL35_9\n  eq r8 r1 3701337357\n  cjmp r8 .LBL35_10\n  eq r8 r1 2845631446\n  cjmp r8 .LBL35_11\n  eq r8 r1 1659424326\n  cjmp r8 .LBL35_12\n  eq r8 r1 2132927061\n  cjmp r8 .LBL35_13\n  jmp .LBL35_1\n.LBL35_1:\n  ret\n.LBL35_2:\n  mstore [r9,-6] r2\n  mload r2 [r9,-6]\n  mload r2 [r2,+32]\n  mstore [r9,-13] r2\n  mload r2 [r9,-6]\n  mload r2 [r2,+40]\n  mstore [r9,-9] r2\n  mload r2 [r9,-6]\n  mload r2 [r2,+48]\n  mstore [r9,-4] r2\n  mload r2 [r9,-6]\n  mload r2 [r2,+56]\n  mov r4 7\n  add r1 r2 1\n  add r1 r4 r1\n  mstore [r9,-7] r1\n  mload r1 [r9,-6]\n  mload r2 [r9,-7]\n  mload r1 [r1,r2]\n  add r3 r1 1\n  mload r1 [r9,-7]\n  add r1 r1 r3\n  mstore [r9,-5] r1\n  mload r1 [r9,-5]\n  mload r2 [r9,-6]\n  mload r1 [r2,r1]\n  mstore [r9,-11] r1\n  mov r1 14\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-6]\n  mstore [r1] r2\n  mload r2 [r9,-13]\n  mstore [r1,+1] r2\n  mload r2 [r9,-9]\n  mstore [r1,+2] r2\n  mload r2 [r9,-4]\n  mstore [r1,+3] r2\n  mload r2 [r9,-6]\n  add r2 r2 7\n  mstore [r1,+4] r2\n  mload r2 [r9,-6]\n  mload r3 [r9,-7]\n  add r2 r2 r3\n  mstore [r1,+5] r2\n  mload r2 [r9,-5]\n  mload r3 [r9,-6]\n  add r2 r3 r2\n  mstore [r1,+6] r2\n  mload r2 [r9,-11]\n  add r2 r2 1\n  mstore [r9,-12] r2\n  mload r2 [r9,-5]\n  mload r3 [r9,-12]\n  add r2 r2 r3\n  mstore [r9,-8] r2\n  mload r2 [r9,-6]\n  mload r3 [r9,-8]\n  add r2 r2 r3\n  mstore [r1,+7] r2\n  mload r2 [r9,-8]\n  add r2 r2 4\n  mstore [r9,-10] r2\n  mload r2 [r9,-6]\n  mload r3 [r9,-10]\n  mload r2 [r2,r3]\n  call system_entrance\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  tstore r1 1\n  add r9 r9 -99\n  ret\n.LBL35_3:\n  mstore [r9,-18] r2\n  mload r2 [r9,-18]\n  mload r2 [r2,+32]\n  mstore [r9,-15] r2\n  mload r2 [r9,-18]\n  mload r2 [r2,+40]\n  mstore [r9,-21] r2\n  mload r2 [r9,-18]\n  mload r2 [r2,+48]\n  mstore [r9,-16] r2\n  mload r2 [r9,-18]\n  mload r2 [r2,+56]\n  mov r4 7\n  add r1 r2 1\n  add r1 r4 r1\n  mstore [r9,-19] r1\n  mload r1 [r9,-18]\n  mload r2 [r9,-19]\n  mload r1 [r1,r2]\n  add r3 r1 1\n  mload r1 [r9,-19]\n  add r1 r1 r3\n  mstore [r9,-17] r1\n  mload r1 [r9,-17]\n  mload r2 [r9,-18]\n  mload r1 [r2,r1]\n  mstore [r9,-22] r1\n  mov r1 14\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-18]\n  mstore [r1] r2\n  mload r2 [r9,-15]\n  mstore [r1,+1] r2\n  mload r2 [r9,-21]\n  mstore [r1,+2] r2\n  mload r2 [r9,-16]\n  mstore [r1,+3] r2\n  mload r2 [r9,-18]\n  add r2 r2 7\n  mstore [r1,+4] r2\n  mload r2 [r9,-18]\n  mload r3 [r9,-19]\n  add r2 r2 r3\n  mstore [r1,+5] r2\n  mload r2 [r9,-17]\n  mload r3 [r9,-18]\n  add r2 r3 r2\n  mstore [r1,+6] r2\n  mload r2 [r9,-22]\n  add r2 r2 1\n  mstore [r9,-14] r2\n  mload r2 [r9,-14]\n  mload r3 [r9,-17]\n  add r2 r3 r2\n  mstore [r9,-20] r2\n  mload r2 [r9,-18]\n  mload r3 [r9,-20]\n  add r2 r2 r3\n  mstore [r1,+7] r2\n  call validateTxStructure\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  tstore r1 1\n  add r9 r9 -99\n  ret\n.LBL35_4:\n  mstore [r9,-30] r2\n  mload r2 [r9,-30]\n  mload r2 [r2,+32]\n  mstore [r9,-26] r2\n  mload r2 [r9,-30]\n  mload r2 [r2,+40]\n  mstore [r9,-34] r2\n  mload r2 [r9,-30]\n  mload r2 [r2,+48]\n  mstore [r9,-27] r2\n  mload r2 [r9,-30]\n  mload r2 [r2,+56]\n  mov r4 7\n  add r1 r2 1\n  add r1 r4 r1\n  mstore [r9,-32] r1\n  mload r1 [r9,-30]\n  mload r2 [r9,-32]\n  mload r1 [r1,r2]\n  add r3 r1 1\n  mload r1 [r9,-32]\n  add r1 r1 r3\n  mstore [r9,-29] r1\n  mload r1 [r9,-29]\n  mload r2 [r9,-30]\n  mload r1 [r2,r1]\n  mstore [r9,-35] r1\n  mov r1 14\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-30]\n  mstore [r1] r2\n  mload r2 [r9,-26]\n  mstore [r1,+1] r2\n  mload r2 [r9,-34]\n  mstore [r1,+2] r2\n  mload r2 [r9,-27]\n  mstore [r1,+3] r2\n  mload r2 [r9,-30]\n  add r2 r2 7\n  mstore [r1,+4] r2\n  mload r2 [r9,-30]\n  mload r3 [r9,-32]\n  add r2 r2 r3\n  mstore [r1,+5] r2\n  mload r2 [r9,-29]\n  mload r3 [r9,-30]\n  add r2 r3 r2\n  mstore [r1,+6] r2\n  mload r2 [r9,-35]\n  add r2 r2 1\n  mstore [r9,-25] r2\n  mload r2 [r9,-25]\n  mload r3 [r9,-29]\n  add r2 r3 r2\n  mstore [r9,-33] r2\n  mload r2 [r9,-30]\n  mload r3 [r9,-33]\n  add r2 r2 r3\n  mstore [r1,+7] r2\n  call callTx\n  mov r1 r0\n  mstore [r9,-44] r1\n  mload r1 [r9,-44]\n  mload r1 [r1]\n  add r1 r1 1\n  mstore [r9,-23] r1\n  mload r1 [r9,-23]\n  add r1 r1 1\n  mstore [r9,-31] r1\n  mload r1 [r9,-31]\n  call heap_malloc\n  mov r1 r0\n  mstore [r9,-47] r1\n  mload r1 [r9,-44]\n  mload r1 [r1]\n  add r1 r1 1\n  mstore [r9,-28] r1\n  mload r3 [r9,-28]\n  mload r2 [r9,-47]\n  mload r1 [r9,-44]\n  add r1 r1 1\n  call memcpy\n  mload r1 [r9,-28]\n  mstore [r9,-24] r1\n  mload r1 [r9,-23]\n  mload r2 [r9,-24]\n  mload r3 [r9,-47]\n  mstore [r3,r2] r1\n  mload r1 [r9,-31]\n  mload r2 [r9,-47]\n  tstore r2 r1\n  add r9 r9 -99\n  ret\n.LBL35_5:\n  mstore [r9,-52] r2\n  mload r2 [r9,-52]\n  mload r2 [r2,+32]\n  mstore [r9,-58] r2\n  mload r2 [r9,-52]\n  mload r2 [r2,+40]\n  mstore [r9,-55] r2\n  mload r2 [r9,-52]\n  mload r2 [r2,+48]\n  mstore [r9,-50] r2\n  mload r2 [r9,-52]\n  mload r2 [r2,+56]\n  mov r4 7\n  add r1 r2 1\n  add r1 r4 r1\n  mstore [r9,-53] r1\n  mload r1 [r9,-52]\n  mload r2 [r9,-53]\n  mload r1 [r1,r2]\n  add r3 r1 1\n  mload r1 [r9,-53]\n  add r1 r1 r3\n  mstore [r9,-51] r1\n  mload r1 [r9,-51]\n  mload r2 [r9,-52]\n  mload r1 [r2,r1]\n  mstore [r9,-56] r1\n  mov r1 14\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-52]\n  mstore [r1] r2\n  mload r2 [r9,-58]\n  mstore [r1,+1] r2\n  mload r2 [r9,-55]\n  mstore [r1,+2] r2\n  mload r2 [r9,-50]\n  mstore [r1,+3] r2\n  mload r2 [r9,-52]\n  add r2 r2 7\n  mstore [r1,+4] r2\n  mload r2 [r9,-52]\n  mload r3 [r9,-53]\n  add r2 r2 r3\n  mstore [r1,+5] r2\n  mload r2 [r9,-51]\n  mload r3 [r9,-52]\n  add r2 r3 r2\n  mstore [r1,+6] r2\n  mload r2 [r9,-56]\n  add r2 r2 1\n  mstore [r9,-57] r2\n  mload r2 [r9,-51]\n  mload r3 [r9,-57]\n  add r2 r2 r3\n  mstore [r9,-54] r2\n  mload r2 [r9,-52]\n  mload r3 [r9,-54]\n  add r2 r2 r3\n  mstore [r1,+7] r2\n  call sendTx\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  tstore r1 1\n  add r9 r9 -99\n  ret\n.LBL35_6:\n  mstore [r9,-61] r2\n  mload r2 [r9,-61]\n  mload r2 [r2,+32]\n  mstore [r9,-67] r2\n  mload r2 [r9,-61]\n  mload r2 [r2,+40]\n  mstore [r9,-64] r2\n  mload r2 [r9,-61]\n  mload r2 [r2,+48]\n  mstore [r9,-59] r2\n  mload r2 [r9,-61]\n  mload r2 [r2,+56]\n  mov r4 7\n  add r1 r2 1\n  add r1 r4 r1\n  mstore [r9,-62] r1\n  mload r1 [r9,-61]\n  mload r2 [r9,-62]\n  mload r1 [r1,r2]\n  add r3 r1 1\n  mload r1 [r9,-62]\n  add r1 r1 r3\n  mstore [r9,-60] r1\n  mload r1 [r9,-60]\n  mload r2 [r9,-61]\n  mload r1 [r2,r1]\n  mstore [r9,-65] r1\n  mov r1 14\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-61]\n  mstore [r1] r2\n  mload r2 [r9,-67]\n  mstore [r1,+1] r2\n  mload r2 [r9,-64]\n  mstore [r1,+2] r2\n  mload r2 [r9,-59]\n  mstore [r1,+3] r2\n  mload r2 [r9,-61]\n  add r2 r2 7\n  mstore [r1,+4] r2\n  mload r2 [r9,-61]\n  mload r3 [r9,-62]\n  add r2 r2 r3\n  mstore [r1,+5] r2\n  mload r2 [r9,-60]\n  mload r3 [r9,-61]\n  add r2 r3 r2\n  mstore [r1,+6] r2\n  mload r2 [r9,-65]\n  add r2 r2 1\n  mstore [r9,-66] r2\n  mload r2 [r9,-60]\n  mload r3 [r9,-66]\n  add r2 r2 r3\n  mstore [r9,-63] r2\n  mload r2 [r9,-61]\n  mload r3 [r9,-63]\n  add r2 r2 r3\n  mstore [r1,+7] r2\n  call validateTx\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  tstore r1 1\n  add r9 r9 -99\n  ret\n.LBL35_7:\n  mstore [r9,-70] r2\n  mload r2 [r9,-70]\n  mload r2 [r2,+32]\n  mstore [r9,-76] r2\n  mload r2 [r9,-70]\n  mload r2 [r2,+40]\n  mstore [r9,-73] r2\n  mload r2 [r9,-70]\n  mload r2 [r2,+48]\n  mstore [r9,-68] r2\n  mload r2 [r9,-70]\n  mload r2 [r2,+56]\n  mov r4 7\n  add r1 r2 1\n  add r1 r4 r1\n  mstore [r9,-71] r1\n  mload r1 [r9,-70]\n  mload r2 [r9,-71]\n  mload r1 [r1,r2]\n  add r3 r1 1\n  mload r1 [r9,-71]\n  add r1 r1 r3\n  mstore [r9,-69] r1\n  mload r1 [r9,-69]\n  mload r2 [r9,-70]\n  mload r1 [r2,r1]\n  mstore [r9,-74] r1\n  mov r1 14\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-70]\n  mstore [r1] r2\n  mload r2 [r9,-76]\n  mstore [r1,+1] r2\n  mload r2 [r9,-73]\n  mstore [r1,+2] r2\n  mload r2 [r9,-68]\n  mstore [r1,+3] r2\n  mload r2 [r9,-70]\n  add r2 r2 7\n  mstore [r1,+4] r2\n  mload r2 [r9,-70]\n  mload r3 [r9,-71]\n  add r2 r2 r3\n  mstore [r1,+5] r2\n  mload r2 [r9,-69]\n  mload r3 [r9,-70]\n  add r2 r3 r2\n  mstore [r1,+6] r2\n  mload r2 [r9,-74]\n  add r2 r2 1\n  mstore [r9,-75] r2\n  mload r2 [r9,-69]\n  mload r3 [r9,-75]\n  add r2 r2 r3\n  mstore [r9,-72] r2\n  mload r2 [r9,-70]\n  mload r3 [r9,-72]\n  add r2 r2 r3\n  mstore [r1,+7] r2\n  call validateDeployment\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  tstore r1 1\n  add r9 r9 -99\n  ret\n.LBL35_8:\n  mstore [r9,-79] r2\n  mload r2 [r9,-79]\n  mload r2 [r2,+32]\n  mstore [r9,-85] r2\n  mload r2 [r9,-79]\n  mload r2 [r2,+40]\n  mstore [r9,-82] r2\n  mload r2 [r9,-79]\n  mload r2 [r2,+48]\n  mstore [r9,-77] r2\n  mload r2 [r9,-79]\n  mload r2 [r2,+56]\n  mov r4 7\n  add r1 r2 1\n  add r1 r4 r1\n  mstore [r9,-80] r1\n  mload r1 [r9,-79]\n  mload r2 [r9,-80]\n  mload r1 [r1,r2]\n  add r3 r1 1\n  mload r1 [r9,-80]\n  add r1 r1 r3\n  mstore [r9,-78] r1\n  mload r1 [r9,-78]\n  mload r2 [r9,-79]\n  mload r1 [r2,r1]\n  mstore [r9,-83] r1\n  mov r1 14\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-79]\n  mstore [r1] r2\n  mload r2 [r9,-85]\n  mstore [r1,+1] r2\n  mload r2 [r9,-82]\n  mstore [r1,+2] r2\n  mload r2 [r9,-77]\n  mstore [r1,+3] r2\n  mload r2 [r9,-79]\n  add r2 r2 7\n  mstore [r1,+4] r2\n  mload r2 [r9,-79]\n  mload r3 [r9,-80]\n  add r2 r2 r3\n  mstore [r1,+5] r2\n  mload r2 [r9,-78]\n  mload r3 [r9,-79]\n  add r2 r3 r2\n  mstore [r1,+6] r2\n  mload r2 [r9,-83]\n  add r2 r2 1\n  mstore [r9,-84] r2\n  mload r2 [r9,-78]\n  mload r3 [r9,-84]\n  add r2 r2 r3\n  mstore [r9,-81] r2\n  mload r2 [r9,-79]\n  mload r3 [r9,-81]\n  add r2 r2 r3\n  mstore [r1,+7] r2\n  call getSignedHash\n  mov r1 r0\n  mstore [r9,-86] r1\n  mov r1 5\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-86]\n  mload r2 [r2]\n  mstore [r1] r2\n  mload r2 [r9,-86]\n  mload r2 [r2,+1]\n  mstore [r1,+1] r2\n  mload r2 [r9,-86]\n  mload r2 [r2,+2]\n  mstore [r1,+2] r2\n  mload r2 [r9,-86]\n  mload r2 [r2,+3]\n  mstore [r1,+3] r2\n  mov r2 4\n  mstore [r1,+4] r2\n  tstore r1 5\n  add r9 r9 -99\n  ret\n.LBL35_9:\n  add r1 r2 0\n  mload r2 [r1,+4]\n  add r2 r1 4\n  call getTransactionHash\n  mov r1 r0\n  mstore [r9,-87] r1\n  mov r1 5\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-87]\n  mload r2 [r2]\n  mstore [r1] r2\n  mload r2 [r9,-87]\n  mload r2 [r2,+1]\n  mstore [r1,+1] r2\n  mload r2 [r9,-87]\n  mload r2 [r2,+2]\n  mstore [r1,+2] r2\n  mload r2 [r9,-87]\n  mload r2 [r2,+3]\n  mstore [r1,+3] r2\n  mov r2 4\n  mstore [r1,+4] r2\n  tstore r1 5\n  add r9 r9 -99\n  ret\n.LBL35_10:\n  add r1 r2 0\n  call validate_sender\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  tstore r1 1\n  add r9 r9 -99\n  ret\n.LBL35_11:\n  add r1 r2 0\n  mload r2 [r1,+4]\n  call validate_nonce\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  tstore r1 1\n  add r9 r9 -99\n  ret\n.LBL35_12:\n  mstore [r9,-93] r2\n  mload r2 [r9,-93]\n  add r2 r2 4\n  mstore [r9,-89] r2\n  mload r2 [r9,-89]\n  add r2 r2 4\n  mstore [r9,-95] r2\n  mload r2 [r9,-95]\n  mload r2 [r2,+32]\n  mstore [r9,-91] r2\n  mload r2 [r9,-95]\n  mload r2 [r2,+40]\n  mstore [r9,-98] r2\n  mload r2 [r9,-95]\n  mload r2 [r2,+48]\n  mstore [r9,-92] r2\n  mload r2 [r9,-95]\n  mload r2 [r2,+56]\n  mov r4 7\n  add r1 r2 1\n  add r1 r4 r1\n  mstore [r9,-96] r1\n  mload r1 [r9,-95]\n  mload r2 [r9,-96]\n  mload r1 [r1,r2]\n  add r3 r1 1\n  mload r1 [r9,-96]\n  add r1 r1 r3\n  mstore [r9,-94] r1\n  mload r1 [r9,-94]\n  mload r2 [r9,-95]\n  mload r1 [r2,r1]\n  mstore [r9,-88] r1\n  mov r1 14\n  call heap_malloc\n  mov r3 r0\n  mload r1 [r9,-95]\n  mstore [r3] r1\n  mload r1 [r9,-91]\n  mstore [r3,+1] r1\n  mload r1 [r9,-98]\n  mstore [r3,+2] r1\n  mload r1 [r9,-92]\n  mstore [r3,+3] r1\n  mload r1 [r9,-95]\n  add r1 r1 7\n  mstore [r3,+4] r1\n  mload r1 [r9,-95]\n  mload r2 [r9,-96]\n  add r1 r1 r2\n  mstore [r3,+5] r1\n  mload r1 [r9,-94]\n  mload r2 [r9,-95]\n  add r1 r2 r1\n  mstore [r3,+6] r1\n  mload r1 [r9,-88]\n  add r1 r1 1\n  mstore [r9,-90] r1\n  mload r1 [r9,-90]\n  mload r2 [r9,-94]\n  add r1 r2 r1\n  mstore [r9,-97] r1\n  mload r1 [r9,-95]\n  mload r2 [r9,-97]\n  add r1 r1 r2\n  mstore [r3,+7] r1\n  mload r2 [r9,-89]\n  mload r1 [r9,-93]\n  call validate_tx\n  mov r1 1\n  call heap_malloc\n  mov r1 r0\n  mov r2 0\n  mstore [r1] r2\n  tstore r1 1\n  add r9 r9 -99\n  ret\n.LBL35_13:\n  mload r1 [r2]\n  add r1 r2 0\n  call hashL2Bytecode\n  mov r1 r0\n  mstore [r9,-99] r1\n  mov r1 5\n  call heap_malloc\n  mov r1 r0\n  mload r2 [r9,-99]\n  mload r2 [r2]\n  mstore [r1] r2\n  mload r2 [r9,-99]\n  mload r2 [r2,+1]\n  mstore [r1,+1] r2\n  mload r2 [r9,-99]\n  mload r2 [r2,+2]\n  mstore [r1,+2] r2\n  mload r2 [r9,-99]\n  mload r2 [r2,+3]\n  mstore [r1,+3] r2\n  mov r2 4\n  mstore [r1,+4] r2\n  tstore r1 5\n  add r9 r9 -99\n  ret\nmain:\n.LBL36_0:\n  add r9 r9 8\n  mstore [r9,-2] r9\n  mov r1 13\n  call heap_malloc\n  mov r1 r0\n  mov r2 1\n  tload r1 r2 13\n  mload r1 [r1]\n  mstore [r9,-4] r1\n  mov r1 14\n  call heap_malloc\n  mov r1 r0\n  mov r2 1\n  tload r1 r2 14\n  mload r1 [r1]\n  mstore [r9,-6] r1\n  mload r1 [r9,-6]\n  add r1 r1 14\n  mstore [r9,-3] r1\n  mload r1 [r9,-3]\n  call heap_malloc\n  mov r3 r0\n  mov r1 1\n  mload r2 [r9,-3]\n  tload r3 r1 r2\n  mload r2 [r9,-6]\n  mload r1 [r9,-4]\n  call function_dispatch\n  add r9 r9 -8\n  end\n",
+  "prophets": [
+    {
+      "label": ".PROPHET20_0",
+      "code": "%{\n    function mod(felt x, felt y) -> felt {\n        return x % y;\n    }\n    entry() {\n        cid.r = mod(cid.x, cid.y);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.x",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.y",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.r",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET20_1",
+      "code": "%{\n    function div(felt x, felt y) -> felt {\n        return x / y;\n    }\n    entry() {\n        cid.q = div(cid.x, cid.y);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.x",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.y",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.q",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "label": ".PROPHET25_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET25_1",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET25_2",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET25_3",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET25_4",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET25_5",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET25_6",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET25_7",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET26_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET26_1",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET28_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET28_1",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET28_2",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET29_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET29_1",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET29_2",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET29_3",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET29_4",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET29_5",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET31_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET32_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET32_1",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET33_0",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "label": ".PROPHET33_1",
+      "code": "%{\n    entry() {\n        printf(cid.base, cid.flag);\n    }\n%}",
+      "inputs": [
+        {
+          "name": "cid.base",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        },
+        {
+          "name": "cid.flag",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": []
+    }
+  ]
+}
