@@ -1,0 +1,30 @@
+contract NonceHolder {
+
+    mapping(address => mapping(u32 => bool)) nonces;
+    mapping(address => u32) _usedNonces;
+
+    fn onlyEntrypointCall() {
+        address ENTRY_POINT_ADDRESS = address(0x8001);
+        assert(caller_address() == ENTRY_POINT_ADDRESS, "Only Entrypoint system contract can call this function.");
+    }
+
+    fn isNonceUsed(address _address, u32 _nonce) -> (bool) {
+        // MOCK_TEST:
+        // assert(_address == 0x0000000000000008000000000000000800000000000000080000000000000008address);
+        // assert(_nonce == 1);
+        return nonces[_address][_nonce];
+    }
+
+    fn setNonce(address _address, u32 _nonce) {
+        onlyEntrypointCall();
+
+        assert(!nonces[_address][_nonce], "Nonce already used");
+        nonces[_address][_nonce] = true;
+
+        _usedNonces[_address] = _usedNonces[_address] + 1;
+    }
+
+    fn usedNonces(address _address) -> (u32) {
+        return _usedNonces[_address];
+    }
+}

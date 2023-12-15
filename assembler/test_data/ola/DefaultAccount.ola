@@ -1,0 +1,71 @@
+// For DefaultAccount, all the methods should only be called by Entrypoint system contract.
+// Although user's AA implemenation does not have this restriction.
+
+contract DefaultAccount {
+
+    struct Transaction {
+        address sender;
+        u32 nonce;
+        u32 version;
+        u32 chainid;
+        fields data; // CR: fields data;
+        fields codes; // CR: fields codes;
+        fields signature; // CR: fields signature;
+        hash codeHash; // CR: not spoorted right now.
+    }
+
+    fn onlyEntrypointCall() {
+        address ENTRY_POINT_ADDRESS = address(0x8001);
+        assert(caller_address() == ENTRY_POINT_ADDRESS, "Only Entrypoint system contract can call this function.");
+    }
+
+    fn ignoreDelegateCall() {
+        assert(current_address() == code_address(), "Delegatecall is not allowed.");
+    }
+
+    fn validateTransaction(hash _txHash, hash _signedHash, Transaction _tx) -> (field) {
+        print(_txHash);
+        print(_signedHash);
+        print(_tx);
+        onlyEntrypointCall();
+        ignoreDelegateCall();
+
+        // TODO: add signature verification.
+
+        // TODO: selector is not supported right now.
+        // return DefaultAccount.validateTransaction.selector;
+        // we use hash to represent this for now. hash has 8 u32.
+        hash magic = poseidon_hash("validateTransaction(hash,hash,Transaction)");
+        fields hash_magic = fields(magic);
+        return hash_magic[0];
+    }
+
+    fn executeTransaction(hash _txHash, hash _signedHash, Transaction _tx) -> (fields) {
+        print(_txHash);
+        print(_signedHash);
+        print(_tx);
+        onlyEntrypointCall();
+        ignoreDelegateCall();
+
+        // TODO: how do we handle return data?
+        // CR: slice
+        address to = abi.decode(_tx.data[0:4], (address));
+        print(to);
+        // fields res = to.call(_tx.data[4:]);
+        return _tx.data[4:];
+    } 
+
+    // fn payForTransaction(hash _txHash, hash _signedHash) {
+    //     onlyEntrypointCall();
+    //     ignoreDelegateCall();
+
+    //     // TODO: handle gas payment
+    // }
+
+    // fn prepareForPaymaster(hash _txHash, hash _signedHash, Transaction _tx) {
+    //     onlyEntrypointCall();
+    //     ignoreDelegateCall();
+
+    //     // TODO: handle allowance and approval for user and paymaster
+    // }
+}
