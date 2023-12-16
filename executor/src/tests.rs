@@ -909,7 +909,7 @@ fn entry_point_func_0_test() {
 
     {
         let func = abi.functions[0].clone();
-        let sender = Value::Address(FixedArray4([77, 88, 99, 100]));
+        let sender = Value::Address(FixedArray4([77, 88, 99, 1000000000]));
         let nonce = Value::U32(1);
         let version = Value::U32(3);
         let chainId = Value::U32(1);
