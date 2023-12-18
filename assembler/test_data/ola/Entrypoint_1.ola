@@ -1,0 +1,36 @@
+// TODO: import is not supported right now.
+// TODO: multiple contract in one file is not supported right now.
+
+contract Entrypoint {
+    // TODO: we only support one contract deployment in one transaction.
+
+    // TODO: disable this for version 0.
+    // TODO: the predefined constant is not supported yet.
+    // system address range [2^15+1, 2^16-1]
+    // address MAX_SYSTEM_CONTRACT_ADDRESS = address(0xffff);
+    // address KNOWN_CODES_STORAGE = address(0x8004);
+    // address NONCE_HOLDER_ADDRESS = address(0x8003);
+    // address DEPLOYER_SYSTEM_CONTRACT = address(0x8005);
+
+
+    struct Transaction1 {
+        fields data; // CR: fields data;
+        fields codes; // CR: fields codes;
+    }
+
+
+    fn validate_tx(Transaction1 _tx) {
+        // CR: struct encode is not supported.
+        // CR: Default Account for EOA?
+        fields validate_tx_calldata = abi.encodeWithSignature("validateTransaction(hash,hash,Transaction)",_tx);
+        print(validate_tx_calldata);
+        // fields validate_tx_bytes = _tx.sender.call(validate_tx_calldata);
+        // field magic = abi.decode(validate_tx_bytes, (field));
+
+        // CR: constant magic.
+        // hash magics = poseidon_hash("validateTransaction(hash,hash,Transaction)");
+        // fields hash_magic = fields(magics);
+        // print(hash_magic);
+        // assert(magic == hash_magic[0], "Validate transaction failed.");
+    }
+}

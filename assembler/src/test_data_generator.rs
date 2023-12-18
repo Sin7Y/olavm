@@ -270,6 +270,11 @@ mod tests {
     }
 
     #[test]
+    fn generate_entry_point_1() {
+        generate_from_file("Entrypoint_1_asm.json".to_string(), "Entrypoint_1.json".to_string());
+    }
+
+    #[test]
     fn generate_know_code_storage() {
         generate_from_file("KnownCodeStorage_asm.json".to_string(), "KnownCodeStorage.json".to_string());
     }

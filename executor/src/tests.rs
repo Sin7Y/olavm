@@ -953,6 +953,137 @@ fn entry_point_func_0_test() {
 
 
 #[test]
+fn entry_point_func_5_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/Entrypoint_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[10].clone();
+        let sender = Value::Address(FixedArray4([77, 88, 99, 1000000000]));
+        let nonce = Value::U32(1);
+        let version = Value::U32(3);
+        let chainId = Value::U32(1);
+        let data = Value::Fields(vec![190, 200, 210, 220, 230, 240]);
+        let code = Value::Fields(vec![250, 260, 270, 280, 290, 300]);
+        let signature = Value::Fields(vec![310, 320, 330, 340, 350, 360]);
+        let hash = Value::Hash(FixedArray4([370, 380, 390, 400]));
+        let tx = Value::Tuple(vec![
+            ("sender".to_string(), sender),
+            ("nonce".to_string(), nonce),
+            ("version".to_string(), version),
+            ("chainId".to_string(), chainId),
+            ("data".to_string(), data),
+            ("code".to_string(), code),
+            ("signature".to_string(), signature),
+            ("hash".to_string(), hash),
+        ]);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx]).unwrap();
+
+        println!("input:{:?}", input);
+
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/Entrypoint.json",
+            "entry_point_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+}
+
+
+#[test]
+fn entry_point_func_10_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/Entrypoint_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[10].clone();
+        let tx_Hash = Value::Hash(FixedArray4([11, 22, 33, 44]));
+        let _signedHash = Value::Hash(FixedArray4([55, 66, 77, 88]));
+        let sender = Value::Address(FixedArray4([77, 88, 99, 1000000000]));
+        let nonce = Value::U32(1);
+        let version = Value::U32(3);
+        let chainId = Value::U32(1);
+        let data = Value::Fields(vec![190, 200, 210, 220, 230, 240]);
+        let code = Value::Fields(vec![250, 260, 270, 280, 290, 300]);
+        let signature = Value::Fields(vec![310, 320, 330, 340, 350, 360]);
+        let hash = Value::Hash(FixedArray4([370, 380, 390, 400]));
+        let tx = Value::Tuple(vec![
+            ("sender".to_string(), sender),
+            ("nonce".to_string(), nonce),
+            ("version".to_string(), version),
+            ("chainId".to_string(), chainId),
+            ("data".to_string(), data),
+            ("code".to_string(), code),
+            ("signature".to_string(), signature),
+            ("hash".to_string(), hash),
+        ]);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx_Hash, _signedHash, tx]).unwrap();
+
+        println!("input:{:?}", input);
+
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/Entrypoint.json",
+            "entry_point_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+}
+
+
+
+#[test]
+fn entry_point_func_1_0_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/Entrypoint_1_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[0].clone();
+
+        let data = Value::Fields(vec![190, 200, 210, 220, 230, 240]);
+        let code = Value::Fields(vec![250, 260, 270, 280, 290, 300]);
+        let tx = Value::Tuple(vec![
+            ("data".to_string(), data),
+            ("code".to_string(), code),
+        ]);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx]).unwrap();
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/Entrypoint_1.json",
+            "entry_point_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+}
+
+
+
+#[test]
 fn known_code_storage_func_1_test() {
     let abi: Abi = {
         let file = File::open("../assembler/test_data/abi/KnownCodeStorage_abi.json")
