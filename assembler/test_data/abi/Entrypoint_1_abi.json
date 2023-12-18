@@ -1,0 +1,23 @@
+[
+  {
+    "name": "validate_tx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  }
+]
