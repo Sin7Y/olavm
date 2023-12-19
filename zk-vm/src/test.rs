@@ -72,7 +72,7 @@ pub mod tests {
             GoldilocksField::from_canonical_u64(3965482278),
         ];
 
-        let res = node.execute_tx(caller_address, caller_exe_address, calldata);
+        let res = node.execute_tx(caller_address, caller_exe_address, calldata, false);
 
         if res.is_ok() {
             println!("run tx success:{:?}", res);
