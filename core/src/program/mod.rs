@@ -20,6 +20,7 @@ pub struct Program {
     pub instructions: Vec<String>,
     pub trace: Trace,
     pub debug_info: Option<BTreeMap<usize, String>>,
+    pub print_flag: bool,
     pub prophets: HashMap<u64, OlaProphet>,
     pub pre_exe_flag: bool,
 }

@@ -184,6 +184,7 @@ fn main() {
                 debug_info: None,
                 prophets: HashMap::new(),
                 pre_exe_flag: false,
+                print_flag: false,
             };
 
             let inputs = GenerationInputs::default();

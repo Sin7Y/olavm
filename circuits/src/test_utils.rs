@@ -233,6 +233,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         debug_info: program.debug_info,
         prophets,
         pre_exe_flag: false,
+        print_flag: false,
     };
 
     for inst in instructions {
