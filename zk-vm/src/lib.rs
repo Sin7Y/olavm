@@ -241,6 +241,7 @@ impl OlaVM {
         caller_addr: TreeValue,
         code_exe_addr: TreeValue,
         calldata: Vec<GoldilocksField>,
+        debug_flag: bool,
     ) -> Result<(), StateError> {
         let mut env_idx = 0;
         let mut sc_cnt = 0;
@@ -258,7 +259,7 @@ impl OlaVM {
             &self.ctx_info,
         );
         let mut program = Arc::new(Mutex::new(Program::default()));
-
+        program.lock().unwrap().print_flag = debug_flag;
         let mut caller_addr = caller_addr;
         let mut code_exe_addr = code_exe_addr;
         let res = self.contract_run(
