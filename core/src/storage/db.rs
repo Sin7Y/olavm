@@ -72,7 +72,12 @@ impl StateKeeperColumnFamily {
 
 impl SequencerColumnFamily {
     fn all() -> &'static [Self] {
-        &[Self::State, Self::Contracts, Self::FactoryDeps, Self::ContractMap]
+        &[
+            Self::State,
+            Self::Contracts,
+            Self::FactoryDeps,
+            Self::ContractMap,
+        ]
     }
 }
 

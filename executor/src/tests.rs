@@ -55,6 +55,7 @@ fn executor_run_test_program(
         debug_info: program.debug_info,
         prophets: prophets,
         pre_exe_flag: false,
+        print_flag: false,
     };
 
     for inst in instructions {

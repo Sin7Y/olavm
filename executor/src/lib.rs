@@ -32,7 +32,7 @@ use core::util::poseidon_utils::POSEIDON_INPUT_NUM;
 use core::vm::heap::HEAP_PTR;
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
-use log::debug;
+use log::{debug, info};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field64;
 use plonky2::field::types::{Field, PrimeField64};
@@ -253,6 +253,7 @@ impl Process {
         if first.is_none() {
             panic!("get wrong reg index:{}", reg_str);
         }
+        debug!("reg_str:{}", reg_str);
         assert!(first.unwrap() == 'r', "wrong reg name");
         let reg_index = reg_str[1..].parse();
         if reg_index.is_err() {
@@ -1213,8 +1214,7 @@ impl Process {
             );
         }
         self.pc += step;
-        let print_vm_state = false;
-        if print_vm_state {
+        if program.print_flag {
             println!("******************** sstore ********************");
             println!(
                 "scaddr: {}, {}, {}, {}",
@@ -1346,8 +1346,7 @@ impl Process {
         }
         self.pc += step;
 
-        let print_vm_state = false;
-        if print_vm_state {
+        if program.print_flag {
             println!("******************** sload ********************");
             println!(
                 "scaddr: {}, {}, {}, {}",
@@ -1880,8 +1879,7 @@ impl Process {
             }
 
             // Print vm state for debug only.
-            let print_vm_state = false;
-            if print_vm_state {
+            if program.print_flag {
                 self.print_vm_state(&instruction.0);
             }
 
@@ -1891,7 +1889,7 @@ impl Process {
             let step = instruction.2;
             self.instruction = instruction.3;
             self.immediate_data = instruction.4;
-            debug!("execute opcode: {}", opcode.as_str());
+            debug!("execute opcode: {:?}", ops);
             match opcode.as_str() {
                 //todo: not need move to arithmatic library
                 "mov" | "not" => self.execute_inst_mov_not(&ops, step),
@@ -1972,7 +1970,7 @@ impl Process {
                 self.prophet(&mut program.prophets[&pc_status].clone())?
             }
 
-            if print_vm_state {
+            if program.print_flag {
                 println!("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ end step ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑");
                 println!("\n");
             }
