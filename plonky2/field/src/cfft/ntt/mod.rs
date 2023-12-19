@@ -6,14 +6,18 @@ use crate::{types::Field, goldilocks_field::GoldilocksField};
 
 mod domain;
 
+pub const CUDA_MAX_LENGTH: u64 = 1 << 24;
+
 #[allow(improper_ctypes)]
-#[cfg(feature = "cuda")]
+#[not(cfg(feature = "cuda"))]
 extern "C" {
-    fn evaluate_poly(vec: *mut u64, result: *mut u64, N: u64, puserNTTParamFB: *mut NTTParamFB);
-    fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64,result: *mut u64, result_len: u64, puserNTTParamFB: *mut NTTParamFB);
-    fn interpolate_poly(vec: *mut u64, result: *mut u64, N: u64, puserNTTParamFB: *mut NTTParamFB);
-    fn interpolate_poly_with_offset(vec: *mut u64, result: *mut u64, N: u64, domain_offset: u64, puserNTTParamFB: *mut NTTParamFB);
-    fn GPU_init(n: u64, pNTTParamGroup: *mut NTTParamGroup);
+    // fn evaluate_poly(vec: *mut u64, result: *mut u64, N: u64, puserNTTParamFB: *mut NTTParamFB);
+    // fn evaluate_poly_with_offset(vec: *mut u64, N: u64, domain_offset: u64, blowup_factor: u64,result: *mut u64, result_len: u64, puserNTTParamFB: *mut NTTParamFB);
+    // fn interpolate_poly(vec: *mut u64, result: *mut u64, N: u64, puserNTTParamFB: *mut NTTParamFB);
+    // fn interpolate_poly_with_offset(vec: *mut u64, result: *mut u64, N: u64, domain_offset: u64, puserNTTParamFB: *mut NTTParamFB);
+    fn GPU_init(n: u64, in_ptr: *mut *mut u64, out_ptr: *mut *mut u64, param_ptr: *mut *mut u64, extra_info: [u64; 5]) -> u32;
+    fn gpu_method(n: u64, method: u8, in_ptr: *mut *mut u64, out_ptr: *mut *mut u64, param_ptr: *mut *mut u64, extra_info: [u64; 5]) -> u32;
+    fn gpu_free(in_ptr: *mut *mut u64, out_ptr: *mut *mut u64, param_ptr: *mut *mut u64) -> u32;
 }
 
 #[cfg(feature = "cuda")]
@@ -25,7 +29,8 @@ lazy_static! {
     static ref GPU_LOCK: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
     let group = NTTParamGroup::new();
     let n = 1 << 20;
-    GPU_init(n, *mut group);
+
+    let mut null_mut_ptr: *mut i64 = ptr::null_mut();
 }
 
 // only support GoldilocksField(u64), adapting to other fields if needed
