@@ -994,7 +994,7 @@ fn entry_point_func_5_test() {
 
 
 #[test]
-fn entry_point_func_10_test() {
+fn entry_point_func_4_test() {
     let abi: Abi = {
         let file = File::open("../assembler/test_data/abi/Entrypoint_abi.json")
             .expect("failed to open ABI file");
@@ -1003,9 +1003,9 @@ fn entry_point_func_10_test() {
     };
 
     {
-        let func = abi.functions[10].clone();
-        let tx_Hash = Value::Hash(FixedArray4([11, 22, 33, 44]));
-        let _signedHash = Value::Hash(FixedArray4([55, 66, 77, 88]));
+        let func = abi.functions[6].clone();
+        // let tx_Hash = Value::Hash(FixedArray4([11, 22, 33, 44]));
+        // let _signedHash = Value::Hash(FixedArray4([55, 66, 77, 88]));
         let sender = Value::Address(FixedArray4([77, 88, 99, 1000000000]));
         let nonce = Value::U32(1);
         let version = Value::U32(3);
@@ -1024,7 +1024,7 @@ fn entry_point_func_10_test() {
             ("signature".to_string(), signature),
             ("hash".to_string(), hash),
         ]);
-        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx_Hash, _signedHash, tx]).unwrap();
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx]).unwrap();
 
         println!("input:{:?}", input);
 
