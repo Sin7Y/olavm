@@ -1298,6 +1298,42 @@ fn nonce_holder_func_3_test() {
 }
 
 
+
+#[test]
+fn system_context_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/system_context_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_0 = abi.functions[0].clone();
+
+        // encode input and function selector
+        let input_0 = abi
+            .encode_input_with_signature(
+                func_0.signature().as_str(),
+                &[],
+            )
+            .unwrap();
+
+        println!("input_0:{:?}", input_0);
+
+        let calldata_1 = input_0
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/system_context.json",
+            "system_context.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
 #[test]
 fn gen_storage_table_test() {
     let mut program: Program = Program::default();
