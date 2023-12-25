@@ -6,36 +6,52 @@
     "outputs": []
   },
   {
-    "name": "getCodeHash",
+    "name": "getRawHash",
     "type": "function",
     "inputs": [
       {
         "name": "_address",
-        "type": "address",
-        "internalType": "address"
+        "type": "address"
       }
     ],
     "outputs": [
       {
         "name": "",
-        "type": "hash",
-        "internalType": "hash"
+        "type": "hash"
       }
     ]
   },
   {
-    "name": "storeCodeHash",
+    "name": "getCodeHash",
     "type": "function",
     "inputs": [
       {
         "name": "_address",
-        "type": "address",
-        "internalType": "address"
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash"
+      }
+    ]
+  },
+  {
+    "name": "storeBytesHash",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address"
       },
       {
-        "name": "_hash",
-        "type": "hash",
-        "internalType": "hash"
+        "name": "_rawHash",
+        "type": "hash"
+      },
+      {
+        "name": "_codeHash",
+        "type": "hash"
       }
     ],
     "outputs": []

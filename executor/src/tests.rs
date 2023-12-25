@@ -81,7 +81,7 @@ fn executor_run_test_program(
         GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(0),
         GoldilocksField::from_canonical_u64(0),
-        GoldilocksField::from_canonical_u64(32769),
+        GoldilocksField::from_canonical_u64(32773),
     ];
     // current address
     let callee_exe_addr = [
@@ -691,6 +691,47 @@ fn account_code_storage_func_2_test() {
         );
     }
 }
+
+
+
+#[test]
+fn account_code_storage_func_3_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/AccountCodeStorage_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[3].clone();
+        // encode input and function selector
+        let input = abi
+            .encode_input_with_signature(
+                func.signature().as_str(),
+                &[
+                    Value::Address(FixedArray4([1, 2, 3, 4])),
+                    Value::Hash(FixedArray4([5, 6, 7, 8])),
+                    Value::Hash(FixedArray4([11, 22, 33, 44])),
+                ],
+            )
+            .unwrap();
+
+        println!("input:{:?}", input);
+
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/AccountCodeStorage.json",
+            "account_code_storage_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+}
+
 
 #[test]
 fn contract_deployer_func_0_test() {
