@@ -202,6 +202,34 @@ mod tests {
         generate_from_file("global.json".to_string(), "global.json".to_string());
     }
 
+    #[test]
+    fn generate_system() {
+        generate_from_file(
+            "system/AccountCodeStorage_asm.json".to_string(),
+            "AccountCodeStorage.json".to_string(),
+        );
+        generate_from_file(
+            "system/KnownCodeStorage_asm.json".to_string(),
+            "KnownCodeStorage.json".to_string(),
+        );
+        generate_from_file(
+            "system/Entrypoint_asm.json".to_string(),
+            "Entrypoint.json".to_string(),
+        );
+        generate_from_file(
+            "system/DefaultAccount_asm.json".to_string(),
+            "DefaultAccount.json".to_string(),
+        );
+        generate_from_file(
+            "system/NonceHolder_asm.json".to_string(),
+            "NonceHolder.json".to_string(),
+        );
+        generate_from_file(
+            "system/ContractDeployer_asm.json".to_string(),
+            "ContractDeployer.json".to_string(),
+        );
+    }
+
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin/sccall");
         let input_path = format!("test_data/asm/{}", input_file_name);

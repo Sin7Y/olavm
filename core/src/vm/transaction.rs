@@ -10,7 +10,8 @@ pub struct TxCtxInfo {
     pub chain_id: GoldilocksField,
     pub caller_address: [GoldilocksField; 4],
     pub nonce: GoldilocksField,
-    pub signature: [GoldilocksField; 4],
+    pub signature_r: [GoldilocksField; 4],
+    pub signature_s: [GoldilocksField; 4],
     pub tx_hash: [GoldilocksField; 4],
 }
 
@@ -33,17 +34,23 @@ pub fn init_tx_context_mock() -> TxCtxInfo {
             GoldilocksField::from_canonical_u64(8),
         ],
         nonce: GoldilocksField::from_canonical_u64(25),
-        signature: [
+        signature_r: [
             GoldilocksField::from_canonical_u64(129),
             GoldilocksField::from_canonical_u64(130),
             GoldilocksField::from_canonical_u64(131),
             GoldilocksField::from_canonical_u64(132),
         ],
-        tx_hash: [
+        signature_s: [
             GoldilocksField::from_canonical_u64(133),
             GoldilocksField::from_canonical_u64(134),
             GoldilocksField::from_canonical_u64(135),
             GoldilocksField::from_canonical_u64(136),
+        ],
+        tx_hash: [
+            GoldilocksField::from_canonical_u64(137),
+            GoldilocksField::from_canonical_u64(138),
+            GoldilocksField::from_canonical_u64(139),
+            GoldilocksField::from_canonical_u64(140),
         ],
     }
 }
