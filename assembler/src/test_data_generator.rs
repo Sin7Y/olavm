@@ -284,6 +284,11 @@ mod tests {
         generate_from_file("NonceHolder_asm.json".to_string(), "NonceHolder.json".to_string());
     }
 
+    #[test]
+    fn generate_system_context() {
+        generate_from_file("system_context_asm.json".to_string(), "system_context.json".to_string());
+    }
+
 
 
 

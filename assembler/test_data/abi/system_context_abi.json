@@ -1,0 +1,140 @@
+[
+  {
+    "name": "all_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "caller_address_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "origin_address_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "code_address_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "current_address_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "chain_id_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "block_number_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "block_timestamp_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "sequence_address_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "nonce_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "signautre_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash"
+      }
+    ]
+  },
+  {
+    "name": "transaction_version_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "transaction_hash_test",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash"
+      }
+    ]
+  }
+]
