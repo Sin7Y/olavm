@@ -52,7 +52,7 @@ impl StorageKey {
 
 pub fn field_arr_to_u8_arr(value: &Vec<GoldilocksField>) -> Vec<u8> {
     value.iter().fold(Vec::new(), |mut key_vec, item| {
-        key_vec.extend(item.0.to_le_bytes().to_vec());
+        key_vec.extend(item.0.to_be_bytes().to_vec());
         key_vec
     })
 }
@@ -69,7 +69,7 @@ pub fn u8_arr_to_field_arr(value: &Vec<u8>) -> Vec<GoldilocksField> {
         .into_iter()
         .enumerate()
         .map(|(_index, chunk)| {
-            GoldilocksField::from_canonical_u64(u64::from_le_bytes(
+            GoldilocksField::from_canonical_u64(u64::from_be_bytes(
                 chunk.map(|e| *e).collect::<Vec<_>>().try_into().unwrap(),
             ))
         })
