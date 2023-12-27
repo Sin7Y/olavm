@@ -21,34 +21,6 @@ impl AccountTreeId {
     pub fn address(&self) -> &Address {
         &self.address
     }
-
-    //todo: the address format need modify!
-    #[allow(clippy::wrong_self_convention)] // In that case, reference makes more sense.
-    pub fn to_fixed_bytes(&self) -> [u8; 20] {
-        let mut result = [0u8; 20];
-        for (index, item) in self.address.iter().enumerate() {
-            result[(5 * index)..].copy_from_slice(item.0.to_le_bytes().split_at_mut(5).0);
-        }
-        result
-    }
-
-    pub fn from_fixed_bytes(value: [u8; 20]) -> Self {
-        let mut address = [GoldilocksField::ZERO; TREE_VALUE_LEN];
-        for index in 0..TREE_VALUE_LEN {
-            let value = u64::from_le_bytes([
-                value[0 + index * 5],
-                value[1 + index * 5],
-                value[2 + index * 5],
-                value[3 + index * 5],
-                value[4 + index * 5],
-                0,
-                0,
-                0,
-            ]);
-            address[index] = GoldilocksField::from_canonical_u64(value);
-        }
-        Self { address }
-    }
 }
 
 impl Default for AccountTreeId {
