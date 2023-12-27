@@ -5,7 +5,7 @@ use crate::types::merkle_tree::{
     RepeatedStorageWrite, TreeKey, TreeOperation, ZkHash,
 };
 use crate::utils::{deserialize_block_number, serialize_block_number, serialize_tree_leaf};
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
+use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 use itertools::Itertools;
 use log::info;
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -234,12 +234,12 @@ pub(crate) fn serialize_leaf_index_to_key(leaf_index: u64) -> TreeKey {
 
 pub(crate) fn serialize_leaf_index(leaf_index: u64) -> Vec<u8> {
     let mut bytes = vec![0; 8];
-    LittleEndian::write_u64(&mut bytes, leaf_index);
+    BigEndian::write_u64(&mut bytes, leaf_index);
     bytes
 }
 
 fn deserialize_leaf_index(mut bytes: &[u8]) -> u64 {
     bytes
-        .read_u64::<LittleEndian>()
+        .read_u64::<BigEndian>()
         .expect("failed to deserialize leaf index")
 }

@@ -158,7 +158,7 @@ pub fn u8_arr_to_tree_key(value: &Vec<u8>) -> TreeKey {
         .fold(
             [GoldilocksField::ZERO; TREE_VALUE_LEN],
             |mut tree_key, (index, chunk)| {
-                tree_key[index] = GoldilocksField::from_canonical_u64(u64::from_le_bytes(
+                tree_key[index] = GoldilocksField::from_canonical_u64(u64::from_be_bytes(
                     chunk.map(|e| *e).collect::<Vec<_>>().try_into().unwrap(),
                 ));
                 tree_key
@@ -168,7 +168,7 @@ pub fn u8_arr_to_tree_key(value: &Vec<u8>) -> TreeKey {
 
 pub fn tree_key_to_u8_arr(value: &TreeKey) -> Vec<u8> {
     value.iter().fold(Vec::new(), |mut key_vec, item| {
-        key_vec.extend(item.0.to_le_bytes().to_vec());
+        key_vec.extend(item.0.to_be_bytes().to_vec());
         key_vec
     })
 }
@@ -184,11 +184,4 @@ pub fn decode_addr(addr: String) -> TreeKey {
 pub fn tree_key_to_leaf_index(value: &TreeKey) -> LevelIndex {
     let index = tree_key_to_u256(value);
     LevelIndex((ROOT_TREE_DEPTH as u16, index))
-}
-
-pub fn field_arr_to_u8_arr(value: &Vec<GoldilocksField>) -> Vec<u8> {
-    value.iter().fold(Vec::new(), |mut key_vec, item| {
-        key_vec.extend(item.0.to_le_bytes().to_vec());
-        key_vec
-    })
 }
