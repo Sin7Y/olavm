@@ -1,0 +1,152 @@
+{
+  "bytecode": "0x6000020080000000\n0x2\n0x6000020000200000\n0xfffffffeffffffff\n0x4000000208000000\n0xd\n0x0000000108000000\n0x4010000100400000\n0x0\n0x0000040208000000\n0x4000004008000000\n0x1\n0x4000008000008000\n0xd\n0x4800008080000000\n0x1\n0x0022000480000000\n0x4400000400000200\n0xd\n0x0000100208000000\n0x4020000400400000\n0x0\n0x4000000208000000\n0xe\n0x0000000108000000\n0x4010000100400000\n0x0\n0x0000040208000000\n0x4000004008000000\n0x1\n0x4000008000008000\n0xe\n0x4800008080000000\n0x1\n0x0022000880000000\n0x4400000800000200\n0xe\n0x0000200208000000\n0x4020000800400000\n0x0\n0x4080001080000000\n0xe\n0x0000400208000000\n0x0000000108000000\n0x4010000100400000\n0x0\n0x0000040208000000\n0x4000004008000000\n0x1\n0x0000408000008000\n0x4800008080000000\n0x1\n0x0022002080000000\n0x0400402000000200\n0x0000100208000000\n0x0000200408000000\n0x0000800808000000\n0x4000000001000000\n0xa5\n0x6000020080000000\n0xfffffffeffffffff\n0x0000000000100000\n0x4000000208000000\n0x4\n0x0000000108000000\n0x4010000100400000\n0x0\n0x0000040208000000\n0x4000008000008000\n0x4\n0x4800008080000000\n0x1\n0x0022000480000000\n0x4000000208000000\n0x0\n0x4040000200200000\n0x0\n0x4000000208000000\n0x0\n0x4040000200200000\n0x1\n0x4000000208000000\n0x0\n0x4040000200200000\n0x2\n0x4000000208000000\n0x0\n0x4040000200200000\n0x3\n0x4000000208000000\n0x4\n0x0000000108000000\n0x4010000100400000\n0x0\n0x0000040208000000\n0x4000008000008000\n0x4\n0x4800008080000000\n0x1\n0x0022000880000000\n0x0000200208000000\n0x4000000808000000\n0x64\n0x4020000800200000\n0x0\n0x4000000808000000\n0x0\n0x4020000800200000\n0x1\n0x4000000808000000\n0x0\n0x4020000800200000\n0x2\n0x4000000808000000\n0x0\n0x4020000800200000\n0x3\n0x0040080000000400\n0x4000000208000000\n0x4\n0x0000000108000000\n0x4010000100400000\n0x0\n0x0000040408000000\n0x4000000208000000\n0x4\n0x0000000108000000\n0x4010000100400000\n0x0\n0x0000040208000000\n0x4000008000008000\n0x4\n0x4800008080000000\n0x1\n0x0022001080000000\n0x0000400208000000\n0x4000000808000000\n0x0\n0x4020000800200000\n0x0\n0x4000000808000000\n0x0\n0x4020000800200000\n0x1\n0x4000000808000000\n0x0\n0x4020000800200000\n0x2\n0x4000000808000000\n0x0\n0x4020000800200000\n0x3\n0x4000008000008000\n0x4\n0x4800008080000000\n0x1\n0x0042002080000000\n0x0000800408000000\n0x0020100000000800\n0x4040000200400000\n0x0\n0x4020000220000000\n0x64\n0x0000080010000000\n0x0000000000800000\n0x6000020080000000\n0x2\n0x6000020000200000\n0xfffffffeffffffff\n0x0000200408000000\n0x4020000220000000\n0x8cf447e6\n0x4020000002000000\n0xb1\n0x4000000004000000\n0xb0\n0x0000000000800000\n0x4000000001000000\n0x3e\n0x6000020080000000\n0xfffffffeffffffff\n0x0000000000800000",
+  "prophets": [
+    {
+      "host": 4,
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "ctx": [],
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "host": 22,
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "ctx": [],
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "host": 42,
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "ctx": [],
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "host": 62,
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "ctx": [],
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "host": 89,
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "ctx": [],
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "host": 118,
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "ctx": [],
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    },
+    {
+      "host": 124,
+      "code": "%{\n    entry() {\n        cid.addr = malloc(cid.len);\n    }\n%}",
+      "ctx": [],
+      "inputs": [
+        {
+          "name": "cid.len",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cid.addr",
+          "length": 1,
+          "is_ref": false,
+          "is_input_output": false
+        }
+      ]
+    }
+  ]
+}
