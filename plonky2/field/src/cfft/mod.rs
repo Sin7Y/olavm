@@ -15,7 +15,7 @@ mod concurrent;
 
 mod serial;
 
-mod ntt;
+pub mod ntt;
 
 #[cfg(test)]
 mod tests;
