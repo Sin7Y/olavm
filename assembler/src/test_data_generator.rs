@@ -4,7 +4,6 @@ mod tests {
     use crate::relocate::{asm_relocate, AsmBundle};
     use log::LevelFilter;
     use std::fs;
-    use std::path::Path;
 
     #[test]
     fn generate_fib() {
@@ -228,24 +227,7 @@ mod tests {
         generate_from_file(
             "system/ContractDeployer_asm.json".to_string(),
             "ContractDeployer.json".to_string(),
-        )
-    }
-    #[test]
-    fn generate_sys() {
-        generate_all_dir(
-            "test_data/asm/sys".to_string(),
-            "test_data/bin/sys".to_string(),
         );
-    }
-
-    #[test]
-    fn generate_hash() {
-        generate_from_file("hash_asm.json".to_string(), "hash.json".to_string());
-    }
-    
-    #[test]
-    fn generate_ecdsa() {
-        generate_from_file("ecdsa_asm.json".to_string(), "ecdsa.json".to_string());
     }
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {
@@ -260,35 +242,5 @@ mod tests {
         let pretty = serde_json::to_string_pretty(&program).unwrap();
         fs::write(output_path, pretty).unwrap();
         println!("{}", program.bytecode);
-    }
-
-    fn generate_all_dir(input_dir: String, output_dir: String) {
-        let out_dir = Path::new(&output_dir);
-        let _ = fs::create_dir_all(out_dir).unwrap();
-        let in_dir = Path::new(input_dir.as_str());
-
-        for entry in fs::read_dir(in_dir).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_file() {
-                let json_str = std::fs::read_to_string(&path.as_path()).unwrap();
-                let bundle: AsmBundle = serde_json::from_str(json_str.as_str()).unwrap();
-                let relocated = asm_relocate(bundle).unwrap();
-                let program = encode_to_binary(relocated).unwrap();
-                let out_file_name = path
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .replace("_asm", "");
-                let output_path = format!("{}/{}", out_dir.display(), out_file_name);
-                let pretty = serde_json::to_string(&program).unwrap();
-                fs::write(output_path, pretty).unwrap();
-                println!(
-                    "finish compile {}",
-                    path.file_name().unwrap().to_str().unwrap()
-                );
-            }
-        }
     }
 }
