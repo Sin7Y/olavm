@@ -28,7 +28,7 @@ fn executor_run_test_program(
     call_data: Option<Vec<GoldilocksField>>,
 ) {
     let _ = env_logger::builder()
-        .filter_level(LevelFilter::Info)
+        .filter_level(LevelFilter::Debug)
         .try_init();
     let file = File::open(bin_file_path).unwrap();
 
@@ -431,6 +431,22 @@ fn global_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/global.json",
         "global_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn hash_test() {
+    let call_data = [0, 2051797338];
+
+    let calldata = call_data
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/hash.json",
+        "hash_trace.txt",
         false,
         Some(calldata),
     );

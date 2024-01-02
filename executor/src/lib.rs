@@ -80,7 +80,7 @@ macro_rules! memory_zone_detect {
 
 #[macro_export]
 macro_rules! memory_op {
-    ($v: expr, $mem_addr: tt, $read_addr: expr,  $opcode: expr) => {
+    ($v: expr, $mem_addr: expr, $read_addr: expr,  $opcode: expr) => {
         let is_rw;
         let region_prophet;
         let region_heap;
@@ -1962,6 +1962,66 @@ impl Process {
                         &registers_status,
                         &ctx_code_regs_status,
                     )
+                }
+                "sigcheck" => {
+                    let dst_index = self.get_reg_index(ops[1]);
+                    let op1_value = self.get_index_value(ops[2]);
+
+                    self.register_selector.op1 = op1_value.0;
+                    if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+                        self.register_selector.op1_reg_sel[op1_index] =
+                            GoldilocksField::from_canonical_u64(1);
+                    }
+
+                    self.register_selector.dst_reg_sel[dst_index] =
+                        GoldilocksField::from_canonical_u64(1);
+
+                    let msg_mem_addr = self.register_selector.op1.to_canonical_u64();
+                    let mut msg = [GoldilocksField::ZERO; 4];
+                    for i in 0..4 {
+                        let mut data = GoldilocksField::ZERO;
+                        memory_op!(self, msg_mem_addr + i, data, Opcode::MSTORE);
+                        memory_op!(self, msg_mem_addr + i, data, Opcode::SIGCHECK);
+                        msg[i as usize] = data;
+                    }
+
+                    let pk_x_addr = msg_mem_addr + 4;
+                    let mut pk_x = [GoldilocksField::ZERO; 4];
+                    for i in 0..4 {
+                        let mut data = GoldilocksField::ZERO;
+                        memory_op!(self, pk_x_addr + i, data, Opcode::MSTORE);
+                        memory_op!(self, pk_x_addr + i, data, Opcode::SIGCHECK);
+                        pk_x[i as usize] = data;
+                    }
+
+                    let pk_y_addr = pk_x_addr + 4;
+                    let mut pk_y = [GoldilocksField::ZERO; 4];
+                    for i in 0..4 {
+                        let mut data = GoldilocksField::ZERO;
+                        memory_op!(self, pk_y_addr + i, data, Opcode::MSTORE);
+                        memory_op!(self, pk_y_addr + i, data, Opcode::SIGCHECK);
+                        pk_y[i as usize] = data;
+                    }
+
+                    let sig_r_addr = pk_y_addr + 4;
+                    let mut sig_r = [GoldilocksField::ZERO; 4];
+                    for i in 0..4 {
+                        let mut data = GoldilocksField::ZERO;
+                        memory_op!(self, sig_r_addr + i, data, Opcode::MSTORE);
+                        memory_op!(self, sig_r_addr + i, data, Opcode::SIGCHECK);
+                        sig_r[i as usize] = data;
+                    }
+
+                    let sig_s_addr = sig_r_addr + 4;
+                    let mut sig_s = [GoldilocksField::ZERO; 4];
+                    for i in 0..4 {
+                        let mut data = GoldilocksField::ZERO;
+                        memory_op!(self, sig_s_addr + i, data, Opcode::MSTORE);
+                        memory_op!(self, sig_s_addr + i, data, Opcode::SIGCHECK);
+                        sig_s[i as usize] = data;
+                    }
+
+                    self.register_selector.dst = self.registers[dst_index];
                 }
                 _ => panic!("not match opcode:{}", opcode),
             }
