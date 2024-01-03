@@ -44,6 +44,9 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
 
 impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
     fn default() -> Self {
+        #[cfg(feature = "cuda")]
+        plonky2::field::cfft::ntt::init_gpu();
+        
         Self {
             cpu_stark: CpuStark::default(),
             memory_stark: MemoryStark::default(),
