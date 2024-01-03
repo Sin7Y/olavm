@@ -28,7 +28,7 @@ fn executor_run_test_program(
     call_data: Option<Vec<GoldilocksField>>,
 ) {
     let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
+        .filter_level(LevelFilter::Info)
         .try_init();
     let file = File::open(bin_file_path).unwrap();
 
