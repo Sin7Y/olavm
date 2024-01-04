@@ -37,32 +37,32 @@ extern "C" {
 #[cfg(feature = "cuda")]
 lazy_static! {
     static ref GPU_LOCK: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
-    let mut indata: u64 = 0;
-    let mut indata_ptr_1: *mut u64 = &mut indata;
-    let mut indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
-
-    let mut outdata: u64 = 0;
-    let mut outdata_ptr_1: *mut u64 = &mut outdata;
-    let mut outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
-
-    let mut exe_param: u64 = 0;
-    let mut exe_param_ptr_1: *mut u64 = &mut exe_param;
-    let mut exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
-
-    let mut mem_cach: u64 = 0;
-    let mut mem_cach_ptr_1: *mut u64 = &mut mem_cach;
-    let mut mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
 }
+
+static mut INDATA: u64 = 0;
+static mut OUTDATA: u64 = 0;
+static mut EXE_PARAM: u64 = 0;
+static mut MEM_CACH: u64 = 0;
 
 #[cfg(feature = "cuda")]
 pub fn init_gpu() {
+    use once_cell::sync::OnceCell;
+
     static INSTANCE: OnceCell<()> = OnceCell::new();
     INSTANCE
     .get_or_init(|| {
         let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
         unsafe {
+            let mut indata_ptr_1: *mut u64 = &mut INDATA;
+            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
+            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
+            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
+            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
+            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
+            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
+            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_init(
-                ntt_len_max,
+                NTT_MAX_LENGTH,
                 indata_ptr_2,
                 outdata_ptr_2,
                 exe_param_ptr_2,
@@ -100,6 +100,14 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
             let start = Instant::now();
     
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
+            let mut indata_ptr_1: *mut u64 = &mut INDATA;
+            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
+            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
+            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
+            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
+            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
+            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
+            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_method(
                 p.len(),
                 indata_ptr_2,
@@ -160,6 +168,14 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
             let start = Instant::now();
 
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 1, blowup_factor, 0];
+            let mut indata_ptr_1: *mut u64 = &mut INDATA;
+            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
+            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
+            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
+            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
+            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
+            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
+            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_method(
                 p.len(),
                 indata_ptr_2,
@@ -224,6 +240,14 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
             // interpolate_poly(p2.as_mut_ptr(), p2.len() as u64);
 
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 1];
+            let mut indata_ptr_1: *mut u64 = &mut INDATA;
+            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
+            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
+            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
+            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
+            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
+            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
+            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_method(
                 p.len(),
                 indata_ptr_2,
@@ -288,6 +312,14 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
             // interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset);
 
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 1, 1];
+            let mut indata_ptr_1: *mut u64 = &mut INDATA;
+            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
+            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
+            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
+            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
+            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
+            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
+            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_method(
                 p.len(),
                 indata_ptr_2,

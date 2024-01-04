@@ -3,7 +3,7 @@ fn main() {}
 
 #[cfg(feature = "cuda")]
 fn main() {
-    let profile = env::var("PROFILE").unwrap();
+    let profile = std::env::var("PROFILE").unwrap();
     let profile = match profile.as_str() {
         "debug" => "Debug",
         "release" => "Release",
