@@ -22,8 +22,7 @@ use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::slice::SliceIndex;
-use std::vec;
+use ola_lang_abi::{Abi, FixedArray4, Value};
 
 fn executor_run_test_program(
     bin_file_path: &str,
@@ -444,14 +443,11 @@ fn global_test() {
     );
 }
 
+
 #[test]
 fn hash_test() {
-    let call_data = [0, 2051797338];
-
-    let calldata = call_data
-fn array_test() {
     let abi: Abi = {
-        let file = File::open("../assembler/test_data/abi/array_abi.json")
+        let file = File::open("../assembler/test_data/abi/hash_abi.json")
             .expect("failed to open ABI file");
 
         serde_json::from_reader(file).expect("failed to parse ABI")
@@ -461,6 +457,8 @@ fn array_test() {
         .encode_input_with_signature(func.signature().as_str(), &[])
         .unwrap();
     // encode input and function selector
+
+    println!("input: {:?}", input);
 
     let calldata = input
         .iter()
