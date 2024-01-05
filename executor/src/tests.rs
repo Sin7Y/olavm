@@ -453,6 +453,23 @@ fn hash_test() {
 }
 
 #[test]
+fn ecdsa_test() {
+    let call_data = [0, 370402988];
+
+    let calldata = call_data
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/ecdsa.json",
+        "ecdsa_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+
+#[test]
 fn gen_storage_table_test() {
     let mut program: Program = Program::default();
     let mut hash = Vec::new();
