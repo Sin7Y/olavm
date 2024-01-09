@@ -39,6 +39,7 @@ use plonky2::field::types::{Field, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
+use crate::ecdsa::ecdsa_verify;
 use crate::load_tx::{init_ctx_addr_info, load_ctx_addr_info};
 use crate::tape::TapeTree;
 use crate::trace::{gen_memory_table, gen_tape_table};
@@ -51,6 +52,7 @@ use std::time::Instant;
 
 mod decode;
 
+mod ecdsa;
 pub mod load_tx;
 pub mod storage;
 mod tape;
@@ -2020,7 +2022,10 @@ impl Process {
                         memory_op!(self, sig_s_addr + i, data, Opcode::SIGCHECK);
                         sig_s[i as usize] = data;
                     }
-
+                    self.registers[dst_index] = GoldilocksField::from_canonical_u8(ecdsa_verify(
+                        pk_x, pk_y, sig_r, sig_s, msg,
+                    )?
+                        as u8);
                     self.register_selector.dst = self.registers[dst_index];
                 }
                 _ => panic!("not match opcode:{}", opcode),

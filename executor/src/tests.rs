@@ -15,6 +15,7 @@ use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context_mock;
 use log::{debug, LevelFilter};
+use num::{BigInt, BigUint, Num};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
@@ -467,7 +468,6 @@ fn ecdsa_test() {
         Some(calldata),
     );
 }
-
 
 #[test]
 fn gen_storage_table_test() {
