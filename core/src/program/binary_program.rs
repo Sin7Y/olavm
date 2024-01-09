@@ -60,7 +60,13 @@ impl BinaryProgram {
 
     pub fn bytecode_u64_array(&self) -> Result<Vec<u64>, ParseIntError> {
         let bytecodes: Vec<&str> = self.bytecode.split('\n').collect();
-        bytecodes.iter().map(|&c| c.parse::<u64>()).collect()
+        bytecodes
+            .iter()
+            .map(|&c| {
+                let instruction_without_prefix = c.trim_start_matches("0x");
+                u64::from_str_radix(instruction_without_prefix, 16)
+            })
+            .collect()
     }
 }
 
