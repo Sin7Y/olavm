@@ -11,6 +11,7 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 pub mod contracts;
 pub mod error;
 pub mod state_storage;
+pub mod utils;
 
 #[derive(Debug)]
 pub struct NodeState<H> {
