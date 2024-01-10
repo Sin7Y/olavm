@@ -5,6 +5,8 @@ use crate::types::storage::{field_arr_to_u8_arr, u8_arr_to_field_arr};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use rocksdb::WriteBatch;
 
+use super::utils::get_prog_hash_cf_key_from_contract_addr;
+
 #[derive(Debug)]
 pub struct StateStorage {
     pub db: RocksDB,
@@ -132,8 +134,8 @@ impl StateStorage {
     pub fn get_contract_map(&self, contract_addr: &TreeValue) -> Result<Vec<u8>, StateError> {
         let cf = self
             .db
-            .cf_sequencer_handle(SequencerColumnFamily::ContractMap);
-        let addr_key = tree_key_to_u8_arr(contract_addr);
+            .cf_sequencer_handle(SequencerColumnFamily::State);
+        let addr_key = get_prog_hash_cf_key_from_contract_addr(contract_addr);
         let res = self.db.get_cf(cf, addr_key);
 
         if let Ok(code) = res {
