@@ -134,7 +134,7 @@ impl StateStorage {
     pub fn get_contract_map(&self, contract_addr: &TreeValue) -> Result<Vec<u8>, StateError> {
         let cf = self
             .db
-            .cf_sequencer_handle(SequencerColumnFamily::ContractMap);
+            .cf_sequencer_handle(SequencerColumnFamily::State);
         let addr_key = get_prog_hash_cf_key_from_contract_addr(contract_addr);
         let res = self.db.get_cf(cf, addr_key);
 
