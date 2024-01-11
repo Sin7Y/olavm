@@ -53,6 +53,7 @@ pub enum Opcode {
     TLOAD = 9,
     TSTORE = 8,
     SCCALL = 7,
+    SIGCHECK = 6,
 }
 
 impl fmt::Display for Opcode {
@@ -83,6 +84,7 @@ impl fmt::Display for Opcode {
             Opcode::TLOAD => write!(f, "tload"),
             Opcode::TSTORE => write!(f, "tstore"),
             Opcode::SCCALL => write!(f, "sccall"),
+            Opcode::SIGCHECK => write!(f, "sigcheck"),
         }
     }
 }

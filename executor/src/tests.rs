@@ -15,6 +15,7 @@ use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context_mock;
 use log::{debug, LevelFilter};
+use num::{BigInt, BigUint, Num};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
@@ -431,6 +432,38 @@ fn global_test() {
     executor_run_test_program(
         "../assembler/test_data/bin/global.json",
         "global_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn hash_test() {
+    let call_data = [0, 2051797338];
+
+    let calldata = call_data
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/hash.json",
+        "hash_trace.txt",
+        false,
+        Some(calldata),
+    );
+}
+
+#[test]
+fn ecdsa_test() {
+    let call_data = [0, 370402988];
+
+    let calldata = call_data
+        .iter()
+        .map(|e| GoldilocksField::from_canonical_u64(*e))
+        .collect();
+    executor_run_test_program(
+        "../assembler/test_data/bin/ecdsa.json",
+        "ecdsa_trace.txt",
         false,
         Some(calldata),
     );

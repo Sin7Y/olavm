@@ -28,4 +28,13 @@ pub enum ProcessorError {
 
     #[error("Tload flag is invalid: {0}")]
     TloadFlagInvalid(u64),
+
+    #[error("Pubkey is invalid: {0}")]
+    PubKeyInvalid(String),
+
+    #[error("Signature is invalid: {0}")]
+    SignatureInvalid(String),
+
+    #[error("Message is invalid: {0}")]
+    MessageInvalid(String),
 }

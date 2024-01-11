@@ -159,8 +159,12 @@ impl OlaVM {
 
         if get_code {
             let contract = self.get_program(&code_hash)?;
-            let bin_program: BinaryProgram =
-                serde_json::from_str(std::str::from_utf8(&contract.to_vec()).unwrap()).unwrap();
+            let bin_program: BinaryProgram = match bincode::deserialize(&contract) {
+                Ok(data) => data,
+                Err(e) => {
+                    return Err(StateError::GetProgramError(format!("{:?}", e)));
+                }
+            };
 
             let instructions = bin_program.bytecode.split("\n");
             let code: Vec<_> = instructions
