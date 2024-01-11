@@ -3388,6 +3388,7 @@ dependencies = [
 name = "zk-vm"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "core",
  "env_logger 0.6.2",
  "executor",
