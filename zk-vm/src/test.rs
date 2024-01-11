@@ -11,6 +11,7 @@ pub mod tests {
     use std::fs::File;
     use std::io::Write;
     use std::path::Path;
+    use std::path::PathBuf;
     use tempfile::TempDir;
 
     const caller_address: TreeValue = [
@@ -89,8 +90,13 @@ pub mod tests {
 
     #[test]
     fn debug_sys_vote() {
-        let tree_db_path = Path::new("/Users/Softcloud/develop/zk/sin7y/ola-os/db/main/tree");
-        let state_db_path = Path::new("/Users/Softcloud/develop/zk/sin7y/ola-os/db/main/sequencer");
+        let mut tree_db = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        tree_db.push("test_data/db/main/tree");
+        let mut state_db = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        state_db.push("test_data/db/main/sequencer");
+
+        let tree_db_path = tree_db.as_path();
+        let state_db_path = state_db.as_path();
         let mut vm = OlaVM::new(tree_db_path, state_db_path, mock_tx_info());
 
         let caller = [1, 2, 3, 4].map(|v| GoldilocksField::from_canonical_u64(v));
