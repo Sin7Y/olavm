@@ -78,6 +78,7 @@ impl Lexer {
         let mut result = String::new();
         while self.current_char != None && self.current_char.unwrap().is_alphanumeric()
             || self.current_char.unwrap() == '.'
+            || self.current_char.unwrap() == '_'
         {
             result.push(self.current_char.unwrap());
             self.advance();

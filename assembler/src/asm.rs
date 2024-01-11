@@ -162,11 +162,16 @@ fn split_ola_asm_pieces(
         | OlaOpcode::TSTORE
         | OlaOpcode::SCCALL
         | OlaOpcode::SLOAD
-        | OlaOpcode::SSTORE => {
+        | OlaOpcode::SSTORE
+        | OlaOpcode::SIGCHECK => {
             if ops.len() != 2 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }
-            if opcode == OlaOpcode::MOV || opcode == OlaOpcode::NOT || opcode == OlaOpcode::MLOAD {
+            if opcode == OlaOpcode::MOV
+                || opcode == OlaOpcode::NOT
+                || opcode == OlaOpcode::MLOAD
+                || opcode == OlaOpcode::SIGCHECK
+            {
                 let dst = ops.get(0).unwrap();
                 let op1 = ops.get(1).unwrap();
                 Ok((opcode, None, Some(op1.clone()), Some(dst.clone())))

@@ -238,6 +238,16 @@ mod tests {
         );
     }
 
+    #[test]
+    fn generate_hash() {
+        generate_from_file("hash_asm.json".to_string(), "hash.json".to_string());
+    }
+
+    #[test]
+    fn generate_ecdsa() {
+        generate_from_file("ecdsa_asm.json".to_string(), "ecdsa.json".to_string());
+    }
+
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin/sccall");
         let input_path = format!("test_data/asm/{}", input_file_name);

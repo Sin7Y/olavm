@@ -39,6 +39,7 @@ use plonky2::field::types::{Field, PrimeField64};
 use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
+use crate::ecdsa::ecdsa_verify;
 use crate::load_tx::{init_ctx_addr_info, load_ctx_addr_info};
 use crate::tape::TapeTree;
 use crate::trace::{gen_memory_table, gen_tape_table};
@@ -51,6 +52,7 @@ use std::time::Instant;
 
 mod decode;
 
+mod ecdsa;
 pub mod load_tx;
 pub mod storage;
 mod tape;
@@ -80,7 +82,7 @@ macro_rules! memory_zone_detect {
 
 #[macro_export]
 macro_rules! memory_op {
-    ($v: expr, $mem_addr: tt, $read_addr: expr,  $opcode: expr) => {
+    ($v: expr, $mem_addr: expr, $read_addr: expr,  $opcode: expr) => {
         let is_rw;
         let region_prophet;
         let region_heap;
@@ -1513,7 +1515,7 @@ impl Process {
 
     fn execute_inst_tload(
         &mut self,
-        program: &mut Program,
+        _program: &mut Program,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
         step: u64,
@@ -1791,6 +1793,103 @@ impl Process {
         }
     }
 
+    fn execute_inst_sigcheck(
+        &mut self,
+        program: &mut Program,
+        aux_steps: &mut Vec<Step>,
+        ops: &[&str],
+        step: u64,
+        ctx_regs_status: &Address,
+        registers_status: &[GoldilocksField; REGISTER_NUM],
+        ctx_code_regs_status: &Address,
+    ) -> Result<(), ProcessorError> {
+        let dst_index = self.get_reg_index(ops[1]);
+        let op1_value = self.get_index_value(ops[2]);
+
+        self.register_selector.op1 = op1_value.0;
+        if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
+            self.register_selector.op1_reg_sel[op1_index] = GoldilocksField::from_canonical_u64(1);
+        }
+
+        self.register_selector.dst_reg_sel[dst_index] = GoldilocksField::from_canonical_u64(1);
+
+        let msg_mem_addr = self.register_selector.op1.to_canonical_u64();
+        let mut msg = [GoldilocksField::ZERO; 4];
+        for i in 0..4 {
+            let mut data = GoldilocksField::ZERO;
+            memory_op!(self, msg_mem_addr + i, data, Opcode::MSTORE);
+            memory_op!(self, msg_mem_addr + i, data, Opcode::SIGCHECK);
+            msg[i as usize] = data;
+        }
+
+        let pk_x_addr = msg_mem_addr + 4;
+        let mut pk_x = [GoldilocksField::ZERO; 4];
+        for i in 0..4 {
+            let mut data = GoldilocksField::ZERO;
+            memory_op!(self, pk_x_addr + i, data, Opcode::MSTORE);
+            memory_op!(self, pk_x_addr + i, data, Opcode::SIGCHECK);
+            pk_x[i as usize] = data;
+        }
+
+        let pk_y_addr = pk_x_addr + 4;
+        let mut pk_y = [GoldilocksField::ZERO; 4];
+        for i in 0..4 {
+            let mut data = GoldilocksField::ZERO;
+            memory_op!(self, pk_y_addr + i, data, Opcode::MSTORE);
+            memory_op!(self, pk_y_addr + i, data, Opcode::SIGCHECK);
+            pk_y[i as usize] = data;
+        }
+
+        let sig_r_addr = pk_y_addr + 4;
+        let mut sig_r = [GoldilocksField::ZERO; 4];
+        for i in 0..4 {
+            let mut data = GoldilocksField::ZERO;
+            memory_op!(self, sig_r_addr + i, data, Opcode::MSTORE);
+            memory_op!(self, sig_r_addr + i, data, Opcode::SIGCHECK);
+            sig_r[i as usize] = data;
+        }
+
+        let sig_s_addr = sig_r_addr + 4;
+        let mut sig_s = [GoldilocksField::ZERO; 4];
+        for i in 0..4 {
+            let mut data = GoldilocksField::ZERO;
+            memory_op!(self, sig_s_addr + i, data, Opcode::MSTORE);
+            memory_op!(self, sig_s_addr + i, data, Opcode::SIGCHECK);
+            sig_s[i as usize] = data;
+        }
+        self.registers[dst_index] =
+            GoldilocksField::from_canonical_u8(ecdsa_verify(pk_x, pk_y, sig_r, sig_s, msg)? as u8);
+
+        if program.pre_exe_flag {
+            let ext_cnt = GoldilocksField::ONE;
+            let filter_tape_looking = GoldilocksField::ZERO;
+            let mut register_selector_regs: RegisterSelector = Default::default();
+            register_selector_regs.op0_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&sig_r);
+            register_selector_regs.op0_reg_sel[TREE_VALUE_LEN..TREE_VALUE_LEN * 2]
+                .clone_from_slice(&sig_s);
+            register_selector_regs.op1_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&msg);
+            register_selector_regs.op1_reg_sel[TREE_VALUE_LEN..TREE_VALUE_LEN * 2]
+                .clone_from_slice(&pk_x);
+            register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&pk_y);
+            let ctx_regs_status = ctx_regs_status.clone();
+            let ctx_code_regs_status = ctx_code_regs_status.clone();
+            let registers_status = registers_status.clone();
+            aux_insert!(
+                self,
+                aux_steps,
+                ctx_regs_status,
+                ctx_code_regs_status,
+                registers_status,
+                register_selector_regs,
+                ext_cnt,
+                filter_tape_looking
+            );
+            self.register_selector.dst = self.registers[dst_index];
+        }
+        self.pc += step;
+        Ok(())
+    }
+
     pub fn execute(
         &mut self,
         program: &mut Program,
@@ -1963,6 +2062,15 @@ impl Process {
                         &ctx_code_regs_status,
                     )
                 }
+                "sigcheck" => self.execute_inst_sigcheck(
+                    program,
+                    &mut aux_steps,
+                    &ops,
+                    step,
+                    &ctx_regs_status,
+                    &registers_status,
+                    &ctx_code_regs_status,
+                )?,
                 _ => panic!("not match opcode:{}", opcode),
             }
 

@@ -24,7 +24,6 @@ pub struct RocksDB {
 #[derive(Debug)]
 pub enum Database {
     MerkleTree,
-    StateKeeper,
     Sequencer,
 }
 
@@ -122,12 +121,6 @@ impl RocksDB {
         let db = match database {
             Database::MerkleTree => {
                 let cfs = MerkleTreeColumnFamily::all().iter().map(|cf| {
-                    ColumnFamilyDescriptor::new(cf.to_string(), Self::rocksdb_options(tune_options))
-                });
-                DB::open_cf_descriptors(&options, path, cfs).expect("failed to init rocksdb")
-            }
-            Database::StateKeeper => {
-                let cfs = StateKeeperColumnFamily::all().iter().map(|cf| {
                     ColumnFamilyDescriptor::new(cf.to_string(), Self::rocksdb_options(tune_options))
                 });
                 DB::open_cf_descriptors(&options, path, cfs).expect("failed to init rocksdb")
