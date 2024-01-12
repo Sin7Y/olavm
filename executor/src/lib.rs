@@ -251,37 +251,35 @@ impl Process {
     }
 
     pub fn get_reg_index(&self, reg_str: &str) -> usize {
-        let first = reg_str.chars().nth(0);
-        if first.is_none() {
-            panic!("get wrong reg index:{}", reg_str);
-        }
+        let first = reg_str
+            .chars()
+            .nth(0)
+            .expect(&format!("get wrong reg index:{}", reg_str));
         debug!("reg_str:{}", reg_str);
-        assert!(first.unwrap() == 'r', "wrong reg name");
-        let reg_index = reg_str[1..].parse();
-        if reg_index.is_err() {
-            panic!("get wrong reg index:{}", reg_str);
-        }
-        reg_index.unwrap()
+        assert!(first == 'r', "wrong reg name");
+        reg_str[1..]
+            .parse()
+            .expect(&format!("get wrong reg index:{}", reg_str))
     }
 
     pub fn get_index_value(&self, op_str: &str) -> (GoldilocksField, ImmediateOrRegName) {
-        let src = op_str.parse();
-        let value;
-        if src.is_ok() {
-            let data: u64 = src.unwrap();
-            return (
+        match op_str.parse() {
+            Ok(data) => (
                 GoldilocksField::from_canonical_u64(data),
                 ImmediateOrRegName::Immediate(GoldilocksField::from_canonical_u64(data)),
-            );
-        } else {
-            let src_index = self.get_reg_index(op_str);
-            if src_index == (REG_NOT_USED as usize) {
-                return (self.psp_start, ImmediateOrRegName::RegName(src_index));
-            } else if src_index < REGISTER_NUM {
-                value = self.registers[src_index];
-                return (value, ImmediateOrRegName::RegName(src_index));
-            } else {
-                panic!("reg index: {} out of bounds", src_index);
+            ),
+            Err(_) => {
+                let src_index = self.get_reg_index(op_str);
+                match src_index {
+                    idx if idx == (REG_NOT_USED as usize) => {
+                        (self.psp_start, ImmediateOrRegName::RegName(idx))
+                    }
+                    _ if src_index < REGISTER_NUM => {
+                        let value = self.registers[src_index];
+                        (value, ImmediateOrRegName::RegName(src_index))
+                    }
+                    _ => panic!("reg index: {} out of bounds", src_index),
+                }
             }
         }
     }
@@ -336,11 +334,16 @@ impl Process {
     pub fn prophet(&mut self, prophet: &mut OlaProphet) -> Result<(), ProcessorError> {
         debug!("prophet code:{}", prophet.code);
 
-        let re = Regex::new(r"^%\{([\s\S]*)%}$").unwrap();
-
-        let code = re.captures(&prophet.code).unwrap().get(1).unwrap().as_str();
-        debug!("code:{}", code);
-        let mut interpreter = Interpreter::new(code);
+        let re = Regex::new(r"^%\{([\s\S]*)%}$").expect("Regex::new failed");
+        let code = re
+            .captures(&prophet.code)
+            .and_then(|captures| captures.get(1).map(|m| m.as_str()));
+        let mut interpreter = if let Some(code) = code {
+            debug!("code:{}", code);
+            Interpreter::new(code)
+        } else {
+            return Err(ProcessorError::ParseOpcodeError);
+        };
 
         let mut values = Vec::new();
 
@@ -372,7 +375,9 @@ impl Process {
                 Single(_) => return Err(ProcessorError::ParseIntError),
                 Multiple(mut values) => {
                     self.psp_start = self.psp;
-                    self.hp = GoldilocksField(values.pop().unwrap().get_number() as u64);
+                    self.hp = GoldilocksField(
+                        values.pop().expect("Multiple value empty").get_number() as u64,
+                    );
                     debug!("prophet addr:{}", self.psp.0);
                     for value in values {
                         self.memory.write(
@@ -418,7 +423,7 @@ impl Process {
         let mut tmp_cnt = 0;
         self.memory.trace.iter().for_each(|(k, v)| {
             tmp_cnt += 1;
-            print!("{:<22}\t: {:<22}\t", k, v.last().unwrap().value);
+            print!("{:<22}\t: {:<22}\t", k, v.last().expect("v is empty").value);
             if tmp_cnt % 3 == 0 {
                 println!("\n");
             }
@@ -430,7 +435,7 @@ impl Process {
         tmp_cnt = 0;
         self.tape.trace.iter().for_each(|(k, v)| {
             tmp_cnt += 1;
-            print!("{}: {:<22}\t", k, v.last().unwrap().value);
+            print!("{}: {:<22}\t", k, v.last().expect("v is empty").value);
             if tmp_cnt % 5 == 0 {
                 println!("\n");
             }
@@ -442,7 +447,7 @@ impl Process {
         tmp_cnt = 0;
         self.storage.trace.iter().for_each(|(_, v)| {
             tmp_cnt += 1;
-            let cell = v.last().unwrap();
+            let cell = v.last().expect("v is empty");
             let tree_key = cell.addr;
             let value = cell.value;
             println!(
@@ -491,7 +496,9 @@ impl Process {
         let imm_flag = if step == IMM_INSTRUCTION_LEN {
             let imm_u64 = next_instr.trim_start_matches("0x");
             immediate_data =
-                GoldilocksField::from_canonical_u64(u64::from_str_radix(imm_u64, 16).unwrap());
+                GoldilocksField::from_canonical_u64(u64::from_str_radix(imm_u64, 16).expect(
+                    &format!("Failed to convert immediate data str [{}] to u64", imm_u64),
+                ));
             program
                 .trace
                 .raw_binary_instructions
@@ -502,8 +509,12 @@ impl Process {
         };
 
         let inst_u64 = instruct_line.trim_start_matches("0x");
-        let inst_encode =
-            GoldilocksField::from_canonical_u64(u64::from_str_radix(inst_u64, 16).unwrap());
+        let inst_encode = GoldilocksField::from_canonical_u64(
+            u64::from_str_radix(inst_u64, 16).expect(&format!(
+                "Failed to convert instruction code str [{}] to u64",
+                inst_u64
+            )),
+        );
         program.trace.instructions.insert(
             pc,
             (
@@ -519,7 +530,7 @@ impl Process {
     }
 
     fn execute_inst_mov_not(&mut self, ops: &[&str], step: u64) {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             3,
@@ -557,7 +568,7 @@ impl Process {
     }
 
     fn execute_inst_eq_neq(&mut self, ops: &[&str], step: u64) {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -608,7 +619,7 @@ impl Process {
     }
 
     fn execute_inst_assert(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             2,
@@ -644,7 +655,7 @@ impl Process {
     }
 
     fn execute_inst_cjmp(&mut self, ops: &[&str], step: u64) {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             3,
@@ -668,7 +679,7 @@ impl Process {
     }
 
     fn execute_inst_jmp(&mut self, ops: &[&str]) {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             2,
@@ -685,7 +696,7 @@ impl Process {
     }
 
     fn execute_inst_arithmetic(&mut self, ops: &[&str], step: u64) {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -727,7 +738,7 @@ impl Process {
     }
 
     fn execute_inst_call(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             2,
@@ -774,7 +785,7 @@ impl Process {
     }
 
     fn execute_inst_mstore(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert!(
             ops.len() == 4 || ops.len() == 5,
             "{}",
@@ -834,7 +845,7 @@ impl Process {
     }
 
     fn execute_inst_mload(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert!(
             ops.len() == 4 || ops.len() == 5,
             "{}",
@@ -895,7 +906,7 @@ impl Process {
         ops: &[&str],
         step: u64,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             2,
@@ -928,7 +939,7 @@ impl Process {
     }
 
     fn execute_inst_bitwise(&mut self, program: &mut Program, ops: &[&str], step: u64) {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -988,7 +999,7 @@ impl Process {
         ops: &[&str],
         step: u64,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -1286,7 +1297,7 @@ impl Process {
 
         let read_value;
         if let Some(data) = self.storage.trace.get(&tree_key) {
-            read_value = data.last().unwrap().value.clone();
+            read_value = data.last().expect("Empty storage data").value.clone();
         } else {
             let read_db = account_tree.storage.hash(&path);
             if let Some(value) = read_db {
@@ -1523,7 +1534,7 @@ impl Process {
         registers_status: &[GoldilocksField; REGISTER_NUM],
         ctx_code_regs_status: &Address,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -1605,7 +1616,7 @@ impl Process {
         registers_status: &[GoldilocksField; REGISTER_NUM],
         ctx_code_regs_status: &Address,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             3,
@@ -1673,7 +1684,7 @@ impl Process {
         registers_status: &[GoldilocksField; REGISTER_NUM],
         ctx_code_regs_status: &Address,
     ) -> Result<VMState, ProcessorError> {
-        let opcode = ops.first().unwrap().to_lowercase();
+        let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
             3,
@@ -1901,7 +1912,7 @@ impl Process {
         let mut pc: u64 = 0;
         if program.trace.raw_binary_instructions.is_empty() {
             while pc < instrs_len {
-                pc = self.execute_decode(program, pc, instrs_len).unwrap();
+                pc = self.execute_decode(program, pc, instrs_len)?;
             }
             // init heap ptr
             self.memory.write(
@@ -1936,7 +1947,8 @@ impl Process {
                 .iter()
                 .map(|insts_str| {
                     GoldilocksField::from_canonical_u64(
-                        u64::from_str_radix(insts_str.trim_start_matches("0x"), 16).unwrap(),
+                        u64::from_str_radix(insts_str.trim_start_matches("0x"), 16)
+                            .expect(&format!("Failed to convert str [{}] to u64", &insts_str)),
                     )
                 })
                 .collect::<Vec<_>>()
@@ -1969,7 +1981,7 @@ impl Process {
                         program
                             .debug_info
                             .as_ref()
-                            .unwrap()
+                            .expect("Empty debug_info")
                             .get(&(self.pc as usize))
                     );
                 }
@@ -1983,7 +1995,7 @@ impl Process {
             }
 
             let ops: Vec<&str> = instruction.0.split_whitespace().collect();
-            let opcode = ops.first().unwrap().to_lowercase();
+            let opcode = ops.first().expect("Empty instructions").to_lowercase();
             self.op1_imm = GoldilocksField::from_canonical_u64(instruction.1 as u64);
             let step = instruction.2;
             self.instruction = instruction.3;
