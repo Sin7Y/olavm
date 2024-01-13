@@ -89,7 +89,7 @@ load_ctx_to_tape!(load_tx_context, TxCtxInfo);
 
 pub fn init_tape(
     process: &mut Process,
-    mut calldata: Vec<GoldilocksField>,
+    calldata: Vec<GoldilocksField>,
     caller_exe_addr: Address,
     callee_addr: Address,
     callee_exe_addr: Address,
@@ -107,13 +107,9 @@ pub fn init_tape(
     load_fields_to_tape(process, &ctx_info.signature_s);
     load_fields_to_tape(process, &ctx_info.tx_hash);
 
-    // calldata
+    // calldata, calldata length and function selector is included here.
     load_fields_to_tape(process, &calldata);
-    // calldata_length
-    load_fe_to_tape(
-        process,
-        &GoldilocksField::from_canonical_u64(calldata.len() as u64),
-    );
+
     // addresses
     load_fields_to_tape(process, &caller_exe_addr);
     load_fields_to_tape(process, &callee_addr);
