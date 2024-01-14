@@ -5,6 +5,10 @@ use maybe_rayon::*;
 use crate::{types::Field, goldilocks_field::GoldilocksField};
 
 pub const NTT_MAX_LENGTH: u64 = 1 << 24;
+static mut GLOBAL_POINTER_INDATA: *mut *mut u64 = std::ptr::null_mut();
+static mut GLOBAL_POINTER_OUTDATA: *mut *mut u64 = std::ptr::null_mut();
+static mut GLOBAL_POINTER_PARAM: *mut *mut u64 = std::ptr::null_mut();
+static mut GLOBAL_POINTER_MEMCACH: *mut *mut u64 = std::ptr::null_mut();
 
 #[allow(improper_ctypes)]
 #[cfg(feature = "cuda")]
@@ -39,35 +43,65 @@ lazy_static! {
     static ref GPU_LOCK: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
 }
 
-static mut INDATA: u64 = 0;
-static mut OUTDATA: u64 = 0;
-static mut EXE_PARAM: u64 = 0;
-static mut MEM_CACH: u64 = 0;
-
 #[cfg(feature = "cuda")]
 pub fn init_gpu() {
-    use once_cell::sync::OnceCell;
-
     static INSTANCE: OnceCell<()> = OnceCell::new();
-    INSTANCE
-    .get_or_init(|| {
+    INSTANCE.get_or_init(|| {
+        let mut indata: Box<u64> = Box::new(0);
+        let mut indata_ptr_1: *mut u64 = Box::into_raw(indata);
+        let mut indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
+        unsafe {
+            GLOBAL_POINTER_INDATA = indata_ptr_2;
+        }
+
+        let mut outdata: Box<u64> = Box::new(0);
+        let mut outdata_ptr_1: *mut u64 = Box::into_raw(outdata);
+        let mut outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
+        unsafe {
+            GLOBAL_POINTER_OUTDATA = outdata_ptr_2;
+        }
+
+        let mut exe_param: Box<u64> = Box::new(0);
+        let mut exe_param_ptr_1: *mut u64 = Box::into_raw(exe_param);
+        let mut exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
+        unsafe {
+            GLOBAL_POINTER_PARAM = exe_param_ptr_2;
+        }
+
+        let mut mem_cach: Box<u64> = Box::new(0);
+        let mut mem_cach_ptr_1: *mut u64 = Box::into_raw(mem_cach);
+        let mut mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
+        unsafe {
+            GLOBAL_POINTER_MEMCACH = mem_cach_ptr_2;
+        }
+
+        println!("***************test nomal FFT and iFFT: *****************");
+
         let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
         unsafe {
-            let mut indata_ptr_1: *mut u64 = &mut INDATA;
-            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
-            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
-            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
-            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
-            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
-            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
-            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_init(
                 NTT_MAX_LENGTH,
-                indata_ptr_2,
-                outdata_ptr_2,
-                exe_param_ptr_2,
-                mem_cach_ptr_2,
+                GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_OUTDATA,
+                GLOBAL_POINTER_PARAM,
+                GLOBAL_POINTER_MEMCACH,
                 extra_info.as_mut_ptr(),
+            );
+        }
+    });
+}
+
+#[cfg(feature = "cuda")]
+pub fn free_gpu() {
+    static INSTANCE: OnceCell<()> = OnceCell::new();
+    INSTANCE.get_or_init(|| {
+        unsafe {
+            gpu_free(
+                NTT_MAX_LENGTH,
+                GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_OUTDATA,
+                GLOBAL_POINTER_PARAM,
+                GLOBAL_POINTER_MEMCACH,
             );
         }
     });
@@ -81,12 +115,14 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
         F: Field,
 {
     unsafe {
+        let gpu = GPU_LOCK.lock().unwrap();
+
         let start = Instant::now();
 
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
-                *(*indata_ptr_2).offset(idx) = val as u64;
+                *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
             }
         }
 
@@ -94,43 +130,28 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
         
         #[cfg(feature = "cuda")]
         {
-            // let gpu = Arc::clone(&GPU_LOCK);
-            let gpu = GPU_LOCK.lock().unwrap();
-
             let start = Instant::now();
-    
+            
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
-            let mut indata_ptr_1: *mut u64 = &mut INDATA;
-            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
-            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
-            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
-            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
-            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
-            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
-            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_method(
                 p.len(),
-                indata_ptr_2,
-                outdata_ptr_2,
-                exe_param_ptr_2,
-                mem_cach_ptr_2,
+                GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_OUTDATA,
+                GLOBAL_POINTER_PARAM,
+                GLOBAL_POINTER_MEMCACH,
                 extra_info.as_mut_ptr(),
             );
 
             println!("[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
-    
-            // *gpu += 1;
         }
 
         let start = Instant::now();
         let mut res = Vec::with_capacity(p.len());
 
         for i in 0..p.len() {
-            let val = *(*outdata_ptr_2).offset(i);
+            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
             res[i] = F::from_canonical_u64(i);
         }
-
-        // let res = p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>();
 
         println!("[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
 
@@ -145,12 +166,14 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
         F: Field,
 {
     unsafe {
+        let gpu = GPU_LOCK.lock().unwrap();
+
         let start = Instant::now();
 
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
-                *(*indata_ptr_2).offset(idx) = val as u64;
+                *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
             }
         }
         let domain_offset = domain_offset.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
@@ -162,32 +185,20 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
 
         #[cfg(feature = "cuda")]
         {
-            // let gpu = Arc::clone(&GPU_LOCK);
-            let gpu = GPU_LOCK.lock().unwrap();
 
             let start = Instant::now();
 
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 1, blowup_factor, 0];
-            let mut indata_ptr_1: *mut u64 = &mut INDATA;
-            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
-            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
-            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
-            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
-            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
-            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
-            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_method(
                 p.len(),
-                indata_ptr_2,
-                outdata_ptr_2,
-                exe_param_ptr_2,
-                mem_cach_ptr_2,
+                GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_OUTDATA,
+                GLOBAL_POINTER_PARAM,
+                GLOBAL_POINTER_MEMCACH,
                 extra_info.as_mut_ptr(),
             );
 
             println!("[cuda](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
-
-            // *gpu += 1;
         }
 
         let start = Instant::now();
@@ -197,7 +208,7 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
         let mut res = Vec::with_capacity(result_len);
 
         for i in 0..result_len {
-            let val = *(*outdata_ptr_2).offset(i);
+            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
             res[i] = F::from_canonical_u64(i);
         }
 
@@ -215,16 +226,14 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
         F: Field,
 {
     unsafe {
-        let start = Instant::now();
+        let gpu = GPU_LOCK.lock().unwrap();
 
-        // let mut p2: Vec::<u64> = p.par_iter().map(|f| {
-        //     f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
-        // }).collect::<Vec<u64>>();
+        let start = Instant::now();
 
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
-                *(*indata_ptr_2).offset(idx) = val as u64;
+                *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
             }
         }
 
@@ -232,34 +241,20 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
 
         #[cfg(feature = "cuda")]
         {
-            // let gpu = Arc::clone(&GPU_LOCK);
-            let gpu = GPU_LOCK.lock().unwrap();
 
             let start = Instant::now();
 
-            // interpolate_poly(p2.as_mut_ptr(), p2.len() as u64);
-
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 1];
-            let mut indata_ptr_1: *mut u64 = &mut INDATA;
-            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
-            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
-            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
-            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
-            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
-            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
-            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_method(
                 p.len(),
-                indata_ptr_2,
-                outdata_ptr_2,
-                exe_param_ptr_2,
-                mem_cach_ptr_2,
+                GLOBAL_POINTER_OUTDATA,
+                GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_PARAM,
+                GLOBAL_POINTER_MEMCACH,
                 extra_info.as_mut_ptr(),
             );
 
             println!("[cuda](run_interpolate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
-
-            // *gpu += 1;
         }
 
         let start = Instant::now();
@@ -269,7 +264,7 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
         let mut res = Vec::with_capacity(p.len());
 
         for i in 0..p.len() {
-            let val = *(*outdata_ptr_2).offset(i);
+            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
             res[i] = F::from_canonical_u64(i);
         }
 
@@ -286,15 +281,14 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
         F: Field,
 {
     unsafe {
+        let gpu = GPU_LOCK.lock().unwrap();
+
         let start = Instant::now();
 
-        // let mut p2: Vec::<u64> = p.par_iter().map(|f| {
-        //     f.as_any().downcast_ref::<GoldilocksField>().unwrap().0
-        // }).collect::<Vec<u64>>();
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
-                *(*indata_ptr_2).offset(idx) = val as u64;
+                *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
             }
         }
 
@@ -304,28 +298,18 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
         
         #[cfg(feature = "cuda")]
         {
-            // let gpu = Arc::clone(&GPU_LOCK);
-            let gpu = GPU_LOCK.lock().unwrap();
 
             let start = Instant::now();
 
             // interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset);
 
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 1, 1];
-            let mut indata_ptr_1: *mut u64 = &mut INDATA;
-            let indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
-            let mut outdata_ptr_1: *mut u64 = &mut OUTDATA;
-            let outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
-            let mut exe_param_ptr_1: *mut u64 = &mut EXE_PARAM;
-            let exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
-            let mut mem_cach_ptr_1: *mut u64 = &mut MEM_CACH;
-            let mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
             gpu_method(
                 p.len(),
-                indata_ptr_2,
-                outdata_ptr_2,
-                exe_param_ptr_2,
-                mem_cach_ptr_2,
+                GLOBAL_POINTER_OUTDATA,
+                GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_PARAM,
+                GLOBAL_POINTER_MEMCACH,
                 extra_info.as_mut_ptr(),
             );
 
@@ -339,7 +323,7 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
         let mut res = Vec::with_capacity(p.len());
 
         for i in 0..p.len() {
-            let val = *(*outdata_ptr_2).offset(i);
+            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
             res[i] = F::from_canonical_u64(i);
         }
 
