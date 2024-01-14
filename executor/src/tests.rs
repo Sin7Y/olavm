@@ -21,6 +21,7 @@ use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
+use ola_lang_abi::Abi;
 
 fn executor_run_test_program(
     bin_file_path: &str,
@@ -438,36 +439,57 @@ fn global_test() {
 }
 
 #[test]
-fn hash_test() {
-    let call_data = [0, 2051797338];
+fn array_test() {
 
-    let calldata = call_data
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/array_abi.json").expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+    let func = abi.functions[0].clone();
+    let mut input = abi.encode_input_values(&[]).unwrap();
+    // encode input and function selector
+    input.extend(&[func.method_id()]);
+
+    let calldata = input
         .iter()
         .map(|e| GoldilocksField::from_canonical_u64(*e))
         .collect();
     executor_run_test_program(
-        "../assembler/test_data/bin/hash.json",
-        "hash_trace.txt",
+        "../assembler/test_data/bin/array.json",
+        "array_trace.txt",
         false,
         Some(calldata),
     );
 }
+
 
 #[test]
-fn ecdsa_test() {
-    let call_data = [0, 370402988];
+fn vote_refactor_memory_test() {
 
-    let calldata = call_data
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/vote_abi.json").expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+    let func = abi.functions[0].clone();
+    let mut input = abi.encode_input_values(&[]).unwrap();
+    // encode input and function selector
+    input.extend(&[func.method_id()]);
+
+    let calldata = input
         .iter()
         .map(|e| GoldilocksField::from_canonical_u64(*e))
         .collect();
     executor_run_test_program(
-        "../assembler/test_data/bin/ecdsa.json",
-        "ecdsa_trace.txt",
+        "../assembler/test_data/bin/vote.json",
+        "vote_trace.txt",
         false,
         Some(calldata),
     );
 }
+
+
 
 #[test]
 fn gen_storage_table_test() {
