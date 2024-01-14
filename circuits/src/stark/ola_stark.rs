@@ -65,6 +65,13 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
     }
 }
 
+impl<F: RichField + Extendable<D>, const D: usize> Drop for OlaStark<F, D> {
+    fn drop(&mut self) {
+        #[cfg(feature = "cuda")]
+        plonky2::field::cfft::ntt::free_gpu();
+    }
+}
+
 impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
     pub(crate) fn nums_permutation_zs(&self, config: &StarkConfig) -> [usize; NUM_TABLES] {
         [
