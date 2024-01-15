@@ -1,8 +1,14 @@
-use std::{sync::{Arc, Mutex}, time::Instant};
+use std::{
+    sync::{Arc, Mutex},
+    time::Instant,
+};
 
 use maybe_rayon::*;
 
-use crate::{types::Field, goldilocks_field::GoldilocksField};
+use crate::{goldilocks_field::GoldilocksField, types::Field};
+#[cfg(feature = "cuda")]
+use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 
 pub const NTT_MAX_LENGTH: u64 = 1 << 24;
 static mut GLOBAL_POINTER_INDATA: *mut *mut u64 = std::ptr::null_mut();
@@ -42,6 +48,9 @@ extern "C" {
 lazy_static! {
     static ref GPU_LOCK: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
 }
+
+#[cfg(not(feature = "cuda"))]
+pub fn init_gpu() {}
 
 #[cfg(feature = "cuda")]
 pub fn init_gpu() {
@@ -91,19 +100,20 @@ pub fn init_gpu() {
     });
 }
 
+#[cfg(not(feature = "cuda"))]
+pub fn free_gpu() {}
+
 #[cfg(feature = "cuda")]
 pub fn free_gpu() {
     static INSTANCE: OnceCell<()> = OnceCell::new();
-    INSTANCE.get_or_init(|| {
-        unsafe {
-            gpu_free(
-                NTT_MAX_LENGTH,
-                GLOBAL_POINTER_INDATA,
-                GLOBAL_POINTER_OUTDATA,
-                GLOBAL_POINTER_PARAM,
-                GLOBAL_POINTER_MEMCACH,
-            );
-        }
+    INSTANCE.get_or_init(|| unsafe {
+        gpu_free(
+            NTT_MAX_LENGTH,
+            GLOBAL_POINTER_INDATA,
+            GLOBAL_POINTER_OUTDATA,
+            GLOBAL_POINTER_PARAM,
+            GLOBAL_POINTER_MEMCACH,
+        );
     });
 }
 
@@ -111,8 +121,8 @@ pub fn free_gpu() {
 #[allow(unused_unsafe, unused_mut)]
 #[cfg(feature = "cuda")]
 pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
-    where
-        F: Field,
+where
+    F: Field,
 {
     unsafe {
         let gpu = GPU_LOCK.lock().unwrap();
@@ -126,12 +136,16 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
             }
         }
 
-        println!("[cuda][before](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
-        
+        println!(
+            "[cuda][before](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
+
         #[cfg(feature = "cuda")]
         {
             let start = Instant::now();
-            
+
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
             gpu_method(
                 p.len(),
@@ -142,7 +156,11 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
                 extra_info.as_mut_ptr(),
             );
 
-            println!("[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+            println!(
+                "[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+                p.len(),
+                start.elapsed()
+            );
         }
 
         let start = Instant::now();
@@ -153,7 +171,11 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
             res[i] = F::from_canonical_u64(i);
         }
 
-        println!("[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+        println!(
+            "[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         res
     }
@@ -162,8 +184,8 @@ pub fn run_evaluate_poly<F>(p: &[F]) -> Vec<F>
 #[allow(unused_unsafe, unused_mut, unused_variables)]
 #[cfg(feature = "cuda")]
 pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor: usize) -> Vec<F>
-    where
-        F: Field,
+where
+    F: Field,
 {
     unsafe {
         let gpu = GPU_LOCK.lock().unwrap();
@@ -176,7 +198,11 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
                 *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
             }
         }
-        let domain_offset = domain_offset.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        let domain_offset = domain_offset
+            .as_any()
+            .downcast_ref::<GoldilocksField>()
+            .unwrap()
+            .0;
         let blowup_factor: u64 = blowup_factor as u64;
         let result_len = (p2.len() as u64) * blowup_factor;
         let mut result = vec![0; result_len as usize];
@@ -185,7 +211,6 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
 
         #[cfg(feature = "cuda")]
         {
-
             let start = Instant::now();
 
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 1, blowup_factor, 0];
@@ -203,7 +228,8 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
 
         let start = Instant::now();
 
-        // let res = result.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>();
+        // let res = result.par_iter().map(|&i|
+        // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
         let mut res = Vec::with_capacity(result_len);
 
@@ -215,15 +241,14 @@ pub fn run_evaluate_poly_with_offset<F>(p: &[F], domain_offset: F, blowup_factor
         println!("[cuda][after](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
 
         res
-        
     }
 }
 
 #[allow(unused_unsafe, unused_mut)]
 #[cfg(feature = "cuda")]
 pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
-    where
-        F: Field,
+where
+    F: Field,
 {
     unsafe {
         let gpu = GPU_LOCK.lock().unwrap();
@@ -237,11 +262,14 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
             }
         }
 
-        println!("[cuda][before](run_interpolate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+        println!(
+            "[cuda][before](run_interpolate_poly) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         #[cfg(feature = "cuda")]
         {
-
             let start = Instant::now();
 
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 1];
@@ -254,12 +282,17 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
                 extra_info.as_mut_ptr(),
             );
 
-            println!("[cuda](run_interpolate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+            println!(
+                "[cuda](run_interpolate_poly) data_len = {}, cost_time = {:?}",
+                p.len(),
+                start.elapsed()
+            );
         }
 
         let start = Instant::now();
 
-        // let res = p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>();
+        // let res = p2.par_iter().map(|&i|
+        // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
         let mut res = Vec::with_capacity(p.len());
 
@@ -268,7 +301,11 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
             res[i] = F::from_canonical_u64(i);
         }
 
-        println!("[cuda][after](run_interpolate_poly) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+        println!(
+            "[cuda][after](run_interpolate_poly) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         res
     }
@@ -277,8 +314,8 @@ pub fn run_interpolate_poly<F>(p: &[F]) -> Vec<F>
 #[allow(unused_unsafe, unused_mut, unused_variables)]
 #[cfg(feature = "cuda")]
 pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
-    where
-        F: Field,
+where
+    F: Field,
 {
     unsafe {
         let gpu = GPU_LOCK.lock().unwrap();
@@ -292,16 +329,24 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
             }
         }
 
-        let domain_offset = domain_offset.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        let domain_offset = domain_offset
+            .as_any()
+            .downcast_ref::<GoldilocksField>()
+            .unwrap()
+            .0;
 
-        println!("[cuda][before](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
-        
+        println!(
+            "[cuda][before](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
+
         #[cfg(feature = "cuda")]
         {
-
             let start = Instant::now();
 
-            // interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64, domain_offset);
+            // interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64,
+            // domain_offset);
 
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 1, 1];
             gpu_method(
@@ -313,12 +358,17 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
                 extra_info.as_mut_ptr(),
             );
 
-            println!("[cuda](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+            println!(
+                "[cuda](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}",
+                p.len(),
+                start.elapsed()
+            );
         }
 
         let start = Instant::now();
 
-        // let res = p2.par_iter().map(|&i| F::from_canonical_u64(i)).collect::<Vec<F>>();
+        // let res = p2.par_iter().map(|&i|
+        // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
         let mut res = Vec::with_capacity(p.len());
 
@@ -327,7 +377,11 @@ pub fn run_interpolate_poly_with_offset<F>(p: &[F], domain_offset: F) -> Vec<F>
             res[i] = F::from_canonical_u64(i);
         }
 
-        println!("[cuda][after](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}", p.len(), start.elapsed());
+        println!(
+            "[cuda][after](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         res
     }

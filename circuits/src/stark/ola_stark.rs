@@ -44,9 +44,8 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
 
 impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
     fn default() -> Self {
-        #[cfg(feature = "cuda")]
         plonky2::field::cfft::ntt::init_gpu();
-        
+
         Self {
             cpu_stark: CpuStark::default(),
             memory_stark: MemoryStark::default(),
@@ -62,13 +61,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
             prog_chunk_stark: ProgChunkStark::default(),
             cross_table_lookups: all_cross_table_lookups(),
         }
-    }
-}
-
-impl<F: RichField + Extendable<D>, const D: usize> Drop for OlaStark<F, D> {
-    fn drop(&mut self) {
-        #[cfg(feature = "cuda")]
-        plonky2::field::cfft::ntt::free_gpu();
     }
 }
 
