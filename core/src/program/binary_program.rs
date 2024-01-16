@@ -17,7 +17,7 @@ use crate::vm::{
 pub struct BinaryProgram {
     pub bytecode: String,
     pub prophets: Vec<OlaProphet>,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     pub debug_info: Option<BTreeMap<usize, String>>,
 }
 
