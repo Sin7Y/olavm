@@ -72,7 +72,7 @@ pub struct Update {
 }
 
 impl Update {
-    pub fn new(index: usize, uncles: Vec<TreeKey>, key: TreeKey) -> Self {
+    pub fn new(index: usize, uncles: Vec<TreeKey>, key: TreeKey) -> Result<Self, TreeError> {
         let mut update = Self {
             index,
             uncles,
@@ -81,10 +81,10 @@ impl Update {
         update.changes.push((
             key,
             NodeEntry::Leaf {
-                hash: update.uncles.pop().unwrap(),
+                hash: update.uncles.pop().ok_or(TreeError::EmptyPatch)?,
             },
         ));
-        update
+        Ok(update)
     }
 }
 

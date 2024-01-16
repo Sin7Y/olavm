@@ -198,7 +198,7 @@ impl AccountTree {
             .1
             .borrow_mut()
             .lock()
-            .unwrap()
+            .expect("Mutex lock failed")
             .clone()
             .into_iter()
             .fold(vec![Vec::new(); group_size], |mut groups, item| {
@@ -209,7 +209,7 @@ impl AccountTree {
             .flat_map(|e| e)
             .collect();
 
-        let tree_metadata: Vec<_> = {
+        let tree_metadata: Result<Vec<TreeMetadata>, TreeError> = {
             let patch_metadata =
                 self.apply_patch(updates.0, &storage_logs_with_blocks, &leaf_indices);
 
@@ -234,23 +234,30 @@ impl AccountTree {
 
                     let metadata: Vec<_> =
                         group.into_iter().map(|(metadata, _)| metadata).collect();
-                    let root_hash = metadata.last().unwrap().root_hash.clone();
-                    let witness_input = bincode::serialize(&(metadata, previous_index))
+                    let witness_input = bincode::serialize(&(metadata.clone(), previous_index))
                         .expect("witness serialization failed");
 
-                    TreeMetadata {
-                        root_hash,
-                        rollup_last_leaf_index: last_index,
-                        witness_input,
-                        initial_writes,
-                        repeated_writes,
+                    match metadata.last() {
+                        Some(meta) => {
+                            let root_hash = meta.root_hash.clone();
+                            Ok(TreeMetadata {
+                                root_hash,
+                                rollup_last_leaf_index: last_index,
+                                witness_input,
+                                initial_writes,
+                                repeated_writes,
+                            })
+                        }
+                        None => Err(TreeError::EmptyPatch),
                     }
                 })
+                .collect::<Vec<Result<TreeMetadata, TreeError>>>()
+                .into_iter()
                 .collect()
         };
 
         self.block_number += total_blocks as u32;
-        Ok((hash_trace, tree_metadata))
+        Ok((hash_trace, tree_metadata?))
     }
 
     /// Prepares all the data which will be needed to calculate new Merkle Trees
@@ -269,7 +276,11 @@ impl AccountTree {
         let pre_map = self
             .hash_paths_to_leaves(updates.clone().into_iter(), false)
             .zip(op_idxs.clone().into_iter())
-            .map(|(parent_nodes, (op_idx, key))| (key, Update::new(op_idx, parent_nodes, key)))
+            .map(|(parent_nodes, (op_idx, key))| {
+                Ok::<(TreeKey, Update), TreeError>((key, Update::new(op_idx, parent_nodes, key)?))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
             .fold(HashMap::new(), |mut map: HashMap<_, Vec<_>>, (key, op)| {
                 match map.entry(key) {
                     Entry::Occupied(mut entry) => entry.get_mut().push(op),
@@ -287,7 +298,11 @@ impl AccountTree {
         let map = self
             .hash_paths_to_leaves(updates.into_iter(), true)
             .zip(op_idxs.into_iter())
-            .map(|(parent_nodes, (op_idx, key))| (key, Update::new(op_idx, parent_nodes, key)))
+            .map(|(parent_nodes, (op_idx, key))| {
+                Ok::<(TreeKey, Update), TreeError>((key, Update::new(op_idx, parent_nodes, key)?))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
             .fold(HashMap::new(), |mut map: HashMap<_, Vec<_>>, (key, op)| {
                 match map.entry(key) {
                     Entry::Occupied(mut entry) => entry.get_mut().push(op),
