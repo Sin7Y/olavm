@@ -42,4 +42,7 @@ pub enum TreeError {
 
     #[error("empty patch")]
     EmptyPatch,
+
+    #[error("Index not found error")]
+    LeafIndexNotFound,
 }

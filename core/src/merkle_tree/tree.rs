@@ -5,11 +5,10 @@ use crate::merkle_tree::tree_config::TreeConfig;
 use crate::merkle_tree::utils::idx_to_merkle_path;
 use crate::merkle_tree::TreeError;
 use crate::trace::trace::HashTrace;
-use crate::trace::trace::PoseidonRow;
 use crate::types::merkle_tree::constant::ROOT_TREE_DEPTH;
 use crate::types::merkle_tree::{
     tree_key_default, tree_key_to_u256, u256_to_tree_key, u8_arr_to_tree_key, LeafIndices,
-    LevelIndex, NodeEntry, TreeKey, TreeMetadata, TreeOperation, TreeValue, ZkHash,
+    LevelIndex, NodeEntry, TreeKey, TreeMetadata, TreeOperation, ZkHash,
 };
 use crate::types::proof::StorageLogMetadata;
 use itertools::Itertools;
@@ -211,7 +210,7 @@ impl AccountTree {
 
         let tree_metadata: Result<Vec<TreeMetadata>, TreeError> = {
             let patch_metadata =
-                self.apply_patch(updates.0, &storage_logs_with_blocks, &leaf_indices);
+                self.apply_patch(updates.0, &storage_logs_with_blocks, &leaf_indices)?;
 
             self.root_hash = patch_metadata
                 .last()
@@ -410,65 +409,63 @@ impl AccountTree {
         patch: TreePatch,
         storage_logs: &[(usize, (TreeKey, TreeOperation))],
         leaf_indices: &[LeafIndices],
-    ) -> Vec<StorageLogMetadata> {
-        let (branches, metadata) = patch.into_iter().zip(storage_logs).fold(
-            (HashMap::new(), Vec::new()),
-            |(mut branches, mut metadata), (entries, &(block, (_, storage_log)))| {
-                let leaf_hashed_key = entries.first().unwrap().0;
-                let leaf_index = leaf_indices[block].leaf_indices[&leaf_hashed_key];
-                let mut merkle_paths = Vec::with_capacity(ROOT_TREE_DEPTH);
+    ) -> Result<Vec<StorageLogMetadata>, TreeError> {
+        let mut branches = HashMap::new();
+        let mut metadata = Vec::new();
+        for (entries, &(block, (_, storage_log))) in patch.into_iter().zip(storage_logs) {
+            let leaf_hashed_key = entries.first().ok_or(TreeError::EmptyPatch)?.0;
+            let leaf_index = leaf_indices[block].leaf_indices.get(&leaf_hashed_key).ok_or(TreeError::LeafIndexNotFound)?.clone();
+            let mut merkle_paths = Vec::with_capacity(ROOT_TREE_DEPTH);
 
-                branches.extend(entries.into_iter().enumerate().map(|(level, (key, node))| {
-                    if let NodeEntry::Branch {
-                        right_hash,
-                        left_hash,
-                        ..
-                    } = &node
-                    {
-                        let witness_hash = if (tree_key_to_u256(&leaf_hashed_key) >> (level - 1))
-                            % 2
-                            == 0.into()
-                        {
+            branches.extend(entries.into_iter().enumerate().map(|(level, (key, node))| {
+                if let NodeEntry::Branch {
+                    right_hash,
+                    left_hash,
+                    ..
+                } = &node
+                {
+                    let witness_hash =
+                        if (tree_key_to_u256(&leaf_hashed_key) >> (level - 1)) % 2 == 0.into() {
                             right_hash
                         } else {
                             left_hash
                         };
-                        merkle_paths.push(witness_hash.clone());
-                    }
-                    Self::make_node(level, key, node)
-                }));
+                    merkle_paths.push(witness_hash.clone());
+                }
+                Self::make_node(level, key, node)
+            }));
 
-                let root_hash = branches.get(&(0, U256::zero()).into()).unwrap().clone();
-                let is_write = !matches!(storage_log, TreeOperation::Read(_));
-                let first_write = is_write && leaf_index >= leaf_indices[block].previous_index;
-                let value_written = match storage_log {
-                    TreeOperation::Write { value, .. } => value,
-                    _ => tree_key_default(),
-                };
-                let value_read = match storage_log {
-                    TreeOperation::Write { previous_value, .. } => previous_value,
-                    TreeOperation::Read(value) => value,
-                    TreeOperation::Delete => tree_key_default(),
-                };
-                let metadata_log = StorageLogMetadata {
-                    root_hash,
-                    is_write,
-                    first_write,
-                    merkle_paths,
-                    leaf_hashed_key,
-                    leaf_enumeration_index: leaf_index,
-                    value_written,
-                    value_read,
-                };
-                metadata.push(metadata_log);
-
-                (branches, metadata)
-            },
-        );
+            let root_hash = branches
+                .get(&(0, U256::zero()).into())
+                .ok_or(TreeError::EmptyRoot)?
+                .clone();
+            let is_write = !matches!(storage_log, TreeOperation::Read(_));
+            let first_write = is_write && leaf_index >= leaf_indices[block].previous_index;
+            let value_written = match storage_log {
+                TreeOperation::Write { value, .. } => value,
+                _ => tree_key_default(),
+            };
+            let value_read = match storage_log {
+                TreeOperation::Write { previous_value, .. } => previous_value,
+                TreeOperation::Read(value) => value,
+                TreeOperation::Delete => tree_key_default(),
+            };
+            let metadata_log = StorageLogMetadata {
+                root_hash,
+                is_write,
+                first_write,
+                merkle_paths,
+                leaf_hashed_key,
+                leaf_enumeration_index: leaf_index,
+                value_written,
+                value_read,
+            };
+            metadata.push(metadata_log);
+        }
 
         // Prepare database changes
         self.storage.pre_save(branches);
-        metadata
+        Ok(metadata)
     }
 
     pub fn save(&mut self) -> Result<(), TreeError> {
