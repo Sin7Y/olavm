@@ -15,7 +15,7 @@ use ola_core::storage::db::{Database, RocksDB};
 use ola_core::trace::trace::Trace;
 use ola_core::types::account::Address;
 use ola_core::types::merkle_tree::{
-    encode_addr, tree_key_default, tree_key_to_u8_arr, u8_arr_to_tree_key, TreeValue,
+    encode_addr, tree_key_default, tree_key_to_u8_arr, u8_arr_to_tree_key, TreeKey, TreeValue,
 };
 use ola_core::types::GoldilocksField;
 use ola_core::types::{Field, PrimeField64};
@@ -419,5 +419,15 @@ impl OlaVM {
             }
         }
         Ok(())
+    }
+
+    pub fn finish_batch(&mut self, block_number: u32) -> Result<(), StateError> {
+        let orignal_addr = TreeKey::default();
+        let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
+        let calldata = [block_number as u64, 1, 2190639505]
+            .iter()
+            .map(|l| GoldilocksField::from_canonical_u64(*l))
+            .collect();
+        self.execute_tx(orignal_addr, entry_point_addr, calldata, false)
     }
 }
