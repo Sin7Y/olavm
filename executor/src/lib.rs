@@ -32,7 +32,7 @@ use core::util::poseidon_utils::POSEIDON_INPUT_NUM;
 use core::vm::heap::HEAP_PTR;
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
-use log::{debug, info};
+use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field64;
 use plonky2::field::types::{Field, PrimeField64};
@@ -192,6 +192,7 @@ enum MemRangeType {
 }
 #[derive(Debug)]
 pub struct Process {
+    pub block_timestamp: u64,
     pub env_idx: GoldilocksField,
     pub call_sc_cnt: GoldilocksField,
     pub clk: u32,
@@ -220,6 +221,7 @@ pub struct Process {
 impl Process {
     pub fn new() -> Self {
         Self {
+            block_timestamp: 0,
             env_idx: Default::default(),
             call_sc_cnt: Default::default(),
             clk: 0,
@@ -1184,6 +1186,7 @@ impl Process {
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
 
         self.storage_queries.push(StorageQuery {
+            block_timestamp: self.block_timestamp,
             kind: StorageLogKind::Write,
             contract_addr: self.addr_storage.clone(),
             storage_key: slot_key,
@@ -1307,6 +1310,7 @@ impl Process {
         }
 
         self.storage_queries.push(StorageQuery {
+            block_timestamp: self.block_timestamp,
             kind: StorageLogKind::Read,
             contract_addr: self.addr_storage.clone(),
             storage_key: slot_key,

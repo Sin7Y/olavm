@@ -250,6 +250,7 @@ impl OlaVM {
         let mut env_idx = 0;
         let mut sc_cnt = 0;
         let mut process = Arc::new(Mutex::new(Process::new()));
+        mutex_data!(process).block_timestamp = self.ctx_info.block_timestamp.0;
         mutex_data!(process).env_idx = GoldilocksField::from_canonical_u64(env_idx);
         mutex_data!(process).call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);
         mutex_data!(process).addr_storage = caller_addr;
