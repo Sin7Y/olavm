@@ -414,7 +414,11 @@ impl AccountTree {
         let mut metadata = Vec::new();
         for (entries, &(block, (_, storage_log))) in patch.into_iter().zip(storage_logs) {
             let leaf_hashed_key = entries.first().ok_or(TreeError::EmptyPatch)?.0;
-            let leaf_index = leaf_indices[block].leaf_indices.get(&leaf_hashed_key).ok_or(TreeError::LeafIndexNotFound)?.clone();
+            let leaf_index = leaf_indices[block]
+                .leaf_indices
+                .get(&leaf_hashed_key)
+                .ok_or(TreeError::LeafIndexNotFound)?
+                .clone();
             let mut merkle_paths = Vec::with_capacity(ROOT_TREE_DEPTH);
 
             branches.extend(entries.into_iter().enumerate().map(|(level, (key, node))| {
