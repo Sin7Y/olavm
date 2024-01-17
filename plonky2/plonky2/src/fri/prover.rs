@@ -121,8 +121,8 @@ where
 }
 
 /// https://eprint.iacr.org/2021/582.pdf(Chaper6.3)
-/// This effectively reduces the computation power of the cheating prover while only slightly
-/// increasing the running time of the honest prove
+/// This effectively reduces the computation power of the cheating prover while
+/// only slightly increasing the running time of the honest prove
 fn fri_proof_of_work<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     current_hash: HashOut<F>,
     config: &FriConfig,

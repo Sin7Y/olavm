@@ -388,6 +388,9 @@ impl OlaVM {
                                 GoldilocksField::from_canonical_u64(clk as u64);
                         }
                         self.ola_state.txs_trace.insert(env_id, trace);
+                        self.ola_state
+                            .storage_queries
+                            .append(&mut mutex_data!(process).storage_queries);
                         env_idx -= 1;
                         mutex_data!(process).tp = tp;
                         mutex_data!(process).tape = tape_tree;

@@ -1,4 +1,7 @@
-use crate::types::merkle_tree::{TreeKey, TreeValue};
+use crate::{
+    types::merkle_tree::{TreeKey, TreeValue},
+    vm::vm_state::Address,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -36,4 +39,12 @@ impl StorageLog {
 pub struct WitnessStorageLog {
     pub storage_log: StorageLog,
     pub previous_value: TreeValue,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StorageQuery {
+    pub kind: StorageLogKind,
+    pub contract_addr: Address,
+    pub storage_key: Address,
+    pub value: TreeValue,
 }
