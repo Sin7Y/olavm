@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum StorageLogKind {
     Read,
-    Write,
+    RepeatedWrite,
+    InitialWrite,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -26,12 +27,17 @@ impl StorageLog {
         }
     }
 
+    #[deprecated(note = "use new_write instead")]
     pub fn new_write_log(key: TreeKey, value: TreeValue) -> Self {
         Self {
-            kind: StorageLogKind::Write,
+            kind: StorageLogKind::RepeatedWrite,
             key,
             value,
         }
+    }
+
+    pub fn new_write(kind: StorageLogKind, key: TreeKey, value: TreeValue) -> Self {
+        Self { kind, key, value }
     }
 }
 
@@ -47,5 +53,6 @@ pub struct StorageQuery {
     pub kind: StorageLogKind,
     pub contract_addr: Address,
     pub storage_key: Address,
+    pub pre_value: TreeValue,
     pub value: TreeValue,
 }

@@ -124,10 +124,12 @@ impl AccountTree {
                     .into_iter()
                     .map(|log| {
                         let operation = match log.borrow().storage_log.kind {
-                            StorageLogKind::Write => TreeOperation::Write {
-                                value: log.borrow().storage_log.value,
-                                previous_value: log.borrow().previous_value,
-                            },
+                            StorageLogKind::RepeatedWrite | StorageLogKind::InitialWrite => {
+                                TreeOperation::Write {
+                                    value: log.borrow().storage_log.value,
+                                    previous_value: log.borrow().previous_value,
+                                }
+                            }
                             StorageLogKind::Read => {
                                 TreeOperation::Read(log.borrow().storage_log.value)
                             }
