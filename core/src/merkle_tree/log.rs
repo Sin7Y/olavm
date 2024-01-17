@@ -43,6 +43,7 @@ pub struct WitnessStorageLog {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StorageQuery {
+    pub block_timestamp: u64,
     pub kind: StorageLogKind,
     pub contract_addr: Address,
     pub storage_key: Address,
