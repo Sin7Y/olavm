@@ -5,8 +5,8 @@ use crate::storage::StorageTree;
 use core::vm::error::ProcessorError;
 use core::vm::memory::{MemoryTree, HP_START_ADDR, PSP_START_ADDR};
 
-use core::merkle_tree::log::StorageLog;
-use core::merkle_tree::log::WitnessStorageLog;
+use core::merkle_tree::log::{StorageLog, StorageQuery};
+use core::merkle_tree::log::{StorageLogKind, WitnessStorageLog};
 use core::merkle_tree::tree::AccountTree;
 
 use core::program::instruction::IMM_INSTRUCTION_LEN;
@@ -214,6 +214,7 @@ pub struct Process {
     pub tp: GoldilocksField,
     pub tape: TapeTree,
     pub storage_access_idx: GoldilocksField,
+    pub storage_queries: Vec<StorageQuery>,
 }
 
 impl Process {
@@ -247,6 +248,7 @@ impl Process {
                 trace: BTreeMap::new(),
             },
             storage_access_idx: GoldilocksField::ZERO,
+            storage_queries: Vec::new(),
         }
     }
 
@@ -1181,6 +1183,13 @@ impl Process {
         let (tree_key, hash_row) = storage_key.hashed_key();
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
 
+        self.storage_queries.push(StorageQuery {
+            kind: StorageLogKind::Write,
+            contract_addr: self.addr_storage.clone(),
+            storage_key: slot_key,
+            value: store_value.clone(),
+        });
+
         self.storage.write(
             self.clk,
             GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u64),
@@ -1296,6 +1305,13 @@ impl Process {
                 read_value = tree_key_default();
             }
         }
+
+        self.storage_queries.push(StorageQuery {
+            kind: StorageLogKind::Read,
+            contract_addr: self.addr_storage.clone(),
+            storage_key: slot_key,
+            value: read_value.clone(),
+        });
 
         for index in 0..TREE_VALUE_LEN {
             let mem_addr = value_mem_addr + index as u64;
