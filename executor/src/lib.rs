@@ -1140,6 +1140,7 @@ impl Process {
     fn execute_inst_sstore(
         &mut self,
         program: &mut Program,
+        account_tree: &mut AccountTree,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
         step: u64,
@@ -1183,13 +1184,34 @@ impl Process {
 
         let storage_key = StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
         let (tree_key, hash_row) = storage_key.hashed_key();
+        let path = tree_key_to_leaf_index(&tree_key);
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
 
+        let mut is_initial = true;
+        let pre_value;
+        if let Some(data) = self.storage.trace.get(&tree_key) {
+            pre_value = data.last().unwrap().value.clone();
+        } else {
+            let read_db = account_tree.storage.hash(&path);
+            if let Some(value) = read_db {
+                is_initial = false;
+                pre_value = u8_arr_to_tree_key(&value);
+            } else {
+                pre_value = tree_key_default();
+            }
+        }
+
+        let kind = if is_initial {
+            StorageLogKind::InitialWrite
+        } else {
+            StorageLogKind::RepeatedWrite
+        };
         self.storage_queries.push(StorageQuery {
             block_timestamp: self.block_timestamp,
-            kind: StorageLogKind::Write,
+            kind,
             contract_addr: self.addr_storage.clone(),
             storage_key: slot_key,
+            pre_value,
             value: store_value.clone(),
         });
 
@@ -1205,7 +1227,7 @@ impl Process {
 
         if !program.pre_exe_flag {
             self.storage_log.push(WitnessStorageLog {
-                storage_log: StorageLog::new_write_log(tree_key, store_value),
+                storage_log: StorageLog::new_write(kind, tree_key, store_value),
                 previous_value: tree_key_default(),
             });
 
@@ -1314,6 +1336,7 @@ impl Process {
             kind: StorageLogKind::Read,
             contract_addr: self.addr_storage.clone(),
             storage_key: slot_key,
+            pre_value: read_value.clone(),
             value: read_value.clone(),
         });
 
@@ -2036,6 +2059,7 @@ impl Process {
                 }
                 "sstore" => self.execute_inst_sstore(
                     program,
+                    account_tree,
                     &mut aux_steps,
                     &ops,
                     step,
