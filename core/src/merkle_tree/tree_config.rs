@@ -8,6 +8,8 @@ use plonky2::field::types::Field;
 use std::iter::once;
 use std::sync::Arc;
 
+use super::TreeError;
+
 #[derive(Debug)]
 struct TreeConfigInner<H> {
     /// Hash generator used to hash entries.
@@ -27,15 +29,15 @@ where
     H: Hasher<TreeValue>,
 {
     /// Creates new shared config with supplied params.
-    pub fn new(hasher: H) -> Self {
-        let empty_hashes = Self::calc_default_hashes(ROOT_TREE_DEPTH, &hasher);
-
-        Self {
+    pub fn new(hasher: H) -> Result<Self, TreeError> {
+        let empty_hashes = Self::calc_default_hashes(ROOT_TREE_DEPTH, &hasher)
+            .map_err(|_| TreeError::EmptyPatch)?;
+        Ok(Self {
             inner: Arc::new(TreeConfigInner {
                 empty_tree: Self::calc_empty_tree(&empty_hashes),
                 hasher,
             }),
-        }
+        })
     }
 
     /// Produces tree with all leaves having default value (empty).
@@ -79,22 +81,26 @@ where
     }
 
     /// Calculates default empty leaf hashes for given types.
-    fn calc_default_hashes(depth: usize, hasher: &H) -> Vec<ZkHash> {
+    fn calc_default_hashes(depth: usize, hasher: &H) -> Result<Vec<ZkHash>, String> {
         let mut def_hashes = Vec::with_capacity(depth + 1);
         def_hashes.push(Self::empty_leaf(hasher));
         for index in 0..depth {
-            let last_hash = def_hashes.last().unwrap();
-
-            let hash = if index == 0 {
-                hasher.compress(last_hash, last_hash, Leaf)
+            let last_hash = def_hashes.last();
+            if last_hash.is_none() {
+                return Err("Empty hash arry".to_string());
             } else {
-                hasher.compress(last_hash, last_hash, Branch)
-            };
+                let last_hash = last_hash.unwrap();
+                let hash = if index == 0 {
+                    hasher.compress(last_hash, last_hash, Leaf)
+                } else {
+                    hasher.compress(last_hash, last_hash, Branch)
+                };
 
-            def_hashes.push(hash.0);
+                def_hashes.push(hash.0);
+            }
         }
         def_hashes.reverse();
 
-        def_hashes
+        Ok(def_hashes)
     }
 }

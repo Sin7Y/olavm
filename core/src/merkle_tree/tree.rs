@@ -37,7 +37,7 @@ impl AccountTree {
     /// Creates new ZkSyncTree instance
     pub fn new(db: RocksDB) -> Self {
         let storage = Storage::new(db);
-        let config = TreeConfig::new(ZkHasher::default());
+        let config = TreeConfig::new(ZkHasher::default()).expect("TreeConfig new failed");
         let (root_hash, block_number) = storage.fetch_metadata();
         let root_hash = root_hash.unwrap_or_else(|| config.default_root_hash());
         Self {
@@ -52,7 +52,7 @@ impl AccountTree {
         let db_path = TempDir::new().expect("failed get temporary directory for RocksDB");
         let db = RocksDB::new(Database::MerkleTree, db_path, true);
         let storage = Storage::new(db);
-        let config = TreeConfig::new(ZkHasher::default());
+        let config = TreeConfig::new(ZkHasher::default()).expect("TreeConfig new failed");
         let (root_hash, block_number) = storage.fetch_metadata();
         let root_hash = root_hash.unwrap_or_else(|| config.default_root_hash());
         Self {
@@ -66,7 +66,7 @@ impl AccountTree {
     pub fn new_db_test(db_path: String) -> Self {
         let db = RocksDB::new(Database::MerkleTree, db_path, true);
         let storage = Storage::new(db);
-        let config = TreeConfig::new(ZkHasher::default());
+        let config = TreeConfig::new(ZkHasher::default()).expect("TreeConfig new failed");
         let (root_hash, block_number) = storage.fetch_metadata();
         let root_hash = root_hash.unwrap_or_else(|| config.default_root_hash());
         Self {

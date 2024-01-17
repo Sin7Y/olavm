@@ -154,7 +154,7 @@ impl RocksDB {
 
     pub fn get_estimated_number_of_entries(&self, cf: StateKeeperColumnFamily) -> u64 {
         let error_msg = "failed to get estimated number of entries";
-        let cf = self.db.cf_handle(&cf.to_string()).unwrap();
+        let cf = self.db.cf_handle(&cf.to_string()).expect(error_msg);
         self.db
             .property_int_value_cf(cf, "rocksdb.estimate-num-keys")
             .expect(error_msg)
@@ -227,14 +227,15 @@ impl RocksDB {
 
     /// awaits termination of all running rocksdb instances
     pub fn await_rocksdb_termination() {
+        let error_msg = "failed to terminate rocksdb";
         let (lock, cvar) = &*ROCKSDB_INSTANCE_COUNTER;
-        let mut num_instances = lock.lock().unwrap();
+        let mut num_instances = lock.lock().expect(error_msg);
         while *num_instances != 0 {
             info!(
                 "Waiting for all the RocksDB instances to be dropped, {} remaining",
                 *num_instances
             );
-            num_instances = cvar.wait(num_instances).unwrap();
+            num_instances = cvar.wait(num_instances).expect(error_msg);
         }
         info!("All the RocksDB instances are dropped");
     }
@@ -253,7 +254,7 @@ struct RegistryEntry;
 impl RegistryEntry {
     fn new() -> Self {
         let (lock, cvar) = &*ROCKSDB_INSTANCE_COUNTER;
-        let mut num_instances = lock.lock().unwrap();
+        let mut num_instances = lock.lock().expect("Failed to lock mutex");
         *num_instances += 1;
         cvar.notify_all();
         Self
@@ -263,7 +264,7 @@ impl RegistryEntry {
 impl Drop for RegistryEntry {
     fn drop(&mut self) {
         let (lock, cvar) = &*ROCKSDB_INSTANCE_COUNTER;
-        let mut num_instances = lock.lock().unwrap();
+        let mut num_instances = lock.lock().expect("Failed to lock mutex");
         *num_instances -= 1;
         cvar.notify_all();
     }
