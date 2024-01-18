@@ -168,7 +168,7 @@ where
 
         for i in 0..p.len() {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
-            res[i] = F::from_canonical_u64(i);
+            res[i] = F::from_canonical_u64(val);
         }
 
         println!(
@@ -235,7 +235,7 @@ where
 
         for i in 0..result_len {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
-            res[i] = F::from_canonical_u64(i);
+            res[i] = F::from_canonical_u64(val);
         }
 
         println!("[cuda][after](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
@@ -298,7 +298,7 @@ where
 
         for i in 0..p.len() {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
-            res[i] = F::from_canonical_u64(i);
+            res[i] = F::from_canonical_u64(val);
         }
 
         println!(
@@ -374,7 +374,7 @@ where
 
         for i in 0..p.len() {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
-            res[i] = F::from_canonical_u64(i);
+            res[i] = F::from_canonical_u64(val);
         }
 
         println!(
