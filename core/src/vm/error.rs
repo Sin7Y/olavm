@@ -4,12 +4,17 @@ use thiserror::Error;
 pub enum ProcessorError {
     #[error("parse string to integer fail")]
     ParseIntError,
+
     /// parse integer to opcode fail
     #[error("decode binary opcode to asm fail")]
     ParseOpcodeError,
+
     /// interpreter not use single value for return
-    #[error("interpreter not use single value for return")]
+    #[error("Interpreter not use single value for return")]
     InterpreterReturnSingle,
+
+    #[error("Interpreter run error: {0}")]
+    InterpreterRunError(String),
 
     #[error("U32 range check fail, value out range")]
     U32RangeCheckFail,
@@ -29,6 +34,9 @@ pub enum ProcessorError {
     #[error("Tload flag is invalid: {0}")]
     TloadFlagInvalid(u64),
 
+    #[error("Tstore error: {0}")]
+    TstoreError(String),
+
     #[error("Pubkey is invalid: {0}")]
     PubKeyInvalid(String),
 
@@ -46,4 +54,13 @@ pub enum ProcessorError {
 
     #[error("IO operations error")]
     FileIOError(#[from] std::io::Error),
+
+    #[error("mstore error: {0}")]
+    MstoreError(String),
+
+    #[error("mload error: {0}")]
+    MloadError(String),
+
+    #[error("Wrong reg index: {0}")]
+    RegIndexError(usize),
 }

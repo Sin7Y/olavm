@@ -160,7 +160,7 @@ macro_rules! tape_copy {
             $mem_addr = $mem_base_addr + index;
             $tape_addr = $tape_base_addr+index;
             assert!($tape_addr < GoldilocksField::ORDER, "tape_addr is big than ORDER");
-            memory_zone_detect!($mem_addr, $is_rw,  $region_prophet, $region_heap, panic!("tstore in prophet"));
+            memory_zone_detect!($mem_addr, $is_rw,  $region_prophet, $region_heap, return Err(ProcessorError::TstoreError(format!("tstore in prophet"))));
             register_selector.aux0 = GoldilocksField::from_canonical_u64($mem_addr);
             register_selector.op0_reg_sel[0] = GoldilocksField::from_canonical_u64($tape_addr);
 
@@ -262,23 +262,26 @@ impl Process {
             .expect(&format!("get wrong reg index:{}", reg_str))
     }
 
-    pub fn get_index_value(&self, op_str: &str) -> (GoldilocksField, ImmediateOrRegName) {
+    pub fn get_index_value(
+        &self,
+        op_str: &str,
+    ) -> Result<(GoldilocksField, ImmediateOrRegName), ProcessorError> {
         match op_str.parse() {
-            Ok(data) => (
+            Ok(data) => Ok((
                 GoldilocksField::from_canonical_u64(data),
                 ImmediateOrRegName::Immediate(GoldilocksField::from_canonical_u64(data)),
-            ),
+            )),
             Err(_) => {
                 let src_index = self.get_reg_index(op_str);
                 match src_index {
                     idx if idx == (REG_NOT_USED as usize) => {
-                        (self.psp_start, ImmediateOrRegName::RegName(idx))
+                        Ok((self.psp_start, ImmediateOrRegName::RegName(idx)))
                     }
                     _ if src_index < REGISTER_NUM => {
                         let value = self.registers[src_index];
-                        (value, ImmediateOrRegName::RegName(src_index))
+                        Ok((value, ImmediateOrRegName::RegName(src_index)))
                     }
-                    _ => panic!("reg index: {} out of bounds", src_index),
+                    _ => Err(ProcessorError::RegIndexError(src_index)),
                 }
             }
         }
@@ -366,34 +369,33 @@ impl Process {
         }
 
         prophet.ctx.push((HEAP_PTR.to_string(), self.hp.0));
-        let res = interpreter.run(prophet, values, &self.memory);
+        let out = interpreter
+            .run(prophet, values, &self.memory)
+            .map_err(|err| ProcessorError::InterpreterRunError(err))?;
         // todo: need process error!
-        debug!("interpreter:{:?}", res);
-
-        if let Ok(out) = res {
-            match out {
-                Single(_) => return Err(ProcessorError::ParseIntError),
-                Multiple(mut values) => {
-                    self.psp_start = self.psp;
-                    self.hp = GoldilocksField(
-                        values.pop().expect("Multiple value empty").get_number() as u64,
+        debug!("interpreter:{:?}", out);
+        match out {
+            Single(_) => return Err(ProcessorError::ParseIntError),
+            Multiple(mut values) => {
+                self.psp_start = self.psp;
+                self.hp = GoldilocksField(
+                    values.pop().expect("Multiple value empty").get_number() as u64
+                );
+                debug!("prophet addr:{}", self.psp.0);
+                for value in values {
+                    self.memory.write(
+                        self.psp.0,
+                        0, //write， clk is 0
+                        GoldilocksField::from_canonical_u64(0 as u64),
+                        GoldilocksField::from_canonical_u64(MemoryType::WriteOnce as u64),
+                        GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
+                        GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
+                        GoldilocksField::from_canonical_u64(1_u64),
+                        GoldilocksField::from_canonical_u64(0_u64),
+                        GoldilocksField(value.get_number() as u64),
+                        self.env_idx,
                     );
-                    debug!("prophet addr:{}", self.psp.0);
-                    for value in values {
-                        self.memory.write(
-                            self.psp.0,
-                            0, //write， clk is 0
-                            GoldilocksField::from_canonical_u64(0 as u64),
-                            GoldilocksField::from_canonical_u64(MemoryType::WriteOnce as u64),
-                            GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
-                            GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
-                            GoldilocksField::from_canonical_u64(1_u64),
-                            GoldilocksField::from_canonical_u64(0_u64),
-                            GoldilocksField(value.get_number() as u64),
-                            self.env_idx,
-                        );
-                        self.psp += GoldilocksField::ONE;
-                    }
+                    self.psp += GoldilocksField::ONE;
                 }
             }
         }
@@ -529,7 +531,7 @@ impl Process {
         Ok(pc + step)
     }
 
-    fn execute_inst_mov_not(&mut self, ops: &[&str], step: u64) {
+    fn execute_inst_mov_not(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
         let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
@@ -538,7 +540,7 @@ impl Process {
             format!("{} params len is 2", opcode.as_str())
         );
         let dst_index = self.get_reg_index(ops[1]);
-        let value = self.get_index_value(ops[2]);
+        let value = self.get_index_value(ops[2])?;
         self.register_selector.op1 = value.0;
         if let ImmediateOrRegName::RegName(op1_index) = value.1 {
             if op1_index != (REG_NOT_USED as usize) {
@@ -558,16 +560,17 @@ impl Process {
                 self.registers[dst_index] = GoldilocksField::NEG_ONE - value.0;
                 self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::NOT as u8);
             }
-            _ => panic!("not match opcode:{}", opcode),
+            _ => return Err(ProcessorError::ParseOpcodeError),
         };
 
         self.register_selector.dst = self.registers[dst_index];
         self.register_selector.dst_reg_sel[dst_index] = GoldilocksField::from_canonical_u64(1);
 
         self.pc += step;
+        Ok(())
     }
 
-    fn execute_inst_eq_neq(&mut self, ops: &[&str], step: u64) {
+    fn execute_inst_eq_neq(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
         let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
@@ -577,7 +580,7 @@ impl Process {
         );
         let dst_index = self.get_reg_index(ops[1]);
         let op0_index = self.get_reg_index(ops[2]);
-        let value = self.get_index_value(ops[3]);
+        let value = self.get_index_value(ops[3])?;
 
         self.register_selector.op0 = self.registers[op0_index];
         self.register_selector.op1 = value.0;
@@ -609,13 +612,14 @@ impl Process {
                 );
                 Opcode::NEQ
             }
-            _ => panic!("not match opcode:{}", opcode),
+            _ => return Err(ProcessorError::ParseOpcodeError),
         };
         self.opcode = GoldilocksField::from_canonical_u64(1 << op_type as u8);
 
         self.register_selector.dst = self.registers[dst_index];
         self.register_selector.dst_reg_sel[dst_index] = GoldilocksField::from_canonical_u64(1);
         self.pc += step;
+        Ok(())
     }
 
     fn execute_inst_assert(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
@@ -626,7 +630,7 @@ impl Process {
             "{}",
             format!("{} params len is 2", opcode.as_str())
         );
-        let value = self.get_index_value(ops[1]);
+        let value = self.get_index_value(ops[1])?;
 
         self.register_selector.op1 = value.0;
         let mut reg_index = 0xff;
@@ -645,7 +649,7 @@ impl Process {
                 }
                 Opcode::ASSERT
             }
-            _ => panic!("not match opcode:{}", opcode),
+            _ => return Err(ProcessorError::ParseOpcodeError),
         };
         self.opcode = GoldilocksField::from_canonical_u64(1 << op_type as u8);
 
@@ -654,7 +658,7 @@ impl Process {
         Ok(())
     }
 
-    fn execute_inst_cjmp(&mut self, ops: &[&str], step: u64) {
+    fn execute_inst_cjmp(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
         let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
@@ -663,7 +667,7 @@ impl Process {
             format!("{} params len is 2", opcode.as_str())
         );
         let op0_index = self.get_reg_index(ops[1]);
-        let op1_value = self.get_index_value(ops[2]);
+        let op1_value = self.get_index_value(ops[2])?;
         if self.registers[op0_index].is_one() {
             self.pc = op1_value.0 .0;
         } else {
@@ -676,9 +680,11 @@ impl Process {
         if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
             self.register_selector.op1_reg_sel[op1_index] = GoldilocksField::from_canonical_u64(1);
         }
+
+        Ok(())
     }
 
-    fn execute_inst_jmp(&mut self, ops: &[&str]) {
+    fn execute_inst_jmp(&mut self, ops: &[&str]) -> Result<(), ProcessorError> {
         let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
@@ -686,16 +692,17 @@ impl Process {
             "{}",
             format!("{} params len is 1", opcode.as_str())
         );
-        let value = self.get_index_value(ops[1]);
+        let value = self.get_index_value(ops[1])?;
         self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::JMP as u8);
         self.pc = value.0 .0;
         self.register_selector.op1 = value.0;
         if let ImmediateOrRegName::RegName(op1_index) = value.1 {
             self.register_selector.op1_reg_sel[op1_index] = GoldilocksField::from_canonical_u64(1);
         }
+        Ok(())
     }
 
-    fn execute_inst_arithmetic(&mut self, ops: &[&str], step: u64) {
+    fn execute_inst_arithmetic(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
         let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
@@ -705,7 +712,7 @@ impl Process {
         );
         let dst_index = self.get_reg_index(ops[1]);
         let op0_index = self.get_reg_index(ops[2]);
-        let op1_value = self.get_index_value(ops[3]);
+        let op1_value = self.get_index_value(ops[3])?;
 
         self.register_selector.op0 = self.registers[op0_index];
         self.register_selector.op1 = op1_value.0;
@@ -728,13 +735,14 @@ impl Process {
                 );
                 self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::MUL as u8);
             }
-            _ => panic!("not match opcode:{}", opcode),
+            _ => return Err(ProcessorError::ParseOpcodeError),
         };
 
         self.register_selector.dst = self.registers[dst_index];
         self.register_selector.dst_reg_sel[dst_index] = GoldilocksField::from_canonical_u64(1);
 
         self.pc += step;
+        Ok(())
     }
 
     fn execute_inst_call(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
@@ -745,7 +753,7 @@ impl Process {
             "{}",
             format!("{} params len is 1", opcode.as_str())
         );
-        let call_addr = self.get_index_value(ops[1]);
+        let call_addr = self.get_index_value(ops[1])?;
         let write_addr = self.registers[FP_REG_INDEX].0 - 1;
         let next_pc = GoldilocksField::from_canonical_u64(self.pc + step);
         memory_op!(
@@ -792,13 +800,15 @@ impl Process {
             format!("{} params len is not match", opcode.as_str())
         );
         let mut offset_addr = 0;
-        let op0_value = self.get_index_value(ops[1]);
+        let op0_value = self.get_index_value(ops[1])?;
 
         self.register_selector.op0 = op0_value.0;
         if let ImmediateOrRegName::RegName(op0_index) = op0_value.1 {
             self.register_selector.op0_reg_sel[op0_index] = GoldilocksField::from_canonical_u64(1);
         } else {
-            panic!("mstore op0 should be a reg");
+            return Err(ProcessorError::MstoreError(format!(
+                "mstore op0 should be a reg"
+            )));
         }
         let dst_index;
         if ops.len() == 4 {
@@ -852,12 +862,14 @@ impl Process {
             format!("{} params len is not match", opcode.as_str())
         );
         let dst_index = self.get_reg_index(ops[1]);
-        let op0_value = self.get_index_value(ops[2]);
+        let op0_value = self.get_index_value(ops[2])?;
 
         if let ImmediateOrRegName::RegName(op0_index) = op0_value.1 {
             self.register_selector.op0_reg_sel[op0_index] = GoldilocksField::from_canonical_u64(1);
         } else {
-            panic!("mstore op0 should be a reg");
+            return Err(ProcessorError::MstoreError(format!(
+                "mstore op0 should be a reg"
+            )));
         }
 
         self.register_selector.op0 = op0_value.0;
@@ -938,7 +950,12 @@ impl Process {
         Ok(())
     }
 
-    fn execute_inst_bitwise(&mut self, program: &mut Program, ops: &[&str], step: u64) {
+    fn execute_inst_bitwise(
+        &mut self,
+        program: &mut Program,
+        ops: &[&str],
+        step: u64,
+    ) -> Result<(), ProcessorError> {
         let opcode = ops.first().expect("Empty instructions").to_lowercase();
         assert_eq!(
             ops.len(),
@@ -948,7 +965,7 @@ impl Process {
         );
         let dst_index = self.get_reg_index(ops[1]);
         let op0_index = self.get_reg_index(ops[2]);
-        let op1_value = self.get_index_value(ops[3]);
+        let op1_value = self.get_index_value(ops[3])?;
 
         self.register_selector.op0 = self.registers[op0_index];
         self.register_selector.op1 = op1_value.0;
@@ -976,7 +993,7 @@ impl Process {
                 self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::XOR as u8);
                 1 << Opcode::XOR as u64
             }
-            _ => panic!("not match opcode:{}", opcode),
+            _ => return Err(ProcessorError::ParseOpcodeError),
         };
 
         if !program.pre_exe_flag {
@@ -991,6 +1008,7 @@ impl Process {
             );
         }
         self.pc += step;
+        Ok(())
     }
 
     fn execute_inst_gte(
@@ -1009,7 +1027,7 @@ impl Process {
         let dst_index = self.get_reg_index(ops[1]);
 
         let op0_index = self.get_reg_index(ops[2]);
-        let value = self.get_index_value(ops[3]);
+        let value = self.get_index_value(ops[3])?;
 
         self.register_selector.op0 = self.registers[op0_index];
         self.register_selector.op1 = value.0;
@@ -1027,7 +1045,7 @@ impl Process {
                 self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::GTE as u8);
                 ComparisonOperation::Gte
             }
-            _ => panic!("not match opcode:{}", opcode),
+            _ => return Err(ProcessorError::ParseOpcodeError),
         };
 
         if !program.pre_exe_flag {
@@ -1160,7 +1178,7 @@ impl Process {
         let mut register_selector_regs: RegisterSelector = Default::default();
 
         let op0_index = self.get_reg_index(ops[1]);
-        let value = self.get_index_value(ops[2]);
+        let value = self.get_index_value(ops[2])?;
 
         self.register_selector.op0 = self.registers[op0_index];
         self.register_selector.op1 = value.0;
@@ -1268,7 +1286,7 @@ impl Process {
         let mut register_selector_regs: RegisterSelector = Default::default();
 
         let op0_index = self.get_reg_index(ops[1]);
-        let value = self.get_index_value(ops[2]);
+        let value = self.get_index_value(ops[2])?;
 
         self.register_selector.op0 = self.registers[op0_index];
         self.register_selector.op1 = value.0;
@@ -1396,7 +1414,7 @@ impl Process {
 
         let dst_index = self.get_reg_index(ops[1]);
         let op0_index = self.get_reg_index(ops[2]);
-        let op1_value = self.get_index_value(ops[3]);
+        let op1_value = self.get_index_value(ops[3])?;
 
         self.register_selector.op0 = self.registers[op0_index];
         self.register_selector.op1 = op1_value.0;
@@ -1544,7 +1562,7 @@ impl Process {
         self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::TLOAD as u8);
         let dst_index = self.get_reg_index(ops[1]);
         let op0_index = self.get_reg_index(ops[2]);
-        let op1_value = self.get_index_value(ops[3]);
+        let op1_value = self.get_index_value(ops[3])?;
 
         self.register_selector.dst = self.registers[dst_index];
         let mem_base_addr = self.registers[dst_index].to_canonical_u64();
@@ -1625,7 +1643,7 @@ impl Process {
         );
         self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::TSTORE as u8);
         let op0_index = self.get_reg_index(ops[1]);
-        let op1_value = self.get_index_value(ops[2]);
+        let op1_value = self.get_index_value(ops[2])?;
 
         if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
             self.register_selector.op1_reg_sel[op1_index] = GoldilocksField::from_canonical_u64(1);
@@ -1684,7 +1702,10 @@ impl Process {
         registers_status: &[GoldilocksField; REGISTER_NUM],
         ctx_code_regs_status: &Address,
     ) -> Result<VMState, ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ParseOpcodeError)?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             3,
@@ -1692,7 +1713,7 @@ impl Process {
             format!("{} params len is not match", opcode.as_str())
         );
         let op0_index = self.get_reg_index(ops[1]);
-        let op1_value = self.get_index_value(ops[2]);
+        let op1_value = self.get_index_value(ops[2])?;
 
         self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SCCALL as u8);
         self.register_selector.op0 = self.registers[op0_index];
@@ -1731,7 +1752,7 @@ impl Process {
             );
             self.tp += GoldilocksField::from_canonical_u64(len as u64);
         } else {
-            panic!("not support")
+            return Err(ProcessorError::ParseOpcodeError);
         }
 
         if !program.pre_exe_flag {
@@ -1800,7 +1821,7 @@ impl Process {
         } else if op1_value.0 == GoldilocksField::ZERO {
             return Ok(VMState::SCCall(SCCallType::Call(callee_address)));
         } else {
-            panic!("not support")
+            return Err(ProcessorError::ParseOpcodeError);
         }
     }
 
@@ -1815,7 +1836,7 @@ impl Process {
         ctx_code_regs_status: &Address,
     ) -> Result<(), ProcessorError> {
         let dst_index = self.get_reg_index(ops[1]);
-        let op1_value = self.get_index_value(ops[2]);
+        let op1_value = self.get_index_value(ops[2])?;
 
         self.register_selector.op1 = op1_value.0;
         if let ImmediateOrRegName::RegName(op1_index) = op1_value.1 {
@@ -2003,18 +2024,18 @@ impl Process {
             debug!("execute opcode: {:?}", ops);
             match opcode.as_str() {
                 //todo: not need move to arithmatic library
-                "mov" | "not" => self.execute_inst_mov_not(&ops, step),
-                "eq" | "neq" => self.execute_inst_eq_neq(&ops, step),
+                "mov" | "not" => self.execute_inst_mov_not(&ops, step)?,
+                "eq" | "neq" => self.execute_inst_eq_neq(&ops, step)?,
                 "assert" => self.execute_inst_assert(&ops, step)?,
-                "cjmp" => self.execute_inst_cjmp(&ops, step),
-                "jmp" => self.execute_inst_jmp(&ops),
-                "add" | "mul" | "sub" => self.execute_inst_arithmetic(&ops, step),
+                "cjmp" => self.execute_inst_cjmp(&ops, step)?,
+                "jmp" => self.execute_inst_jmp(&ops)?,
+                "add" | "mul" | "sub" => self.execute_inst_arithmetic(&ops, step)?,
                 "call" => self.execute_inst_call(&ops, step)?,
                 "ret" => self.execute_inst_ret(&ops)?,
                 "mstore" => self.execute_inst_mstore(&ops, step)?,
                 "mload" => self.execute_inst_mload(&ops, step)?,
                 "range" => self.execute_inst_range(program, &ops, step)?,
-                "and" | "or" | "xor" => self.execute_inst_bitwise(program, &ops, step),
+                "and" | "or" | "xor" => self.execute_inst_bitwise(program, &ops, step)?,
                 "gte" => self.execute_inst_gte(program, &ops, step)?,
                 "end" => {
                     end_step = self.execute_inst_end(
@@ -2083,7 +2104,7 @@ impl Process {
                     &registers_status,
                     &ctx_code_regs_status,
                 )?,
-                _ => panic!("not match opcode:{}", opcode),
+                _ => return Err(ProcessorError::ParseOpcodeError),
             }
 
             if program.prophets.get(&pc_status).is_some() {
