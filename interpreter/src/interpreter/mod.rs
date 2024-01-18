@@ -30,10 +30,13 @@ impl Interpreter {
         debug!("sema");
         self.root_node
             .write()
-            .unwrap()
+            .map_err(|err| format!("failed to lock write lock {}", err))?
             .traverse(&mut SymTableGen::new(&prophet))?;
         debug!("executor");
         let mut exe = Executor::new(&prophet, values, mem);
-        self.root_node.write().unwrap().traverse(&mut exe)
+        self.root_node
+            .write()
+            .map_err(|err| format!("failed to lock write lock {}", err))?
+            .traverse(&mut exe)
     }
 }
