@@ -48,7 +48,7 @@ impl MemoryTree {
         // Return the last value in the address trace.
         let read_mem_res = self.trace.get_mut(&addr);
         if let Some(mem_data) = read_mem_res {
-            let last_value = mem_data.last().expect("empty address trace").value;
+            let last_value = mem_data.last().ok_or(ProcessorError::EmptyHashTraceError)?.value;
             let new_value = MemoryCell {
                 env_idx,
                 is_rw,
