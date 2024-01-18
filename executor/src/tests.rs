@@ -123,15 +123,15 @@ fn executor_run_test_program(
     let res = process.execute(&mut program, &mut account_tree);
 
     if res.is_err() {
-        gen_dump_file(&mut process, &mut program);
+        gen_dump_file(&mut process, &mut program).unwrap();
         println!("err tp:{}", process.tp);
     }
     println!("execute res:{:?}", res);
     if print_trace {
         println!("vm trace: {:?}", program.trace);
     }
-    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut account_tree);
-    gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut account_tree).unwrap();
+    gen_storage_table(&mut process, &mut program, hash_roots);
     program.trace.start_end_roots = (start, account_tree.root_hash());
 
     let trace_json_format = serde_json::to_string(&program.trace).unwrap();

@@ -126,7 +126,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
             return;
         }
     }
-    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db);
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db).unwrap();
     gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
     program.trace.start_end_roots = (start, db.root_hash());
 
@@ -305,7 +305,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
             return;
         }
     }
-    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db);
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db).unwrap();
     gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
     program.trace.start_end_roots = (start, db.root_hash());
 

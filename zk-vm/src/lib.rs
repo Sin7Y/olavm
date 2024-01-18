@@ -205,7 +205,7 @@ impl OlaVM {
         if let Ok(vm_state) = res {
             Ok(vm_state)
         } else {
-            gen_dump_file(process, program);
+            gen_dump_file(process, program)?;
             Err(StateError::VmExecError(format!("{:?}", res)))
         }
     }
@@ -341,7 +341,8 @@ impl OlaVM {
                             &mut mutex_data!(process),
                             &mut mutex_data!(program),
                             &mut self.account_tree,
-                        );
+                        )
+                        .map_err(StateError::GenStorageTableError)?;
                         if let Err(err) = gen_storage_table(
                             &mut mutex_data!(process),
                             &mut mutex_data!(program),

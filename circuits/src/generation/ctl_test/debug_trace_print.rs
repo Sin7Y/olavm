@@ -253,7 +253,7 @@ pub fn get_exec_trace(
             println!("execute err:{:?}", e);
         }
     }
-    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db);
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db).unwrap();
     gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
     program.trace.start_end_roots = (start, db.root_hash());
     return program.trace;
