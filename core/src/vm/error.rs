@@ -37,4 +37,13 @@ pub enum ProcessorError {
 
     #[error("Message is invalid: {0}")]
     MessageInvalid(String),
+
+    #[error("Empty hash trace")]
+    EmptyHashTraceError,
+
+    #[error("Serialize json string failed")]
+    JsonSerdeError(#[from] serde_json::Error),
+
+    #[error("IO operations error")]
+    FileIOError(#[from] std::io::Error),
 }
