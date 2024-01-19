@@ -23,13 +23,10 @@ use ola_core::vm::error::ProcessorError;
 use ola_core::vm::transaction::TxCtxInfo;
 use ola_core::vm::vm_state::{SCCallType, VMState};
 
-use ola_core::crypto::hash::Hasher;
 use ola_core::merkle_tree::log::{StorageLog, WitnessStorageLog};
-use ola_core::types::storage::field_arr_to_u8_arr;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufReader, Write};
-use std::ops::Not;
+use std::io::BufReader;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
@@ -170,12 +167,11 @@ impl OlaVM {
             let code: Vec<_> = instructions
                 .clone()
                 .map(|e| {
-                    GoldilocksField::from_canonical_u64(
-                        u64::from_str_radix(&e[2..], 16)
-                            .expect(&format!("Failed to convert str [{}] to u64", &e[2..])),
-                    )
+                    let c = u64::from_str_radix(&e[2..], 16)
+                        .map_err(|err|StateError::ParseIntError(format!("Failed to convert str to u64 with err: {}", err)))?;
+                    Ok(GoldilocksField::from_canonical_u64(c))
                 })
-                .collect();
+                .collect::<Result<Vec<_>, StateError>>()?;
             let mut prophets = HashMap::new();
             for item in bin_program.prophets {
                 prophets.insert(item.host as u64, item);
@@ -222,12 +218,11 @@ impl OlaVM {
 
         let code: Vec<_> = instructions
             .map(|e| {
-                GoldilocksField::from_canonical_u64(
-                    u64::from_str_radix(&e[2..], 16)
-                        .expect(&format!("Failed to convert str [{}] to u64", &e[2..])),
-                )
+                let c = u64::from_str_radix(&e[2..], 16)
+                        .map_err(|err|StateError::ParseIntError(format!("Failed to convert str to u64 with err: {}", err)))?;
+                    Ok(GoldilocksField::from_canonical_u64(c))
             })
-            .collect();
+            .collect::<Result<Vec<_>, StateError>>()?;
 
         let prophets = serde_json::to_string(&program.prophets)?;
 
@@ -273,7 +268,7 @@ impl OlaVM {
         let mut program = Arc::new(Mutex::new(Program::default()));
         program
             .lock()
-            .expect("Failed to acquire lock on program")
+            .map_err(|err| StateError::MutexLockError(format!("Failed to acquire lock on program with err: {}", err)))?
             .print_flag = debug_flag;
         let mut caller_addr = caller_addr;
         let mut code_exe_addr = code_exe_addr;
@@ -343,13 +338,11 @@ impl OlaVM {
                             &mut self.account_tree,
                         )
                         .map_err(StateError::GenStorageTableError)?;
-                        if let Err(err) = gen_storage_table(
+                        let _ = gen_storage_table(
                             &mut mutex_data!(process),
                             &mut mutex_data!(program),
                             hash_roots,
-                        ) {
-                            return Err(StateError::GenStorageTableError(err));
-                        };
+                        ).map_err(StateError::GenStorageTableError)?;
                         let trace =
                             std::mem::replace(&mut mutex_data!(program).trace, Trace::default());
                         self.ola_state
@@ -363,10 +356,7 @@ impl OlaVM {
                         let tape_tree = mutex_data!(process).tape.clone();
                         let tp = mutex_data!(process).tp.clone();
                         let clk = mutex_data!(process).clk.clone();
-                        let ctx = match self.process_ctx.pop() {
-                            Some(ctx) => ctx,
-                            None => return Err(StateError::ProcessContextEmpty),
-                        };
+                        let ctx = self.process_ctx.pop().ok_or(StateError::ProcessContextEmpty)?;
                         let env_id = mutex_data!(process).env_idx.to_canonical_u64();
                         let program_log =
                             std::mem::replace(&mut mutex_data!(process).program_log, Vec::new());
@@ -381,10 +371,7 @@ impl OlaVM {
                         program = ctx.1;
                         caller_addr = ctx.2;
                         code_exe_addr = ctx.3;
-                        let mut step = match step {
-                            Some(step) => step,
-                            None => return Err(StateError::ExeEndStepEmpty),
-                        };
+                        let mut step = step.ok_or(StateError::ExeEndStepEmpty)?;
                         step.clk = mutex_data!(process).clk;
                         step.env_idx = mutex_data!(process).env_idx;
                         step.addr_storage = mutex_data!(process).addr_storage;
@@ -400,7 +387,7 @@ impl OlaVM {
                             let sccall_rows = &mut mutex_data!(program).trace.sc_call;
                             sccall_rows
                                 .last_mut()
-                                .expect("Empty sccall_rows slice")
+                                .ok_or(StateError::EmptyArrayError(format!("Empty sccall_rows slice")))?
                                 .clk_callee_end = GoldilocksField::from_canonical_u64(clk as u64);
                         }
                         self.ola_state.txs_trace.insert(env_id, trace);

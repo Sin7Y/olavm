@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::vm::error;
+
 #[derive(Error, Debug)]
 pub enum StateError {
     #[error("storage access error")]
@@ -31,4 +33,13 @@ pub enum StateError {
 
     #[error("Generate storage table error")]
     GenStorageTableError(#[from] crate::vm::error::ProcessorError),
+
+    #[error("Mutex lock error: {0}")]
+    MutexLockError(String),
+
+    #[error("Empty array error: {0}")]
+    EmptyArrayError(String),
+
+    #[error("Parse int error: {0}")]
+    ParseIntError(String),
 }

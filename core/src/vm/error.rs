@@ -63,4 +63,13 @@ pub enum ProcessorError {
 
     #[error("Wrong reg index: {0}")]
     RegIndexError(usize),
+
+    #[error("Create Regex error: {0}")]
+    RegexNewError(String),
+
+    #[error("Regex capture error: {0}")]
+    RegexCaptureError(String),
+
+    #[error("Array indexing error: {0}")]
+    ArrayIndexError(String),
 }

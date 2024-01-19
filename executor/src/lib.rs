@@ -337,16 +337,21 @@ impl Process {
     pub fn prophet(&mut self, prophet: &mut OlaProphet) -> Result<(), ProcessorError> {
         debug!("prophet code:{}", prophet.code);
 
-        let re = Regex::new(r"^%\{([\s\S]*)%}$").expect("Regex::new failed");
+        let re = Regex::new(r"^%\{([\s\S]*)%}$").map_err(|err| {
+            ProcessorError::RegexNewError(format!("Regex::new failed with err: {}", err))
+        })?;
         let code = re
             .captures(&prophet.code)
-            .and_then(|captures| captures.get(1).map(|m| m.as_str()));
-        let mut interpreter = if let Some(code) = code {
-            debug!("code:{}", code);
-            Interpreter::new(code)
-        } else {
-            return Err(ProcessorError::ParseOpcodeError);
-        };
+            .ok_or(ProcessorError::RegexCaptureError(String::from(
+                "Regex capture failed in prophet code",
+            )))?
+            .get(1)
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty data at index 1 in prophet.code",
+            )))?
+            .as_str();
+        debug!("code:{}", code);
+        let mut interpreter = Interpreter::new(code);
 
         let mut values = Vec::new();
 
@@ -379,7 +384,12 @@ impl Process {
             Multiple(mut values) => {
                 self.psp_start = self.psp;
                 self.hp = GoldilocksField(
-                    values.pop().expect("Multiple value empty").get_number() as u64
+                    values
+                        .pop()
+                        .ok_or(ProcessorError::ArrayIndexError(String::from(
+                            "Multiple value empty",
+                        )))?
+                        .get_number() as u64,
                 );
                 debug!("prophet addr:{}", self.psp.0);
                 for value in values {
@@ -497,10 +507,9 @@ impl Process {
 
         let imm_flag = if step == IMM_INSTRUCTION_LEN {
             let imm_u64 = next_instr.trim_start_matches("0x");
-            immediate_data =
-                GoldilocksField::from_canonical_u64(u64::from_str_radix(imm_u64, 16).expect(
-                    &format!("Failed to convert immediate data str [{}] to u64", imm_u64),
-                ));
+            immediate_data = GoldilocksField::from_canonical_u64(
+                u64::from_str_radix(imm_u64, 16).map_err(|_| ProcessorError::ParseIntError)?,
+            );
             program
                 .trace
                 .raw_binary_instructions
@@ -512,10 +521,7 @@ impl Process {
 
         let inst_u64 = instruct_line.trim_start_matches("0x");
         let inst_encode = GoldilocksField::from_canonical_u64(
-            u64::from_str_radix(inst_u64, 16).expect(&format!(
-                "Failed to convert instruction code str [{}] to u64",
-                inst_u64
-            )),
+            u64::from_str_radix(inst_u64, 16).map_err(|_| ProcessorError::ParseIntError)?,
         );
         program.trace.instructions.insert(
             pc,
@@ -532,7 +538,12 @@ impl Process {
     }
 
     fn execute_inst_mov_not(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             3,
@@ -571,7 +582,12 @@ impl Process {
     }
 
     fn execute_inst_eq_neq(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -623,7 +639,12 @@ impl Process {
     }
 
     fn execute_inst_assert(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             2,
@@ -659,7 +680,12 @@ impl Process {
     }
 
     fn execute_inst_cjmp(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             3,
@@ -685,7 +711,12 @@ impl Process {
     }
 
     fn execute_inst_jmp(&mut self, ops: &[&str]) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             2,
@@ -703,7 +734,12 @@ impl Process {
     }
 
     fn execute_inst_arithmetic(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -746,7 +782,12 @@ impl Process {
     }
 
     fn execute_inst_call(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             2,
@@ -793,7 +834,12 @@ impl Process {
     }
 
     fn execute_inst_mstore(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert!(
             ops.len() == 4 || ops.len() == 5,
             "{}",
@@ -855,7 +901,12 @@ impl Process {
     }
 
     fn execute_inst_mload(&mut self, ops: &[&str], step: u64) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert!(
             ops.len() == 4 || ops.len() == 5,
             "{}",
@@ -918,7 +969,12 @@ impl Process {
         ops: &[&str],
         step: u64,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             2,
@@ -956,7 +1012,12 @@ impl Process {
         ops: &[&str],
         step: u64,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -1017,7 +1078,12 @@ impl Process {
         ops: &[&str],
         step: u64,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -1315,7 +1381,13 @@ impl Process {
 
         let read_value;
         if let Some(data) = self.storage.trace.get(&tree_key) {
-            read_value = data.last().expect("Empty storage data").value.clone();
+            read_value = data
+                .last()
+                .ok_or(ProcessorError::ArrayIndexError(String::from(
+                    "Empty storage data",
+                )))?
+                .value
+                .clone();
         } else {
             let read_db = account_tree.storage.hash(&path);
             if let Some(value) = read_db {
@@ -1552,7 +1624,12 @@ impl Process {
         registers_status: &[GoldilocksField; REGISTER_NUM],
         ctx_code_regs_status: &Address,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             4,
@@ -1634,7 +1711,12 @@ impl Process {
         registers_status: &[GoldilocksField; REGISTER_NUM],
         ctx_code_regs_status: &Address,
     ) -> Result<(), ProcessorError> {
-        let opcode = ops.first().expect("Empty instructions").to_lowercase();
+        let opcode = ops
+            .first()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty instructions",
+            )))?
+            .to_lowercase();
         assert_eq!(
             ops.len(),
             3,
@@ -1967,12 +2049,11 @@ impl Process {
                 .instructions
                 .iter()
                 .map(|insts_str| {
-                    GoldilocksField::from_canonical_u64(
-                        u64::from_str_radix(insts_str.trim_start_matches("0x"), 16)
-                            .expect(&format!("Failed to convert str [{}] to u64", &insts_str)),
-                    )
+                    let inst = u64::from_str_radix(insts_str.trim_start_matches("0x"), 16)
+                        .map_err(|_| ProcessorError::ParseIntError)?;
+                    Ok(GoldilocksField::from_canonical_u64(inst))
                 })
-                .collect::<Vec<_>>()
+                .collect::<Result<Vec<_>, ProcessorError>>()?
                 .as_slice(),
         )
         .1;
@@ -2016,7 +2097,12 @@ impl Process {
             }
 
             let ops: Vec<&str> = instruction.0.split_whitespace().collect();
-            let opcode = ops.first().expect("Empty instructions").to_lowercase();
+            let opcode = ops
+                .first()
+                .ok_or(ProcessorError::ArrayIndexError(String::from(
+                    "Empty instructions",
+                )))?
+                .to_lowercase();
             self.op1_imm = GoldilocksField::from_canonical_u64(instruction.1 as u64);
             let step = instruction.2;
             self.instruction = instruction.3;

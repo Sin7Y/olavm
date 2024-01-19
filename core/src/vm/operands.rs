@@ -52,48 +52,47 @@ impl FromStr for OlaOperand {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let regex_reg_offset = Regex::new(r"^\[(?P<reg>r[0-8]),(?P<offset>-?[[:digit:]]+)\]$")
-            .expect("Failed to new Regex");
+            .map_err(|_| String::from("Failed to new Regex"))?;
         let capture_reg_offset = regex_reg_offset.captures(s);
         if capture_reg_offset.is_some() {
             let caps = capture_reg_offset.unwrap();
-            let str_reg = caps.name("reg");
-            let str_offset = caps.name("offset");
-            if str_reg.is_some() && str_offset.is_some() {
-                let str_reg = str_reg.unwrap().as_str();
-                let str_offset = str_offset.unwrap().as_str();
-                let register = OlaRegister::from_str(str_reg)?;
-                let offset = ImmediateValue::from_str(str_offset)?;
-                return Ok(OlaOperand::RegisterWithOffset { register, offset });
-            } else {
-                return Err(format!("Failed to capture 'reg' and 'offset' in {}", s));
-            }
+            let str_reg = caps
+                .name("reg")
+                .ok_or(format!("Failed to capture 'reg' in {}", s))?
+                .as_str();
+            let str_offset = caps
+                .name("offset")
+                .ok_or(format!("Failed to capture 'offset' in {}", s))?
+                .as_str();
+            let register = OlaRegister::from_str(str_reg)?;
+            let offset = ImmediateValue::from_str(str_offset)?;
+            return Ok(OlaOperand::RegisterWithOffset { register, offset });
         }
 
-        let regex_reg = Regex::new(r"^(?P<reg>r[0-8])$").expect("Failed to new Regex");
+        let regex_reg =
+            Regex::new(r"^(?P<reg>r[0-8])$").map_err(|_| String::from("Failed to new Regex"))?;
         let capture_reg = regex_reg.captures(s);
         if capture_reg.is_some() {
             let caps = capture_reg.unwrap();
-            let str_reg = caps.name("reg");
-            if str_reg.is_some() {
-                let str_reg = str_reg.unwrap().as_str();
-                let register = OlaRegister::from_str(str_reg)?;
-                return Ok(OlaOperand::RegisterOperand { register });
-            } else {
-                return Err(format!("Failed to capture 'reg' in {}", s));
-            }
+            let str_reg = caps
+                .name("reg")
+                .ok_or(format!("Failed to capture 'reg' in {}", s))?
+                .as_str();
+            let register = OlaRegister::from_str(str_reg)?;
+            return Ok(OlaOperand::RegisterOperand { register });
         }
 
-        let regex_immediate_value =
-            Regex::new(r"^(?P<imm>-?[[:digit:]]+)$").expect("Failed to new Regex");
+        let regex_immediate_value = Regex::new(r"^(?P<imm>-?[[:digit:]]+)$")
+            .map_err(|_| String::from("Failed to new Regex"))?;
         let capture_immediate = regex_immediate_value.captures(s);
         if capture_immediate.is_some() {
             let caps = capture_immediate.unwrap();
-            let str_imm = caps.name("imm");
-            if str_imm.is_some() {
-                let str_imm = str_imm.unwrap().as_str();
-                let value = ImmediateValue::from_str(str_imm)?;
-                return Ok(OlaOperand::ImmediateOperand { value });
-            }
+            let str_imm = caps
+                .name("imm")
+                .ok_or(format!("Failed to capture 'imm' in {}", s))?
+                .as_str();
+            let value = ImmediateValue::from_str(str_imm)?;
+            return Ok(OlaOperand::ImmediateOperand { value });
         }
 
         let special_reg = OlaSpecialRegister::from_str(s)

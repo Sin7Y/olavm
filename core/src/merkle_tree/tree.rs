@@ -197,7 +197,9 @@ impl AccountTree {
             .1
             .borrow_mut()
             .lock()
-            .expect("Mutex lock failed")
+            .map_err(|err| {
+                TreeError::MutexLockError(format!("Mutex lock failed in updates with err: {}", err))
+            })?
             .clone()
             .into_iter()
             .fold(vec![Vec::new(); group_size], |mut groups, item| {
@@ -277,10 +279,8 @@ impl AccountTree {
         let pre_map = self
             .hash_paths_to_leaves(updates.clone().into_iter(), false)
             .zip(op_idxs.clone().into_iter())
-            .map(|(parent_nodes, (op_idx, key))| {
-                Ok::<(TreeKey, Update), TreeError>((key, Update::new(op_idx, parent_nodes, key)?))
-            })
-            .collect::<Result<Vec<_>, _>>()?
+            .map(|(parent_nodes, (op_idx, key))| Ok((key, Update::new(op_idx, parent_nodes, key)?)))
+            .collect::<Result<Vec<(TreeKey, Update)>, TreeError>>()?
             .into_iter()
             .fold(HashMap::new(), |mut map: HashMap<_, Vec<_>>, (key, op)| {
                 match map.entry(key) {
@@ -299,10 +299,8 @@ impl AccountTree {
         let map = self
             .hash_paths_to_leaves(updates.into_iter(), true)
             .zip(op_idxs.into_iter())
-            .map(|(parent_nodes, (op_idx, key))| {
-                Ok::<(TreeKey, Update), TreeError>((key, Update::new(op_idx, parent_nodes, key)?))
-            })
-            .collect::<Result<Vec<_>, _>>()?
+            .map(|(parent_nodes, (op_idx, key))| Ok((key, Update::new(op_idx, parent_nodes, key)?)))
+            .collect::<Result<Vec<(TreeKey, Update)>, TreeError>>()?
             .into_iter()
             .fold(HashMap::new(), |mut map: HashMap<_, Vec<_>>, (key, op)| {
                 match map.entry(key) {
@@ -412,67 +410,84 @@ impl AccountTree {
         storage_logs: &[(usize, (TreeKey, TreeOperation))],
         leaf_indices: &[LeafIndices],
     ) -> Result<Vec<StorageLogMetadata>, TreeError> {
-        let mut branches = HashMap::new();
-        let mut metadata = Vec::new();
-        for (entries, &(block, (_, storage_log))) in patch.into_iter().zip(storage_logs) {
-            let leaf_hashed_key = entries
-                .first()
-                .ok_or(TreeError::EmptyPatch(String::from(
-                    "Empty patch array in apply_patch",
-                )))?
-                .0;
-            let leaf_index = leaf_indices[block]
-                .leaf_indices
-                .get(&leaf_hashed_key)
-                .ok_or(TreeError::LeafIndexNotFound)?
-                .clone();
-            let mut merkle_paths = Vec::with_capacity(ROOT_TREE_DEPTH);
+        let init_branches: HashMap<LevelIndex, TreeKey> = HashMap::new();
+        let init_metadata: Vec<StorageLogMetadata> = Vec::new();
+        let res = patch.into_iter().zip(storage_logs).fold(
+            Ok((init_branches, init_metadata)),
+            |acc: Result<(HashMap<LevelIndex, TreeKey>, Vec<StorageLogMetadata>), TreeError>,
+             (entries, &(block, (_, storage_log)))| {
+                acc.and_then(|(mut branches, mut metadata)| {
+                    let leaf_hashed_key = entries
+                        .first()
+                        .ok_or(TreeError::EmptyPatch(format!("Empty patch apply_patch")))?
+                        .0;
+                    let leaf_index = leaf_indices
+                        .get(block)
+                        .ok_or(TreeError::LeafIndexNotFound)?
+                        .leaf_indices
+                        .get(&leaf_hashed_key)
+                        .ok_or(TreeError::LeafIndexNotFound)?
+                        .clone();
+                    let mut merkle_paths = Vec::with_capacity(ROOT_TREE_DEPTH);
 
-            branches.extend(entries.into_iter().enumerate().map(|(level, (key, node))| {
-                if let NodeEntry::Branch {
-                    right_hash,
-                    left_hash,
-                    ..
-                } = &node
-                {
-                    let witness_hash =
-                        if (tree_key_to_u256(&leaf_hashed_key) >> (level - 1)) % 2 == 0.into() {
-                            right_hash
-                        } else {
-                            left_hash
-                        };
-                    merkle_paths.push(witness_hash.clone());
-                }
-                Self::make_node(level, key, node)
-            }));
+                    branches.extend(entries.into_iter().enumerate().map(|(level, (key, node))| {
+                        if let NodeEntry::Branch {
+                            right_hash,
+                            left_hash,
+                            ..
+                        } = &node
+                        {
+                            let witness_hash =
+                                if (tree_key_to_u256(&leaf_hashed_key) >> (level - 1)) % 2
+                                    == 0.into()
+                                {
+                                    right_hash
+                                } else {
+                                    left_hash
+                                };
+                            merkle_paths.push(witness_hash.clone());
+                        }
+                        Self::make_node(level, key, node)
+                    }));
 
-            let root_hash = branches
-                .get(&(0, U256::zero()).into())
-                .ok_or(TreeError::EmptyRoot)?
-                .clone();
-            let is_write = !matches!(storage_log, TreeOperation::Read(_));
-            let first_write = is_write && leaf_index >= leaf_indices[block].previous_index;
-            let value_written = match storage_log {
-                TreeOperation::Write { value, .. } => value,
-                _ => tree_key_default(),
-            };
-            let value_read = match storage_log {
-                TreeOperation::Write { previous_value, .. } => previous_value,
-                TreeOperation::Read(value) => value,
-                TreeOperation::Delete => tree_key_default(),
-            };
-            let metadata_log = StorageLogMetadata {
-                root_hash,
-                is_write,
-                first_write,
-                merkle_paths,
-                leaf_hashed_key,
-                leaf_enumeration_index: leaf_index,
-                value_written,
-                value_read,
-            };
-            metadata.push(metadata_log);
-        }
+                    let root_hash = branches
+                        .get(&(0, U256::zero()).into())
+                        .ok_or(TreeError::EmptyPatch(format!("Empty branches apply_patch")))?
+                        .clone();
+                    let is_write = !matches!(storage_log, TreeOperation::Read(_));
+                    let first_write = is_write
+                        && leaf_index
+                            >= leaf_indices
+                                .get(block)
+                                .ok_or(TreeError::LeafIndexNotFound)?
+                                .previous_index;
+                    let value_written = match storage_log {
+                        TreeOperation::Write { value, .. } => value,
+                        _ => tree_key_default(),
+                    };
+                    let value_read = match storage_log {
+                        TreeOperation::Write { previous_value, .. } => previous_value,
+                        TreeOperation::Read(value) => value,
+                        TreeOperation::Delete => tree_key_default(),
+                    };
+                    let metadata_log = StorageLogMetadata {
+                        root_hash,
+                        is_write,
+                        first_write,
+                        merkle_paths,
+                        leaf_hashed_key,
+                        leaf_enumeration_index: leaf_index,
+                        value_written,
+                        value_read,
+                    };
+                    metadata.push(metadata_log);
+
+                    Ok((branches, metadata))
+                })
+            },
+        )?;
+
+        let (branches, metadata) = res;
 
         // Prepare database changes
         self.storage.pre_save(branches);
