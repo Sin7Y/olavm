@@ -280,7 +280,7 @@ impl BinaryInstruction {
             } else {
                 if matched_op1_reg.is_ok() {
                     Some(OlaOperand::RegisterOperand {
-                        register: matched_op1_reg.unwrap(),
+                        register: matched_op1_reg?,
                     })
                 } else if opcode == OlaOpcode::MOV {
                     Some(OlaOperand::SpecialReg {
