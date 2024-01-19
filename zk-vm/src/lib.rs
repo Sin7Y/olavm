@@ -347,6 +347,9 @@ impl OlaVM {
                         self.ola_state
                             .txs_trace
                             .insert(mutex_data!(process).env_idx.to_canonical_u64(), trace);
+                        self.ola_state
+                            .storage_queries
+                            .append(&mut mutex_data!(process).storage_queries);
                         debug!("finish tx");
                         break;
                     } else {
@@ -361,6 +364,10 @@ impl OlaVM {
                             std::mem::replace(&mut mutex_data!(process).program_log, Vec::new());
                         let witness_log =
                             std::mem::replace(&mut mutex_data!(process).storage_log, Vec::new());
+                        let mut storage_queries = std::mem::replace(
+                            &mut mutex_data!(process).storage_queries,
+                            Vec::new(),
+                        );
                         let storage_tree = std::mem::replace(
                             &mut mutex_data!(process).storage.trace,
                             HashMap::new(),
@@ -389,9 +396,7 @@ impl OlaVM {
                                 GoldilocksField::from_canonical_u64(clk as u64);
                         }
                         self.ola_state.txs_trace.insert(env_id, trace);
-                        self.ola_state
-                            .storage_queries
-                            .append(&mut mutex_data!(process).storage_queries);
+                        self.ola_state.storage_queries.append(&mut storage_queries);
                         env_idx -= 1;
                         mutex_data!(process).tp = tp;
                         mutex_data!(process).tape = tape_tree;
