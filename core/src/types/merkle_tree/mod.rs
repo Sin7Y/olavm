@@ -132,9 +132,10 @@ pub fn h160_to_tree_key(value: H160) -> TreeKey {
 }
 
 pub fn tree_key_to_h256(value: &TreeKey) -> H256 {
-    let bytes: [u8; 32] = tree_key_to_u8_arr(value)
-        .try_into()
-        .expect("Vec<u8> convert to [u8;32] failed with data {}");
+    let bytes: [u8; 32] = tree_key_to_u8_arr(value).try_into().expect(&format!(
+        "Vec<u8> convert to [u8;32] failed with data {:?}",
+        value
+    ));
     H256(bytes)
 }
 

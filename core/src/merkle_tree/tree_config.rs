@@ -85,19 +85,14 @@ where
         let mut def_hashes = Vec::with_capacity(depth + 1);
         def_hashes.push(Self::empty_leaf(hasher));
         for index in 0..depth {
-            let last_hash = def_hashes.last();
-            if last_hash.is_none() {
-                return Err("Empty hash arry".to_string());
+            let last_hash = def_hashes.last().ok_or(format!("Empty hash arry"))?;
+            let hash = if index == 0 {
+                hasher.compress(last_hash, last_hash, Leaf)
             } else {
-                let last_hash = last_hash.unwrap();
-                let hash = if index == 0 {
-                    hasher.compress(last_hash, last_hash, Leaf)
-                } else {
-                    hasher.compress(last_hash, last_hash, Branch)
-                };
+                hasher.compress(last_hash, last_hash, Branch)
+            };
 
-                def_hashes.push(hash.0);
-            }
+            def_hashes.push(hash.0);
         }
         def_hashes.reverse();
 
