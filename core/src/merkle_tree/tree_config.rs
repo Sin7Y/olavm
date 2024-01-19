@@ -31,7 +31,7 @@ where
     /// Creates new shared config with supplied params.
     pub fn new(hasher: H) -> Result<Self, TreeError> {
         let empty_hashes = Self::calc_default_hashes(ROOT_TREE_DEPTH, &hasher)
-            .map_err(|_| TreeError::EmptyPatch)?;
+            .map_err(|err| TreeError::EmptyPatch(err))?;
         Ok(Self {
             inner: Arc::new(TreeConfigInner {
                 empty_tree: Self::calc_empty_tree(&empty_hashes),

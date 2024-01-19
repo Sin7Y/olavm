@@ -40,9 +40,12 @@ pub enum TreeError {
     #[error("storage access error")]
     StorageIoError(#[from] rocksdb::Error),
 
-    #[error("empty patch")]
-    EmptyPatch,
+    #[error("empty patch error: {0}")]
+    EmptyPatch(String),
 
     #[error("Index not found error")]
     LeafIndexNotFound,
+
+    #[error("Lock mutex error: {0}")]
+    MutexLockError(String),
 }
