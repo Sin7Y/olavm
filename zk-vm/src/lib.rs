@@ -202,7 +202,7 @@ impl OlaVM {
         if let Ok(vm_state) = res {
             Ok(vm_state)
         } else {
-            gen_dump_file(process, program);
+            // gen_dump_file(process, program);
             Err(StateError::VmExecError(format!("{:?}", res)))
         }
     }
@@ -260,7 +260,7 @@ impl OlaVM {
             calldata,
             caller_addr,
             code_exe_addr,
-            caller_addr,
+            code_exe_addr,
             &self.ctx_info,
         );
         let mut program = Arc::new(Mutex::new(Program::default()));
