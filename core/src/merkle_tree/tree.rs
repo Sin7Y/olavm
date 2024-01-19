@@ -247,7 +247,9 @@ impl AccountTree {
                                 repeated_writes,
                             })
                         }
-                        None => Err(TreeError::EmptyPatch),
+                        None => Err(TreeError::EmptyPatch(String::from(
+                            "Empty matadata in apply_update_batch",
+                        ))),
                     }
                 })
                 .collect::<Vec<Result<TreeMetadata, TreeError>>>()
@@ -413,7 +415,12 @@ impl AccountTree {
         let mut branches = HashMap::new();
         let mut metadata = Vec::new();
         for (entries, &(block, (_, storage_log))) in patch.into_iter().zip(storage_logs) {
-            let leaf_hashed_key = entries.first().ok_or(TreeError::EmptyPatch)?.0;
+            let leaf_hashed_key = entries
+                .first()
+                .ok_or(TreeError::EmptyPatch(String::from(
+                    "Empty patch array in apply_patch",
+                )))?
+                .0;
             let leaf_index = leaf_indices[block]
                 .leaf_indices
                 .get(&leaf_hashed_key)
