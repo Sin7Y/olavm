@@ -411,12 +411,11 @@ impl OlaVM {
     }
 
     pub fn finish_batch(&mut self, block_number: u32) -> Result<(), StateError> {
-        let orignal_addr = TreeKey::default();
         let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
         let calldata = [block_number as u64, 1, 2190639505]
             .iter()
             .map(|l| GoldilocksField::from_canonical_u64(*l))
             .collect();
-        self.execute_tx(orignal_addr, entry_point_addr, calldata, false)
+        self.execute_tx(entry_point_addr, entry_point_addr, calldata, false)
     }
 }

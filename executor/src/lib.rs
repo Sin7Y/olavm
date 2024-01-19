@@ -40,7 +40,7 @@ use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::ecdsa::ecdsa_verify;
-use crate::load_tx::{init_ctx_addr_info, load_ctx_addr_info};
+use crate::load_tx::append_caller_callee_addr;
 use crate::tape::TapeTree;
 use crate::trace::{gen_memory_table, gen_tape_table};
 use core::memory_zone_process;
@@ -1749,19 +1749,10 @@ impl Process {
             );
         }
 
-        let len;
         if op1_value.0 == GoldilocksField::ONE {
-            len = load_ctx_addr_info(
-                self,
-                &init_ctx_addr_info(self.addr_storage, callee_address, self.addr_storage),
-            );
-            self.tp += GoldilocksField::from_canonical_u64(len as u64);
+            append_caller_callee_addr(self, self.addr_storage, callee_address, self.addr_storage);
         } else if op1_value.0 == GoldilocksField::ZERO {
-            len = load_ctx_addr_info(
-                self,
-                &init_ctx_addr_info(self.addr_storage, callee_address, callee_address),
-            );
-            self.tp += GoldilocksField::from_canonical_u64(len as u64);
+            append_caller_callee_addr(self, self.addr_storage, callee_address, callee_address);
         } else {
             panic!("not support")
         }
