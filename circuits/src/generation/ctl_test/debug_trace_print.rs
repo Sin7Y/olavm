@@ -13,7 +13,7 @@ use std::{
 use assembler::encoder::encode_asm_from_json_file;
 use core::{
     crypto::{hash::Hasher, ZkHasher},
-    merkle_tree::log::{StorageLog, WitnessStorageLog},
+    merkle_tree::log::{StorageLog, StorageLogKind, WitnessStorageLog},
     types::merkle_tree::{encode_addr, tree_key_default},
     vm::transaction::init_tx_context_mock,
 };
@@ -233,7 +233,11 @@ pub fn get_exec_trace(
         .insert(encode_addr(&callee_exe_addr), code);
 
     db.process_block(vec![WitnessStorageLog {
-        storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+        storage_log: StorageLog::new_write(
+            StorageLogKind::RepeatedWrite,
+            callee_exe_addr,
+            code_hash,
+        ),
         previous_value: tree_key_default(),
     }]);
     let _ = db.save();
@@ -307,6 +311,7 @@ fn print_title_data_with_data(desc: &str, title: &[String], data: &[Vec<Goldiloc
     }
 }
 
+#[allow(dead_code)]
 pub fn print_title_data(
     desc: &str,
     data_col_to_name: BTreeMap<usize, String>,

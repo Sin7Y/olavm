@@ -1,11 +1,11 @@
 use executor::load_tx::init_tape;
-use executor::trace::{gen_dump_file, gen_storage_hash_table, gen_storage_table};
+use executor::trace::{gen_storage_hash_table, gen_storage_table};
 use executor::Process;
 use log::debug;
 use ola_core::crypto::ZkHasher;
 use ola_core::merkle_tree::tree::AccountTree;
 use ola_core::mutex_data;
-use ola_core::program::binary_program::{BinaryProgram, OlaProphet};
+use ola_core::program::binary_program::BinaryProgram;
 use ola_core::program::Program;
 use ola_core::state::contracts::Contracts;
 use ola_core::state::error::StateError;
@@ -15,7 +15,7 @@ use ola_core::storage::db::{Database, RocksDB};
 use ola_core::trace::trace::Trace;
 use ola_core::types::account::Address;
 use ola_core::types::merkle_tree::{
-    encode_addr, tree_key_default, tree_key_to_u8_arr, u8_arr_to_tree_key, TreeKey, TreeValue,
+    encode_addr, tree_key_default, tree_key_to_u8_arr, u8_arr_to_tree_key, TreeValue,
 };
 use ola_core::types::GoldilocksField;
 use ola_core::types::{Field, PrimeField64};
@@ -23,7 +23,7 @@ use ola_core::vm::error::ProcessorError;
 use ola_core::vm::transaction::TxCtxInfo;
 use ola_core::vm::vm_state::{SCCallType, VMState};
 
-use ola_core::merkle_tree::log::{StorageLog, WitnessStorageLog};
+use ola_core::merkle_tree::log::{StorageLog, StorageLogKind, WitnessStorageLog};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
@@ -244,7 +244,11 @@ impl OlaVM {
         self.save_contract_map(addr, &tree_key_to_u8_arr(&code_hash))?;
 
         self.account_tree.process_block(vec![WitnessStorageLog {
-            storage_log: StorageLog::new_write_log(addr.clone(), code_hash),
+            storage_log: StorageLog::new_write(
+                StorageLogKind::RepeatedWrite,
+                addr.clone(),
+                code_hash,
+            ),
             previous_value: tree_key_default(),
         }]);
         let _ = self.account_tree.save();

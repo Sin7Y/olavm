@@ -58,6 +58,7 @@ impl MerkleTreeColumnFamily {
 }
 
 impl StateKeeperColumnFamily {
+    #[allow(dead_code)]
     fn all() -> &'static [Self] {
         &[
             Self::State,

@@ -15,6 +15,7 @@ pub(crate) const COL_PROG_FILTER_EXEC: usize = COL_PROG_EXEC_COMP_PROG_PERM + 1;
 pub(crate) const COL_PROG_FILTER_PROG_CHUNK: usize = COL_PROG_FILTER_EXEC + 1;
 pub(crate) const NUM_PROG_COLS: usize = COL_PROG_FILTER_PROG_CHUNK + 1;
 
+#[allow(dead_code)]
 pub(crate) fn get_prog_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     for (index, col) in COL_PROG_CODE_ADDR_RANGE.into_iter().enumerate() {
@@ -60,6 +61,7 @@ pub(crate) const COL_PROG_CHUNK_IS_PADDING_LINE: usize =
     COL_PROG_CHUNK_FILTER_LOOKING_PROG_RANGE.end;
 pub(crate) const NUM_PROG_CHUNK_COLS: usize = COL_PROG_CHUNK_IS_PADDING_LINE + 1;
 
+#[allow(dead_code)]
 pub(crate) fn get_prog_chunk_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     for (index, col) in COL_PROG_CHUNK_CODE_ADDR_RANGE.into_iter().enumerate() {
