@@ -5,8 +5,8 @@ use crate::storage::StorageTree;
 use core::vm::error::ProcessorError;
 use core::vm::memory::{MemoryTree, HP_START_ADDR, PSP_START_ADDR};
 
-use core::merkle_tree::log::StorageLog;
-use core::merkle_tree::log::WitnessStorageLog;
+use core::merkle_tree::log::{StorageLog, StorageQuery};
+use core::merkle_tree::log::{StorageLogKind, WitnessStorageLog};
 use core::merkle_tree::tree::AccountTree;
 
 use core::program::instruction::IMM_INSTRUCTION_LEN;
@@ -32,7 +32,7 @@ use core::util::poseidon_utils::POSEIDON_INPUT_NUM;
 use core::vm::heap::HEAP_PTR;
 use interpreter::interpreter::Interpreter;
 use interpreter::utils::number::NumberRet::{Multiple, Single};
-use log::{debug, info};
+use log::debug;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field64;
 use plonky2::field::types::{Field, PrimeField64};
@@ -40,7 +40,7 @@ use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::ecdsa::ecdsa_verify;
-use crate::load_tx::{init_ctx_addr_info, load_ctx_addr_info};
+use crate::load_tx::append_caller_callee_addr;
 use crate::tape::TapeTree;
 use crate::trace::{gen_memory_table, gen_tape_table};
 use core::memory_zone_process;
@@ -192,6 +192,7 @@ enum MemRangeType {
 }
 #[derive(Debug)]
 pub struct Process {
+    pub block_timestamp: u64,
     pub env_idx: GoldilocksField,
     pub call_sc_cnt: GoldilocksField,
     pub clk: u32,
@@ -214,11 +215,13 @@ pub struct Process {
     pub tp: GoldilocksField,
     pub tape: TapeTree,
     pub storage_access_idx: GoldilocksField,
+    pub storage_queries: Vec<StorageQuery>,
 }
 
 impl Process {
     pub fn new() -> Self {
         Self {
+            block_timestamp: 0,
             env_idx: Default::default(),
             call_sc_cnt: Default::default(),
             clk: 0,
@@ -247,6 +250,7 @@ impl Process {
                 trace: BTreeMap::new(),
             },
             storage_access_idx: GoldilocksField::ZERO,
+            storage_queries: Vec::new(),
         }
     }
 
@@ -1231,6 +1235,7 @@ impl Process {
     fn execute_inst_sstore(
         &mut self,
         program: &mut Program,
+        account_tree: &mut AccountTree,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
         step: u64,
@@ -1274,7 +1279,36 @@ impl Process {
 
         let storage_key = StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
         let (tree_key, hash_row) = storage_key.hashed_key();
+        let path = tree_key_to_leaf_index(&tree_key);
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
+
+        let mut is_initial = true;
+        let pre_value;
+        if let Some(data) = self.storage.trace.get(&tree_key) {
+            pre_value = data.last().unwrap().value.clone();
+        } else {
+            let read_db = account_tree.storage.hash(&path);
+            if let Some(value) = read_db {
+                is_initial = false;
+                pre_value = u8_arr_to_tree_key(&value);
+            } else {
+                pre_value = tree_key_default();
+            }
+        }
+
+        let kind = if is_initial {
+            StorageLogKind::InitialWrite
+        } else {
+            StorageLogKind::RepeatedWrite
+        };
+        self.storage_queries.push(StorageQuery {
+            block_timestamp: self.block_timestamp,
+            kind,
+            contract_addr: self.addr_storage.clone(),
+            storage_key: slot_key,
+            pre_value,
+            value: store_value.clone(),
+        });
 
         self.storage.write(
             self.clk,
@@ -1288,7 +1322,7 @@ impl Process {
 
         if !program.pre_exe_flag {
             self.storage_log.push(WitnessStorageLog {
-                storage_log: StorageLog::new_write_log(tree_key, store_value),
+                storage_log: StorageLog::new_write(kind, tree_key, store_value),
                 previous_value: tree_key_default(),
             });
 
@@ -1397,6 +1431,15 @@ impl Process {
                 read_value = tree_key_default();
             }
         }
+
+        self.storage_queries.push(StorageQuery {
+            block_timestamp: self.block_timestamp,
+            kind: StorageLogKind::Read,
+            contract_addr: self.addr_storage.clone(),
+            storage_key: slot_key,
+            pre_value: read_value.clone(),
+            value: read_value.clone(),
+        });
 
         for index in 0..TREE_VALUE_LEN {
             let mem_addr = value_mem_addr + index as u64;
@@ -1820,19 +1863,10 @@ impl Process {
             );
         }
 
-        let len;
         if op1_value.0 == GoldilocksField::ONE {
-            len = load_ctx_addr_info(
-                self,
-                &init_ctx_addr_info(self.addr_storage, callee_address, self.addr_storage),
-            );
-            self.tp += GoldilocksField::from_canonical_u64(len as u64);
+            append_caller_callee_addr(self, self.addr_storage, callee_address, self.addr_storage);
         } else if op1_value.0 == GoldilocksField::ZERO {
-            len = load_ctx_addr_info(
-                self,
-                &init_ctx_addr_info(self.addr_storage, callee_address, callee_address),
-            );
-            self.tp += GoldilocksField::from_canonical_u64(len as u64);
+            append_caller_callee_addr(self, self.addr_storage, callee_address, callee_address);
         } else {
             return Err(ProcessorError::ParseOpcodeError);
         }
@@ -2135,6 +2169,7 @@ impl Process {
                 }
                 "sstore" => self.execute_inst_sstore(
                     program,
+                    account_tree,
                     &mut aux_steps,
                     &ops,
                     step,
