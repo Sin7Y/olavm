@@ -185,8 +185,9 @@ impl BinaryInstruction {
         instruction_u64 |= self.opcode.binary_bit_mask();
         let mut codes: Vec<String> = vec![];
         codes.push(format!("0x{:0>16x}", instruction_u64));
-        let imm = imm.ok_or("Immediate value is none")?;
-        codes.push(imm.hex);
+        if imm.is_some() {
+            codes.push(imm.unwrap().hex);
+        };
         Ok(codes)
     }
 
