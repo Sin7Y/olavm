@@ -167,8 +167,12 @@ impl OlaVM {
             let code: Vec<_> = instructions
                 .clone()
                 .map(|e| {
-                    let c = u64::from_str_radix(&e[2..], 16)
-                        .map_err(|err|StateError::ParseIntError(format!("Failed to convert str to u64 with err: {}", err)))?;
+                    let c = u64::from_str_radix(&e[2..], 16).map_err(|err| {
+                        StateError::ParseIntError(format!(
+                            "Failed to convert str to u64 with err: {}",
+                            err
+                        ))
+                    })?;
                     Ok(GoldilocksField::from_canonical_u64(c))
                 })
                 .collect::<Result<Vec<_>, StateError>>()?;
@@ -218,9 +222,13 @@ impl OlaVM {
 
         let code: Vec<_> = instructions
             .map(|e| {
-                let c = u64::from_str_radix(&e[2..], 16)
-                        .map_err(|err|StateError::ParseIntError(format!("Failed to convert str to u64 with err: {}", err)))?;
-                    Ok(GoldilocksField::from_canonical_u64(c))
+                let c = u64::from_str_radix(&e[2..], 16).map_err(|err| {
+                    StateError::ParseIntError(format!(
+                        "Failed to convert str to u64 with err: {}",
+                        err
+                    ))
+                })?;
+                Ok(GoldilocksField::from_canonical_u64(c))
             })
             .collect::<Result<Vec<_>, StateError>>()?;
 
@@ -268,7 +276,12 @@ impl OlaVM {
         let mut program = Arc::new(Mutex::new(Program::default()));
         program
             .lock()
-            .map_err(|err| StateError::MutexLockError(format!("Failed to acquire lock on program with err: {}", err)))?
+            .map_err(|err| {
+                StateError::MutexLockError(format!(
+                    "Failed to acquire lock on program with err: {}",
+                    err
+                ))
+            })?
             .print_flag = debug_flag;
         let mut caller_addr = caller_addr;
         let mut code_exe_addr = code_exe_addr;
@@ -342,7 +355,8 @@ impl OlaVM {
                             &mut mutex_data!(process),
                             &mut mutex_data!(program),
                             hash_roots,
-                        ).map_err(StateError::GenStorageTableError)?;
+                        )
+                        .map_err(StateError::GenStorageTableError)?;
                         let trace =
                             std::mem::replace(&mut mutex_data!(program).trace, Trace::default());
                         self.ola_state
@@ -356,7 +370,10 @@ impl OlaVM {
                         let tape_tree = mutex_data!(process).tape.clone();
                         let tp = mutex_data!(process).tp.clone();
                         let clk = mutex_data!(process).clk.clone();
-                        let ctx = self.process_ctx.pop().ok_or(StateError::ProcessContextEmpty)?;
+                        let ctx = self
+                            .process_ctx
+                            .pop()
+                            .ok_or(StateError::ProcessContextEmpty)?;
                         let env_id = mutex_data!(process).env_idx.to_canonical_u64();
                         let program_log =
                             std::mem::replace(&mut mutex_data!(process).program_log, Vec::new());
@@ -387,7 +404,9 @@ impl OlaVM {
                             let sccall_rows = &mut mutex_data!(program).trace.sc_call;
                             sccall_rows
                                 .last_mut()
-                                .ok_or(StateError::EmptyArrayError(format!("Empty sccall_rows slice")))?
+                                .ok_or(StateError::EmptyArrayError(format!(
+                                    "Empty sccall_rows slice"
+                                )))?
                                 .clk_callee_end = GoldilocksField::from_canonical_u64(clk as u64);
                         }
                         self.ola_state.txs_trace.insert(env_id, trace);
