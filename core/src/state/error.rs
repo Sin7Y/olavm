@@ -1,10 +1,8 @@
 use thiserror::Error;
 
-use crate::vm::error;
-
 #[derive(Error, Debug)]
 pub enum StateError {
-    #[error("storage access error")]
+    #[error("Storage access error")]
     StorageIoError(#[from] rocksdb::Error),
 
     #[error("Get ColumnFamily empty")]

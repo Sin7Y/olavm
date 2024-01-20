@@ -37,10 +37,10 @@ pub enum TreeError {
     #[error("Trees have different roots: {0:?} and {1:?} respectively")]
     TreeRootsDiffer(Vec<u8>, Vec<u8>),
 
-    #[error("storage access error")]
+    #[error("Storage access error")]
     StorageIoError(#[from] rocksdb::Error),
 
-    #[error("empty patch error: {0}")]
+    #[error("Empty patch error: {0}")]
     EmptyPatch(String),
 
     #[error("Index not found error")]
