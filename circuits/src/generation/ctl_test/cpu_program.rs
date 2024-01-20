@@ -1,11 +1,14 @@
+#[allow(unused_imports)]
 use core::types::{merkle_tree::decode_addr, Field, GoldilocksField};
 
+#[allow(unused_imports)]
 use crate::{
     cpu::columns::*,
     generation::{cpu::generate_cpu_trace, prog::generate_prog_trace},
     program::columns::*,
 };
 
+#[allow(unused_imports)]
 use super::debug_trace_print::{get_exec_trace, get_rows_vec_from_trace, print_title_data};
 
 #[test]

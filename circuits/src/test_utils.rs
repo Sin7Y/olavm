@@ -1,6 +1,6 @@
 use core::crypto::hash::Hasher;
 use core::crypto::ZkHasher;
-use core::merkle_tree::log::{StorageLog, WitnessStorageLog};
+use core::merkle_tree::log::{StorageLog, StorageLogKind, WitnessStorageLog};
 use core::types::merkle_tree::{encode_addr, tree_key_default};
 use core::{program::Program, trace::trace::Trace, types::account::Address};
 use std::collections::HashMap;
@@ -105,7 +105,11 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
         .insert(encode_addr(&callee_exe_addr), code);
 
     db.process_block(vec![WitnessStorageLog {
-        storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+        storage_log: StorageLog::new_write(
+            StorageLogKind::RepeatedWrite,
+            callee_exe_addr,
+            code_hash,
+        ),
         previous_value: tree_key_default(),
     }]);
     let _ = db.save();
@@ -285,7 +289,11 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         .insert(encode_addr(&callee_exe_addr), code);
 
     db.process_block(vec![WitnessStorageLog {
-        storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+        storage_log: StorageLog::new_write(
+            StorageLogKind::RepeatedWrite,
+            callee_exe_addr,
+            code_hash,
+        ),
         previous_value: tree_key_default(),
     }]);
     let _ = db.save();

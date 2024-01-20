@@ -76,6 +76,7 @@ pub(crate) const RANGE_CHECK_U8_SIZE: usize = 1 << 8;
 pub(crate) const BITWISE_U8_SIZE_PER: usize = 1 << 16;
 pub(crate) const BITWISE_U8_SIZE: usize = 3 * BITWISE_U8_SIZE_PER;
 
+#[allow(dead_code)]
 pub(crate) fn get_bitwise_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     m.insert(FILTER, String::from("FILTER"));

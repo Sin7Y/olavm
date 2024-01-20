@@ -20,7 +20,7 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2::util::timing::TimingTree;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::fs::{self, metadata, File};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::time::Instant;
@@ -95,7 +95,7 @@ fn main() {
             let arg_path = sub_matches.get_one::<String>("args").expect("required");
             let file = File::open(&arg_path).unwrap();
             let reader = BufReader::new(file);
-            let mut calldata: Vec<_> = reader
+            let calldata: Vec<_> = reader
                 .lines()
                 .into_iter()
                 .map(|e| GoldilocksField::from_canonical_u64(e.unwrap().parse::<u64>().unwrap()))

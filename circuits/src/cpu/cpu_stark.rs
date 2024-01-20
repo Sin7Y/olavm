@@ -15,7 +15,6 @@ use {
     plonky2::hash::hash_types::RichField,
     plonky2::plonk::circuit_builder::CircuitBuilder,
     std::marker::PhantomData,
-    std::ops::Range,
 };
 
 pub fn ctl_data_cpu_mem_store_load<F: Field>() -> Vec<Column<F>> {

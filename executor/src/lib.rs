@@ -104,7 +104,7 @@ macro_rules! memory_op {
             $v.env_idx,
         )?;
     };
-    ($v: expr, $mem_addr: tt, $value: expr,  $opcode: expr,$panic: expr) => {
+    ($v: expr, $mem_addr: tt, $value: expr,  $opcode: expr, $panic: expr) => {
         let is_rw;
         let region_prophet;
         let region_heap;

@@ -1,7 +1,6 @@
-use core::types::merkle_tree::{tree_key_to_u8_arr, u8_arr_to_tree_key};
-use core::types::merkle_tree::{TreeKey, TreeValue};
+use core::types::merkle_tree::tree_key_to_u8_arr;
+use core::types::merkle_tree::TreeValue;
 use core::vm::error::ProcessorError;
-use num::{BigUint, Num};
 use secp256k1::{ecdsa, Message, PublicKey, Secp256k1};
 pub fn ecdsa_verify(
     x: TreeValue,
@@ -32,7 +31,7 @@ pub fn ecdsa_verify(
         .map_err(|e| ProcessorError::SignatureInvalid(e.to_string()))?;
 
     let msg_arr = tree_key_to_u8_arr(&msg);
-    let message =
-        Message::from_slice(&msg_arr).map_err(|e| ProcessorError::MessageInvalid(e.to_string()))?;
+    let message = Message::from_digest_slice(&msg_arr)
+        .map_err(|e| ProcessorError::MessageInvalid(e.to_string()))?;
     Ok(secp.verify_ecdsa(&message, &sig, &pubkey).is_ok())
 }
