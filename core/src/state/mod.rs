@@ -1,4 +1,5 @@
 use crate::crypto::hash::Hasher;
+use crate::merkle_tree::log::StorageQuery;
 use crate::state::contracts::Contracts;
 use std::collections::BTreeMap;
 
@@ -20,6 +21,7 @@ pub struct NodeState<H> {
     state_storage: StateStorage,
     pub txs_trace: BTreeMap<u64, Trace>,
     pub hasher: H,
+    pub storage_queries: Vec<StorageQuery>,
 }
 
 impl<H> NodeState<H>
@@ -32,6 +34,7 @@ where
             state_storage,
             txs_trace: BTreeMap::new(),
             hasher,
+            storage_queries: vec![],
         }
     }
 

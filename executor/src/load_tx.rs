@@ -144,3 +144,14 @@ fn load_fields_to_tape(process: &mut Process, fields: &[GoldilocksField]) {
     });
     process.tp += GoldilocksField::from_canonical_u64(fields.len() as u64);
 }
+
+pub fn append_caller_callee_addr(
+    process: &mut Process,
+    caller_exe_addr: Address,
+    callee_code_addr: Address,
+    callee_exe_addr: Address,
+) {
+    load_fields_to_tape(process, &caller_exe_addr);
+    load_fields_to_tape(process, &callee_code_addr);
+    load_fields_to_tape(process, &callee_exe_addr);
+}

@@ -205,7 +205,7 @@ impl OlaVM {
         if let Ok(vm_state) = res {
             Ok(vm_state)
         } else {
-            gen_dump_file(process, program)?;
+            // gen_dump_file(process, program)?;
             Err(StateError::VmExecError(format!("{:?}", res)))
         }
     }
@@ -261,6 +261,7 @@ impl OlaVM {
         let mut env_idx = 0;
         let mut sc_cnt = 0;
         let mut process = Arc::new(Mutex::new(Process::new()));
+        mutex_data!(process).block_timestamp = self.ctx_info.block_timestamp.0;
         mutex_data!(process).env_idx = GoldilocksField::from_canonical_u64(env_idx);
         mutex_data!(process).call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);
         mutex_data!(process).addr_storage = caller_addr;
@@ -270,7 +271,7 @@ impl OlaVM {
             calldata,
             caller_addr,
             code_exe_addr,
-            caller_addr,
+            code_exe_addr,
             &self.ctx_info,
         );
         let mut program = Arc::new(Mutex::new(Program::default()));
@@ -362,6 +363,9 @@ impl OlaVM {
                         self.ola_state
                             .txs_trace
                             .insert(mutex_data!(process).env_idx.to_canonical_u64(), trace);
+                        self.ola_state
+                            .storage_queries
+                            .append(&mut mutex_data!(process).storage_queries);
                         debug!("finish tx");
                         break;
                     } else {
@@ -379,6 +383,10 @@ impl OlaVM {
                             std::mem::replace(&mut mutex_data!(process).program_log, Vec::new());
                         let witness_log =
                             std::mem::replace(&mut mutex_data!(process).storage_log, Vec::new());
+                        let mut storage_queries = std::mem::replace(
+                            &mut mutex_data!(process).storage_queries,
+                            Vec::new(),
+                        );
                         let storage_tree = std::mem::replace(
                             &mut mutex_data!(process).storage.trace,
                             HashMap::new(),
@@ -410,6 +418,7 @@ impl OlaVM {
                                 .clk_callee_end = GoldilocksField::from_canonical_u64(clk as u64);
                         }
                         self.ola_state.txs_trace.insert(env_id, trace);
+                        self.ola_state.storage_queries.append(&mut storage_queries);
                         env_idx -= 1;
                         mutex_data!(process).tp = tp;
                         mutex_data!(process).tape = tape_tree;
@@ -429,12 +438,11 @@ impl OlaVM {
     }
 
     pub fn finish_batch(&mut self, block_number: u32) -> Result<(), StateError> {
-        let orignal_addr = TreeKey::default();
         let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
         let calldata = [block_number as u64, 1, 2190639505]
             .iter()
             .map(|l| GoldilocksField::from_canonical_u64(*l))
             .collect();
-        self.execute_tx(orignal_addr, entry_point_addr, calldata, false)
+        self.execute_tx(entry_point_addr, entry_point_addr, calldata, false)
     }
 }
