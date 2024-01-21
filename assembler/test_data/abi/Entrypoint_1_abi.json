@@ -4,9 +4,25 @@
     "type": "function",
     "inputs": [
       {
+        "name": "_txHash",
+        "type": "hash"
+      },
+      {
+        "name": "_signedHash",
+        "type": "hash"
+      },
+      {
         "name": "_tx",
         "type": "tuple",
         "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
           {
             "name": "data",
             "type": "fields"

@@ -1101,14 +1101,19 @@ fn entry_point_func_1_0_test() {
 
     {
         let func = abi.functions[0].clone();
-
+        let tx_hash = Value::Hash(FixedArray4([370, 380, 390, 400]));
+        let sign_hash =  Value::Hash(FixedArray4([410, 420, 430, 440]));
         let data = Value::Fields(vec![190, 200, 210, 220, 230, 240]);
-        let code = Value::Fields(vec![250, 260, 270, 280, 290, 300]);
+        let code = Value::Fields(vec![]);
+        let address_from = Value::Address(FixedArray4([77, 88, 99, 1000000000]));
+        let address_to = Value::Address(FixedArray4([73, 82, 99, 1000000000]));
         let tx = Value::Tuple(vec![
+            ("address_from".to_string(), address_from),
+            ("address_to".to_string(), address_to),
             ("data".to_string(), data),
             ("code".to_string(), code),
         ]);
-        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx]).unwrap();
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx_hash, sign_hash, tx]).unwrap();
         let calldata = input
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
@@ -1122,6 +1127,43 @@ fn entry_point_func_1_0_test() {
     }
 }
 
+
+#[test]
+fn default_account_func_1_0_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/DefaultAccount_1_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[0].clone();
+        let tx_hash = Value::Hash(FixedArray4([370, 380, 390, 400]));
+        let sign_hash =  Value::Hash(FixedArray4([410, 420, 430, 440]));
+        let data = Value::Fields(vec![190, 200, 210, 220, 230, 240]);
+        let code = Value::Fields(vec![]);
+        let address_from = Value::Address(FixedArray4([77, 88, 99, 1000000000]));
+        let address_to = Value::Address(FixedArray4([73, 82, 99, 1000000000]));
+        let tx = Value::Tuple(vec![
+            ("address_from".to_string(), address_from),
+            ("address_to".to_string(), address_to),
+            ("data".to_string(), data),
+            ("code".to_string(), code),
+        ]);
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[tx_hash, sign_hash, tx]).unwrap();
+        let calldata = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/DefaultAccount_1.json",
+            "default_account_trace.txt",
+            false,
+            Some(calldata),
+        );
+    }
+}
 
 
 #[test]
@@ -1339,6 +1381,80 @@ fn system_context_test() {
         );
     }
 }
+
+
+#[test]
+fn storage_mapping_fields_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/storage_mapping_fields_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_0 = abi.functions[0].clone();
+
+        // encode input and function selector
+        let input_0 = abi
+            .encode_input_with_signature(
+                func_0.signature().as_str(),
+                &[],
+            )
+            .unwrap();
+
+        println!("input_0:{:?}", input_0);
+
+        let calldata_1 = input_0
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/storage_mapping_fields.json",
+            "storage_mapping_fields.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
+
+
+#[test]
+fn storage_string_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/storage_string_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_0 = abi.functions[0].clone();
+
+        // encode input and function selector
+        let input_0 = abi
+            .encode_input_with_signature(
+                func_0.signature().as_str(),
+                &[],
+            )
+            .unwrap();
+
+        println!("input_0:{:?}", input_0);
+
+        let calldata_1 = input_0
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/storage_string.json",
+            "storage_string_xxx.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
 
 #[test]
 fn gen_storage_table_test() {
