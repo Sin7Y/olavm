@@ -265,6 +265,11 @@ mod tests {
     }
 
     #[test]
+    fn generate_default_account_1() {
+        generate_from_file("DefaultAccount_1_asm.json".to_string(), "DefaultAccount_1.json".to_string());
+    }
+
+    #[test]
     fn generate_entry_point() {
         generate_from_file("Entrypoint_asm.json".to_string(), "Entrypoint.json".to_string());
     }
@@ -287,6 +292,16 @@ mod tests {
     #[test]
     fn generate_system_context() {
         generate_from_file("system_context_asm.json".to_string(), "system_context.json".to_string());
+    }
+
+    #[test]
+    fn generate_storage_mapping_fields() {
+        generate_from_file("storage_mapping_fields_asm.json".to_string(), "storage_mapping_fields.json".to_string());
+    }
+
+    #[test]
+    fn generate_storage_string() {
+        generate_from_file("storage_string_asm.json".to_string(), "storage_string.json".to_string());
     }
 
     fn generate_from_file(input_file_name: String, output_file_name: String) {
