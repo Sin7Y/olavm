@@ -1421,6 +1421,43 @@ fn storage_mapping_fields_test() {
 
 
 #[test]
+fn string_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/string_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_0 = abi.functions[0].clone();
+
+        // encode input and function selector
+        let input_0 = abi
+            .encode_input_with_signature(
+                func_0.signature().as_str(),
+                &[],
+            )
+            .unwrap();
+
+        println!("input_0:{:?}", input_0);
+
+        let calldata_1 = input_0
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/string.json",
+            "string_xxx.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
+
+
+#[test]
 fn storage_string_test() {
     let abi: Abi = {
         let file = File::open("../assembler/test_data/abi/storage_string_abi.json")
@@ -1454,6 +1491,7 @@ fn storage_string_test() {
         );
     }
 }
+
 
 
 #[test]
