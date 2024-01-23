@@ -121,6 +121,7 @@ mod tests {
     use crate::program::columns::NUM_PROG_COLS;
     use crate::{program::program_stark::ProgramStark, stark::stark::Stark};
     use assembler::encoder::encode_asm_from_json_file;
+    use executor::TxScopeCacheManager;
     use core::vm::transaction::init_tx_context_mock;
     use core::{
         merkle_tree::tree::AccountTree,
@@ -186,7 +187,11 @@ mod tests {
         }
 
         program.prophets = prophets;
-        let _ = process.execute(&mut program, &mut AccountTree::new_test());
+        let _ = process.execute(
+            &mut program,
+            &mut AccountTree::new_test(),
+            &mut TxScopeCacheManager::default(),
+        );
         let insts = program
             .instructions
             .iter()
