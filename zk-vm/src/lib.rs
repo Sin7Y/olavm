@@ -1,6 +1,6 @@
 use executor::load_tx::init_tape;
-use executor::trace::{gen_storage_hash_table, gen_storage_table};
-use executor::Process;
+use executor::trace::{gen_dump_file, gen_storage_hash_table, gen_storage_table};
+use executor::{Process, TxScopeCacheManager};
 use log::debug;
 use ola_core::crypto::ZkHasher;
 use ola_core::merkle_tree::tree::AccountTree;
@@ -42,6 +42,7 @@ pub struct OlaVM {
     // process, caller address, code address
     pub process_ctx: Vec<(Arc<Mutex<Process>>, Arc<Mutex<Program>>, Address, Address)>,
     pub ctx_info: TxCtxInfo,
+    pub tx_cache_manager: TxScopeCacheManager,
 }
 
 impl OlaVM {
@@ -62,6 +63,7 @@ impl OlaVM {
             account_tree,
             process_ctx: Vec::new(),
             ctx_info,
+            tx_cache_manager: TxScopeCacheManager::default(),
         }
     }
 
@@ -141,7 +143,7 @@ impl OlaVM {
         process: &mut Process,
         program: &mut Program,
     ) -> Result<VMState, ProcessorError> {
-        process.execute(program, &mut self.account_tree)
+        process.execute(program, &mut self.account_tree, &mut self.tx_cache_manager)
     }
 
     pub fn contract_run(

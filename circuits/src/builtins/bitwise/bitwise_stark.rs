@@ -421,7 +421,7 @@ mod tests {
     use core::merkle_tree::tree::AccountTree;
     use core::program::Program;
     use core::types::account::Address;
-    use executor::Process;
+    use executor::{Process, TxScopeCacheManager};
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
@@ -453,7 +453,11 @@ mod tests {
         program.prophets = prophets;
         let mut process = Process::new();
         process.addr_storage = Address::default();
-        let _ = process.execute(&mut program, &mut AccountTree::new_test());
+        let _ = process.execute(
+            &mut program,
+            &mut AccountTree::new_test(),
+            &mut TxScopeCacheManager::default(),
+        );
 
         let (rows, bitwise_beta) =
             generate_bitwise_trace::<F>(&program.trace.builtin_bitwise_combined);

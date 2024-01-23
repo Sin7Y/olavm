@@ -12,7 +12,7 @@ use core::vm::transaction::init_tx_context_mock;
 use core::vm::vm_state::Address;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::load_tx::init_tape;
-use executor::Process;
+use executor::{Process, TxScopeCacheManager};
 use itertools::Itertools;
 use log::{debug, error, info, logger, LevelFilter};
 use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -57,7 +57,11 @@ pub fn test_by_asm_json(path: String) {
     );
 
     program.prophets = prophets;
-    let _ = process.execute(&mut program, &mut AccountTree::new_test());
+    let _ = process.execute(
+        &mut program,
+        &mut AccountTree::new_test(),
+        &mut TxScopeCacheManager::default(),
+    );
     info!("exec time:{}", now.elapsed().as_millis());
     let mut ola_stark = OlaStark::default();
     let now = Instant::now();

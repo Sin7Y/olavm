@@ -24,8 +24,8 @@ use core::crypto::poseidon_trace::{
 use core::program::binary_program::OlaProphet;
 use core::program::binary_program::OlaProphetInput;
 use core::types::account::Address;
-use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::tree_key_to_leaf_index;
+use core::types::merkle_tree::{tree_key_default, TreeKey, TreeValue};
 use core::types::merkle_tree::{u8_arr_to_tree_key, TREE_VALUE_LEN};
 use core::types::storage::StorageKey;
 use core::util::poseidon_utils::POSEIDON_INPUT_NUM;
@@ -189,6 +189,28 @@ const TP_START_ADDR: GoldilocksField = GoldilocksField::ZERO;
 enum MemRangeType {
     MemSort,
     MemRegion,
+}
+
+#[derive(Default, Debug)]
+pub struct TxScopeCacheManager {
+    pub storage_cache: HashMap<[u64; 4], [u64; 4]>,
+}
+
+impl TxScopeCacheManager {
+    fn load_storage_cache(&self, tree_key: &TreeKey) -> Option<TreeValue> {
+        let key = tree_key.map(|fe| fe.0);
+        let cached_value = self.storage_cache.get(&key);
+        match cached_value {
+            Some(v) => Some(v.map(|u| GoldilocksField::from_canonical_u64(u))),
+            None => None,
+        }
+    }
+
+    fn cache_storage(&mut self, tree_key: &TreeKey, value: &TreeValue) {
+        let key = tree_key.map(|fe| fe.0);
+        let value = value.map(|fe| fe.0);
+        self.storage_cache.insert(key, value);
+    }
 }
 #[derive(Debug)]
 pub struct Process {
@@ -1235,6 +1257,7 @@ impl Process {
     fn execute_inst_sstore(
         &mut self,
         program: &mut Program,
+        tx_cache_manager: &mut TxScopeCacheManager,
         account_tree: &mut AccountTree,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
@@ -1284,8 +1307,8 @@ impl Process {
 
         let mut is_initial = true;
         let pre_value;
-        if let Some(data) = self.storage.trace.get(&tree_key) {
-            pre_value = data.last().unwrap().value.clone();
+        if let Some(data) = tx_cache_manager.load_storage_cache(&tree_key) {
+            pre_value = data.clone();
         } else {
             let read_db = account_tree.storage.hash(&path);
             if let Some(value) = read_db {
@@ -1301,6 +1324,8 @@ impl Process {
         } else {
             StorageLogKind::RepeatedWrite
         };
+
+        tx_cache_manager.cache_storage(&tree_key, &store_value);
         self.storage_queries.push(StorageQuery {
             block_timestamp: self.block_timestamp,
             kind,
@@ -1373,6 +1398,7 @@ impl Process {
     fn execute_inst_sload(
         &mut self,
         program: &mut Program,
+        tx_cache_manager: &mut TxScopeCacheManager,
         account_tree: &mut AccountTree,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
@@ -1414,14 +1440,8 @@ impl Process {
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
 
         let read_value;
-        if let Some(data) = self.storage.trace.get(&tree_key) {
-            read_value = data
-                .last()
-                .ok_or(ProcessorError::ArrayIndexError(String::from(
-                    "Empty storage data",
-                )))?
-                .value
-                .clone();
+        if let Some(data) = tx_cache_manager.load_storage_cache(&tree_key) {
+            read_value = data.clone();
         } else {
             let read_db = account_tree.storage.hash(&path);
             if let Some(value) = read_db {
@@ -2042,6 +2062,7 @@ impl Process {
         &mut self,
         program: &mut Program,
         account_tree: &mut AccountTree,
+        tx_cache_manager: &mut TxScopeCacheManager,
     ) -> Result<VMState, ProcessorError> {
         let instrs_len = program.instructions.len() as u64;
         // program.trace.raw_binary_instructions.clear();
@@ -2169,6 +2190,7 @@ impl Process {
                 }
                 "sstore" => self.execute_inst_sstore(
                     program,
+                    tx_cache_manager,
                     account_tree,
                     &mut aux_steps,
                     &ops,
@@ -2179,6 +2201,7 @@ impl Process {
                 )?,
                 "sload" => self.execute_inst_sload(
                     program,
+                    tx_cache_manager,
                     account_tree,
                     &mut aux_steps,
                     &ops,
