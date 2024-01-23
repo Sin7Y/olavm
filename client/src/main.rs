@@ -15,7 +15,7 @@ use core::trace::trace::Trace;
 use core::vm::transaction::init_tx_context_mock;
 use core::vm::vm_state::Address;
 use executor::load_tx::init_tape;
-use executor::Process;
+use executor::{Process, TxScopeCacheManager};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
@@ -156,6 +156,7 @@ fn main() {
                 .execute(
                     &mut program,
                     &mut AccountTree::new_db_test("./db_test".to_string()),
+                    &mut TxScopeCacheManager::default(),
                 )
                 .expect("OlaVM execute fail");
             println!("exec time:{}", now.elapsed().as_millis());
