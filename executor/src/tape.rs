@@ -34,11 +34,17 @@ impl TapeTree {
         // Return the last value in the address trace.
         let read_res = self.trace.get_mut(&addr);
         if let Some(tape_data) = read_res {
-            let last_value = tape_data.last().expect("empty address trace").value;
+            let last_tape_data =
+                tape_data
+                    .last()
+                    .ok_or(ProcessorError::ArrayIndexError(String::from(
+                        "Empty address trace in tape",
+                    )))?;
+            let last_value = last_tape_data.value;
             let new_value = TapeCell {
                 clk,
                 op,
-                is_init: tape_data.last().expect("empty address trace").is_init,
+                is_init: last_tape_data.is_init,
                 filter_looked,
                 value: last_value,
             };
@@ -56,7 +62,12 @@ impl TapeTree {
         // Return the last value in the address trace.
         let read_res = self.trace.get_mut(&addr);
         if let Some(tape_data) = read_res {
-            let last_value = tape_data.last().expect("empty address trace").value;
+            let last_value = tape_data
+                .last()
+                .ok_or(ProcessorError::ArrayIndexError(String::from(
+                    "Empty address trace in tape",
+                )))?
+                .value;
             Ok(last_value)
         } else {
             Err(ProcessorError::TapeVistInv(addr))
