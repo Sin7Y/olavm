@@ -32,46 +32,44 @@ impl TapeTree {
         // prev_value) to it; if this is the first time we access this address,
         // return MemVistInv error because memory must be inited first.
         // Return the last value in the address trace.
-        let read_res = self.trace.get_mut(&addr);
-        if let Some(tape_data) = read_res {
-            let last_tape_data =
-                tape_data
-                    .last()
-                    .ok_or(ProcessorError::ArrayIndexError(String::from(
-                        "Empty address trace in tape",
-                    )))?;
-            let last_value = last_tape_data.value;
-            let new_value = TapeCell {
-                clk,
-                op,
-                is_init: last_tape_data.is_init,
-                filter_looked,
-                value: last_value,
-            };
-            tape_data.push(new_value);
-            Ok(last_value)
-        } else {
-            Err(ProcessorError::TapeVistInv(addr))
-        }
-    }
-
-    pub fn read_without_trace(&mut self, addr: u64) -> Result<GoldilocksField, ProcessorError> {
-        // look up the previous value in the appropriate address trace and add (clk,
-        // prev_value) to it; if this is the first time we access this address,
-        // return MemVistInv error because memory must be inited first.
-        // Return the last value in the address trace.
-        let read_res = self.trace.get_mut(&addr);
-        if let Some(tape_data) = read_res {
-            let last_value = tape_data
+        let tape_data = self
+            .trace
+            .get_mut(&addr)
+            .ok_or(ProcessorError::TapeVistInv(addr))?;
+        let last_tape_data =
+            tape_data
                 .last()
                 .ok_or(ProcessorError::ArrayIndexError(String::from(
                     "Empty address trace in tape",
-                )))?
-                .value;
-            Ok(last_value)
-        } else {
-            Err(ProcessorError::TapeVistInv(addr))
-        }
+                )))?;
+        let last_value = last_tape_data.value;
+        let new_value = TapeCell {
+            clk,
+            op,
+            is_init: last_tape_data.is_init,
+            filter_looked,
+            value: last_value,
+        };
+        tape_data.push(new_value);
+        Ok(last_value)
+    }
+
+    pub fn read_without_trace(&mut self, addr: u64) -> Result<GoldilocksField, ProcessorError> {
+        // look up the previous value in the appropriate address trace,
+        // if this is the first time we access this address,
+        // return MemVistInv error because memory must be inited first.
+        // Return the last value in the address trace.
+        let tape_data = self
+            .trace
+            .get_mut(&addr)
+            .ok_or(ProcessorError::TapeVistInv(addr))?;
+        let last_value = tape_data
+            .last()
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty address trace in tape",
+            )))?
+            .value;
+        Ok(last_value)
     }
 
     pub fn write(
