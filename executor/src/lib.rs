@@ -8,6 +8,7 @@ use core::vm::memory::{MemoryTree, HP_START_ADDR, PSP_START_ADDR};
 
 use core::merkle_tree::log::{StorageLog, StorageQuery};
 use core::merkle_tree::log::{StorageLogKind, WitnessStorageLog};
+use core::merkle_tree::tree::AccountTree;
 
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{ImmediateOrRegName, Opcode};
@@ -256,6 +257,7 @@ pub struct Process {
 impl Process {
     pub fn new() -> Self {
         Self {
+            block_timestamp: 0,
             block_timestamp: 0,
             env_idx: Default::default(),
             call_sc_cnt: Default::default(),
@@ -1914,7 +1916,9 @@ impl Process {
 
         if op1_value.0 == GoldilocksField::ONE {
             append_caller_callee_addr(self, self.addr_storage, callee_address, self.addr_storage);
+            append_caller_callee_addr(self, self.addr_storage, callee_address, self.addr_storage);
         } else if op1_value.0 == GoldilocksField::ZERO {
+            append_caller_callee_addr(self, self.addr_storage, callee_address, callee_address);
             append_caller_callee_addr(self, self.addr_storage, callee_address, callee_address);
         } else {
             return Err(ProcessorError::ParseOpcodeError);

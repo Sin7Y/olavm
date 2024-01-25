@@ -336,6 +336,7 @@ impl OlaVM {
             caller_addr,
             code_exe_addr,
             code_exe_addr,
+            code_exe_addr,
             &self.ctx_info,
         );
         let mut program = Program::default();
@@ -464,6 +465,7 @@ impl OlaVM {
                         }
                         self.ola_state.txs_trace.insert(env_id, trace);
                         self.ola_state.storage_queries.append(&mut storage_queries);
+                        self.ola_state.storage_queries.append(&mut storage_queries);
                         env_idx -= 1;
                         process.tp = tp;
                         process.tape = tape_tree;
@@ -497,5 +499,14 @@ impl OlaVM {
             &mut BatchCacheManager::default(),
             false,
         )
+    }
+
+    pub fn finish_batch(&mut self, block_number: u32) -> Result<(), StateError> {
+        let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
+        let calldata = [block_number as u64, 1, 2190639505]
+            .iter()
+            .map(|l| GoldilocksField::from_canonical_u64(*l))
+            .collect();
+        self.execute_tx(entry_point_addr, entry_point_addr, calldata, false)
     }
 }

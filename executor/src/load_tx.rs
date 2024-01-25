@@ -86,8 +86,27 @@ load_ctx_to_tape!(load_tx_context, TxCtxInfo);
 //     process.tp += GoldilocksField::from_canonical_u64(ctx_addr_len as u64);
 // }
 
+// pub fn init_tape(
+//     process: &mut Process,
+//     mut calldata: Vec<GoldilocksField>,
+//     caller_exe_addr: Address,
+//     callee_addr: Address,
+//     callee_exe_addr: Address,
+//     ctx_info: &TxCtxInfo,
+// ) {
+//     let tp_start = load_tx_context(process, ctx_info);
+//     process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
+//     load_tx_calldata(process, &calldata);
+//     let ctx_addr_len = load_ctx_addr_info(
+//         process,
+//         &init_ctx_addr_info(caller_exe_addr, callee_addr, callee_exe_addr),
+//     );
+//     process.tp += GoldilocksField::from_canonical_u64(ctx_addr_len as u64);
+// }
+
 pub fn init_tape(
     process: &mut Process,
+    calldata: Vec<GoldilocksField>,
     calldata: Vec<GoldilocksField>,
     caller_exe_addr: Address,
     callee_addr: Address,

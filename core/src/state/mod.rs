@@ -1,5 +1,6 @@
 use crate::crypto::hash::Hasher;
 use crate::merkle_tree::log::StorageQuery;
+use crate::merkle_tree::log::StorageQuery;
 use crate::state::contracts::Contracts;
 use std::collections::BTreeMap;
 
