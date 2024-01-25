@@ -1,3 +1,4 @@
+use config::ENTRY_POINT_ADDRESS;
 use executor::load_tx::init_tape;
 use executor::trace::{gen_storage_hash_table, gen_storage_table};
 use executor::{BatchCacheManager, Process};
@@ -456,7 +457,8 @@ impl OlaVM {
     }
 
     pub fn finish_batch(&mut self, block_number: u32) -> Result<(), StateError> {
-        let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
+        let entry_point_addr =
+            ENTRY_POINT_ADDRESS.map(|fe| GoldilocksField::from_canonical_u64(fe));
         let calldata = [block_number as u64, 1, 2190639505]
             .iter()
             .map(|l| GoldilocksField::from_canonical_u64(*l))
