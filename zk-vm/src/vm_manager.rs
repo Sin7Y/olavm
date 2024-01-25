@@ -142,7 +142,7 @@ impl<'a> VmManager<'a> {
             signature_s: [GoldilocksField::ZERO; 4],
             tx_hash: [GoldilocksField::ZERO; 4],
         };
-        let mut vm = OlaVM::new(self.tree_db_path, self.state_db_path, tx_init_info);
+        let mut vm = OlaVM::new_call(self.tree_db_path, self.state_db_path, tx_init_info);
         let exec_res = vm.execute_tx(
             call_info.get_to_address(),
             call_info.get_to_address(),
