@@ -1,5 +1,5 @@
 use crate::trace::{gen_dump_file, gen_storage_hash_table, gen_storage_table};
-use crate::{Process, TxScopeCacheManager};
+use crate::{Process, BatchCacheManager};
 
 use crate::load_tx::init_tape;
 use core::crypto::hash::Hasher;
@@ -123,7 +123,7 @@ fn executor_run_test_program(
     let res = process.execute(
         &mut program,
         &mut account_tree,
-        &mut TxScopeCacheManager::default(),
+        &mut BatchCacheManager::default(),
     );
 
     if res.is_err() {

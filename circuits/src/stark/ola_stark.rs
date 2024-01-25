@@ -665,7 +665,7 @@ mod tests {
     use core::vm::transaction::init_tx_context_mock;
     use executor::load_tx::init_tape;
     use executor::trace::{gen_storage_hash_table, gen_storage_table};
-    use executor::{Process, TxScopeCacheManager};
+    use executor::{Process, BatchCacheManager};
     use itertools::Itertools;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -917,7 +917,7 @@ mod tests {
         let res = process.execute(
             &mut program,
             &mut db,
-            &mut TxScopeCacheManager::default(),
+            &mut BatchCacheManager::default(),
         );
         match res {
             Ok(_) => {}

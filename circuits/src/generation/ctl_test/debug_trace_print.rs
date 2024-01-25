@@ -20,7 +20,7 @@ use core::{
 use executor::{
     load_tx::init_tape,
     trace::{gen_storage_hash_table, gen_storage_table},
-    Process, TxScopeCacheManager,
+    Process, BatchCacheManager,
 };
 use plonky2::hash::hash_types::RichField;
 
@@ -253,7 +253,7 @@ pub fn get_exec_trace(
     let res = process.execute(
         &mut program,
         &mut db,
-        &mut TxScopeCacheManager::default(),
+        &mut BatchCacheManager::default(),
     );
     match res {
         Ok(_) => {}
