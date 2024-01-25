@@ -216,7 +216,7 @@ impl TxScopeCacheManager {
         self.storage_cache.insert(key, value);
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Process {
     pub block_timestamp: u64,
     pub env_idx: GoldilocksField,
@@ -1257,6 +1257,13 @@ impl Process {
             }
         }
 
+        // println!("§§§§§§§§§§§§§§§§§§§§§§§ end tape §§§§§§§§§§§§§§§§§§§§§§§>");
+        // self.tape.trace.iter().for_each(|(k, v)| {
+        //     println!("{}: {:<10}\t", k, v.last().expect("v is empty").value);
+
+        // });
+        // println!("§§§§§§§§§§§§§§§§§§§§§§§ end tape §§§§§§§§§§§§§§§§§§§§§§§<");
+
         Ok(end_step)
     }
 
@@ -1376,28 +1383,26 @@ impl Process {
             );
         }
         self.pc += step;
-        if program.print_flag {
-            println!("******************** sstore ********************");
-            println!(
-                "scaddr: {}, {}, {}, {}",
-                self.addr_storage[0],
-                self.addr_storage[1],
-                self.addr_storage[2],
-                self.addr_storage[3]
-            );
-            println!(
-                "storage_key: {}, {}, {}, {}",
-                slot_key[0], slot_key[1], slot_key[2], slot_key[3]
-            );
-            println!(
-                "tree_key: {}, {}, {}, {}",
-                tree_key[0], tree_key[1], tree_key[2], tree_key[3]
-            );
-            println!(
-                "value: {}, {}, {}, {}",
-                store_value[0], store_value[1], store_value[2], store_value[3]
-            );
-        }
+        // if program.print_flag {
+        println!("******************** sstore ********************>");
+        println!(
+            "scaddr: {}, {}, {}, {}",
+            self.addr_storage[0], self.addr_storage[1], self.addr_storage[2], self.addr_storage[3]
+        );
+        println!(
+            "storage_key: {}, {}, {}, {}",
+            slot_key[0], slot_key[1], slot_key[2], slot_key[3]
+        );
+        println!(
+            "tree_key: {}, {}, {}, {}",
+            tree_key[0], tree_key[1], tree_key[2], tree_key[3]
+        );
+        println!(
+            "value: {}, {}, {}, {}",
+            store_value[0], store_value[1], store_value[2], store_value[3]
+        );
+        println!("******************** sstore ********************<");
+        // }
         Ok(())
     }
 
@@ -1445,18 +1450,17 @@ impl Process {
         let path = tree_key_to_leaf_index(&tree_key);
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
 
-        let read_value;
-        if let Some(data) = tx_cache_manager.load_storage_cache(&tree_key) {
-            read_value = data.clone();
+        let read_value = if let Some(data) = tx_cache_manager.load_storage_cache(&tree_key) {
+            data.clone()
         } else {
             let read_db = account_tree.storage.hash(&path);
             if let Some(value) = read_db {
-                read_value = u8_arr_to_tree_key(&value);
+                u8_arr_to_tree_key(&value)
             } else {
                 debug!("sload can not read data from addr:{:?}", tree_key);
-                read_value = tree_key_default();
+                tree_key_default()
             }
-        }
+        };
 
         self.storage_queries.push(StorageQuery {
             block_timestamp: self.block_timestamp,
@@ -1518,28 +1522,26 @@ impl Process {
         }
         self.pc += step;
 
-        if program.print_flag {
-            println!("******************** sload ********************");
-            println!(
-                "scaddr: {}, {}, {}, {}",
-                self.addr_storage[0],
-                self.addr_storage[1],
-                self.addr_storage[2],
-                self.addr_storage[3]
-            );
-            println!(
-                "storage_key: {}, {}, {}, {}",
-                slot_key[0], slot_key[1], slot_key[2], slot_key[3]
-            );
-            println!(
-                "tree_key: {}, {}, {}, {}",
-                tree_key[0], tree_key[1], tree_key[2], tree_key[3]
-            );
-            println!(
-                "value: {}, {}, {}, {}",
-                read_value[0], read_value[1], read_value[2], read_value[3]
-            );
-        }
+        // if program.print_flag {
+        println!("******************** sload ********************>");
+        println!(
+            "scaddr: {}, {}, {}, {}",
+            self.addr_storage[0], self.addr_storage[1], self.addr_storage[2], self.addr_storage[3]
+        );
+        println!(
+            "storage_key: {}, {}, {}, {}",
+            slot_key[0], slot_key[1], slot_key[2], slot_key[3]
+        );
+        println!(
+            "tree_key: {}, {}, {}, {}",
+            tree_key[0], tree_key[1], tree_key[2], tree_key[3]
+        );
+        println!(
+            "value: {}, {}, {}, {}",
+            read_value[0], read_value[1], read_value[2], read_value[3]
+        );
+        println!("******************** sload ********************<");
+        // }
         Ok(())
     }
 
@@ -1839,10 +1841,12 @@ impl Process {
             ),ctx_regs_status, ctx_code_regs_status, registers_status, zone_length,  mem_base_addr,
             tape_base_addr, aux_steps, mem_addr, tape_addr, is_rw, region_prophet, region_heap, value, true);
 
-        println!(
-            "execute_inst_tstore return data in sccall: {:?}",
-            self.return_data
-        );
+        // println!("£££££££££££££££££££££££££ tstore tape £££££££££££££££££££££££££>");
+        // self.tape.trace.iter().for_each(|(k, v)| {
+        //     println!("{}: {:<10}\t", k, v.last().expect("v is empty").value);
+
+        // });
+        // println!("£££££££££££££££££££££££££ tstore tape £££££££££££££££££££££££££<");
 
         self.tp += op1_value.0;
         self.pc += step;

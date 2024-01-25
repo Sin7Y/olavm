@@ -914,11 +914,7 @@ mod tests {
         });
 
         program.prophets = prophets;
-        let res = process.execute(
-            &mut program,
-            &mut db,
-            &mut TxScopeCacheManager::default(),
-        );
+        let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
         match res {
             Ok(_) => {}
             Err(e) => {
