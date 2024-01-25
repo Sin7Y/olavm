@@ -1,6 +1,6 @@
 use executor::load_tx::init_tape;
-use executor::trace::{gen_dump_file, gen_storage_hash_table, gen_storage_table};
-use executor::{Process, TxScopeCacheManager};
+use executor::trace::{gen_storage_hash_table, gen_storage_table};
+use executor::{BatchCacheManager, Process};
 use log::debug;
 use ola_core::crypto::ZkHasher;
 use ola_core::merkle_tree::tree::AccountTree;
@@ -31,6 +31,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 mod config;
+mod vm_manager;
 
 #[cfg(test)]
 pub mod test;
@@ -42,7 +43,6 @@ pub struct OlaVM {
     // process, caller address, code address
     pub process_ctx: Vec<(Arc<Mutex<Process>>, Arc<Mutex<Program>>, Address, Address)>,
     pub ctx_info: TxCtxInfo,
-    pub tx_cache_manager: TxScopeCacheManager,
 }
 
 impl OlaVM {
@@ -63,7 +63,6 @@ impl OlaVM {
             account_tree,
             process_ctx: Vec::new(),
             ctx_info,
-            tx_cache_manager: TxScopeCacheManager::default(),
         }
     }
 
@@ -142,8 +141,9 @@ impl OlaVM {
         &mut self,
         process: &mut Process,
         program: &mut Program,
+        cache_manager: &mut BatchCacheManager,
     ) -> Result<VMState, ProcessorError> {
-        process.execute(program, &mut self.account_tree, &mut self.tx_cache_manager)
+        process.execute(program, &mut self.account_tree, cache_manager)
     }
 
     pub fn contract_run(
@@ -153,6 +153,7 @@ impl OlaVM {
         _caller_addr: Address,
         exe_code_addr: Address,
         get_code: bool,
+        cache_manager: &mut BatchCacheManager,
     ) -> Result<VMState, StateError> {
         let code_hash = self.get_contract_map(&exe_code_addr)?;
 
@@ -203,7 +204,7 @@ impl OlaVM {
                 .insert(encode_addr(&exe_code_addr), code);
         }
 
-        let res = self.vm_run(process, program);
+        let res = self.vm_run(process, program, cache_manager);
         if let Ok(vm_state) = res {
             Ok(vm_state)
         } else {
@@ -262,6 +263,7 @@ impl OlaVM {
         caller_addr: TreeValue,
         code_exe_addr: TreeValue,
         calldata: Vec<GoldilocksField>,
+        cache_manager: &mut BatchCacheManager,
         debug_flag: bool,
     ) -> Result<(), StateError> {
         let mut env_idx = 0;
@@ -298,6 +300,7 @@ impl OlaVM {
             caller_addr,
             code_exe_addr,
             true,
+            cache_manager,
         );
         let mut res = res.map_err(|err| {
             self.process_ctx
@@ -345,6 +348,7 @@ impl OlaVM {
                         caller_addr,
                         code_exe_addr,
                         true,
+                        cache_manager,
                     )?;
                 }
                 VMState::ExeEnd(step) => {
@@ -434,6 +438,7 @@ impl OlaVM {
                             ctx.2,
                             ctx.3,
                             false,
+                            cache_manager,
                         )?;
                         debug!("contract end:{:?}", res);
                     }
@@ -449,6 +454,12 @@ impl OlaVM {
             .iter()
             .map(|l| GoldilocksField::from_canonical_u64(*l))
             .collect();
-        self.execute_tx(entry_point_addr, entry_point_addr, calldata, false)
+        self.execute_tx(
+            entry_point_addr,
+            entry_point_addr,
+            calldata,
+            &mut BatchCacheManager::default(),
+            false,
+        )
     }
 }
