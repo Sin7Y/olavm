@@ -14,7 +14,7 @@ pub enum StateError {
     #[error("VM json serde error")]
     JsonSerdeError(#[from] serde_json::Error),
 
-    #[error("VM json serde error")]
+    #[error("Can not load the program")]
     GetProgramError(String),
 
     #[error("Convert string error")]
