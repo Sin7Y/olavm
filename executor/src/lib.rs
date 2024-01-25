@@ -1257,13 +1257,6 @@ impl Process {
             }
         }
 
-        // println!("§§§§§§§§§§§§§§§§§§§§§§§ end tape §§§§§§§§§§§§§§§§§§§§§§§>");
-        // self.tape.trace.iter().for_each(|(k, v)| {
-        //     println!("{}: {:<10}\t", k, v.last().expect("v is empty").value);
-
-        // });
-        // println!("§§§§§§§§§§§§§§§§§§§§§§§ end tape §§§§§§§§§§§§§§§§§§§§§§§<");
-
         Ok(end_step)
     }
 
@@ -1383,26 +1376,29 @@ impl Process {
             );
         }
         self.pc += step;
-        // if program.print_flag {
-        println!("******************** sstore ********************>");
-        println!(
-            "scaddr: {}, {}, {}, {}",
-            self.addr_storage[0], self.addr_storage[1], self.addr_storage[2], self.addr_storage[3]
-        );
-        println!(
-            "storage_key: {}, {}, {}, {}",
-            slot_key[0], slot_key[1], slot_key[2], slot_key[3]
-        );
-        println!(
-            "tree_key: {}, {}, {}, {}",
-            tree_key[0], tree_key[1], tree_key[2], tree_key[3]
-        );
-        println!(
-            "value: {}, {}, {}, {}",
-            store_value[0], store_value[1], store_value[2], store_value[3]
-        );
-        println!("******************** sstore ********************<");
-        // }
+        if program.print_flag {
+            println!("******************** sstore ********************>");
+            println!(
+                "scaddr: {}, {}, {}, {}",
+                self.addr_storage[0],
+                self.addr_storage[1],
+                self.addr_storage[2],
+                self.addr_storage[3]
+            );
+            println!(
+                "storage_key: {}, {}, {}, {}",
+                slot_key[0], slot_key[1], slot_key[2], slot_key[3]
+            );
+            println!(
+                "tree_key: {}, {}, {}, {}",
+                tree_key[0], tree_key[1], tree_key[2], tree_key[3]
+            );
+            println!(
+                "value: {}, {}, {}, {}",
+                store_value[0], store_value[1], store_value[2], store_value[3]
+            );
+            println!("******************** sstore ********************<");
+        }
         Ok(())
     }
 
@@ -1522,26 +1518,29 @@ impl Process {
         }
         self.pc += step;
 
-        // if program.print_flag {
-        println!("******************** sload ********************>");
-        println!(
-            "scaddr: {}, {}, {}, {}",
-            self.addr_storage[0], self.addr_storage[1], self.addr_storage[2], self.addr_storage[3]
-        );
-        println!(
-            "storage_key: {}, {}, {}, {}",
-            slot_key[0], slot_key[1], slot_key[2], slot_key[3]
-        );
-        println!(
-            "tree_key: {}, {}, {}, {}",
-            tree_key[0], tree_key[1], tree_key[2], tree_key[3]
-        );
-        println!(
-            "value: {}, {}, {}, {}",
-            read_value[0], read_value[1], read_value[2], read_value[3]
-        );
-        println!("******************** sload ********************<");
-        // }
+        if program.print_flag {
+            println!("******************** sload ********************>");
+            println!(
+                "scaddr: {}, {}, {}, {}",
+                self.addr_storage[0],
+                self.addr_storage[1],
+                self.addr_storage[2],
+                self.addr_storage[3]
+            );
+            println!(
+                "storage_key: {}, {}, {}, {}",
+                slot_key[0], slot_key[1], slot_key[2], slot_key[3]
+            );
+            println!(
+                "tree_key: {}, {}, {}, {}",
+                tree_key[0], tree_key[1], tree_key[2], tree_key[3]
+            );
+            println!(
+                "value: {}, {}, {}, {}",
+                read_value[0], read_value[1], read_value[2], read_value[3]
+            );
+            println!("******************** sload ********************<");
+        }
         Ok(())
     }
 
@@ -1841,13 +1840,6 @@ impl Process {
             ),ctx_regs_status, ctx_code_regs_status, registers_status, zone_length,  mem_base_addr,
             tape_base_addr, aux_steps, mem_addr, tape_addr, is_rw, region_prophet, region_heap, value, true);
 
-        // println!("£££££££££££££££££££££££££ tstore tape £££££££££££££££££££££££££>");
-        // self.tape.trace.iter().for_each(|(k, v)| {
-        //     println!("{}: {:<10}\t", k, v.last().expect("v is empty").value);
-
-        // });
-        // println!("£££££££££££££££££££££££££ tstore tape £££££££££££££££££££££££££<");
-
         self.tp += op1_value.0;
         self.pc += step;
         Ok(())
@@ -1969,10 +1961,6 @@ impl Process {
         self.pc += step;
         self.clk += 1;
 
-        println!(
-            "execute_inst_sccall return data in sccall: {:?}",
-            self.return_data
-        );
         // SCCall use all the tstored data, so the `return_data` is not actual return
         // data.
         self.return_data.clear();
