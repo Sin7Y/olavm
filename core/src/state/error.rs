@@ -40,4 +40,7 @@ pub enum StateError {
 
     #[error("Parse int error: {0}")]
     ParseIntError(String),
+
+    #[error("VM is not alive, batch has been finished!")]
+    VMNotAvaliable,
 }
