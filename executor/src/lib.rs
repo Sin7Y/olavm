@@ -152,7 +152,7 @@ macro_rules! aux_insert {
 #[macro_export]
 macro_rules! tape_copy {
     ($v: expr, $read_proc: stmt, $write_proc: stmt, $ctx_regs_status: tt, $ctx_code_regs_status: tt, $registers_status: tt, $zone_length: tt, $mem_base_addr: tt, $tape_base_addr: tt, $aux_steps: tt,
-     $mem_addr: tt, $tape_addr: tt, $is_rw: tt, $region_prophet:tt, $region_heap: tt, $value: tt) => {
+     $mem_addr: tt, $tape_addr: tt, $is_rw: tt, $region_prophet:tt, $region_heap: tt, $value: tt, $tstore: tt) => {
         let mut ext_cnt = GoldilocksField::ONE;
         let filter_tape_looking = GoldilocksField::ONE;
         let mut register_selector = $v.register_selector.clone();
@@ -169,6 +169,10 @@ macro_rules! tape_copy {
             register_selector.aux1 = $value;
 
             $write_proc
+
+            if $tstore {
+                $v.return_data.push($value);
+            }
 
             aux_insert!($v, $aux_steps, $ctx_regs_status, $ctx_code_regs_status, $registers_status, register_selector.clone(), ext_cnt, filter_tape_looking);
             ext_cnt += GoldilocksField::ONE;
@@ -212,7 +216,7 @@ impl TxScopeCacheManager {
         self.storage_cache.insert(key, value);
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Process {
     pub block_timestamp: u64,
     pub env_idx: GoldilocksField,
@@ -238,6 +242,7 @@ pub struct Process {
     pub tape: TapeTree,
     pub storage_access_idx: GoldilocksField,
     pub storage_queries: Vec<StorageQuery>,
+    pub return_data: Vec<GoldilocksField>,
 }
 
 impl Process {
@@ -273,6 +278,7 @@ impl Process {
             },
             storage_access_idx: GoldilocksField::ZERO,
             storage_queries: Vec::new(),
+            return_data: Vec::new(),
         }
     }
 
@@ -1371,7 +1377,7 @@ impl Process {
         }
         self.pc += step;
         if program.print_flag {
-            println!("******************** sstore ********************");
+            println!("******************** sstore ********************>");
             println!(
                 "scaddr: {}, {}, {}, {}",
                 self.addr_storage[0],
@@ -1391,6 +1397,7 @@ impl Process {
                 "value: {}, {}, {}, {}",
                 store_value[0], store_value[1], store_value[2], store_value[3]
             );
+            println!("******************** sstore ********************<");
         }
         Ok(())
     }
@@ -1439,18 +1446,17 @@ impl Process {
         let path = tree_key_to_leaf_index(&tree_key);
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
 
-        let read_value;
-        if let Some(data) = tx_cache_manager.load_storage_cache(&tree_key) {
-            read_value = data.clone();
+        let read_value = if let Some(data) = tx_cache_manager.load_storage_cache(&tree_key) {
+            data.clone()
         } else {
             let read_db = account_tree.storage.hash(&path);
             if let Some(value) = read_db {
-                read_value = u8_arr_to_tree_key(&value);
+                u8_arr_to_tree_key(&value)
             } else {
                 debug!("sload can not read data from addr:{:?}", tree_key);
-                read_value = tree_key_default();
+                tree_key_default()
             }
-        }
+        };
 
         self.storage_queries.push(StorageQuery {
             block_timestamp: self.block_timestamp,
@@ -1513,7 +1519,7 @@ impl Process {
         self.pc += step;
 
         if program.print_flag {
-            println!("******************** sload ********************");
+            println!("******************** sload ********************>");
             println!(
                 "scaddr: {}, {}, {}, {}",
                 self.addr_storage[0],
@@ -1533,6 +1539,7 @@ impl Process {
                 "value: {}, {}, {}, {}",
                 read_value[0], read_value[1], read_value[2], read_value[3]
             );
+            println!("******************** sload ********************<");
         }
         Ok(())
     }
@@ -1758,8 +1765,8 @@ impl Process {
                 region_heap,
                 value,
                 self.env_idx
-            ), ctx_regs_status, ctx_code_regs_status, registers_status, zone_length,  mem_base_addr, tape_base_addr, aux_steps,
-            mem_addr, tape_addr, is_rw, region_prophet, region_heap, value);
+            ), ctx_regs_status, ctx_code_regs_status, registers_status, zone_length,  mem_base_addr,
+            tape_base_addr, aux_steps, mem_addr, tape_addr, is_rw, region_prophet, region_heap, value, false);
 
         self.pc += step;
         Ok(())
@@ -1823,15 +1830,16 @@ impl Process {
                 region_heap,
                 self.env_idx
             )?,
-                self.tape.write(
+            self.tape.write(
                 tape_addr,
                 self.clk,
                 GoldilocksField::from_canonical_u64(1 << Opcode::TSTORE as u64),
                 GoldilocksField::ZERO,
                 GoldilocksField::ONE,
                 value,
-            )
-            ,ctx_regs_status, ctx_code_regs_status, registers_status, zone_length,  mem_base_addr, tape_base_addr, aux_steps,  mem_addr, tape_addr, is_rw, region_prophet, region_heap, value);
+            ),ctx_regs_status, ctx_code_regs_status, registers_status, zone_length,  mem_base_addr,
+            tape_base_addr, aux_steps, mem_addr, tape_addr, is_rw, region_prophet, region_heap, value, true);
+
         self.tp += op1_value.0;
         self.pc += step;
         Ok(())
@@ -1952,6 +1960,11 @@ impl Process {
 
         self.pc += step;
         self.clk += 1;
+
+        // SCCall use all the tstored data, so the `return_data` is not actual return
+        // data.
+        self.return_data.clear();
+
         if op1_value.0 == GoldilocksField::ONE {
             return Ok(VMState::SCCall(SCCallType::DelegateCall(callee_address)));
         } else if op1_value.0 == GoldilocksField::ZERO {
@@ -2127,24 +2140,12 @@ impl Process {
             let storage_acc_id_status = self.storage_access_idx;
             let mut aux_steps = Vec::new();
 
-            let instruction;
-            if let Some(inst) = program.trace.instructions.get(&self.pc) {
-                instruction = inst.clone();
-                if program.debug_info.is_some() {
-                    debug!(
-                        "pc:{}, execute instruction: {:?}, asm:{:?}",
-                        self.pc,
-                        instruction,
-                        program
-                            .debug_info
-                            .as_ref()
-                            .expect("Empty debug_info")
-                            .get(&(self.pc as usize))
-                    );
-                }
-            } else {
-                return Err(ProcessorError::PcVistInv(self.pc));
-            }
+            let instruction = program
+                .trace
+                .instructions
+                .get(&self.pc)
+                .ok_or(ProcessorError::PcVistInv(self.pc))?
+                .clone();
 
             // Print vm state for debug only.
             if program.print_flag {

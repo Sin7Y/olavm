@@ -123,11 +123,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     });
 
     program.prophets = prophets;
-    let res = process.execute(
-        &mut program,
-        &mut db,
-        &mut TxScopeCacheManager::default(),
-    );
+    let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {
@@ -310,11 +306,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         previous_value: tree_key_default(),
     });
 
-    let res = process.execute(
-        &mut program,
-        &mut db,
-        &mut TxScopeCacheManager::default(),
-    );
+    let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {
