@@ -1,4 +1,4 @@
-use std::{mem, path::Path};
+use std::{mem, path::{Path, PathBuf}};
 
 use anyhow::anyhow;
 use executor::BatchCacheManager;
@@ -105,17 +105,17 @@ pub struct InvokeResult {
 
 pub struct CallResult {}
 
-pub struct VmManager<'a> {
-    tree_db_path: &'a Path,
-    state_db_path: &'a Path,
+pub struct VmManager {
+    tree_db_path: String,
+    state_db_path: String,
     block_info: BlockInfo,
     storage_queries: Vec<StorageQuery>,
     cache_manager: BatchCacheManager,
     is_alive: bool,
 }
 
-impl<'a> VmManager<'a> {
-    pub fn new(block_info: BlockInfo, tree_db_path: &'a Path, state_db_path: &'a Path) -> Self {
+impl VmManager {
+    pub fn new(block_info: BlockInfo, tree_db_path: String, state_db_path: String) -> Self {
         Self {
             tree_db_path,
             state_db_path,
@@ -142,7 +142,9 @@ impl<'a> VmManager<'a> {
             signature_s: [GoldilocksField::ZERO; 4],
             tx_hash: [GoldilocksField::ZERO; 4],
         };
-        let mut vm = OlaVM::new_call(self.tree_db_path, self.state_db_path, tx_init_info);
+        let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
+        let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
+        let mut vm = OlaVM::new_call(tree_db_path_buf.as_path(), state_db_path_buf.as_path(), tx_init_info);
         let exec_res = vm.execute_tx(
             call_info.get_to_address(),
             call_info.get_to_address(),
@@ -175,7 +177,10 @@ impl<'a> VmManager<'a> {
             signature_s: tx_info.get_signature_s(),
             tx_hash: tx_info.get_tx_hash(),
         };
-        let mut vm = OlaVM::new(self.tree_db_path, self.state_db_path, tx_init_info);
+        let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
+        let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
+        let mut vm = OlaVM::new_call(tree_db_path_buf.as_path(), state_db_path_buf.as_path(), tx_init_info);
+
         let exec_res = vm.execute_tx(
             tx_info.get_to_address(),
             tx_info.get_to_address(),
@@ -209,7 +214,9 @@ impl<'a> VmManager<'a> {
             signature_s: TreeValue::default(),
             tx_hash: TreeValue::default(),
         };
-        let mut vm = OlaVM::new(self.tree_db_path, self.state_db_path, tx_init_info);
+        let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
+        let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
+        let mut vm = OlaVM::new_call(tree_db_path_buf.as_path(), state_db_path_buf.as_path(), tx_init_info);
 
         let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
         let calldata = [self.block_info.block_number as u64, 1, 2190639505]
