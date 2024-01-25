@@ -1,4 +1,7 @@
-use std::{mem, path::{Path, PathBuf}};
+use std::{
+    mem,
+    path::{Path, PathBuf},
+};
 
 use anyhow::anyhow;
 use executor::BatchCacheManager;
@@ -144,7 +147,11 @@ impl VmManager {
         };
         let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
         let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
-        let mut vm = OlaVM::new_call(tree_db_path_buf.as_path(), state_db_path_buf.as_path(), tx_init_info);
+        let mut vm = OlaVM::new_call(
+            tree_db_path_buf.as_path(),
+            state_db_path_buf.as_path(),
+            tx_init_info,
+        );
         let exec_res = vm.execute_tx(
             call_info.get_to_address(),
             call_info.get_to_address(),
@@ -179,7 +186,11 @@ impl VmManager {
         };
         let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
         let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
-        let mut vm = OlaVM::new_call(tree_db_path_buf.as_path(), state_db_path_buf.as_path(), tx_init_info);
+        let mut vm = OlaVM::new_call(
+            tree_db_path_buf.as_path(),
+            state_db_path_buf.as_path(),
+            tx_init_info,
+        );
 
         let exec_res = vm.execute_tx(
             tx_info.get_to_address(),
@@ -216,7 +227,11 @@ impl VmManager {
         };
         let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
         let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
-        let mut vm = OlaVM::new_call(tree_db_path_buf.as_path(), state_db_path_buf.as_path(), tx_init_info);
+        let mut vm = OlaVM::new_call(
+            tree_db_path_buf.as_path(),
+            state_db_path_buf.as_path(),
+            tx_init_info,
+        );
 
         let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
         let calldata = [self.block_info.block_number as u64, 1, 2190639505]
