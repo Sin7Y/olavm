@@ -22,6 +22,7 @@ pub struct NodeState<H> {
     pub txs_trace: BTreeMap<u64, Trace>,
     pub hasher: H,
     pub storage_queries: Vec<StorageQuery>,
+    pub return_data: Vec<GoldilocksField>,
 }
 
 impl<H> NodeState<H>
@@ -35,6 +36,7 @@ where
             txs_trace: BTreeMap::new(),
             hasher,
             storage_queries: vec![],
+            return_data: vec![],
         }
     }
 

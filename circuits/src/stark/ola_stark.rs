@@ -665,7 +665,7 @@ mod tests {
     use core::vm::transaction::init_tx_context_mock;
     use executor::load_tx::init_tape;
     use executor::trace::{gen_storage_hash_table, gen_storage_table};
-    use executor::{Process, BatchCacheManager};
+    use executor::{BatchCacheManager, Process};
     use itertools::Itertools;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -914,11 +914,7 @@ mod tests {
         });
 
         program.prophets = prophets;
-        let res = process.execute(
-            &mut program,
-            &mut db,
-            &mut BatchCacheManager::default(),
-        );
+        let res = process.execute(&mut program, &mut db, &mut BatchCacheManager::default());
         match res {
             Ok(_) => {}
             Err(e) => {

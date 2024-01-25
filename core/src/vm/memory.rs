@@ -22,7 +22,7 @@ pub struct MemoryCell {
     pub value: GoldilocksField,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct MemoryTree {
     // visit by memory address, MemoryCell vector store memory trace value， the last one is the
     // current status
