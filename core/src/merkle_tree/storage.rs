@@ -71,7 +71,9 @@ impl Storage {
     /// Saves current state to db
     pub fn save(&mut self, block_number: u32) -> Result<(), TreeError> {
         if self.pending_patch.0.is_empty() {
-            return Err(TreeError::EmptyPatch);
+            return Err(TreeError::EmptyPatch(String::from(
+                "Empty pending patch in storage",
+            )));
         }
         let mut write_batch =
             std::mem::replace(&mut self.pending_patch, PendingPatch(WriteBatch::default())).0;
@@ -103,7 +105,7 @@ impl Storage {
         let mut current_index = self
             .db
             .get_cf(cf, LEAF_INDEX_KEY)
-            .expect("failed to fetch current leaf index")
+            .map_err(|err| TreeError::StorageIoError(err))?
             .map(|bytes| deserialize_leaf_index(&bytes))
             .unwrap_or(1);
 

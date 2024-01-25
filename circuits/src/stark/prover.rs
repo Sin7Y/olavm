@@ -1,8 +1,6 @@
 use core::program::Program;
 use std::any::type_name;
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
-use std::time::Instant;
 
 use anyhow::{ensure, Result};
 use log::info;
@@ -27,7 +25,6 @@ use crate::builtins::bitwise::bitwise_stark::BitwiseStark;
 use crate::builtins::cmp::cmp_stark::CmpStark;
 use crate::builtins::poseidon::poseidon_chunk_stark::PoseidonChunkStark;
 use crate::builtins::poseidon::poseidon_stark::PoseidonStark;
-use crate::builtins::rangecheck::rangecheck_stark::RangeCheckStark;
 use crate::builtins::sccall::sccall_stark::SCCallStark;
 use crate::builtins::storage::storage_access_stark::StorageAccessStark;
 use crate::program::prog_chunk_stark::ProgChunkStark;

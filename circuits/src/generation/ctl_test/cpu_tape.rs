@@ -7,6 +7,7 @@ use crate::{
 #[allow(unused_imports)]
 use core::types::{Field, GoldilocksField};
 
+#[allow(unused_imports)]
 use super::debug_trace_print::{get_exec_trace, get_rows_vec_from_trace, print_title_data};
 
 #[test]

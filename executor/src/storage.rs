@@ -76,7 +76,7 @@ impl PartialOrd for StorageCell {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct StorageTree {
     pub trace: HashMap<TreeKey, Vec<StorageCell>>,
 }

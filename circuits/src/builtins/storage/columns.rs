@@ -32,6 +32,7 @@ pub(crate) const COL_ST_FILTER_IS_FOR_PROG: usize = COL_ST_FILTER_IS_HASH_BIT_1 
 pub(crate) const COL_ST_IS_PADDING: usize = COL_ST_FILTER_IS_FOR_PROG + 1;
 pub(crate) const NUM_COL_ST: usize = COL_ST_IS_PADDING + 1;
 
+#[allow(dead_code)]
 pub(crate) fn get_storage_access_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     m.insert(COL_ST_ACCESS_IDX, String::from("IDX"));

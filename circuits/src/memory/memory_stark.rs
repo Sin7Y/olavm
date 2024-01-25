@@ -114,7 +114,6 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
         let p = P::ZEROS;
         let span = P::Scalar::from_canonical_u64(2_u64.pow(32).sub(1));
         let addr_heap_ptr = P::Scalar::from_canonical_u64(ADDR_HEAP_PTR);
-        let init_value_heap_ptr = P::Scalar::from_canonical_u64(INIT_VALUE_HEAP_PTR);
 
         let is_rw = lv[COL_MEM_IS_RW];
         let region_prophet = lv[COL_MEM_REGION_PROPHET];

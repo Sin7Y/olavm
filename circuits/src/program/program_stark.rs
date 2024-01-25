@@ -128,6 +128,7 @@ mod tests {
         types::{Field, GoldilocksField},
         vm::vm_state::Address,
     };
+    use executor::TxScopeCacheManager;
     use executor::{load_tx::init_tape, Process};
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
@@ -186,7 +187,11 @@ mod tests {
         }
 
         program.prophets = prophets;
-        let _ = process.execute(&mut program, &mut AccountTree::new_test());
+        let _ = process.execute(
+            &mut program,
+            &mut AccountTree::new_test(),
+            &mut TxScopeCacheManager::default(),
+        );
         let insts = program
             .instructions
             .iter()

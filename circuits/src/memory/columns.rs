@@ -44,6 +44,7 @@ pub(crate) const COL_MEM_FILTER_LOOKING_RC: usize = COL_MEM_RC_VALUE + 1;
 pub(crate) const COL_MEM_FILTER_LOOKING_RC_COND: usize = COL_MEM_FILTER_LOOKING_RC + 1;
 pub(crate) const NUM_MEM_COLS: usize = COL_MEM_FILTER_LOOKING_RC_COND + 1;
 
+#[allow(dead_code)]
 pub(crate) fn get_memory_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     m.insert(COL_MEM_TX_IDX, String::from("TX_IDX"));

@@ -1,5 +1,3 @@
-use std::borrow::BorrowMut;
-
 use super::hash_types::RichField;
 use crate::plonk::config::{GenericConfig, GenericHashOut, Hasher, PoseidonGoldilocksConfig};
 use maybe_rayon::{MaybeParIter, ParallelIterator};
@@ -19,7 +17,9 @@ pub fn hash_bytes<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, cons
 ) -> [u8; 32] {
     let field_elements = bytes_to_felts::<F, C, D>(input);
     let hash = C::InnerHasher::hash_no_pad(&field_elements);
-    hash.to_bytes().as_slice().try_into().unwrap()
+    felts_to_bytes::<F, C, D>(&hash.to_vec())
+        .try_into()
+        .unwrap()
 }
 
 pub fn bytes_to_felts<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(

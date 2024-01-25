@@ -197,18 +197,17 @@ impl BinaryInstruction {
                 "decode binary instruction error, empty binary code."
             ));
         }
-        let instruction_binary = binary_code.first().unwrap();
+        let instruction_binary = binary_code.first().ok_or("Empty binary code")?;
         let instruction_without_prefix = instruction_binary.trim_start_matches("0x");
-        let instruction_u64_res = u64::from_str_radix(instruction_without_prefix, 16);
-        if instruction_u64_res.is_err() {
-            return Err(format!(
-                "decode binary instruction error, instruction could not parsed into an u64: {}",
-                instruction_binary
-            ));
-        }
-        let instruction_u64 = instruction_u64_res.unwrap();
+        let instruction_u64 =
+            u64::from_str_radix(instruction_without_prefix, 16).map_err(|_| {
+                format!(
+                    "decode binary instruction error, instruction could not parsed into an u64: {}",
+                    instruction_binary
+                )
+            })?;
 
-        let matched_opcode = all::<OlaOpcode>()
+        let opcode = all::<OlaOpcode>()
             .collect::<Vec<_>>()
             .iter()
             .map(|op| {
@@ -217,14 +216,12 @@ impl BinaryInstruction {
                 (op, matched)
             })
             .find(|(_op, matched)| matched.clone())
-            .map(|(op, _matched)| op.clone());
-        if matched_opcode.is_none() {
-            return Err(format!(
+            .map(|(op, _matched)| op.clone())
+            .ok_or(format!(
                 "decode binary instruction error, no opcode matched: {}",
                 instruction_binary
-            ));
-        }
-        let opcode = matched_opcode.unwrap().clone();
+            ))?;
+
         let is_op1_imm = instruction_u64 & (1 << Self::BIT_SHIFT_OP1_IMM) != 0;
         let instruction_length =
             if is_op1_imm || opcode == OlaOpcode::MLOAD || opcode == OlaOpcode::MSTORE {
@@ -236,12 +233,12 @@ impl BinaryInstruction {
             return Err(format!("decode binary instruction error, length should be {}, but input code length is {}: {}", instruction_length, binary_code.len(), instruction_binary));
         }
         let immediate_value = if instruction_length == 2 {
-            let imm_line = binary_code.get(1).unwrap().clone();
-            let imm = ImmediateValue::from_str(imm_line.as_str());
-            if imm.is_err() {
-                return Err(format!("decode binary instruction error, invalid immediate value: {}, with instruction {}", imm_line, instruction_binary));
-            };
-            Some(imm.unwrap())
+            let imm_line = binary_code
+                .get(1)
+                .ok_or("Binary code has only 1 string")?
+                .clone();
+            let imm = ImmediateValue::from_str(imm_line.as_str())?;
+            Some(imm)
         } else {
             None
         };
@@ -259,9 +256,10 @@ impl BinaryInstruction {
                 register: reg.clone(),
             });
 
+        let immediate_value = immediate_value.ok_or("Empty immediate value")?;
         let op1 = if is_op1_imm {
             Some(OlaOperand::ImmediateOperand {
-                value: immediate_value.unwrap(),
+                value: immediate_value,
             })
         } else {
             let matched_op1_reg = all::<OlaRegister>()
@@ -273,19 +271,17 @@ impl BinaryInstruction {
                     (reg, matched)
                 })
                 .find(|(_reg, matched)| matched.clone())
-                .map(|(reg, _matched)| reg.clone());
+                .map(|(reg, _matched)| reg.clone())
+                .ok_or("No matched op1 register");
             if opcode == OlaOpcode::MSTORE || opcode == OlaOpcode::MLOAD {
-                if matched_op1_reg.is_none() {
-                    return Err(format!(""));
-                }
                 Some(OlaOperand::RegisterWithFactor {
-                    register: matched_op1_reg.unwrap(),
-                    factor: immediate_value.unwrap(),
+                    register: matched_op1_reg?,
+                    factor: immediate_value,
                 })
             } else {
-                if matched_op1_reg.is_some() {
+                if matched_op1_reg.is_ok() {
                     Some(OlaOperand::RegisterOperand {
-                        register: matched_op1_reg.unwrap(),
+                        register: matched_op1_reg?,
                     })
                 } else if opcode == OlaOpcode::MOV {
                     Some(OlaOperand::SpecialReg {

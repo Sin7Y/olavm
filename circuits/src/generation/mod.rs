@@ -84,14 +84,14 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     let exec_for_cpu = exec.clone();
     thread::spawn(move || {
         let cpu_rows = generate_cpu_trace::<F>(&exec_for_cpu);
-        cpu_tx.send(trace_to_poly_values(cpu_rows));
+        let _ = cpu_tx.send(trace_to_poly_values(cpu_rows));
     });
 
     let (memory_tx, memory_rx) = channel();
     let memory = std::mem::replace(&mut program.trace.memory, Vec::new());
     thread::spawn(move || {
         let memory_rows = generate_memory_trace::<F>(&memory);
-        memory_tx.send(trace_to_poly_values(memory_rows));
+        let _ = memory_tx.send(trace_to_poly_values(memory_rows));
     });
 
     let (bitwise_tx, bitwise_rx) = channel();
@@ -99,28 +99,28 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
         std::mem::replace(&mut program.trace.builtin_bitwise_combined, Vec::new());
     thread::spawn(move || {
         let (bitwise_rows, bitwise_beta) = generate_bitwise_trace::<F>(&builtin_bitwise_combined);
-        bitwise_tx.send((trace_to_poly_values(bitwise_rows), bitwise_beta));
+        let _ = bitwise_tx.send((trace_to_poly_values(bitwise_rows), bitwise_beta));
     });
 
     let (cmp_tx, cmp_rx) = channel();
     let builtin_cmp = std::mem::replace(&mut program.trace.builtin_cmp, Vec::new());
     thread::spawn(move || {
         let cmp_rows = generate_cmp_trace(&builtin_cmp);
-        cmp_tx.send(trace_to_poly_values(cmp_rows));
+        let _ = cmp_tx.send(trace_to_poly_values(cmp_rows));
     });
 
     let (rc_tx, rc_rx) = channel();
     let builtin_rangecheck = std::mem::replace(&mut program.trace.builtin_rangecheck, Vec::new());
     thread::spawn(move || {
         let rc_rows = generate_rc_trace(&builtin_rangecheck);
-        rc_tx.send(trace_to_poly_values(rc_rows));
+        let _ = rc_tx.send(trace_to_poly_values(rc_rows));
     });
 
     let (poseidon_tx, poseidon_rx) = channel();
     let builtin_poseidon = std::mem::replace(&mut program.trace.builtin_poseidon, Vec::new());
     thread::spawn(move || {
         let poseidon_rows = generate_poseidon_trace(&builtin_poseidon);
-        poseidon_tx.send(trace_to_poly_values(poseidon_rows));
+        let _ = poseidon_tx.send(trace_to_poly_values(poseidon_rows));
     });
 
     let (poseidon_chunk_tx, poseidon_chunk_rx) = channel();
@@ -129,7 +129,7 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     thread::spawn(move || {
         let poseidon_chunk_rows: [Vec<F>; 53] =
             generate_poseidon_chunk_trace(&builtin_poseidon_chunk);
-        poseidon_chunk_tx.send(trace_to_poly_values(poseidon_chunk_rows));
+        let _ = poseidon_chunk_tx.send(trace_to_poly_values(poseidon_chunk_rows));
     });
 
     let (storage_tx, storage_rx) = channel();
@@ -140,21 +140,21 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     thread::spawn(move || {
         let storage_access_rows =
             generate_storage_access_trace(&builtin_storage_hash, &builtin_program_hash);
-        storage_tx.send(trace_to_poly_values(storage_access_rows));
+        let _ = storage_tx.send(trace_to_poly_values(storage_access_rows));
     });
 
     let (tape_tx, tape_rx) = channel();
     let tape = std::mem::replace(&mut program.trace.tape, Vec::new());
     thread::spawn(move || {
         let tape_rows = generate_tape_trace(&tape);
-        tape_tx.send(trace_to_poly_values(tape_rows));
+        let _ = tape_tx.send(trace_to_poly_values(tape_rows));
     });
 
     let (sccall_tx, sccall_rx) = channel();
     let sc_call = std::mem::replace(&mut program.trace.sc_call, Vec::new());
     thread::spawn(move || {
         let sccall_rows = generate_sccall_trace(&sc_call);
-        sccall_tx.send(trace_to_poly_values(sccall_rows));
+        let _ = sccall_tx.send(trace_to_poly_values(sccall_rows));
     });
 
     let (program_tx, program_rx) = channel();
@@ -168,13 +168,13 @@ pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     thread::spawn(move || {
         let (program_rows, program_beta) =
             prog::generate_prog_trace::<F>(&exec, progs_for_program, program.trace.start_end_roots);
-        program_tx.send((trace_to_poly_values(program_rows), program_beta));
+        let _ = program_tx.send((trace_to_poly_values(program_rows), program_beta));
     });
 
     let (prog_chunk_tx, prog_chunk_rx) = channel();
     thread::spawn(move || {
         let prog_chunk_rows = prog::generate_prog_chunk_trace::<F>(progs);
-        prog_chunk_tx.send(trace_to_poly_values(prog_chunk_rows));
+        let _ = prog_chunk_tx.send(trace_to_poly_values(prog_chunk_rows));
     });
 
     let (bitwise_trace, bitwise_beta) = bitwise_rx.recv().unwrap();
