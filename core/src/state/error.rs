@@ -43,4 +43,6 @@ pub enum StateError {
 
     #[error("VM is not alive, batch has been finished!")]
     VMNotAvaliable,
+    #[error("Cannot make a call after finish batch!")]
+    CalledAfterBatchFinished,
 }
