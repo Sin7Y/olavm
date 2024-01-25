@@ -31,6 +31,8 @@ use std::path::Path;
 mod config;
 mod vm_manager;
 
+pub use vm_manager::*;
+
 #[cfg(test)]
 pub mod test;
 
