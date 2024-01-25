@@ -200,8 +200,8 @@ impl VmManager {
             false,
         );
 
-        self.storage_queries
-            .append(vm.ola_state.storage_queries.as_mut());
+        let to_append = vm.ola_state.storage_queries.clone();
+        self.storage_queries.extend(to_append);
 
         match exec_res {
             Ok(_) => Ok(InvokeResult {
@@ -248,8 +248,8 @@ impl VmManager {
             false,
         );
 
-        self.storage_queries
-            .append(vm.ola_state.storage_queries.as_mut());
+        let to_append = vm.ola_state.storage_queries.clone();
+        self.storage_queries.extend(to_append);
 
         match exec_res {
             Ok(_) => {
