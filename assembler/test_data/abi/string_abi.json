@@ -1,8 +1,30 @@
 [
   {
-    "name": "string_test",
+    "name": "set_string_test",
     "type": "function",
     "inputs": [],
     "outputs": []
+  },
+  {
+    "name": "string_test_return",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ]
+  },
+  {
+    "name": "string_test_return2",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ]
   }
 ]

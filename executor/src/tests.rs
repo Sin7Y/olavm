@@ -59,7 +59,7 @@ fn executor_run_test_program(
         debug_info: program.debug_info,
         prophets: prophets,
         pre_exe_flag: false,
-        print_flag: false,
+        print_flag: true,
     };
 
     for inst in instructions {
@@ -1384,7 +1384,7 @@ fn system_context_test() {
 
 
 #[test]
-fn storage_mapping_fields_test() {
+fn storage_mapping_fields_test_0() {
     let abi: Abi = {
         let file = File::open("../assembler/test_data/abi/storage_mapping_fields_abi.json")
             .expect("failed to open ABI file");
@@ -1405,7 +1405,43 @@ fn storage_mapping_fields_test() {
 
         println!("input_0:{:?}", input_0);
 
-        let calldata_1 = input_0
+        let calldata_0 = input_0
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/storage_mapping_fields.json",
+            "storage_mapping_fields.txt",
+            false,
+            Some(calldata_0),
+        );
+    }
+}
+
+
+#[test]
+fn storage_mapping_fields_test_1() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/storage_mapping_fields_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_1 = abi.functions[1].clone();
+
+        // encode input and function selector
+        let input_1 = abi
+            .encode_input_with_signature(
+                func_1.signature().as_str(),
+                &[],
+            )
+            .unwrap();
+
+        println!("input_1:{:?}", input_1);
+
+        let calldata_1 = input_1
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
             .collect();
@@ -1421,7 +1457,7 @@ fn storage_mapping_fields_test() {
 
 
 #[test]
-fn string_test() {
+fn string_test_0() {
     let abi: Abi = {
         let file = File::open("../assembler/test_data/abi/string_abi.json")
             .expect("failed to open ABI file");
@@ -1442,7 +1478,43 @@ fn string_test() {
 
         println!("input_0:{:?}", input_0);
 
-        let calldata_1 = input_0
+        let calldata_0 = input_0
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/string.json",
+            "string_xxx.txt",
+            false,
+            Some(calldata_0),
+        );
+    }
+}
+
+
+#[test]
+fn string_test_1() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/string_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_1 = abi.functions[1].clone();
+
+        // encode input and function selector
+        let input_1 = abi
+            .encode_input_with_signature(
+                func_1.signature().as_str(),
+                &[],
+            )
+            .unwrap();
+
+        println!("input_1:{:?}", input_1);
+
+        let calldata_1 = input_1
             .iter()
             .map(|e| GoldilocksField::from_canonical_u64(*e))
             .collect();
@@ -1451,6 +1523,42 @@ fn string_test() {
             "string_xxx.txt",
             false,
             Some(calldata_1),
+        );
+    }
+}
+
+
+#[test]
+fn string_test_2() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/string_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_2 = abi.functions[2].clone();
+
+        // encode input and function selector
+        let input_2 = abi
+            .encode_input_with_signature(
+                func_2.signature().as_str(),
+                &[],
+            )
+            .unwrap();
+
+        println!("input_2:{:?}", input_2);
+
+        let calldata_2 = input_2
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/string.json",
+            "string_xxx.txt",
+            false,
+            Some(calldata_2),
         );
     }
 }
@@ -1486,6 +1594,43 @@ fn storage_string_test() {
         executor_run_test_program(
             "../assembler/test_data/bin/storage_string.json",
             "storage_string_xxx.txt",
+            false,
+            Some(calldata_1),
+        );
+    }
+}
+
+
+
+#[test]
+fn u32_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/u32_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func_0 = abi.functions[0].clone();
+
+        // encode input and function selector
+        let input_0 = abi
+            .encode_input_with_signature(
+                func_0.signature().as_str(),
+                &[],
+            )
+            .unwrap();
+
+        println!("input_0:{:?}", input_0);
+
+        let calldata_1 = input_0
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/u32.json",
+            "u32_xxx.txt",
             false,
             Some(calldata_1),
         );
