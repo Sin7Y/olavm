@@ -41,6 +41,7 @@ pub struct OlaVM {
     // process, caller address, code address
     pub process_ctx: Vec<(Process, Program, Address, Address)>,
     pub ctx_info: TxCtxInfo,
+    pub is_call: bool,
 }
 
 impl OlaVM {
@@ -61,6 +62,28 @@ impl OlaVM {
             account_tree,
             process_ctx: Vec::new(),
             ctx_info,
+            is_call: false,
+        }
+    }
+
+    pub fn new_call(tree_db_path: &Path, state_db_path: &Path, ctx_info: TxCtxInfo) -> Self {
+        let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
+        let account_tree = AccountTree::new(acc_db);
+        let state_db = RocksDB::new(Database::Sequencer, state_db_path, false);
+        let ola_state = NodeState::new(
+            Contracts {
+                contracts: HashMap::new(),
+            },
+            StateStorage { db: state_db },
+            ZkHasher::default(),
+        );
+
+        OlaVM {
+            ola_state,
+            account_tree,
+            process_ctx: Vec::new(),
+            ctx_info,
+            is_call: true,
         }
     }
 
@@ -266,7 +289,11 @@ impl OlaVM {
     ) -> Result<(), StateError> {
         let mut env_idx = 0;
         let mut sc_cnt = 0;
-        let mut process = Process::new();
+        let mut process = if self.is_call {
+            Process::new_call()
+        } else {
+            Process::new()
+        };
         process.block_timestamp = self.ctx_info.block_timestamp.0;
         process.env_idx = GoldilocksField::from_canonical_u64(env_idx);
         process.call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);

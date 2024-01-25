@@ -72,4 +72,7 @@ pub enum ProcessorError {
 
     #[error("Array indexing error: {0}")]
     ArrayIndexError(String),
+
+    #[error("Try to sstore in a call!")]
+    CannotSStoreInCall,
 }

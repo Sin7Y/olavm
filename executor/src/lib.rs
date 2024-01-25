@@ -243,6 +243,7 @@ pub struct Process {
     pub storage_access_idx: GoldilocksField,
     pub storage_queries: Vec<StorageQuery>,
     pub return_data: Vec<GoldilocksField>,
+    pub is_call: bool,
 }
 
 impl Process {
@@ -279,7 +280,14 @@ impl Process {
             storage_access_idx: GoldilocksField::ZERO,
             storage_queries: Vec::new(),
             return_data: Vec::new(),
+            is_call: false,
         }
+    }
+
+    pub fn new_call() -> Self {
+        let mut process = Self::new();
+        process.is_call = true;
+        process
     }
 
     pub fn get_reg_index(&self, reg_str: &str) -> usize {
@@ -1272,6 +1280,9 @@ impl Process {
         registers_status: &[GoldilocksField; REGISTER_NUM],
         ctx_code_regs_status: &Address,
     ) -> Result<(), ProcessorError> {
+        if self.is_call {
+            return Err(ProcessorError::CannotSStoreInCall);
+        }
         self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u8);
         let mut slot_key = [GoldilocksField::ZERO; 4];
         let mut store_value = [GoldilocksField::ZERO; 4];
