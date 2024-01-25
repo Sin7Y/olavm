@@ -1,9 +1,5 @@
-use std::{
-    mem,
-    path::{Path, PathBuf},
-};
+use std::{mem, path::PathBuf};
 
-use anyhow::anyhow;
 use executor::BatchCacheManager;
 use ola_core::{
     merkle_tree::log::StorageQuery,
@@ -104,7 +100,11 @@ pub struct InvokeResult {
     pub storage_queries: Vec<StorageQuery>,
 }
 
-pub struct CallResult {}
+pub struct FinishBatchResult {
+    pub trace: Trace,
+    pub storage_queries: Vec<StorageQuery>,
+    pub block_tip_queries: Vec<StorageQuery>,
+}
 
 pub struct VmManager {
     tree_db_path: String,
@@ -127,9 +127,9 @@ impl VmManager {
         }
     }
 
-    pub fn call(&mut self, call_info: CallInfo) -> anyhow::Result<Vec<u64>> {
+    pub fn call(&mut self, call_info: CallInfo) -> Result<Vec<u64>, StateError> {
         if !self.is_alive {
-            return Err(anyhow!("Batch has been finished!"));
+            return Err(StateError::CalledAfterBatchFinished);
         }
         let tx_init_info = TxCtxInfo {
             block_number: self.block_info.get_block_number(),
@@ -162,7 +162,7 @@ impl VmManager {
                 let return_data = vm.ola_state.return_data.iter().map(|f| f.0).collect();
                 Ok(return_data)
             }
-            Err(e) => Err(anyhow!("{}", e)),
+            Err(e) => Err(e),
         }
     }
 
@@ -212,7 +212,7 @@ impl VmManager {
         }
     }
 
-    pub fn finish_batch(&mut self) -> anyhow::Result<InvokeResult> {
+    pub fn finish_batch(&mut self) -> Result<FinishBatchResult, StateError> {
         let tx_init_info = TxCtxInfo {
             block_number: self.block_info.get_block_number(),
             block_timestamp: self.block_info.get_timestamp(),
@@ -254,12 +254,13 @@ impl VmManager {
         match exec_res {
             Ok(_) => {
                 self.is_alive = false;
-                Ok(InvokeResult {
+                Ok(FinishBatchResult {
                     trace: vm.ola_state.gen_tx_trace(),
                     storage_queries: mem::take(&mut self.storage_queries),
+                    block_tip_queries: vm.ola_state.storage_queries,
                 })
             }
-            Err(e) => Err(anyhow!("{}", e)),
+            Err(e) => Err(e),
         }
     }
 }
