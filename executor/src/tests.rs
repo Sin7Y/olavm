@@ -1,5 +1,5 @@
 use crate::trace::{gen_dump_file, gen_storage_hash_table, gen_storage_table};
-use crate::{Process, BatchCacheManager};
+use crate::{BatchCacheManager, Process};
 
 use crate::load_tx::init_tape;
 use core::crypto::hash::Hasher;

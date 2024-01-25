@@ -156,7 +156,7 @@ mod tests {
     use core::merkle_tree::tree::AccountTree;
     use core::program::Program;
     use core::types::account::Address;
-    use executor::{Process, BatchCacheManager};
+    use executor::{BatchCacheManager, Process};
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};

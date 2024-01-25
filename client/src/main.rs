@@ -15,7 +15,7 @@ use core::trace::trace::Trace;
 use core::vm::transaction::init_tx_context_mock;
 use core::vm::vm_state::Address;
 use executor::load_tx::init_tape;
-use executor::{Process, BatchCacheManager};
+use executor::{BatchCacheManager, Process};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};

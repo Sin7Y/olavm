@@ -12,7 +12,7 @@ use core::vm::transaction::init_tx_context_mock;
 use core::vm::vm_state::Address;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor::load_tx::init_tape;
-use executor::{Process, BatchCacheManager};
+use executor::{BatchCacheManager, Process};
 use itertools::Itertools;
 use log::{debug, error, info, logger, LevelFilter};
 use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
