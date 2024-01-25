@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{mem, path::Path};
 
 use anyhow::anyhow;
 use executor::BatchCacheManager;
@@ -6,7 +6,9 @@ use ola_core::{
     merkle_tree::log::StorageQuery,
     trace::trace::Trace,
     types::{
-        merkle_tree::u8_arr_to_tree_key, storage::u8_arr_to_field_arr, Field, GoldilocksField,
+        merkle_tree::{u8_arr_to_tree_key, TreeValue},
+        storage::u8_arr_to_field_arr,
+        Field, GoldilocksField,
     },
     vm::transaction::TxCtxInfo,
 };
@@ -109,6 +111,7 @@ pub struct VmManager<'a> {
     block_info: BlockInfo,
     storage_queries: Vec<StorageQuery>,
     cache_manager: BatchCacheManager,
+    is_alive: bool,
 }
 
 impl<'a> VmManager<'a> {
@@ -119,10 +122,14 @@ impl<'a> VmManager<'a> {
             block_info,
             storage_queries: vec![],
             cache_manager: BatchCacheManager::default(),
+            is_alive: true,
         }
     }
 
     pub fn call(&mut self, call_info: CallInfo) -> anyhow::Result<Vec<u64>> {
+        if !self.is_alive {
+            return Err(anyhow!("Batch has been finished!"));
+        }
         let tx_init_info = TxCtxInfo {
             block_number: self.block_info.get_block_number(),
             block_timestamp: self.block_info.get_timestamp(),
@@ -143,10 +150,19 @@ impl<'a> VmManager<'a> {
             &mut self.cache_manager,
             false,
         );
-        Ok(vec![])
+        match exec_res {
+            Ok(_) => {
+                let return_data = vm.ola_state.return_data.iter().map(|f| f.0).collect();
+                Ok(return_data)
+            }
+            Err(e) => Err(anyhow!("{}", e)),
+        }
     }
 
     pub fn invoke(&mut self, tx_info: TxInfo) -> anyhow::Result<InvokeResult> {
+        if !self.is_alive {
+            return Err(anyhow!("Batch has been finished!"));
+        }
         let tx_init_info = TxCtxInfo {
             block_number: self.block_info.get_block_number(),
             block_timestamp: self.block_info.get_timestamp(),
@@ -176,6 +192,50 @@ impl<'a> VmManager<'a> {
                 trace: vm.ola_state.gen_tx_trace(),
                 storage_queries: vm.ola_state.storage_queries,
             }),
+            Err(e) => Err(anyhow!("{}", e)),
+        }
+    }
+
+    fn finish_batch(&mut self) -> anyhow::Result<InvokeResult> {
+        let tx_init_info = TxCtxInfo {
+            block_number: self.block_info.get_block_number(),
+            block_timestamp: self.block_info.get_timestamp(),
+            sequencer_address: self.block_info.get_sequencer_address(),
+            version: GoldilocksField::ZERO,
+            chain_id: self.block_info.get_chain_id(),
+            caller_address: self.block_info.get_sequencer_address(),
+            nonce: GoldilocksField::ZERO,
+            signature_r: TreeValue::default(),
+            signature_s: TreeValue::default(),
+            tx_hash: TreeValue::default(),
+        };
+        let mut vm = OlaVM::new(self.tree_db_path, self.state_db_path, tx_init_info);
+
+        let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
+        let calldata = [self.block_info.block_number as u64, 1, 2190639505]
+            .iter()
+            .map(|l| GoldilocksField::from_canonical_u64(*l))
+            .collect();
+
+        let exec_res = vm.execute_tx(
+            entry_point_addr,
+            entry_point_addr,
+            calldata,
+            &mut self.cache_manager,
+            false,
+        );
+
+        self.storage_queries
+            .append(vm.ola_state.storage_queries.as_mut());
+
+        match exec_res {
+            Ok(_) => {
+                self.is_alive = false;
+                Ok(InvokeResult {
+                    trace: vm.ola_state.gen_tx_trace(),
+                    storage_queries: mem::take(&mut self.storage_queries),
+                })
+            }
             Err(e) => Err(anyhow!("{}", e)),
         }
     }
