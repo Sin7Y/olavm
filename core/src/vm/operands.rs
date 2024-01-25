@@ -51,44 +51,55 @@ impl FromStr for OlaOperand {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let regex_reg_offset =
-            Regex::new(r"^\[(?P<reg>r[0-8]),(?P<offset>-?[[:digit:]]+)\]$").unwrap();
+        let regex_reg_offset = Regex::new(r"^\[(?P<reg>r[0-8]),(?P<offset>-?[[:digit:]]+)\]$")
+            .map_err(|_| String::from("Failed to new Regex"))?;
         let capture_reg_offset = regex_reg_offset.captures(s);
         if capture_reg_offset.is_some() {
             let caps = capture_reg_offset.unwrap();
-            let str_reg = caps.name("reg").unwrap().as_str();
-            let str_offset = caps.name("offset").unwrap().as_str();
+            let str_reg = caps
+                .name("reg")
+                .ok_or(format!("Failed to capture 'reg' in {}", s))?
+                .as_str();
+            let str_offset = caps
+                .name("offset")
+                .ok_or(format!("Failed to capture 'offset' in {}", s))?
+                .as_str();
             let register = OlaRegister::from_str(str_reg)?;
             let offset = ImmediateValue::from_str(str_offset)?;
             return Ok(OlaOperand::RegisterWithOffset { register, offset });
         }
 
-        let regex_reg = Regex::new(r"^(?P<reg>r[0-8])$").unwrap();
+        let regex_reg =
+            Regex::new(r"^(?P<reg>r[0-8])$").map_err(|_| String::from("Failed to new Regex"))?;
         let capture_reg = regex_reg.captures(s);
         if capture_reg.is_some() {
             let caps = capture_reg.unwrap();
-            let str_reg = caps.name("reg").unwrap().as_str();
+            let str_reg = caps
+                .name("reg")
+                .ok_or(format!("Failed to capture 'reg' in {}", s))?
+                .as_str();
             let register = OlaRegister::from_str(str_reg)?;
             return Ok(OlaOperand::RegisterOperand { register });
         }
 
-        let regex_immediate_value = Regex::new(r"^(?P<imm>-?[[:digit:]]+)$").unwrap();
+        let regex_immediate_value = Regex::new(r"^(?P<imm>-?[[:digit:]]+)$")
+            .map_err(|_| String::from("Failed to new Regex"))?;
         let capture_immediate = regex_immediate_value.captures(s);
         if capture_immediate.is_some() {
             let caps = capture_immediate.unwrap();
-            let str_imm = caps.name("imm").unwrap().as_str();
+            let str_imm = caps
+                .name("imm")
+                .ok_or(format!("Failed to capture 'imm' in {}", s))?
+                .as_str();
             let value = ImmediateValue::from_str(str_imm)?;
             return Ok(OlaOperand::ImmediateOperand { value });
         }
 
-        let special_reg = OlaSpecialRegister::from_str(s);
-        if special_reg.is_ok() {
-            return Ok(OlaOperand::SpecialReg {
-                special_reg: special_reg.unwrap(),
-            });
-        }
-
-        return Err(format!("invalid operand: {}", s));
+        let special_reg = OlaSpecialRegister::from_str(s)
+            .map_err(|err| format!("invalid operand: {} with error: {}", s, err))?;
+        Ok(OlaOperand::SpecialReg {
+            special_reg: special_reg,
+        })
     }
 }
 
@@ -151,11 +162,8 @@ impl FromStr for ImmediateValue {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with("0x") {
             let without_prefix = s.trim_start_matches("0x");
-            let hex_parsed_res = u64::from_str_radix(without_prefix, 16);
-            if hex_parsed_res.is_err() {
-                return Err(format!("Immediate is not a valid number: {}", s));
-            }
-            let value = hex_parsed_res.unwrap();
+            let value = u64::from_str_radix(without_prefix, 16)
+                .map_err(|_| format!("Immediate is not a valid number: {}", s))?;
             if value >= ImmediateValue::ORDER {
                 return Err(format!("Immediate overflow: {}", s));
             }
@@ -164,11 +172,8 @@ impl FromStr for ImmediateValue {
             });
         }
 
-        let parsed_result = i128::from_str_radix(s, 10);
-        if parsed_result.is_err() {
-            return Err(format!("Immediate is not a valid number: {}", s));
-        }
-        let value = parsed_result.unwrap();
+        let value = i128::from_str_radix(s, 10)
+            .map_err(|_| format!("Immediate is not a valid number: {}", s))?;
         let signed_order = ImmediateValue::ORDER as i128;
         if value >= signed_order || value * -1 >= signed_order {
             return Err(format!("Immediate overflow: {}", s));

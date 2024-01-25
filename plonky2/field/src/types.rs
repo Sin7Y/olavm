@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::iter::{Product, Sum};
@@ -37,6 +38,7 @@ pub trait Field:
     + Sync
     + Serialize
     + DeserializeOwned
+    + Any
 {
     const ZERO: Self;
     const ONE: Self;
@@ -434,6 +436,10 @@ pub trait Field:
     fn multiply_accumulate(&self, x: Self, y: Self) -> Self {
         // Default implementation.
         *self + x * y
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

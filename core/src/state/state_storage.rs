@@ -1,6 +1,6 @@
 use crate::state::error::StateError;
 use crate::storage::db::{RocksDB, SequencerColumnFamily, StateKeeperColumnFamily};
-use crate::types::merkle_tree::{tree_key_to_u8_arr, u8_arr_to_tree_key, TreeValue};
+use crate::types::merkle_tree::{tree_key_to_u8_arr, TreeValue};
 use crate::types::storage::{field_arr_to_u8_arr, u8_arr_to_field_arr};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use rocksdb::WriteBatch;
@@ -64,17 +64,9 @@ impl StateStorage {
             .db
             .cf_sequencer_handle(SequencerColumnFamily::FactoryDeps);
 
-        let mut res = self.db.get_cf(cf, code_hash);
-
-        if let Ok(res) = res {
-            if res.is_some() {
-                return Ok(res.unwrap());
-            } else {
-                return Err(StateError::GetProgramError("program empty".to_string()));
-            }
-        }
-
-        Err(StateError::GetProgramError(res.err().unwrap().to_string()))
+        let res = self.db.get_cf(cf, code_hash);
+        res.map_err(StateError::StorageIoError)?
+            .ok_or(StateError::GetProgramError("program empty".to_string()))
     }
 
     pub fn get_contracts(
@@ -91,11 +83,14 @@ impl StateStorage {
         let res = self.db.multi_get_cf(code_keys);
 
         let mut codes = Vec::new();
-        for e in res.into_iter() {
-            if let Ok(res) = e {
-                codes.push(u8_arr_to_field_arr(&res.unwrap()))
+        for r in res.into_iter() {
+            if let Ok(Some(res)) = r {
+                codes.push(u8_arr_to_field_arr(&res))
             } else {
-                return Err(StateError::StorageIoError(e.err().unwrap()));
+                return Err(match r {
+                    Err(err) => StateError::StorageIoError(err),
+                    Ok(_) => StateError::ColumnFamilyEmpty,
+                });
             }
         }
 
@@ -108,11 +103,13 @@ impl StateStorage {
             .cf_state_keeper_handle(StateKeeperColumnFamily::Contracts);
         let code_key = tree_key_to_u8_arr(code_hash);
         let res = self.db.get_cf(cf, code_key);
-
-        if let Ok(code) = res {
-            return Ok(u8_arr_to_field_arr(&code.unwrap()));
+        if let Ok(Some(res)) = res {
+            Ok(u8_arr_to_field_arr(&res))
         } else {
-            return Err(StateError::StorageIoError(res.err().unwrap()));
+            return Err(match res {
+                Err(err) => StateError::StorageIoError(err),
+                Ok(_) => StateError::ColumnFamilyEmpty,
+            });
         }
     }
 
@@ -133,14 +130,11 @@ impl StateStorage {
 
     pub fn get_contract_map(&self, contract_addr: &TreeValue) -> Result<Vec<u8>, StateError> {
         let cf = self.db.cf_sequencer_handle(SequencerColumnFamily::State);
-        let addr_key = get_prog_hash_cf_key_from_contract_addr(contract_addr);
+        let addr_key = get_prog_hash_cf_key_from_contract_addr(contract_addr)
+            .map_err(StateError::GetProgramError)?;
         let res = self.db.get_cf(cf, addr_key);
-
-        if let Ok(code) = res {
-            return Ok(code.unwrap());
-        } else {
-            return Err(StateError::StorageIoError(res.err().unwrap()));
-        }
+        res.map_err(StateError::StorageIoError)?
+            .ok_or(StateError::ColumnFamilyEmpty)
     }
 
     pub fn save_prophet(&mut self, code_hash: &TreeValue, prophet: &str) -> Result<(), StateError> {
@@ -175,11 +169,13 @@ impl StateStorage {
             .cf_state_keeper_handle(StateKeeperColumnFamily::Prophets);
         let code_hash_key = tree_key_to_u8_arr(code_hash);
         let res = self.db.get_cf(cf, code_hash_key);
-
-        if let Ok(Some(code)) = res {
-            return Ok(String::from_utf8(code).unwrap());
+        if let Ok(Some(res)) = res {
+            Ok(String::from_utf8(res)?)
         } else {
-            return Err(StateError::StorageIoError(res.err().unwrap()));
+            return Err(match res {
+                Err(err) => StateError::StorageIoError(err),
+                Ok(_) => StateError::ColumnFamilyEmpty,
+            });
         }
     }
 
@@ -189,11 +185,13 @@ impl StateStorage {
             .cf_state_keeper_handle(StateKeeperColumnFamily::Debugs);
         let code_hash_key = tree_key_to_u8_arr(code_hash);
         let res = self.db.get_cf(cf, code_hash_key);
-
-        if let Ok(Some(code)) = res {
-            return Ok(String::from_utf8(code).unwrap());
+        if let Ok(Some(res)) = res {
+            Ok(String::from_utf8(res)?)
         } else {
-            return Err(StateError::StorageIoError(res.err().unwrap()));
+            return Err(match res {
+                Err(err) => StateError::StorageIoError(err),
+                Ok(_) => StateError::ColumnFamilyEmpty,
+            });
         }
     }
 }

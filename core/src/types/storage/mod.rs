@@ -70,7 +70,11 @@ pub fn u8_arr_to_field_arr(value: &Vec<u8>) -> Vec<GoldilocksField> {
         .enumerate()
         .map(|(_index, chunk)| {
             GoldilocksField::from_canonical_u64(u64::from_be_bytes(
-                chunk.map(|e| *e).collect::<Vec<_>>().try_into().unwrap(),
+                chunk
+                    .map(|e| *e)
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .expect("Failed to convert bytes"),
             ))
         })
         .collect()

@@ -81,6 +81,7 @@ impl GrandProductChallenge<Target> {
         builder.add_extension(reduced, gamma)
     }
 
+    #[allow(dead_code)]
     pub(crate) fn combine_base_circuit<F: RichField + Extendable<D>, const D: usize>(
         &self,
         builder: &mut CircuitBuilder<F, D>,

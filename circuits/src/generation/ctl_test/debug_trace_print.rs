@@ -13,14 +13,14 @@ use std::{
 use assembler::encoder::encode_asm_from_json_file;
 use core::{
     crypto::{hash::Hasher, ZkHasher},
-    merkle_tree::log::{StorageLog, WitnessStorageLog},
+    merkle_tree::log::{StorageLog, StorageLogKind, WitnessStorageLog},
     types::merkle_tree::{encode_addr, tree_key_default},
     vm::transaction::init_tx_context_mock,
 };
 use executor::{
     load_tx::init_tape,
     trace::{gen_storage_hash_table, gen_storage_table},
-    Process,
+    Process, TxScopeCacheManager,
 };
 use plonky2::hash::hash_types::RichField;
 
@@ -233,7 +233,11 @@ pub fn get_exec_trace(
         .insert(encode_addr(&callee_exe_addr), code);
 
     db.process_block(vec![WitnessStorageLog {
-        storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+        storage_log: StorageLog::new_write(
+            StorageLogKind::RepeatedWrite,
+            callee_exe_addr,
+            code_hash,
+        ),
         previous_value: tree_key_default(),
     }]);
     let _ = db.save();
@@ -246,14 +250,14 @@ pub fn get_exec_trace(
     });
 
     program.prophets = prophets;
-    let res = process.execute(&mut program, &mut db);
+    let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {
             println!("execute err:{:?}", e);
         }
     }
-    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db);
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db).unwrap();
     gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
     program.trace.start_end_roots = (start, db.root_hash());
     return program.trace;
@@ -307,6 +311,7 @@ fn print_title_data_with_data(desc: &str, title: &[String], data: &[Vec<Goldiloc
     }
 }
 
+#[allow(dead_code)]
 pub fn print_title_data(
     desc: &str,
     data_col_to_name: BTreeMap<usize, String>,

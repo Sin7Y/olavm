@@ -113,7 +113,9 @@ pub fn decode_raw_instruction(
                     let reg1_name = format!("r{}", reg1);
                     instruction += &reg1_name;
                 } else {
-                    panic!("MSTORE op0 must be a reg");
+                    return Err(ProcessorError::MstoreError(format!(
+                        "MSTORE op0 must be a reg"
+                    )));
                 }
 
                 instruction += " ";
@@ -129,7 +131,9 @@ pub fn decode_raw_instruction(
                     instruction += &imm.to_string();
                     instruction += " ";
                 } else {
-                    panic!("MSTORE op1 must be a reg or immediate");
+                    return Err(ProcessorError::MstoreError(format!(
+                        "MSTORE op1 must be a reg or immediate"
+                    )));
                 }
 
                 instruction += " ";
@@ -140,7 +144,9 @@ pub fn decode_raw_instruction(
                     let reg0_name = format!("r{}", reg0);
                     instruction += &reg0_name;
                 } else {
-                    panic!("MSTORE dst must be a reg");
+                    return Err(ProcessorError::MstoreError(format!(
+                        "MSTORE dst must be a reg"
+                    )));
                 }
                 step = IMM_INSTRUCTION_LEN;
             }
@@ -151,14 +157,18 @@ pub fn decode_raw_instruction(
                     let reg0_name = format!("r{}", reg0);
                     instruction += &reg0_name;
                 } else {
-                    panic!("MLOAD dst must be a reg");
+                    return Err(ProcessorError::MloadError(format!(
+                        "MLOAD dst must be a reg"
+                    )));
                 }
                 instruction += " ";
                 if reg1 != REG_NOT_USED {
                     let reg1_name = format!("r{}", reg1);
                     instruction += &reg1_name;
                 } else {
-                    panic!("MLOAD op0 must be a reg");
+                    return Err(ProcessorError::MloadError(format!(
+                        "MLOAD op0 must be a reg"
+                    )));
                 }
                 instruction += " ";
 
@@ -173,7 +183,9 @@ pub fn decode_raw_instruction(
                     instruction += &imm.to_string();
                     instruction += " ";
                 } else {
-                    panic!("MLOAD op1 must be a reg or immediate");
+                    return Err(ProcessorError::MloadError(format!(
+                        "MLOAD op1 must be a reg or immediate"
+                    )));
                 }
                 step = IMM_INSTRUCTION_LEN;
             }

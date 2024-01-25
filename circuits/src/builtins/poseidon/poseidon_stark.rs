@@ -181,7 +181,6 @@ pub fn ctl_filter_with_storage<F: Field>() -> Column<F> {
 
 mod test {
     use core::trace::trace::{PoseidonRow, Trace};
-    use core::types::Field;
     use std::path::PathBuf;
 
     use crate::stark::stark::Stark;

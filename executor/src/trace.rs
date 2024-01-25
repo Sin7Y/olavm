@@ -34,7 +34,7 @@ pub fn gen_memory_table(
         .memory
         .trace
         .get_mut(&HP_START_ADDR)
-        .unwrap()
+        .ok_or(ProcessorError::MemVistInv(HP_START_ADDR))?
         .remove(0);
     for (field_addr, cells) in process.memory.trace.iter() {
         let mut new_addr_flag = true;
@@ -281,7 +281,7 @@ pub fn gen_storage_hash_table(
     process: &mut Process,
     program: &mut Program,
     account_tree: &mut AccountTree,
-) -> Vec<[GoldilocksField; TREE_VALUE_LEN]> {
+) -> Result<Vec<[GoldilocksField; TREE_VALUE_LEN]>, ProcessorError> {
     let storage_log_len = process.storage_log.len();
     let mut trace = std::mem::replace(&mut process.storage_log, Vec::new());
     trace.extend(std::mem::replace(&mut process.program_log, Vec::new()));
@@ -294,7 +294,13 @@ pub fn gen_storage_hash_table(
     for (chunk, log) in hash_traces.chunks(ROOT_TREE_DEPTH).enumerate().zip(trace) {
         let is_write = GoldilocksField::from_canonical_u64(log.storage_log.kind as u64);
         let mut root_hash = [GoldilocksField::ZERO; TREE_VALUE_LEN];
-        root_hash.clone_from_slice(&chunk.1.last().unwrap().0.output[0..4]);
+        let hash_out: &[GoldilocksField] = &chunk
+            .1
+            .last()
+            .ok_or(ProcessorError::EmptyHashTraceError)?
+            .0
+            .output[0..4];
+        root_hash.clone_from_slice(hash_out);
         root_hashes.push(root_hash);
         let mut acc = GoldilocksField::ZERO;
         let key = tree_key_to_u256(&log.storage_log.key);
@@ -349,7 +355,7 @@ pub fn gen_storage_hash_table(
         .builtin_storage_hash
         .drain(storage_log_len * ROOT_TREE_DEPTH..)
         .collect();
-    root_hashes
+    Ok(root_hashes)
 }
 
 pub fn gen_storage_table(
@@ -407,7 +413,7 @@ pub fn gen_tape_table(process: &mut Process, program: &mut Program) -> Result<()
     Ok(())
 }
 
-pub fn gen_dump_file(process: &mut Process, program: &mut Program) {
+pub fn gen_dump_file(process: &mut Process, program: &mut Program) -> Result<(), ProcessorError> {
     let mut dump_trace = DumpTrace {
         exec: vec![],
         memory: vec![],
@@ -448,7 +454,10 @@ pub fn gen_dump_file(process: &mut Process, program: &mut Program) {
         }
     }
 
-    let trace_json_format = serde_json::to_string(&dump_trace).unwrap();
-    let mut file = File::create(format!("dump.json")).unwrap();
-    file.write_all(trace_json_format.as_ref()).unwrap();
+    let trace_json_format =
+        serde_json::to_string(&dump_trace).map_err(ProcessorError::JsonSerdeError)?;
+    let mut file = File::create(format!("dump.json")).map_err(ProcessorError::FileIOError)?;
+    file.write_all(trace_json_format.as_ref())
+        .map_err(ProcessorError::FileIOError)?;
+    Ok(())
 }

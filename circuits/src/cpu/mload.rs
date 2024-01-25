@@ -31,6 +31,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     );
 }
 
+#[allow(dead_code)]
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     _builder: &mut CircuitBuilder<F, D>,
     _lv: &[ExtensionTarget<D>; NUM_CPU_COLS],

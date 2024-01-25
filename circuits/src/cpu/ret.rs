@@ -26,6 +26,7 @@ pub(crate) fn eval_packed_generic<P: PackedField>(
     yield_constr.constraint_transition(lv[COL_S_RET] * (nv[COL_REGS.end - 1] - lv[COL_AUX1]));
 }
 
+#[allow(dead_code)]
 pub(crate) fn eval_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     lv: &[ExtensionTarget<D>; NUM_CPU_COLS],

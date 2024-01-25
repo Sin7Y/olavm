@@ -44,6 +44,8 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
 
 impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
     fn default() -> Self {
+        plonky2::field::cfft::ntt::init_gpu();
+
         Self {
             cpu_stark: CpuStark::default(),
             memory_stark: MemoryStark::default(),
@@ -663,7 +665,7 @@ mod tests {
     use core::vm::transaction::init_tx_context_mock;
     use executor::load_tx::init_tape;
     use executor::trace::{gen_storage_hash_table, gen_storage_table};
-    use executor::Process;
+    use executor::{Process, TxScopeCacheManager};
     use itertools::Itertools;
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
@@ -912,7 +914,7 @@ mod tests {
         });
 
         program.prophets = prophets;
-        let res = process.execute(&mut program, &mut db);
+        let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
         match res {
             Ok(_) => {}
             Err(e) => {

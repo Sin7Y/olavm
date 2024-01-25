@@ -21,6 +21,7 @@ pub(crate) const COL_CMP_ABS_DIFF_INV: usize = COL_CMP_ABS_DIFF + 1;
 pub(crate) const COL_CMP_FILTER_LOOKING_RC: usize = COL_CMP_ABS_DIFF_INV + 1;
 pub(crate) const COL_NUM_CMP: usize = COL_CMP_FILTER_LOOKING_RC + 1;
 
+#[allow(dead_code)]
 pub(crate) fn get_cmp_col_name_map() -> BTreeMap<usize, String> {
     let mut m: BTreeMap<usize, String> = BTreeMap::new();
     m.insert(COL_CMP_OP0, "CMP_OP0".to_string());

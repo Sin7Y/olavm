@@ -205,6 +205,7 @@ where
     )
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_storagehash_extra_looking_products<F, const D: usize>(
     _public_values: &PublicValues,
     _challenge: GrandProductChallenge<F>,

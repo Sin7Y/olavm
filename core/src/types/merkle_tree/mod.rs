@@ -132,7 +132,10 @@ pub fn h160_to_tree_key(value: H160) -> TreeKey {
 }
 
 pub fn tree_key_to_h256(value: &TreeKey) -> H256 {
-    let bytes: [u8; 32] = tree_key_to_u8_arr(value).try_into().unwrap();
+    let bytes: [u8; 32] = tree_key_to_u8_arr(value).try_into().expect(&format!(
+        "Vec<u8> convert to [u8;32] failed with data {:?}",
+        value
+    ));
     H256(bytes)
 }
 
@@ -159,7 +162,11 @@ pub fn u8_arr_to_tree_key(value: &Vec<u8>) -> TreeKey {
             [GoldilocksField::ZERO; TREE_VALUE_LEN],
             |mut tree_key, (index, chunk)| {
                 tree_key[index] = GoldilocksField::from_canonical_u64(u64::from_be_bytes(
-                    chunk.map(|e| *e).collect::<Vec<_>>().try_into().unwrap(),
+                    chunk
+                        .map(|e| *e)
+                        .collect::<Vec<_>>()
+                        .try_into()
+                        .expect("Convert u8 chunk to bytes failed"),
                 ));
                 tree_key
             },
@@ -178,7 +185,7 @@ pub fn encode_addr(addr: &Address) -> String {
 }
 
 pub fn decode_addr(addr: String) -> TreeKey {
-    u8_arr_to_tree_key(&hex::decode(addr).unwrap())
+    u8_arr_to_tree_key(&hex::decode(addr).expect("Decode address from string failed"))
 }
 
 pub fn tree_key_to_leaf_index(value: &TreeKey) -> LevelIndex {

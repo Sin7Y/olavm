@@ -182,7 +182,10 @@ mod tests {
 
     #[test]
     fn generate_books_test() {
-        generate_from_file("books.json".to_string(), "books.json".to_string());
+        generate_from_file(
+            "vote_simple_asm.json".to_string(),
+            "aaaaaa.json".to_string(),
+        );
     }
 
     #[test]

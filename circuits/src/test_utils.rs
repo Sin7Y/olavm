@@ -1,6 +1,6 @@
 use core::crypto::hash::Hasher;
 use core::crypto::ZkHasher;
-use core::merkle_tree::log::{StorageLog, WitnessStorageLog};
+use core::merkle_tree::log::{StorageLog, StorageLogKind, WitnessStorageLog};
 use core::types::merkle_tree::{encode_addr, tree_key_default};
 use core::{program::Program, trace::trace::Trace, types::account::Address};
 use std::collections::HashMap;
@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 use assembler::encoder::encode_asm_from_json_file;
 use executor::trace::{gen_storage_hash_table, gen_storage_table};
+use executor::TxScopeCacheManager;
 use executor::{load_tx::init_tape, Process};
 use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 use plonky2_util::log2_strict;
@@ -105,7 +106,11 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
         .insert(encode_addr(&callee_exe_addr), code);
 
     db.process_block(vec![WitnessStorageLog {
-        storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+        storage_log: StorageLog::new_write(
+            StorageLogKind::RepeatedWrite,
+            callee_exe_addr,
+            code_hash,
+        ),
         previous_value: tree_key_default(),
     }]);
     let _ = db.save();
@@ -118,7 +123,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     });
 
     program.prophets = prophets;
-    let res = process.execute(&mut program, &mut db);
+    let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {
@@ -126,7 +131,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
             return;
         }
     }
-    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db);
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db).unwrap();
     gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
     program.trace.start_end_roots = (start, db.root_hash());
 
@@ -285,7 +290,11 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         .insert(encode_addr(&callee_exe_addr), code);
 
     db.process_block(vec![WitnessStorageLog {
-        storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+        storage_log: StorageLog::new_write(
+            StorageLogKind::RepeatedWrite,
+            callee_exe_addr,
+            code_hash,
+        ),
         previous_value: tree_key_default(),
     }]);
     let _ = db.save();
@@ -297,7 +306,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         previous_value: tree_key_default(),
     });
 
-    let res = process.execute(&mut program, &mut db);
+    let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {
@@ -305,7 +314,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
             return;
         }
     }
-    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db);
+    let hash_roots = gen_storage_hash_table(&mut process, &mut program, &mut db).unwrap();
     gen_storage_table(&mut process, &mut program, hash_roots).unwrap();
     program.trace.start_end_roots = (start, db.root_hash());
 
