@@ -22,7 +22,6 @@ use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use ola_lang_abi::{Abi, FixedArray4, Value};
 
 fn executor_run_test_program(
     bin_file_path: &str,
@@ -58,7 +57,7 @@ fn executor_run_test_program(
         debug_info: program.debug_info,
         prophets: prophets,
         pre_exe_flag: false,
-        print_flag: true,
+        print_flag: false,
     };
 
     for inst in instructions {
@@ -442,7 +441,6 @@ fn global_test() {
         Some(calldata),
     );
 }
-
 
 #[test]
 fn hash_test() {

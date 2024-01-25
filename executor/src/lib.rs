@@ -258,7 +258,6 @@ impl Process {
     pub fn new() -> Self {
         Self {
             block_timestamp: 0,
-            block_timestamp: 0,
             env_idx: Default::default(),
             call_sc_cnt: Default::default(),
             clk: 0,

@@ -107,7 +107,6 @@ load_ctx_to_tape!(load_tx_context, TxCtxInfo);
 pub fn init_tape(
     process: &mut Process,
     calldata: Vec<GoldilocksField>,
-    calldata: Vec<GoldilocksField>,
     caller_exe_addr: Address,
     callee_addr: Address,
     callee_exe_addr: Address,
