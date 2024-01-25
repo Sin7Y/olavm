@@ -115,6 +115,7 @@ pub fn init_tape(
     load_fields_to_tape(process, &callee_exe_addr);
 }
 
+#[inline]
 fn load_fe_to_tape(process: &mut Process, fe: &GoldilocksField) {
     let addr = process.tp.0;
     process.tape.write(
@@ -129,19 +130,9 @@ fn load_fe_to_tape(process: &mut Process, fe: &GoldilocksField) {
 }
 
 fn load_fields_to_tape(process: &mut Process, fields: &[GoldilocksField]) {
-    let mut addr = process.tp.0;
     fields.into_iter().for_each(|fe| {
-        process.tape.write(
-            addr as u64,
-            0,
-            GoldilocksField::from_canonical_u64(0),
-            GoldilocksField::ONE,
-            GoldilocksField::ZERO,
-            GoldilocksField::from_canonical_u64(fe.0),
-        );
-        addr += 1;
+        load_fe_to_tape(process, fe);
     });
-    process.tp += GoldilocksField::from_canonical_u64(fields.len() as u64);
 }
 
 pub fn append_caller_callee_addr(
