@@ -75,22 +75,22 @@ impl TxInfo {
     pub fn get_version(&self) -> GoldilocksField {
         GoldilocksField::from_canonical_u64(self.version as u64)
     }
-    fn get_caller_address(&self) -> [GoldilocksField; 4] {
+    pub fn get_caller_address(&self) -> [GoldilocksField; 4] {
         u8_arr_to_tree_key(&self.caller_address.to_vec())
     }
-    fn get_calldata(&self) -> Vec<GoldilocksField> {
+    pub fn get_calldata(&self) -> Vec<GoldilocksField> {
         u8_arr_to_field_arr(&self.calldata)
     }
-    fn get_nonce(&self) -> GoldilocksField {
+    pub fn get_nonce(&self) -> GoldilocksField {
         GoldilocksField::from_canonical_u64(self.nonce as u64)
     }
-    fn get_signature_r(&self) -> [GoldilocksField; 4] {
+    pub fn get_signature_r(&self) -> [GoldilocksField; 4] {
         u8_arr_to_tree_key(&self.signature_r.to_vec())
     }
-    fn get_signature_s(&self) -> [GoldilocksField; 4] {
+    pub fn get_signature_s(&self) -> [GoldilocksField; 4] {
         u8_arr_to_tree_key(&self.signature_s.to_vec())
     }
-    fn get_tx_hash(&self) -> [GoldilocksField; 4] {
+    pub fn get_tx_hash(&self) -> [GoldilocksField; 4] {
         u8_arr_to_tree_key(&self.tx_hash.to_vec())
     }
 }
@@ -184,7 +184,7 @@ impl VmManager {
         };
         let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
         let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
-        let mut vm = OlaVM::new_call(
+        let mut vm = OlaVM::new(
             tree_db_path_buf.as_path(),
             state_db_path_buf.as_path(),
             tx_init_info,
@@ -227,7 +227,7 @@ impl VmManager {
         };
         let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
         let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
-        let mut vm = OlaVM::new_call(
+        let mut vm = OlaVM::new(
             tree_db_path_buf.as_path(),
             state_db_path_buf.as_path(),
             tx_init_info,

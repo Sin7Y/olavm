@@ -31,6 +31,7 @@ use std::path::Path;
 
 mod config;
 mod vm_manager;
+mod preexecutor;
 
 pub use vm_manager::*;
 
@@ -288,7 +289,7 @@ impl OlaVM {
         code_exe_addr: TreeValue,
         calldata: Vec<GoldilocksField>,
         cache_manager: &mut BatchCacheManager,
-        debug_flag: bool,
+        is_preexecute: bool,
     ) -> Result<(), StateError> {
         let mut env_idx = 0;
         let mut sc_cnt = 0;
@@ -311,7 +312,7 @@ impl OlaVM {
             &self.ctx_info,
         );
         let mut program = Program::default();
-        program.print_flag = debug_flag;
+        program.pre_exe_flag = is_preexecute;
         let mut caller_addr = caller_addr;
         let mut code_exe_addr = code_exe_addr;
         let res = self.contract_run(
@@ -347,6 +348,7 @@ impl OlaVM {
                     process.return_data = return_data;
 
                     program = Program::default();
+                    program.pre_exe_flag = is_preexecute;
 
                     match ret {
                         SCCallType::Call(addr) => {
