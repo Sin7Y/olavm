@@ -11,19 +11,20 @@ use crate::{config::ENTRY_POINT_ADDRESS, BlockInfo, OlaVM, TxInfo};
 
 pub struct PreExecutor {
     block_info: BlockInfo,
+    tree_db_path: String,
+    state_db_path: String,
 }
 
 impl PreExecutor {
-    pub fn new(block_info: BlockInfo) -> Self {
-        PreExecutor { block_info }
+    pub fn new(block_info: BlockInfo, tree_db_path: String, state_db_path: String) -> Self {
+        PreExecutor {
+            block_info,
+            tree_db_path,
+            state_db_path,
+        }
     }
 
-    pub fn execute(
-        &self,
-        tx_info: TxInfo,
-        tree_db_path: String,
-        state_db_path: String,
-    ) -> Result<(), StateError> {
+    pub fn execute(&self, tx_info: TxInfo) -> Result<(), StateError> {
         let tx_init_info = TxCtxInfo {
             block_number: self.block_info.get_block_number(),
             block_timestamp: self.block_info.get_timestamp(),
@@ -36,8 +37,8 @@ impl PreExecutor {
             signature_s: tx_info.get_signature_s(),
             tx_hash: tx_info.get_tx_hash(),
         };
-        let tree_db_path_buf: PathBuf = tree_db_path.clone().into();
-        let state_db_path_buf: PathBuf = state_db_path.clone().into();
+        let tree_db_path_buf: PathBuf = self.tree_db_path.clone().into();
+        let state_db_path_buf: PathBuf = self.state_db_path.clone().into();
         let mut vm = OlaVM::new(
             tree_db_path_buf.as_path(),
             state_db_path_buf.as_path(),
