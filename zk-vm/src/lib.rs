@@ -30,8 +30,8 @@ use std::io::BufReader;
 use std::path::Path;
 
 mod config;
-mod vm_manager;
 mod preexecutor;
+mod vm_manager;
 
 pub use vm_manager::*;
 
