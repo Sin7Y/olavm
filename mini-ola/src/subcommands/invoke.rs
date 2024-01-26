@@ -1,14 +1,24 @@
-use std::{fs::File, path::PathBuf};
+use core::storage::db::{Database, RocksDB};
+use std::{
+    fs::File,
+    path::PathBuf,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use clap::Parser;
 use ola_lang_abi::{Abi, Param, Value};
 
-use crate::utils::{from_hex_be, ExpandedPathbufParser};
+use crate::utils::{from_hex_be, ExpandedPathbufParser, OLA_RAW_TX_TYPE, h256_from_hex_be};
 
 use super::parser::ToValue;
+use zk_vm::{BlockInfo, OlaVM, TxInfo, VmManager};
 
 #[derive(Debug, Parser)]
 pub struct Invoke {
+    #[clap(long, help = "Path of rocksdb database")]
+    db: Option<PathBuf>,
+    #[clap(long, help = "Caller Address")]
+    caller: Option<String>,
     #[clap(
         value_parser = ExpandedPathbufParser,
         help = "Path to the JSON keystore"
@@ -20,6 +30,12 @@ pub struct Invoke {
 
 impl Invoke {
     pub fn run(self) -> anyhow::Result<()> {
+        // let from = if let Some(addr) = self.caller {
+        //     h256_from_hex_be(addr.as_str()).unwrap()
+        // } else {
+        //     H256::random()
+        // };
+        
         let mut arg_iter = self.calls.into_iter();
         let contract_address_hex = arg_iter.next().expect("contract address needed");
         let contract_address =
@@ -48,6 +64,39 @@ impl Invoke {
             .map(|(p, i)| ToValue::parse_input((**p).clone(), i.clone()))
             .collect();
 
+        let db_home = match self.db {
+            Some(path) => path,
+            None => PathBuf::from("./db"),
+        };
+        let tree_db_path = db_home.join("tree");
+        let state_db_path = db_home.join("state");
+        let block_info = Self::mock_block_info();
+        let manager = VmManager::new(
+            block_info,
+            tree_db_path.to_str().unwrap().to_string(),
+            state_db_path.to_str().unwrap().to_string(),
+        );
+        let tx_info: TxInfo = TxInfo {
+            version: OLA_RAW_TX_TYPE,
+            caller_address: todo!(),
+            calldata: todo!(),
+            nonce: todo!(),
+            signature_r: todo!(),
+            signature_s: todo!(),
+            tx_hash: todo!(),
+        };
+    // let result = manager.invoke(tx_info)
         Ok(())
+    }
+
+    fn mock_block_info() -> BlockInfo {
+        let now = SystemTime::now();
+        let block_timestamp = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
+        BlockInfo {
+            block_number: 0,
+            block_timestamp: block_timestamp,
+            sequencer_address: [0; 32],
+            chain_id: 1027,
+        }
     }
 }
