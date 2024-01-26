@@ -30,8 +30,8 @@ use std::io::BufReader;
 use std::path::Path;
 
 mod config;
-mod vm_manager;
 mod preexecutor;
+mod vm_manager;
 
 pub use vm_manager::*;
 
@@ -53,6 +53,7 @@ impl OlaVM {
         let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
         let account_tree = AccountTree::new(acc_db);
         let state_db = RocksDB::new(Database::Sequencer, state_db_path, false);
+
         let ola_state = NodeState::new(
             Contracts {
                 contracts: HashMap::new(),
@@ -168,7 +169,7 @@ impl OlaVM {
         program: &mut Program,
         cache_manager: &mut BatchCacheManager,
     ) -> Result<VMState, ProcessorError> {
-        process.execute(program, &mut self.account_tree, cache_manager)
+        process.execute(program, &mut self.ola_state.state_storage, cache_manager)
     }
 
     pub fn contract_run(

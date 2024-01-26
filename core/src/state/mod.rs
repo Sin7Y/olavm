@@ -18,7 +18,7 @@ pub mod utils;
 pub struct NodeState<H> {
     #[allow(unused)]
     contracts: Contracts,
-    state_storage: StateStorage,
+    pub state_storage: StateStorage,
     pub txs_trace: BTreeMap<u64, Trace>,
     pub hasher: H,
     pub storage_queries: Vec<StorageQuery>,

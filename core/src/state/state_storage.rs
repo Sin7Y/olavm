@@ -1,9 +1,12 @@
+use crate::crypto::poseidon_trace::calculate_arbitrary_poseidon;
 use crate::state::error::StateError;
-use crate::storage::db::{RocksDB, SequencerColumnFamily, StateKeeperColumnFamily};
-use crate::types::merkle_tree::{tree_key_to_u8_arr, TreeValue};
+use crate::storage::db::{Database, RocksDB, SequencerColumnFamily, StateKeeperColumnFamily};
+use crate::types::merkle_tree::{tree_key_to_u8_arr, u8_arr_to_tree_key, TreeValue};
 use crate::types::storage::{field_arr_to_u8_arr, u8_arr_to_field_arr};
 use plonky2::field::goldilocks_field::GoldilocksField;
+
 use rocksdb::WriteBatch;
+use tempfile::TempDir;
 
 use super::utils::get_prog_hash_cf_key_from_contract_addr;
 
@@ -13,6 +16,38 @@ pub struct StateStorage {
 }
 
 impl StateStorage {
+    pub fn new_test() -> Self {
+        let db_path = TempDir::new().expect("failed get temporary directory for RocksDB");
+        let db = RocksDB::new(Database::MerkleTree, db_path, true);
+        StateStorage { db }
+    }
+    pub fn get_storage(
+        &self,
+        address: &[GoldilocksField; 4],
+        slot: &[GoldilocksField; 4],
+    ) -> Result<Option<[GoldilocksField; 4]>, StateError> {
+        let mut tree_key = Vec::new();
+        tree_key.extend_from_slice(address);
+        tree_key.extend_from_slice(slot);
+        let tree_key = calculate_arbitrary_poseidon(&tree_key);
+        let key = tree_key_to_u8_arr(&tree_key);
+        let cf = self.db.cf_sequencer_handle(SequencerColumnFamily::State);
+        let res = self.db.get_cf(cf, key).map_err(StateError::StorageIoError);
+        match res {
+            Ok(read) => match read {
+                Some(u8s) => {
+                    if u8s.len() == 32 {
+                        Ok(Some(u8_arr_to_tree_key(&u8s)))
+                    } else {
+                        Err(StateError::StorageDataFormatErr)
+                    }
+                }
+                None => Ok(None),
+            },
+            Err(e) => Err(e),
+        }
+    }
+
     pub fn save_contract(
         &mut self,
         code_hash: &TreeValue,

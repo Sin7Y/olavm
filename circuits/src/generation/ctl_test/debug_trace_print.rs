@@ -12,10 +12,7 @@ use std::{
 
 use assembler::encoder::encode_asm_from_json_file;
 use core::{
-    crypto::{hash::Hasher, ZkHasher},
-    merkle_tree::log::{StorageLog, StorageLogKind, WitnessStorageLog},
-    types::merkle_tree::{encode_addr, tree_key_default},
-    vm::transaction::init_tx_context_mock,
+    crypto::{hash::Hasher, ZkHasher}, merkle_tree::log::{StorageLog, StorageLogKind, WitnessStorageLog}, state::state_storage::StateStorage, types::merkle_tree::{encode_addr, tree_key_default}, vm::transaction::init_tx_context_mock
 };
 use executor::{
     load_tx::init_tape,
@@ -250,7 +247,8 @@ pub fn get_exec_trace(
     });
 
     program.prophets = prophets;
-    let res = process.execute(&mut program, &mut db, &mut BatchCacheManager::default());
+    // FIXME: account tree is not used, merkle root cannot update.
+    let res = process.execute(&mut program, &StateStorage::new_test(), &mut BatchCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {

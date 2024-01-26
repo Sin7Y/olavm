@@ -2,6 +2,7 @@
 
 use crate::decode::{decode_raw_instruction, REG_NOT_USED};
 use crate::storage::StorageTree;
+use core::state::state_storage::StateStorage;
 use core::vm::error::ProcessorError;
 use core::vm::memory::{MemoryTree, HP_START_ADDR, PSP_START_ADDR};
 
@@ -24,9 +25,9 @@ use core::crypto::poseidon_trace::{
 use core::program::binary_program::OlaProphet;
 use core::program::binary_program::OlaProphetInput;
 use core::types::account::Address;
-use core::types::merkle_tree::tree_key_to_leaf_index;
+
+use core::types::merkle_tree::TREE_VALUE_LEN;
 use core::types::merkle_tree::{tree_key_default, TreeKey, TreeValue};
-use core::types::merkle_tree::{u8_arr_to_tree_key, TREE_VALUE_LEN};
 use core::types::storage::StorageKey;
 use core::util::poseidon_utils::POSEIDON_INPUT_NUM;
 use core::vm::heap::HEAP_PTR;
@@ -1272,7 +1273,7 @@ impl Process {
         &mut self,
         program: &mut Program,
         tx_cache_manager: &mut BatchCacheManager,
-        account_tree: &mut AccountTree,
+        state_storage: &StateStorage,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
         step: u64,
@@ -1319,7 +1320,6 @@ impl Process {
 
         let storage_key = StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
         let (tree_key, hash_row) = storage_key.hashed_key();
-        let path = tree_key_to_leaf_index(&tree_key);
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
 
         let mut is_initial = true;
@@ -1327,13 +1327,16 @@ impl Process {
         if let Some(data) = tx_cache_manager.load_storage_cache(&tree_key) {
             pre_value = data.clone();
         } else {
-            let read_db = account_tree.storage.hash(&path);
-            if let Some(value) = read_db {
-                is_initial = false;
-                pre_value = u8_arr_to_tree_key(&value);
-            } else {
-                pre_value = tree_key_default();
-            }
+            pre_value = match state_storage.get_storage(&self.addr_storage, &slot_key) {
+                Ok(v) => match v {
+                    Some(r) => {
+                        is_initial = false;
+                        r
+                    }
+                    None => [GoldilocksField::ZERO; 4],
+                },
+                Err(_) => return Err(ProcessorError::SStoreError),
+            };
         }
 
         let kind = if is_initial {
@@ -1417,7 +1420,7 @@ impl Process {
         &mut self,
         program: &mut Program,
         tx_cache_manager: &mut BatchCacheManager,
-        account_tree: &mut AccountTree,
+        state_storage: &StateStorage,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
         step: u64,
@@ -1454,18 +1457,17 @@ impl Process {
 
         let storage_key = StorageKey::new(AccountTreeId::new(self.addr_storage.clone()), slot_key);
         let (tree_key, hash_row) = storage_key.hashed_key();
-        let path = tree_key_to_leaf_index(&tree_key);
         register_selector_regs.dst_reg_sel[0..TREE_VALUE_LEN].clone_from_slice(&tree_key);
 
         let read_value = if let Some(data) = tx_cache_manager.load_storage_cache(&tree_key) {
             data.clone()
         } else {
-            let read_db = account_tree.storage.hash(&path);
-            if let Some(value) = read_db {
-                u8_arr_to_tree_key(&value)
-            } else {
-                debug!("sload can not read data from addr:{:?}", tree_key);
-                tree_key_default()
+            match state_storage.get_storage(&self.addr_storage, &slot_key) {
+                Ok(v) => match v {
+                    Some(r) => r,
+                    None => [GoldilocksField::ZERO; 4],
+                },
+                Err(_) => return Err(ProcessorError::SStoreError),
             }
         };
 
@@ -2085,7 +2087,7 @@ impl Process {
     pub fn execute(
         &mut self,
         program: &mut Program,
-        account_tree: &mut AccountTree,
+        state_storage: &StateStorage,
         cache_manager: &mut BatchCacheManager,
     ) -> Result<VMState, ProcessorError> {
         let instrs_len = program.instructions.len() as u64;
@@ -2203,7 +2205,7 @@ impl Process {
                 "sstore" => self.execute_inst_sstore(
                     program,
                     cache_manager,
-                    account_tree,
+                    state_storage,
                     &mut aux_steps,
                     &ops,
                     step,
@@ -2214,7 +2216,7 @@ impl Process {
                 "sload" => self.execute_inst_sload(
                     program,
                     cache_manager,
-                    account_tree,
+                    state_storage,
                     &mut aux_steps,
                     &ops,
                     step,

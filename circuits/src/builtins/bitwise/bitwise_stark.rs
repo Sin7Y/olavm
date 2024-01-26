@@ -418,8 +418,9 @@ mod tests {
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
     use assembler::encoder::encode_asm_from_json_file;
-    use core::merkle_tree::tree::AccountTree;
+    
     use core::program::Program;
+    use core::state::state_storage::StateStorage;
     use core::types::account::Address;
     use executor::{BatchCacheManager, Process};
     use plonky2::field::goldilocks_field::GoldilocksField;
@@ -455,7 +456,7 @@ mod tests {
         process.addr_storage = Address::default();
         let _ = process.execute(
             &mut program,
-            &mut AccountTree::new_test(),
+            &StateStorage::new_test(),
             &mut BatchCacheManager::default(),
         );
 

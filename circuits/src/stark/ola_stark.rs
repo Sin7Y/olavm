@@ -659,6 +659,7 @@ mod tests {
     use core::merkle_tree::tree::AccountTree;
     use core::program::binary_program::BinaryProgram;
     use core::program::Program;
+    use core::state::state_storage::StateStorage;
     use core::types::account::Address;
     use core::types::merkle_tree::{encode_addr, tree_key_default};
     use core::types::{Field, GoldilocksField};
@@ -914,7 +915,8 @@ mod tests {
         });
 
         program.prophets = prophets;
-        let res = process.execute(&mut program, &mut db, &mut BatchCacheManager::default());
+        // FIXME: account tree is not used, merkle root cannot update.
+        let res = process.execute(&mut program, &StateStorage::new_test(), &mut BatchCacheManager::default());
         match res {
             Ok(_) => {}
             Err(e) => {

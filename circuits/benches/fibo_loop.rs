@@ -5,8 +5,8 @@ use circuits::stark::ola_stark::OlaStark;
 use circuits::stark::proof::PublicValues;
 use circuits::stark::prover::prove_with_traces;
 use circuits::stark::verifier::verify_proof;
-use core::merkle_tree::tree::AccountTree;
 use core::program::Program;
+use core::state::state_storage::StateStorage;
 use core::types::{Field, GoldilocksField};
 use core::vm::transaction::init_tx_context_mock;
 use core::vm::vm_state::Address;
@@ -61,7 +61,7 @@ pub fn test_by_asm_json(path: String) {
 
     let _ = process.execute(
         &mut program,
-        &mut AccountTree::new_test(),
+        &StateStorage::new_test(),
         &mut BatchCacheManager::default(),
     );
     info!(

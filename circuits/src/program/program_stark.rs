@@ -121,15 +121,14 @@ mod tests {
     use crate::program::columns::NUM_PROG_COLS;
     use crate::{program::program_stark::ProgramStark, stark::stark::Stark};
     use assembler::encoder::encode_asm_from_json_file;
+    use core::state::state_storage::StateStorage;
     use core::vm::transaction::init_tx_context_mock;
     use core::{
-        merkle_tree::tree::AccountTree,
         program::Program,
         types::{Field, GoldilocksField},
         vm::vm_state::Address,
     };
     use executor::BatchCacheManager;
-    use executor::TxScopeCacheManager;
     use executor::{load_tx::init_tape, Process};
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2_util::log2_strict;
@@ -190,7 +189,7 @@ mod tests {
         program.prophets = prophets;
         let _ = process.execute(
             &mut program,
-            &mut AccountTree::new_test(),
+            &StateStorage::new_test(),
             &mut BatchCacheManager::default(),
         );
         let insts = program

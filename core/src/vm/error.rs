@@ -75,4 +75,7 @@ pub enum ProcessorError {
 
     #[error("Try to sstore in a call!")]
     CannotSStoreInCall,
+
+    #[error("SStore failed")]
+    SStoreError,
 }

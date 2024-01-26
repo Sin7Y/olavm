@@ -4,6 +4,8 @@ use thiserror::Error;
 pub enum StateError {
     #[error("Storage access error")]
     StorageIoError(#[from] rocksdb::Error),
+    #[error("Storage data format error, not 256 bits")]
+    StorageDataFormatErr,
 
     #[error("Get ColumnFamily empty")]
     ColumnFamilyEmpty,
