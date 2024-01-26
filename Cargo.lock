@@ -1913,6 +1913,7 @@ dependencies = [
  "ola-lang-abi",
  "plonky2",
  "rand 0.8.5",
+ "rocksdb",
  "serde",
  "serde_derive",
  "serde_json",
