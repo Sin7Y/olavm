@@ -1,0 +1,23 @@
+[
+  {
+    "name": "setNonce",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address"
+      },
+      {
+        "name": "_nonce",
+        "type": "u32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "vote_for",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  }
+]
