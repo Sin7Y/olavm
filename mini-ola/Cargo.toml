@@ -1,0 +1,23 @@
+[package]
+name = "mini-ola"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.4.7", features = ["derive", "env", "string"] }
+clap_complete = "4.4.4"
+anyhow = "1.0.75"
+thiserror = "1.0"
+hex = "0.4.3"
+ola-lang-abi = "1.0.5"
+shellexpand = "3.1.0"
+colored = "2.0.0"
+core = { package = "core", path = "../core"}
+serde_json = "1"
+serde = { version = "1" }
+serde_derive = { version = "1" }
+plonky2 = { path = "../plonky2/plonky2" }
+bincode = "1.3.3"
+rand = "0.8.5"
