@@ -1910,6 +1910,7 @@ dependencies = [
  "colored",
  "core",
  "ethereum-types",
+ "executor",
  "hex",
  "ola-lang-abi",
  "plonky2",

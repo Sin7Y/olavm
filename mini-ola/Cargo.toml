@@ -24,3 +24,4 @@ bincode = "1.3.3"
 rand = "0.8.5"
 rocksdb = { version = "0.21", default-features = false, features = ["snappy"] }
 ethereum-types = "0.14.1"
+executor = { package = "executor", path = "../executor", version = "0.1.0", default-features = false }

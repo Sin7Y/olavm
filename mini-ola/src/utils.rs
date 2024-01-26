@@ -94,3 +94,42 @@ pub fn u64_array_to_h256(arr: &[u64; 4]) -> H256 {
     }
     H256(bytes)
 }
+
+pub fn u64s_to_bytes(arr: &[u64]) -> Vec<u8> {
+    arr.iter().flat_map(|w| w.to_be_bytes()).collect()
+}
+
+pub fn bytes_to_u64s(bytes: Vec<u8>) -> Vec<u64> {
+    assert!(bytes.len() % 8 == 0, "Bytes must be divisible by 8");
+    bytes
+        .chunks(8)
+        .map(|chunk| {
+            let mut bytes = [0u8; 8];
+            bytes.copy_from_slice(chunk);
+            u64::from_be_bytes(bytes)
+        })
+        .collect()
+}
+
+pub fn address_from_hex_be(value: &str) -> anyhow::Result<[u8; 32]> {
+    let value = value.trim_start_matches("0x");
+
+    let hex_chars_len = value.len();
+    let expected_hex_length = 64;
+
+    let parsed_bytes: [u8; 32] = if hex_chars_len == expected_hex_length {
+        let mut buffer = [0u8; 32];
+        hex::decode_to_slice(value, &mut buffer)?;
+        buffer
+    } else if hex_chars_len < expected_hex_length {
+        let mut padded_hex = str::repeat("0", expected_hex_length - hex_chars_len);
+        padded_hex.push_str(value);
+
+        let mut buffer = [0u8; 32];
+        hex::decode_to_slice(&padded_hex, &mut buffer)?;
+        buffer
+    } else {
+        anyhow::bail!("Key out of range.");
+    };
+    Ok(parsed_bytes)
+}
