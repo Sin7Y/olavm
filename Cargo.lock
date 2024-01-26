@@ -1909,6 +1909,7 @@ dependencies = [
  "clap_complete",
  "colored",
  "core",
+ "ethereum-types",
  "hex",
  "ola-lang-abi",
  "plonky2",
@@ -1919,6 +1920,7 @@ dependencies = [
  "serde_json",
  "shellexpand",
  "thiserror",
+ "zk-vm",
 ]
 
 [[package]]
