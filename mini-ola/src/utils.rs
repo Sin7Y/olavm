@@ -7,6 +7,7 @@ use ethereum_types::H256;
 pub struct ExpandedPathbufParser;
 
 pub const OLA_FIELD_ORDER: u64 = 18446744069414584321; // 2^64-2^32+1
+pub const OLA_RAW_TX_TYPE: u32 = 16;
 
 impl TypedValueParser for ExpandedPathbufParser {
     type Value = PathBuf;
@@ -52,7 +53,6 @@ pub fn from_hex_be(value: &str) -> anyhow::Result<[u8; 32]> {
     };
     Ok(parsed_bytes)
 }
-
 
 pub fn h256_from_hex_be(value: &str) -> anyhow::Result<H256> {
     let value = value.trim_start_matches("0x");
