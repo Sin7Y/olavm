@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use assembler::encoder::encode_asm_from_json_file;
 use executor::trace::{gen_storage_hash_table, gen_storage_table};
-use executor::TxScopeCacheManager;
+use executor::BatchCacheManager;
 use executor::{load_tx::init_tape, Process};
 use plonky2::field::{goldilocks_field::GoldilocksField, types::Field};
 use plonky2_util::log2_strict;
@@ -123,7 +123,7 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     });
 
     program.prophets = prophets;
-    let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
+    let res = process.execute(&mut program, &mut db, &mut BatchCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {
@@ -306,7 +306,7 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         previous_value: tree_key_default(),
     });
 
-    let res = process.execute(&mut program, &mut db, &mut TxScopeCacheManager::default());
+    let res = process.execute(&mut program, &mut db, &mut BatchCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {

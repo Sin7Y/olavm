@@ -14,7 +14,7 @@ pub enum StateError {
     #[error("VM json serde error")]
     JsonSerdeError(#[from] serde_json::Error),
 
-    #[error("VM json serde error")]
+    #[error("Can not load the program")]
     GetProgramError(String),
 
     #[error("Convert string error")]
@@ -40,4 +40,9 @@ pub enum StateError {
 
     #[error("Parse int error: {0}")]
     ParseIntError(String),
+
+    #[error("VM is not alive, batch has been finished!")]
+    VMNotAvaliable,
+    #[error("Cannot make a call after finish batch!")]
+    CalledAfterBatchFinished,
 }
