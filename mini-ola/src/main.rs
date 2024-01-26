@@ -2,7 +2,7 @@ use clap::{CommandFactory, Parser, Subcommand};
 use colored::Colorize;
 use subcommands::deploy::Deploy;
 
-mod path;
+mod utils;
 mod subcommands;
 
 #[derive(Debug, Parser)]

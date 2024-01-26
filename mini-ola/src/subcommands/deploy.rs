@@ -1,12 +1,8 @@
 use core::{
-    crypto::poseidon_trace::calculate_arbitrary_poseidon,
     program::binary_program::BinaryProgram,
     state::utils::get_prog_hash_cf_key_from_contract_addr,
     storage::db::{Database, RocksDB, SequencerColumnFamily},
-    types::{
-        storage::{field_arr_to_u8_arr, u8_arr_to_field_arr},
-        Field, GoldilocksField,
-    },
+    types::{storage::u8_arr_to_field_arr, Field, GoldilocksField},
 };
 use std::{fs::File, path::PathBuf};
 
@@ -16,7 +12,7 @@ use plonky2::hash::utils::poseidon_hash_bytes;
 use rand::{thread_rng, Rng};
 use rocksdb::WriteBatch;
 
-use crate::path::ExpandedPathbufParser;
+use crate::utils::ExpandedPathbufParser;
 
 #[derive(Debug, Parser)]
 pub struct Deploy {
@@ -78,6 +74,9 @@ impl Deploy {
         let cf = state_db.cf_sequencer_handle(SequencerColumnFamily::FactoryDeps);
         let mut batch = WriteBatch::default();
         batch.put_cf(cf, &program_hash, &program_bytes);
+
+        let target_address = hex::encode(target_address);
+        println!("Deploy success at address: 0x{}", target_address);
         Ok(())
     }
 }
