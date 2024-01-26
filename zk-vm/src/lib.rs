@@ -1,6 +1,7 @@
+use config::ENTRY_POINT_ADDRESS;
 use executor::load_tx::init_tape;
 use executor::trace::{gen_storage_hash_table, gen_storage_table};
-use executor::{Process, TxScopeCacheManager};
+use executor::{BatchCacheManager, Process};
 use log::debug;
 use ola_core::crypto::ZkHasher;
 use ola_core::merkle_tree::tree::AccountTree;
@@ -29,6 +30,10 @@ use std::io::BufReader;
 use std::path::Path;
 
 mod config;
+mod vm_manager;
+mod preexecutor;
+
+pub use vm_manager::*;
 
 #[cfg(test)]
 pub mod test;
@@ -40,7 +45,7 @@ pub struct OlaVM {
     // process, caller address, code address
     pub process_ctx: Vec<(Process, Program, Address, Address)>,
     pub ctx_info: TxCtxInfo,
-    pub tx_cache_manager: TxScopeCacheManager,
+    pub is_call: bool,
 }
 
 impl OlaVM {
@@ -61,7 +66,28 @@ impl OlaVM {
             account_tree,
             process_ctx: Vec::new(),
             ctx_info,
-            tx_cache_manager: TxScopeCacheManager::default(),
+            is_call: false,
+        }
+    }
+
+    pub fn new_call(tree_db_path: &Path, state_db_path: &Path, ctx_info: TxCtxInfo) -> Self {
+        let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
+        let account_tree = AccountTree::new(acc_db);
+        let state_db = RocksDB::new(Database::Sequencer, state_db_path, false);
+        let ola_state = NodeState::new(
+            Contracts {
+                contracts: HashMap::new(),
+            },
+            StateStorage { db: state_db },
+            ZkHasher::default(),
+        );
+
+        OlaVM {
+            ola_state,
+            account_tree,
+            process_ctx: Vec::new(),
+            ctx_info,
+            is_call: true,
         }
     }
 
@@ -140,8 +166,9 @@ impl OlaVM {
         &mut self,
         process: &mut Process,
         program: &mut Program,
+        cache_manager: &mut BatchCacheManager,
     ) -> Result<VMState, ProcessorError> {
-        process.execute(program, &mut self.account_tree, &mut self.tx_cache_manager)
+        process.execute(program, &mut self.account_tree, cache_manager)
     }
 
     pub fn contract_run(
@@ -151,6 +178,7 @@ impl OlaVM {
         _caller_addr: Address,
         exe_code_addr: Address,
         get_code: bool,
+        cache_manager: &mut BatchCacheManager,
     ) -> Result<VMState, StateError> {
         let code_hash = self.get_contract_map(&exe_code_addr)?;
 
@@ -201,7 +229,7 @@ impl OlaVM {
                 .insert(encode_addr(&exe_code_addr), code);
         }
 
-        let res = self.vm_run(process, program);
+        let res = self.vm_run(process, program, cache_manager);
         if let Ok(vm_state) = res {
             Ok(vm_state)
         } else {
@@ -260,11 +288,16 @@ impl OlaVM {
         caller_addr: TreeValue,
         code_exe_addr: TreeValue,
         calldata: Vec<GoldilocksField>,
-        debug_flag: bool,
+        cache_manager: &mut BatchCacheManager,
+        is_preexecute: bool,
     ) -> Result<(), StateError> {
         let mut env_idx = 0;
         let mut sc_cnt = 0;
-        let mut process = Process::new();
+        let mut process = if self.is_call {
+            Process::new_call()
+        } else {
+            Process::new()
+        };
         process.block_timestamp = self.ctx_info.block_timestamp.0;
         process.env_idx = GoldilocksField::from_canonical_u64(env_idx);
         process.call_sc_cnt = GoldilocksField::from_canonical_u64(sc_cnt);
@@ -279,10 +312,17 @@ impl OlaVM {
             &self.ctx_info,
         );
         let mut program = Program::default();
-        program.print_flag = debug_flag;
+        program.pre_exe_flag = is_preexecute;
         let mut caller_addr = caller_addr;
         let mut code_exe_addr = code_exe_addr;
-        let res = self.contract_run(&mut process, &mut program, caller_addr, code_exe_addr, true);
+        let res = self.contract_run(
+            &mut process,
+            &mut program,
+            caller_addr,
+            code_exe_addr,
+            true,
+            cache_manager,
+        );
         let mut res = res.map_err(|err| {
             self.process_ctx
                 .push((process.clone(), program.clone(), caller_addr, code_exe_addr));
@@ -308,6 +348,7 @@ impl OlaVM {
                     process.return_data = return_data;
 
                     program = Program::default();
+                    program.pre_exe_flag = is_preexecute;
 
                     match ret {
                         SCCallType::Call(addr) => {
@@ -327,6 +368,7 @@ impl OlaVM {
                         caller_addr,
                         code_exe_addr,
                         true,
+                        cache_manager,
                     )?;
                 }
                 VMState::ExeEnd(step) => {
@@ -400,8 +442,14 @@ impl OlaVM {
                         env_idx -= 1;
                         process.tp = tp;
                         process.tape = tape_tree;
-                        process.return_data = return_data;
-                        res = self.contract_run(&mut process, &mut program, ctx.2, ctx.3, false)?;
+                        res = self.contract_run(
+                            &mut process,
+                            &mut program,
+                            ctx.2,
+                            ctx.3,
+                            false,
+                            cache_manager,
+                        )?;
                         debug!("contract end:{:?}", res);
                     }
                 }
@@ -411,11 +459,18 @@ impl OlaVM {
     }
 
     pub fn finish_batch(&mut self, block_number: u32) -> Result<(), StateError> {
-        let entry_point_addr = [0, 0, 0, 32769].map(|l| GoldilocksField::from_canonical_u64(l));
+        let entry_point_addr =
+            ENTRY_POINT_ADDRESS.map(|fe| GoldilocksField::from_canonical_u64(fe));
         let calldata = [block_number as u64, 1, 2190639505]
             .iter()
             .map(|l| GoldilocksField::from_canonical_u64(*l))
             .collect();
-        self.execute_tx(entry_point_addr, entry_point_addr, calldata, false)
+        self.execute_tx(
+            entry_point_addr,
+            entry_point_addr,
+            calldata,
+            &mut BatchCacheManager::default(),
+            false,
+        )
     }
 }

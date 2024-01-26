@@ -1,5 +1,6 @@
 #[cfg(test)]
 pub mod tests {
+    use crate::config::ENTRY_POINT_ADDRESS;
     use crate::OlaVM;
 
     use executor::trace::gen_storage_hash_table;
@@ -100,7 +101,8 @@ pub mod tests {
         let mut vm = OlaVM::new(tree_db_path, state_db_path, mock_tx_info());
 
         let caller = [1, 2, 3, 4].map(|v| GoldilocksField::from_canonical_u64(v));
-        let contract_addr = [0, 0, 0, 32769].map(|v| GoldilocksField::from_canonical_u64(v));
+        let contract_address =
+            ENTRY_POINT_ADDRESS.map(|fe| GoldilocksField::from_canonical_u64(fe));
         let calldata = [
             14348135955808093023u64,
             5294470202576835940,

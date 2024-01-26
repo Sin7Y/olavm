@@ -156,7 +156,7 @@ mod tests {
     use core::merkle_tree::tree::AccountTree;
     use core::program::Program;
     use core::types::account::Address;
-    use executor::{Process, TxScopeCacheManager};
+    use executor::{BatchCacheManager, Process};
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
@@ -195,7 +195,7 @@ mod tests {
         let _ = process.execute(
             &mut program,
             &mut AccountTree::new_test(),
-            &mut TxScopeCacheManager::default(),
+            &mut BatchCacheManager::default(),
         );
 
         let rows = generate_rc_trace::<F>(&program.trace.builtin_rangecheck);

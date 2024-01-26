@@ -21,7 +21,7 @@ unroll = "0.1.5"
 static_assertions = "1.1.0"
 maybe_rayon = { path = "../maybe_rayon" }
 cxx = { version = "1.0", optional = true }
-tokio = { version = "1.32.0", features = ["full"], optional = true }
+tokio = { version = "=1.35.0", features = ["full"], optional = true }
 crossbeam = { version = "0.4.1", optional = true }
 lazy_static = { version = "1.4.0", optional = true }
 futures = { version = "0.3", optional = true}

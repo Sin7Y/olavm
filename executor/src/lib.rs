@@ -189,18 +189,11 @@ const PROPHET_INPUT_REG_END_INDEX: usize = PROPHET_INPUT_REG_START_INDEX + PROPH
 const PROPHET_INPUT_FP_START_OFFSET: u64 = 3;
 const TP_START_ADDR: GoldilocksField = GoldilocksField::ZERO;
 
-#[derive(Debug, Clone)]
-enum MemRangeType {
-    MemSort,
-    MemRegion,
-}
-
 #[derive(Default, Debug)]
-pub struct TxScopeCacheManager {
+pub struct BatchCacheManager {
     pub storage_cache: HashMap<[u64; 4], [u64; 4]>,
 }
-
-impl TxScopeCacheManager {
+impl BatchCacheManager {
     fn load_storage_cache(&self, tree_key: &TreeKey) -> Option<TreeValue> {
         let key = tree_key.map(|fe| fe.0);
         let cached_value = self.storage_cache.get(&key);
@@ -216,6 +209,13 @@ impl TxScopeCacheManager {
         self.storage_cache.insert(key, value);
     }
 }
+
+#[derive(Debug, Clone)]
+enum MemRangeType {
+    MemSort,
+    MemRegion,
+}
+
 #[derive(Debug, Clone)]
 pub struct Process {
     pub block_timestamp: u64,
@@ -243,6 +243,7 @@ pub struct Process {
     pub storage_access_idx: GoldilocksField,
     pub storage_queries: Vec<StorageQuery>,
     pub return_data: Vec<GoldilocksField>,
+    pub is_call: bool,
 }
 
 impl Process {
@@ -279,7 +280,14 @@ impl Process {
             storage_access_idx: GoldilocksField::ZERO,
             storage_queries: Vec::new(),
             return_data: Vec::new(),
+            is_call: false,
         }
+    }
+
+    pub fn new_call() -> Self {
+        let mut process = Self::new();
+        process.is_call = true;
+        process
     }
 
     pub fn get_reg_index(&self, reg_str: &str) -> usize {
@@ -1263,7 +1271,7 @@ impl Process {
     fn execute_inst_sstore(
         &mut self,
         program: &mut Program,
-        tx_cache_manager: &mut TxScopeCacheManager,
+        tx_cache_manager: &mut BatchCacheManager,
         account_tree: &mut AccountTree,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
@@ -1272,6 +1280,9 @@ impl Process {
         registers_status: &[GoldilocksField; REGISTER_NUM],
         ctx_code_regs_status: &Address,
     ) -> Result<(), ProcessorError> {
+        if self.is_call {
+            return Err(ProcessorError::CannotSStoreInCall);
+        }
         self.opcode = GoldilocksField::from_canonical_u64(1 << Opcode::SSTORE as u8);
         let mut slot_key = [GoldilocksField::ZERO; 4];
         let mut store_value = [GoldilocksField::ZERO; 4];
@@ -1405,7 +1416,7 @@ impl Process {
     fn execute_inst_sload(
         &mut self,
         program: &mut Program,
-        tx_cache_manager: &mut TxScopeCacheManager,
+        tx_cache_manager: &mut BatchCacheManager,
         account_tree: &mut AccountTree,
         aux_steps: &mut Vec<Step>,
         ops: &[&str],
@@ -2075,7 +2086,7 @@ impl Process {
         &mut self,
         program: &mut Program,
         account_tree: &mut AccountTree,
-        tx_cache_manager: &mut TxScopeCacheManager,
+        cache_manager: &mut BatchCacheManager,
     ) -> Result<VMState, ProcessorError> {
         let instrs_len = program.instructions.len() as u64;
         // program.trace.raw_binary_instructions.clear();
@@ -2191,7 +2202,7 @@ impl Process {
                 }
                 "sstore" => self.execute_inst_sstore(
                     program,
-                    tx_cache_manager,
+                    cache_manager,
                     account_tree,
                     &mut aux_steps,
                     &ops,
@@ -2202,7 +2213,7 @@ impl Process {
                 )?,
                 "sload" => self.execute_inst_sload(
                     program,
-                    tx_cache_manager,
+                    cache_manager,
                     account_tree,
                     &mut aux_steps,
                     &ops,

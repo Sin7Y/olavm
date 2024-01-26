@@ -128,6 +128,7 @@ mod tests {
         types::{Field, GoldilocksField},
         vm::vm_state::Address,
     };
+    use executor::BatchCacheManager;
     use executor::TxScopeCacheManager;
     use executor::{load_tx::init_tape, Process};
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
@@ -190,7 +191,7 @@ mod tests {
         let _ = process.execute(
             &mut program,
             &mut AccountTree::new_test(),
-            &mut TxScopeCacheManager::default(),
+            &mut BatchCacheManager::default(),
         );
         let insts = program
             .instructions
