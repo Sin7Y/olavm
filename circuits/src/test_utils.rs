@@ -1,6 +1,7 @@
 use core::crypto::hash::Hasher;
 use core::crypto::ZkHasher;
 use core::merkle_tree::log::{StorageLog, StorageLogKind, WitnessStorageLog};
+use core::state::state_storage::StateStorage;
 use core::types::merkle_tree::{encode_addr, tree_key_default};
 use core::{program::Program, trace::trace::Trace, types::account::Address};
 use std::collections::HashMap;
@@ -123,7 +124,8 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
     });
 
     program.prophets = prophets;
-    let res = process.execute(&mut program, &mut db, &mut BatchCacheManager::default());
+    // FIXME: account tree is not used, merkle root cannot update.
+    let res = process.execute(&mut program, &StateStorage::new_test(), &mut BatchCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {
@@ -306,7 +308,8 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
         previous_value: tree_key_default(),
     });
 
-    let res = process.execute(&mut program, &mut db, &mut BatchCacheManager::default());
+    // FIXME: account tree is not used, merkle root cannot update.
+    let res = process.execute(&mut program, &StateStorage::new_test(), &mut BatchCacheManager::default());
     match res {
         Ok(_) => {}
         Err(e) => {

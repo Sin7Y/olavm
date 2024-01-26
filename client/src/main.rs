@@ -8,9 +8,9 @@ use circuits::stark::prover::prove;
 use circuits::stark::serialization::Buffer;
 use circuits::stark::verifier::verify_proof;
 use clap::{arg, Command};
-use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::Program;
+use core::state::state_storage::StateStorage;
 use core::trace::trace::Trace;
 use core::vm::transaction::init_tx_context_mock;
 use core::vm::vm_state::Address;
@@ -155,7 +155,7 @@ fn main() {
             process
                 .execute(
                     &mut program,
-                    &mut AccountTree::new_db_test("./db_test".to_string()),
+                    &StateStorage::new_test(),
                     &mut BatchCacheManager::default(),
                 )
                 .expect("OlaVM execute fail");

@@ -10,17 +10,17 @@ use core::merkle_tree::tree::AccountTree;
 use core::program::binary_program::BinaryProgram;
 use core::program::instruction::Opcode;
 use core::program::Program;
+use core::state::state_storage::StateStorage;
 use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context_mock;
-use log::{debug, LevelFilter};
-use num::{BigInt, BigUint, Num};
+use log::LevelFilter;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufReader, Write};
 
 fn executor_run_test_program(
     bin_file_path: &str,
@@ -122,7 +122,7 @@ fn executor_run_test_program(
 
     let res = process.execute(
         &mut program,
-        &mut account_tree,
+        &StateStorage::new_test(),
         &mut BatchCacheManager::default(),
     );
 
