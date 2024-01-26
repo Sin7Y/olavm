@@ -1915,9 +1915,7 @@ impl Process {
 
         if op1_value.0 == GoldilocksField::ONE {
             append_caller_callee_addr(self, self.addr_storage, callee_address, self.addr_storage);
-            append_caller_callee_addr(self, self.addr_storage, callee_address, self.addr_storage);
         } else if op1_value.0 == GoldilocksField::ZERO {
-            append_caller_callee_addr(self, self.addr_storage, callee_address, callee_address);
             append_caller_callee_addr(self, self.addr_storage, callee_address, callee_address);
         } else {
             return Err(ProcessorError::ParseOpcodeError);
