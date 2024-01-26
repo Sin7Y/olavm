@@ -1,4 +1,8 @@
-use core::storage::db::{Database, RocksDB};
+use core::{
+    state::error::StateError,
+    types::{Field, GoldilocksField},
+    vm::transaction::TxCtxInfo,
+};
 use std::{
     fs::File,
     path::PathBuf,
@@ -6,12 +10,18 @@ use std::{
 };
 
 use clap::Parser;
+use ethereum_types::H256;
+use executor::BatchCacheManager;
 use ola_lang_abi::{Abi, Param, Value};
+use plonky2::hash::utils::bytes_to_u64s;
 
-use crate::utils::{from_hex_be, ExpandedPathbufParser, OLA_RAW_TX_TYPE, h256_from_hex_be};
+use crate::utils::{
+    address_from_hex_be, from_hex_be, h256_from_hex_be, h256_to_u64_array, u64s_to_bytes,
+    ExpandedPathbufParser, OLA_RAW_TX_TYPE,
+};
 
 use super::parser::ToValue;
-use zk_vm::{BlockInfo, OlaVM, TxInfo, VmManager};
+use zk_vm::{BlockInfo, InvokeResult, OlaVM, VmManager};
 
 #[derive(Debug, Parser)]
 pub struct Invoke {
@@ -19,6 +29,12 @@ pub struct Invoke {
     db: Option<PathBuf>,
     #[clap(long, help = "Caller Address")]
     caller: Option<String>,
+    #[clap(long, help = "Provide transaction nonce manually")]
+    nonce: Option<u32>,
+    #[clap(long, help = "Provide block number manually")]
+    block: Option<u64>,
+    #[clap(long, help = "Provide second timestamp manually")]
+    timestamp: Option<u64>,
     #[clap(
         value_parser = ExpandedPathbufParser,
         help = "Path to the JSON keystore"
@@ -30,16 +46,40 @@ pub struct Invoke {
 
 impl Invoke {
     pub fn run(self) -> anyhow::Result<()> {
-        // let from = if let Some(addr) = self.caller {
-        //     h256_from_hex_be(addr.as_str()).unwrap()
-        // } else {
-        //     H256::random()
-        // };
-        
+        let caller_address: [u64; 4] = if let Some(addr) = self.caller {
+            let bytes = address_from_hex_be(addr.as_str()).unwrap();
+            let caller_vec = bytes_to_u64s(&bytes);
+            let caller = [0u64; 4];
+            caller.clone_from_slice(&caller_vec[..4]);
+            caller
+        } else {
+            h256_to_u64_array(&H256::random())
+        };
+
+        let nonce = if let Some(n) = self.nonce { n } else { 1 };
+        let block_number = if let Some(n) = self.block { n } else { 0 };
+        let block_timestamp = if let Some(n) = self.timestamp {
+            n
+        } else {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+        };
+        let db_home = match self.db {
+            Some(path) => path,
+            None => PathBuf::from("./db"),
+        };
+        let tree_db_path_buf = db_home.join("tree");
+        let state_db_path_buf = db_home.join("state");
+
         let mut arg_iter = self.calls.into_iter();
         let contract_address_hex = arg_iter.next().expect("contract address needed");
-        let contract_address =
+        let contract_address_bytes =
             from_hex_be(contract_address_hex.as_str()).expect("invalid contract address");
+        let to_vec = bytes_to_u64s(&contract_address_bytes);
+        let to = [0u64; 4];
+        to.clone_from_slice(&to_vec[..4]);
 
         let abi_file = File::open(self.abi).expect("failed to open ABI file");
         let function_sig_name = arg_iter.next().expect("function signature needed");
@@ -63,6 +103,9 @@ impl Invoke {
             .iter()
             .map(|(p, i)| ToValue::parse_input((**p).clone(), i.clone()))
             .collect();
+        let calldata = abi
+            .encode_input_with_signature(func.signature().as_str(), params.as_slice())
+            .unwrap();
 
         let db_home = match self.db {
             Some(path) => path,
@@ -70,33 +113,61 @@ impl Invoke {
         };
         let tree_db_path = db_home.join("tree");
         let state_db_path = db_home.join("state");
-        let block_info = Self::mock_block_info();
-        let manager = VmManager::new(
+        let block_info = mock_block_info();
+        let mut manager = VmManager::new(
             block_info,
             tree_db_path.to_str().unwrap().to_string(),
             state_db_path.to_str().unwrap().to_string(),
         );
-        let tx_info: TxInfo = TxInfo {
-            version: OLA_RAW_TX_TYPE,
-            caller_address: todo!(),
-            calldata: todo!(),
-            nonce: todo!(),
-            signature_r: todo!(),
-            signature_s: todo!(),
-            tx_hash: todo!(),
+
+        let tx_init_info = TxCtxInfo {
+            block_number: GoldilocksField::from_canonical_u64(block_number),
+            block_timestamp: GoldilocksField::from_canonical_u64(block_timestamp),
+            sequencer_address: [GoldilocksField::ZERO; 4],
+            version: GoldilocksField::from_canonical_u32(OLA_RAW_TX_TYPE),
+            chain_id: GoldilocksField::from_canonical_u64(1027),
+            caller_address: caller_address.map(|n| GoldilocksField::from_canonical_u64(n)),
+            nonce: GoldilocksField::from_canonical_u32(nonce),
+            signature_r: [0; 4].map(|n| GoldilocksField::from_canonical_u64(n)),
+            signature_s: [0; 4].map(|n| GoldilocksField::from_canonical_u64(n)),
+            tx_hash: [0; 4].map(|n| GoldilocksField::from_canonical_u64(n)),
         };
-    // let result = manager.invoke(tx_info)
+
+        let mut vm = OlaVM::new(
+            tree_db_path_buf.as_path(),
+            state_db_path_buf.as_path(),
+            tx_init_info,
+        );
+        let exec_res = vm.execute_tx(
+            caller_address.map(|n| GoldilocksField::from_canonical_u64(n)),
+            to.map(|n| GoldilocksField::from_canonical_u64(n)),
+            calldata
+                .iter()
+                .map(|n| GoldilocksField::from_canonical_u64(*n))
+                .collect(),
+            &mut BatchCacheManager::default(),
+            false,
+        );
+
+        match exec_res {
+        Ok(_) => {
+            vm.ola_state.storage_queries.iter().for_each(|q|)
+        }
+            Err(e) => {
+                eprintln!("Invoke TX Error: {}", e)
+            }
+        }
         Ok(())
     }
+}
 
-    fn mock_block_info() -> BlockInfo {
-        let now = SystemTime::now();
-        let block_timestamp = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
-        BlockInfo {
-            block_number: 0,
-            block_timestamp: block_timestamp,
-            sequencer_address: [0; 32],
-            chain_id: 1027,
-        }
+fn mock_block_info() -> BlockInfo {
+    let now = SystemTime::now();
+    let block_timestamp = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
+    BlockInfo {
+        block_number: 0,
+        block_timestamp: block_timestamp,
+        sequencer_address: [0; 32],
+        chain_id: 1027,
     }
 }
