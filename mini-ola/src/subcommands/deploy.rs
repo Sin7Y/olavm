@@ -32,14 +32,6 @@ impl Deploy {
         let program: BinaryProgram = serde_json::from_reader(File::open(self.contract)?)?;
         let program_bytes = bincode::serialize(&program)?;
         let program_hash = poseidon_hash_bytes(program_bytes.as_ref()).to_vec();
-        // let instructions_u64 = program.bytecode_u64_array()?;
-        // let instructions: Vec<GoldilocksField> = instructions_u64
-        //     .iter()
-        //     .map(|n| GoldilocksField(*n))
-        //     .collect();
-        // let mut bytecode_hash_u256 = calculate_arbitrary_poseidon(&instructions);
-        // bytecode_hash_u256.reverse();
-        // let bytecode_hash = field_arr_to_u8_arr(&bytecode_hash_u256.to_vec());
 
         let target_address: [u8; 32] = if let Some(addr) = self.address {
             let u8s = hex::decode(addr)?;
@@ -57,10 +49,7 @@ impl Deploy {
             Some(path) => path,
             None => PathBuf::from("./db"),
         };
-        // let tree_db_path = db_home.join("tree");
         let state_db_path = db_home.join("state");
-        // let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path.as_path(),
-        // false);
         let state_db = RocksDB::new(Database::Sequencer, state_db_path.as_path(), false);
 
         let addr_fes = u8_arr_to_field_arr(&target_address.to_vec());
@@ -70,11 +59,20 @@ impl Deploy {
         let addr_key = get_prog_hash_cf_key_from_contract_addr(&addr_key).unwrap();
         let mut batch = WriteBatch::default();
         batch.put_cf(cf, &addr_key, &program_hash);
+        let db_write = state_db.write(batch);
+        if db_write.is_err() {
+            eprintln!("DB write error.");
+            return Ok(());
+        }
 
         let cf = state_db.cf_sequencer_handle(SequencerColumnFamily::FactoryDeps);
         let mut batch = WriteBatch::default();
         batch.put_cf(cf, &program_hash, &program_bytes);
-
+        let db_write = state_db.write(batch);
+        if db_write.is_err() {
+            eprintln!("DB write error.");
+            return Ok(());
+        }
         let target_address = hex::encode(target_address);
         println!("Deploy success at address: 0x{}", target_address);
         Ok(())
