@@ -12,7 +12,7 @@ use plonky2::hash::utils::poseidon_hash_bytes;
 use rand::{thread_rng, Rng};
 use rocksdb::WriteBatch;
 
-use crate::utils::ExpandedPathbufParser;
+use crate::utils::{address_from_hex_be, ExpandedPathbufParser};
 
 #[derive(Debug, Parser)]
 pub struct Deploy {
@@ -34,10 +34,7 @@ impl Deploy {
         let program_hash = poseidon_hash_bytes(program_bytes.as_ref()).to_vec();
 
         let target_address: [u8; 32] = if let Some(addr) = self.address {
-            let u8s = hex::decode(addr)?;
-            let mut bytes = [0u8; 32];
-            bytes.clone_from_slice(&u8s[..32]);
-            bytes
+            address_from_hex_be(addr.as_str()).unwrap()
         } else {
             let mut rng = thread_rng();
             let mut bytes = [0u8; 32];
