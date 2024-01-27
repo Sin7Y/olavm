@@ -70,8 +70,7 @@ impl Call {
 
         let mut arg_iter = self.calls.into_iter();
         let contract_address_hex = arg_iter.next().expect("contract address needed");
-        let contract_address_bytes =
-            from_hex_be(contract_address_hex.as_str()).expect("invalid contract address");
+        let contract_address_bytes = address_from_hex_be(contract_address_hex.as_str()).unwrap();
         let to_vec = bytes_to_u64s(&contract_address_bytes);
         let mut to = [0u64; 4];
         to.clone_from_slice(&to_vec[..4]);
@@ -121,7 +120,7 @@ impl Call {
             tx_init_info,
         );
         let exec_res = vm.execute_tx(
-            caller_address.map(|n| GoldilocksField::from_canonical_u64(n)),
+            to.map(|n| GoldilocksField::from_canonical_u64(n)),
             to.map(|n| GoldilocksField::from_canonical_u64(n)),
             calldata
                 .iter()
