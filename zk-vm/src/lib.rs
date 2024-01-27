@@ -34,6 +34,7 @@ mod preexecutor;
 mod vm_manager;
 
 pub use vm_manager::*;
+pub use preexecutor::*;
 
 #[cfg(test)]
 pub mod test;
