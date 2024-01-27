@@ -15,7 +15,7 @@ use ola_lang_abi::{Abi, Param, Value};
 use plonky2::hash::utils::bytes_to_u64s;
 
 use crate::utils::{
-    address_from_hex_be, from_hex_be, h256_to_u64_array, ExpandedPathbufParser, OLA_RAW_TX_TYPE,
+    address_from_hex_be, h256_to_u64_array, ExpandedPathbufParser, OLA_RAW_TX_TYPE,
 };
 
 use super::parser::ToValue;
