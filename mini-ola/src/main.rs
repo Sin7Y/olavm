@@ -1,9 +1,9 @@
 use clap::{CommandFactory, Parser, Subcommand};
 use colored::Colorize;
-use subcommands::deploy::Deploy;
+use subcommands::{call::Call, deploy::Deploy, invoke::Invoke};
 
-mod utils;
 mod subcommands;
+mod utils;
 
 #[derive(Debug, Parser)]
 #[clap(author, about)]
@@ -18,6 +18,10 @@ struct Cli {
 enum Subcommands {
     #[clap(about = "Deploy a ola contract locally.")]
     Deploy(Deploy),
+    #[clap(about = "Invoke a transaction.")]
+    Invoke(Invoke),
+    #[clap(about = "Make a state query.")]
+    Call(Call),
 }
 
 fn main() {
@@ -36,6 +40,8 @@ fn run_command(cli: Cli) -> anyhow::Result<()> {
         }
         (false, Some(command)) => match command {
             Subcommands::Deploy(cmd) => cmd.run(),
+            Subcommands::Invoke(cmd) => cmd.run(),
+            Subcommands::Call(cmd) => cmd.run(),
         },
     }
 }
