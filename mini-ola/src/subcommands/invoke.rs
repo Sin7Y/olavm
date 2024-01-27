@@ -1,6 +1,8 @@
 use core::{
-    state::error::StateError,
-    types::{Field, GoldilocksField},
+    crypto::poseidon_trace::calculate_arbitrary_poseidon,
+    merkle_tree::log::StorageLogKind,
+    storage::db::SequencerColumnFamily,
+    types::{merkle_tree::tree_key_to_u8_arr, Field, GoldilocksField},
     vm::transaction::TxCtxInfo,
 };
 use std::{
@@ -14,14 +16,14 @@ use ethereum_types::H256;
 use executor::BatchCacheManager;
 use ola_lang_abi::{Abi, Param, Value};
 use plonky2::hash::utils::bytes_to_u64s;
+use rocksdb::WriteBatch;
 
 use crate::utils::{
-    address_from_hex_be, from_hex_be, h256_from_hex_be, h256_to_u64_array, u64s_to_bytes,
-    ExpandedPathbufParser, OLA_RAW_TX_TYPE,
+    address_from_hex_be, h256_to_u64_array, ExpandedPathbufParser, OLA_RAW_TX_TYPE,
 };
 
 use super::parser::ToValue;
-use zk_vm::{BlockInfo, InvokeResult, OlaVM, VmManager};
+use zk_vm::OlaVM;
 
 #[derive(Debug, Parser)]
 pub struct Invoke {
@@ -49,7 +51,7 @@ impl Invoke {
         let caller_address: [u64; 4] = if let Some(addr) = self.caller {
             let bytes = address_from_hex_be(addr.as_str()).unwrap();
             let caller_vec = bytes_to_u64s(&bytes);
-            let caller = [0u64; 4];
+            let mut caller = [0u64; 4];
             caller.clone_from_slice(&caller_vec[..4]);
             caller
         } else {
@@ -77,7 +79,7 @@ impl Invoke {
         let contract_address_hex = arg_iter.next().expect("contract address needed");
         let contract_address_bytes = address_from_hex_be(contract_address_hex.as_str()).unwrap();
         let to_vec = bytes_to_u64s(&contract_address_bytes);
-        let to = [0u64; 4];
+        let mut to = [0u64; 4];
         to.clone_from_slice(&to_vec[..4]);
 
         let abi_file = File::open(self.abi).expect("failed to open ABI file");
@@ -105,19 +107,6 @@ impl Invoke {
         let calldata = abi
             .encode_input_with_signature(func.signature().as_str(), params.as_slice())
             .unwrap();
-
-        let db_home = match self.db {
-            Some(path) => path,
-            None => PathBuf::from("./db"),
-        };
-        let tree_db_path = db_home.join("tree");
-        let state_db_path = db_home.join("state");
-        let block_info = mock_block_info();
-        let mut manager = VmManager::new(
-            block_info,
-            tree_db_path.to_str().unwrap().to_string(),
-            state_db_path.to_str().unwrap().to_string(),
-        );
 
         let tx_init_info = TxCtxInfo {
             block_number: GoldilocksField::from_canonical_u64(block_number),
@@ -178,16 +167,5 @@ impl Invoke {
             }
         }
         Ok(())
-    }
-}
-
-fn mock_block_info() -> BlockInfo {
-    let now = SystemTime::now();
-    let block_timestamp = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
-    BlockInfo {
-        block_number: 0,
-        block_timestamp: block_timestamp,
-        sequencer_address: [0; 32],
-        chain_id: 1027,
     }
 }
