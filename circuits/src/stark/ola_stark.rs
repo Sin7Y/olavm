@@ -916,7 +916,11 @@ mod tests {
 
         program.prophets = prophets;
         // FIXME: account tree is not used, merkle root cannot update.
-        let res = process.execute(&mut program, &StateStorage::new_test(), &mut BatchCacheManager::default());
+        let res = process.execute(
+            &mut program,
+            &StateStorage::new_test(),
+            &mut BatchCacheManager::default(),
+        );
         match res {
             Ok(_) => {}
             Err(e) => {

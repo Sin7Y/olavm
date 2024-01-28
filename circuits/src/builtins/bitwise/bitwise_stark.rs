@@ -418,7 +418,7 @@ mod tests {
     use crate::stark::stark::Stark;
     use crate::stark::vars::StarkEvaluationVars;
     use assembler::encoder::encode_asm_from_json_file;
-    
+
     use core::program::Program;
     use core::state::state_storage::StateStorage;
     use core::types::account::Address;

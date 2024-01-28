@@ -125,7 +125,11 @@ pub fn test_stark_with_asm_path<Row, const COL_NUM: usize, E, H>(
 
     program.prophets = prophets;
     // FIXME: account tree is not used, merkle root cannot update.
-    let res = process.execute(&mut program, &StateStorage::new_test(), &mut BatchCacheManager::default());
+    let res = process.execute(
+        &mut program,
+        &StateStorage::new_test(),
+        &mut BatchCacheManager::default(),
+    );
     match res {
         Ok(_) => {}
         Err(e) => {
@@ -309,7 +313,11 @@ pub fn simple_test_stark<const COL_NUM: usize, E, H>(
     });
 
     // FIXME: account tree is not used, merkle root cannot update.
-    let res = process.execute(&mut program, &StateStorage::new_test(), &mut BatchCacheManager::default());
+    let res = process.execute(
+        &mut program,
+        &StateStorage::new_test(),
+        &mut BatchCacheManager::default(),
+    );
     match res {
         Ok(_) => {}
         Err(e) => {
