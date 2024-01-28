@@ -1,7 +1,7 @@
 use anyhow::{bail, Ok, Result};
 use ola_lang_abi::{FixedArray4, Param, Type, Value};
 
-use crate::utils::{h256_from_hex_be, h256_to_u64_array, OLA_FIELD_ORDER, u64_array_to_h256};
+use crate::utils::{h256_from_hex_be, h256_to_u64_array, u64_array_to_h256, OLA_FIELD_ORDER};
 
 pub struct ToValue;
 impl ToValue {
