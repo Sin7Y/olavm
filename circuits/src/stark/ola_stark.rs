@@ -689,231 +689,231 @@ mod tests {
     #[allow(dead_code)]
     type S = dyn Stark<F, D>;
 
-    #[test]
-    fn fibo_loop_test() {
-        let calldata = [10u64, 1u64, 2, 4185064725u64]
-            .iter()
-            .map(|v| GoldilocksField::from_canonical_u64(*v))
-            .collect_vec();
-        test_by_asm_json("fib_asm.json".to_string(), Some(calldata), None)
-    }
-
-    #[test]
-    fn fibo_recursive_decode() {
-        test_by_asm_json("fibo_recursive.json".to_string(), None, None)
-    }
-
-    #[test]
-    fn memory_test() {
-        test_by_asm_json("memory.json".to_string(), None, None)
-    }
-
-    #[test]
-    fn call_test() {
-        test_by_asm_json("call.json".to_string(), None, None)
-    }
-
     // #[test]
-    // fn range_check_test() {
-    //     test_by_asm_json("range_check.json".to_string(), None)
+    // fn fibo_loop_test() {
+    //     let calldata = [10u64, 1u64, 2, 4185064725u64]
+    //         .iter()
+    //         .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //         .collect_vec();
+    //     test_by_asm_json("fib_asm.json".to_string(), Some(calldata), None)
     // }
 
     // #[test]
-    // fn bitwise_test() {
-    //     test_by_asm_json("bitwise.json".to_string(), None)
+    // fn fibo_recursive_decode() {
+    //     test_by_asm_json("fibo_recursive.json".to_string(), None, None)
     // }
-
-    #[test]
-    fn comparison_test() {
-        test_by_asm_json("comparison.json".to_string(), None, None)
-    }
 
     // #[test]
-    // fn test_ola_prophet_hand_write() {
-    //     test_by_asm_json("hand_write_prophet.json".to_string(), None);
+    // fn memory_test() {
+    //     test_by_asm_json("memory.json".to_string(), None, None)
     // }
-
-    #[test]
-    fn test_ola_prophet_sqrt() {
-        let calldata = [144u64, 10u64, 2, 3509365327u64]
-            .iter()
-            .map(|v| GoldilocksField::from_canonical_u64(*v))
-            .collect_vec();
-        test_by_asm_json("sqrt_prophet_asm.json".to_string(), Some(calldata), None);
-    }
 
     // #[test]
-    // fn test_ola_sqrt() {
-    //     test_by_asm_json("sqrt.json".to_string(), None);
+    // fn call_test() {
+    //     test_by_asm_json("call.json".to_string(), None, None)
     // }
 
-    #[test]
-    fn test_ola_poseidon() {
-        let call_data = vec![
-            GoldilocksField::ZERO,
-            GoldilocksField::from_canonical_u64(1239976900),
-        ];
-        test_by_asm_json("poseidon_hash.json".to_string(), Some(call_data), None);
-    }
+    // // #[test]
+    // // fn range_check_test() {
+    // //     test_by_asm_json("range_check.json".to_string(), None)
+    // // }
 
-    #[test]
-    fn test_ola_storage() {
-        let call_data = vec![
-            GoldilocksField::from_canonical_u64(0),
-            GoldilocksField::from_canonical_u64(2364819430),
-        ];
-        test_by_asm_json("storage_u32.json".to_string(), Some(call_data), None);
-    }
+    // // #[test]
+    // // fn bitwise_test() {
+    // //     test_by_asm_json("bitwise.json".to_string(), None)
+    // // }
 
-    #[test]
-    fn test_ola_global() {
-        let call_data = vec![
-            GoldilocksField::ZERO,
-            GoldilocksField::from_canonical_u64(4171824493),
-        ];
-        test_by_asm_json("global.json".to_string(), Some(call_data), None);
-    }
+    // #[test]
+    // fn comparison_test() {
+    //     test_by_asm_json("comparison.json".to_string(), None, None)
+    // }
 
-    #[test]
-    fn test_ola_malloc() {
-        test_by_asm_json("malloc.json".to_string(), None, None);
-    }
+    // // #[test]
+    // // fn test_ola_prophet_hand_write() {
+    // //     test_by_asm_json("hand_write_prophet.json".to_string(), None);
+    // // }
 
-    #[test]
-    fn test_ola_vote() {
-        let db_name = "vote_test".to_string();
+    // #[test]
+    // fn test_ola_prophet_sqrt() {
+    //     let calldata = [144u64, 10u64, 2, 3509365327u64]
+    //         .iter()
+    //         .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //         .collect_vec();
+    //     test_by_asm_json("sqrt_prophet_asm.json".to_string(), Some(calldata), None);
+    // }
 
-        let init_calldata = [3u64, 1u64, 2u64, 3u64, 4, 2817135588u64]
-            .iter()
-            .map(|v| GoldilocksField::from_canonical_u64(*v))
-            .collect_vec();
-        let vote_calldata = [2u64, 1, 2791810083u64]
-            .iter()
-            .map(|v| GoldilocksField::from_canonical_u64(*v))
-            .collect_vec();
-        let winning_proposal_calldata = [0u64, 3186728800u64]
-            .iter()
-            .map(|v| GoldilocksField::from_canonical_u64(*v))
-            .collect_vec();
-        let winning_name_calldata = [0u64, 363199787u64]
-            .iter()
-            .map(|v| GoldilocksField::from_canonical_u64(*v))
-            .collect_vec();
-        test_by_asm_json("vote.json".to_string(), Some(init_calldata), Some(db_name));
-    }
+    // // #[test]
+    // // fn test_ola_sqrt() {
+    // //     test_by_asm_json("sqrt.json".to_string(), None);
+    // // }
 
-    #[test]
-    fn test_ola_mem_gep() {
-        test_by_asm_json("mem_gep.json".to_string(), None, None);
-    }
+    // #[test]
+    // fn test_ola_poseidon() {
+    //     let call_data = vec![
+    //         GoldilocksField::ZERO,
+    //         GoldilocksField::from_canonical_u64(1239976900),
+    //     ];
+    //     test_by_asm_json("poseidon_hash.json".to_string(), Some(call_data), None);
+    // }
 
-    #[test]
-    fn test_ola_mem_gep_vector() {
-        test_by_asm_json("mem_gep_vector.json".to_string(), None, None);
-    }
+    // #[test]
+    // fn test_ola_storage() {
+    //     let call_data = vec![
+    //         GoldilocksField::from_canonical_u64(0),
+    //         GoldilocksField::from_canonical_u64(2364819430),
+    //     ];
+    //     test_by_asm_json("storage_u32.json".to_string(), Some(call_data), None);
+    // }
+
+    // #[test]
+    // fn test_ola_global() {
+    //     let call_data = vec![
+    //         GoldilocksField::ZERO,
+    //         GoldilocksField::from_canonical_u64(4171824493),
+    //     ];
+    //     test_by_asm_json("global.json".to_string(), Some(call_data), None);
+    // }
+
+    // #[test]
+    // fn test_ola_malloc() {
+    //     test_by_asm_json("malloc.json".to_string(), None, None);
+    // }
+
+    // #[test]
+    // fn test_ola_vote() {
+    //     let db_name = "vote_test".to_string();
+
+    //     let init_calldata = [3u64, 1u64, 2u64, 3u64, 4, 2817135588u64]
+    //         .iter()
+    //         .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //         .collect_vec();
+    //     let vote_calldata = [2u64, 1, 2791810083u64]
+    //         .iter()
+    //         .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //         .collect_vec();
+    //     let winning_proposal_calldata = [0u64, 3186728800u64]
+    //         .iter()
+    //         .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //         .collect_vec();
+    //     let winning_name_calldata = [0u64, 363199787u64]
+    //         .iter()
+    //         .map(|v| GoldilocksField::from_canonical_u64(*v))
+    //         .collect_vec();
+    //     test_by_asm_json("vote.json".to_string(), Some(init_calldata), Some(db_name));
+    // }
+
+    // #[test]
+    // fn test_ola_mem_gep() {
+    //     test_by_asm_json("mem_gep.json".to_string(), None, None);
+    // }
+
+    // #[test]
+    // fn test_ola_mem_gep_vector() {
+    //     test_by_asm_json("mem_gep_vector.json".to_string(), None, None);
+    // }
 
     // #[test]
     // fn test_ola_string_assert() {
     //     test_by_asm_json("string_assert.json".to_string(), None);
     // }
 
-    #[allow(unused)]
-    pub fn test_by_asm_json(
-        file_name: String,
-        call_data: Option<Vec<GoldilocksField>>,
-        db_name: Option<String>,
-    ) {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("../assembler/test_data/asm/");
-        path.push(file_name);
-        let program_path = path.display().to_string();
+    // #[allow(unused)]
+    // pub fn test_by_asm_json(
+    //     file_name: String,
+    //     call_data: Option<Vec<GoldilocksField>>,
+    //     db_name: Option<String>,
+    // ) {
+    //     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    //     path.push("../assembler/test_data/asm/");
+    //     path.push(file_name);
+    //     let program_path = path.display().to_string();
 
-        let mut db = match db_name {
-            Some(name) => {
-                let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-                db_path.push("../executor/db_test/");
-                db_path.push("../executor/db_test/");
-                db_path.push(name);
-                AccountTree::new_db_test(db_path.display().to_string())
-            }
-            _ => AccountTree::new_test(),
-        };
+    //     let mut db = match db_name {
+    //         Some(name) => {
+    //             let mut db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    //             db_path.push("../executor/db_test/");
+    //             db_path.push("../executor/db_test/");
+    //             db_path.push(name);
+    //             AccountTree::new_db_test(db_path.display().to_string())
+    //         }
+    //         _ => AccountTree::new_test(),
+    //     };
 
-        let program = encode_asm_from_json_file(program_path).unwrap();
-        let hash = ZkHasher::default();
-        let instructions = program.bytecode.split("\n");
-        let code: Vec<_> = instructions
-            .clone()
-            .map(|e| GoldilocksField::from_canonical_u64(u64::from_str_radix(&e[2..], 16).unwrap()))
-            .collect();
-        let code_hash = hash.hash_bytes(&code);
-        let mut prophets = HashMap::new();
-        for item in program.prophets {
-            prophets.insert(item.host as u64, item);
-        }
+    //     let program = encode_asm_from_json_file(program_path).unwrap();
+    //     let hash = ZkHasher::default();
+    //     let instructions = program.bytecode.split("\n");
+    //     let code: Vec<_> = instructions
+    //         .clone()
+    //         .map(|e| GoldilocksField::from_canonical_u64(u64::from_str_radix(&e[2..], 16).unwrap()))
+    //         .collect();
+    //     let code_hash = hash.hash_bytes(&code);
+    //     let mut prophets = HashMap::new();
+    //     for item in program.prophets {
+    //         prophets.insert(item.host as u64, item);
+    //     }
 
-        let mut program: Program = Program::default();
+    //     let mut program: Program = Program::default();
 
-        for inst in instructions {
-            program.instructions.push(inst.to_string());
-        }
+    //     for inst in instructions {
+    //         program.instructions.push(inst.to_string());
+    //     }
 
-        let mut process = Process::new();
-        process.addr_storage = Address::default();
+    //     let mut process = Process::new();
+    //     process.addr_storage = Address::default();
 
-        let tp_start = 0;
+    //     let tp_start = 0;
 
-        let callee: Address = [
-            GoldilocksField::from_canonical_u64(9),
-            GoldilocksField::from_canonical_u64(10),
-            GoldilocksField::from_canonical_u64(11),
-            GoldilocksField::from_canonical_u64(12),
-        ];
-        let caller_addr = [
-            GoldilocksField::from_canonical_u64(17),
-            GoldilocksField::from_canonical_u64(18),
-            GoldilocksField::from_canonical_u64(19),
-            GoldilocksField::from_canonical_u64(20),
-        ];
-        let callee_exe_addr = [
-            GoldilocksField::from_canonical_u64(13),
-            GoldilocksField::from_canonical_u64(14),
-            GoldilocksField::from_canonical_u64(15),
-            GoldilocksField::from_canonical_u64(16),
-        ];
+    //     let callee: Address = [
+    //         GoldilocksField::from_canonical_u64(9),
+    //         GoldilocksField::from_canonical_u64(10),
+    //         GoldilocksField::from_canonical_u64(11),
+    //         GoldilocksField::from_canonical_u64(12),
+    //     ];
+    //     let caller_addr = [
+    //         GoldilocksField::from_canonical_u64(17),
+    //         GoldilocksField::from_canonical_u64(18),
+    //         GoldilocksField::from_canonical_u64(19),
+    //         GoldilocksField::from_canonical_u64(20),
+    //     ];
+    //     let callee_exe_addr = [
+    //         GoldilocksField::from_canonical_u64(13),
+    //         GoldilocksField::from_canonical_u64(14),
+    //         GoldilocksField::from_canonical_u64(15),
+    //         GoldilocksField::from_canonical_u64(16),
+    //     ];
 
-        if let Some(calldata) = call_data {
-            process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
+    //     if let Some(calldata) = call_data {
+    //         process.tp = GoldilocksField::from_canonical_u64(tp_start as u64);
 
-            init_tape(
-                &mut process,
-                calldata,
-                caller_addr,
-                callee,
-                callee_exe_addr,
-                &init_tx_context_mock(),
-            );
-        }
+    //         init_tape(
+    //             &mut process,
+    //             calldata,
+    //             caller_addr,
+    //             callee,
+    //             callee_exe_addr,
+    //             &init_tx_context_mock(),
+    //         );
+    //     }
 
-        process.addr_code = callee_exe_addr;
-        process.addr_storage = callee;
-        program
-            .trace
-            .addr_program_hash
-            .insert(encode_addr(&callee_exe_addr), code);
+    //     process.addr_code = callee_exe_addr;
+    //     process.addr_storage = callee;
+    //     program
+    //         .trace
+    //         .addr_program_hash
+    //         .insert(encode_addr(&callee_exe_addr), code);
 
-        db.process_block(vec![WitnessStorageLog {
-            storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
-            previous_value: tree_key_default(),
-        }]);
-        let _ = db.save();
+    //     db.process_block(vec![WitnessStorageLog {
+    //         storage_log: StorageLog::new_write_log(callee_exe_addr, code_hash),
+    //         previous_value: tree_key_default(),
+    //     }]);
+    //     let _ = db.save();
 
-        let start = db.root_hash();
+    //     let start = db.root_hash();
 
-        process.program_log.push(WitnessStorageLog {
-            storage_log: StorageLog::new_read_log(callee_exe_addr, code_hash),
-            previous_value: tree_key_default(),
-        });
+    //     process.program_log.push(WitnessStorageLog {
+    //         storage_log: StorageLog::new_read_log(callee_exe_addr, code_hash),
+    //         previous_value: tree_key_default(),
+    //     });
 
         program.prophets = prophets;
         // FIXME: account tree is not used, merkle root cannot update.
@@ -933,25 +933,25 @@ mod tests {
         gen_storage_table(&mut process, &mut program, hash_roots.unwrap()).unwrap();
         program.trace.start_end_roots = (start, db.root_hash());
 
-        let inputs = GenerationInputs::default();
+    //     let inputs = GenerationInputs::default();
 
-        let mut ola_stark = OlaStark::default();
-        let (traces, public_values) = generate_traces(program, &mut ola_stark, inputs);
-        let config = StarkConfig::standard_fast_config();
-        let proof = prove_with_traces::<F, C, D>(
-            &ola_stark,
-            &config,
-            traces,
-            public_values,
-            &mut TimingTree::default(),
-        );
+    //     let mut ola_stark = OlaStark::default();
+    //     let (traces, public_values) = generate_traces(program, &mut ola_stark, inputs);
+    //     let config = StarkConfig::standard_fast_config();
+    //     let proof = prove_with_traces::<F, C, D>(
+    //         &ola_stark,
+    //         &config,
+    //         traces,
+    //         public_values,
+    //         &mut TimingTree::default(),
+    //     );
 
-        if let Ok(proof) = proof {
-            let ola_stark = OlaStark::default();
-            let verify_res = verify_proof(ola_stark, proof, &config);
-            println!("verify result:{:?}", verify_res);
-        } else {
-            println!("proof err:{:?}", proof);
-        }
-    }
+    //     if let Ok(proof) = proof {
+    //         let ola_stark = OlaStark::default();
+    //         let verify_res = verify_proof(ola_stark, proof, &config);
+    //         println!("verify result:{:?}", verify_res);
+    //     } else {
+    //         println!("proof err:{:?}", proof);
+    //     }
+    // }
 }

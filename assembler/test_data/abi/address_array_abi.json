@@ -1,0 +1,46 @@
+[
+  {
+    "name": "address_array_fiexed",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "address_array_dynamic",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "address_array_fiexed_return",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[3]"
+      }
+    ]
+  },
+  {
+    "name": "address_array_dynamic_return",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]"
+      }
+    ]
+  }
+]

@@ -15,6 +15,7 @@ use core::types::account::Address;
 use core::types::merkle_tree::tree_key_default;
 use core::types::merkle_tree::{decode_addr, encode_addr};
 use core::vm::transaction::init_tx_context_mock;
+use std::time;
 use log::{debug, LevelFilter};
 use ola_lang_abi::{Abi, FixedArray4, Value};
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -57,7 +58,7 @@ fn executor_run_test_program(
         debug_info: program.debug_info,
         prophets: prophets,
         pre_exe_flag: false,
-        print_flag: false,
+        print_flag: true,
     };
 
     for inst in instructions {

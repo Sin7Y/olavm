@@ -314,6 +314,21 @@ mod tests {
         generate_from_file("u32_asm.json".to_string(), "u32.json".to_string());
     }
 
+    #[test]
+    fn generate_mapping_1() {
+        generate_from_file("mapping_1_asm.json".to_string(), "mapping_1.json".to_string());
+    }
+
+    #[test]
+    fn generate_proposal() {
+        generate_from_file("proposal_asm.json".to_string(), "proposal.json".to_string());
+    }
+
+    #[test]
+    fn generate_address_array() {
+        generate_from_file("address_array_asm.json".to_string(), "address_array.json".to_string());
+    }
+
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin/sccall");
         let input_path = format!("test_data/asm/{}", input_file_name);
