@@ -309,8 +309,7 @@ impl FromValue {
             }
 
             let v = Self::parse_input(i.1.clone());
-            ret += &v;
-            ret += ",";
+            ret += format!("{}: {},", i.0, v).as_str();
         });
         ret.pop();
         ret += "}";

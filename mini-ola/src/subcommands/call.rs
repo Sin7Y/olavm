@@ -14,8 +14,9 @@ use executor::BatchCacheManager;
 use ola_lang_abi::{Abi, Param, Value};
 use plonky2::hash::utils::bytes_to_u64s;
 
-use crate::utils::{
-    address_from_hex_be, h256_to_u64_array, ExpandedPathbufParser, OLA_RAW_TX_TYPE,
+use crate::{
+    subcommands::parser::FromValue,
+    utils::{address_from_hex_be, h256_to_u64_array, ExpandedPathbufParser, OLA_RAW_TX_TYPE},
 };
 
 use super::parser::ToValue;
@@ -133,7 +134,15 @@ impl Call {
         match exec_res {
             Ok(_) => {
                 let ret_data = vm.ola_state.return_data;
-                println!("Return data: {:?}", ret_data);
+                let u64_ret: Vec<u64> = ret_data.iter().map(|fe| fe.0).collect();
+                let decoded = abi
+                    .decode_output_from_slice(func.signature().as_str(), &u64_ret)
+                    .unwrap();
+                println!("Return data:");
+                for dp in decoded.1.reader().by_index {
+                    let value = FromValue::parse_input(dp.value.clone());
+                    println!("{}", value);
+                }
             }
             Err(e) => {
                 eprintln!("Invoke TX Error: {}", e)
