@@ -393,7 +393,6 @@ impl OlaVM {
                             .storage_queries
                             .append(&mut process.storage_queries);
                         self.ola_state.return_data = process.return_data.clone();
-                        println!("Final return data: {:?}", process.return_data);
                         debug!("finish tx");
                         break;
                     } else {
@@ -401,7 +400,6 @@ impl OlaVM {
                         let tape_tree = process.tape.clone();
                         let tp = process.tp.clone();
                         let clk = process.clk.clone();
-                        let return_data = process.return_data.clone();
                         let ctx = self
                             .process_ctx
                             .pop()
