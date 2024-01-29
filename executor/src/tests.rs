@@ -1871,6 +1871,7 @@ fn proposal_test_2() {
 #[test]
 fn proposal_test_3() {
     let abi: Abi = {
+        
         let file = File::open("../assembler/test_data/abi/proposal_abi.json")
             .expect("failed to open ABI file");
 
