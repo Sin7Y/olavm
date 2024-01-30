@@ -31,6 +31,7 @@ impl TypedValueParser for ExpandedPathbufParser {
     }
 }
 
+#[allow(dead_code)]
 pub fn from_hex_be(value: &str) -> anyhow::Result<[u8; 32]> {
     let value = value.trim_start_matches("0x");
 
@@ -95,10 +96,12 @@ pub fn u64_array_to_h256(arr: &[u64; 4]) -> H256 {
     H256(bytes)
 }
 
+#[allow(dead_code)]
 pub fn u64s_to_bytes(arr: &[u64]) -> Vec<u8> {
     arr.iter().flat_map(|w| w.to_be_bytes()).collect()
 }
 
+#[allow(dead_code)]
 pub fn bytes_to_u64s(bytes: Vec<u8>) -> Vec<u64> {
     assert!(bytes.len() % 8 == 0, "Bytes must be divisible by 8");
     bytes

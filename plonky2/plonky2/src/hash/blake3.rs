@@ -11,9 +11,8 @@ use blake3;
 
 use super::hash_types::BytesHash;
 use arrayref::array_ref;
-use plonky2_field::extension::{Extendable, FieldExtension};
-use plonky2_field::types::{Field, PrimeField64};
-
+use plonky2_field::extension::FieldExtension;
+use plonky2_field::types::PrimeField64;
 pub const ROUND: usize = 7;
 pub const STATE_SIZE: usize = 16;
 pub const IV_SIZE: usize = 8;

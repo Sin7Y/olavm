@@ -7,7 +7,7 @@ use crate::gates::gate::Gate;
 use crate::gates::util::StridedConstraintConsumer;
 use crate::hash::hash_types::RichField;
 use crate::hash::poseidon2;
-use crate::hash::poseidon2::{Poseidon2, ROUNDS, ROUND_F_BEGIN, ROUND_F_END, ROUND_P, WIDTH};
+use crate::hash::poseidon2::{Poseidon2, ROUND_F_BEGIN, ROUND_F_END, ROUND_P, WIDTH};
 use crate::iop::ext_target::ExtensionTarget;
 use crate::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGenerator};
 use crate::iop::target::Target;

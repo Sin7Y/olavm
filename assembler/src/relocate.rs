@@ -31,7 +31,7 @@ impl AsmBundle {
                     continue;
                 }
 
-                let row_res = AsmRow::from_str(processed_line.clone());
+                let row_res = AsmRow::from_str(processed_line);
                 if row_res.is_err() {
                     let err_msg = row_res.err().unwrap();
                     return Err(format!("line {}: {} ==> {}", line_num, line, err_msg));
