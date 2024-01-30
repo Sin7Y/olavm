@@ -1,19 +1,14 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Instant,
-};
-
-use maybe_rayon::*;
-
-use crate::{goldilocks_field::GoldilocksField, types::Field};
 #[cfg(feature = "cuda")]
 use lazy_static::lazy_static;
-use once_cell::sync::OnceCell;
 
 pub const NTT_MAX_LENGTH: u64 = 1 << 24;
+#[allow(dead_code)]
 static mut GLOBAL_POINTER_INDATA: *mut *mut u64 = std::ptr::null_mut();
+#[allow(dead_code)]
 static mut GLOBAL_POINTER_OUTDATA: *mut *mut u64 = std::ptr::null_mut();
+#[allow(dead_code)]
 static mut GLOBAL_POINTER_PARAM: *mut *mut u64 = std::ptr::null_mut();
+#[allow(dead_code)]
 static mut GLOBAL_POINTER_MEMCACH: *mut *mut u64 = std::ptr::null_mut();
 
 #[allow(improper_ctypes)]

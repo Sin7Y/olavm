@@ -8,7 +8,6 @@ use core::vm::memory::{MemoryTree, HP_START_ADDR, PSP_START_ADDR};
 
 use core::merkle_tree::log::{StorageLog, StorageQuery};
 use core::merkle_tree::log::{StorageLogKind, WitnessStorageLog};
-use core::merkle_tree::tree::AccountTree;
 
 use core::program::instruction::IMM_INSTRUCTION_LEN;
 use core::program::instruction::{ImmediateOrRegName, Opcode};

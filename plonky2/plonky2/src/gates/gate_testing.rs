@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use anyhow::{ensure, Result};
 use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::polynomial::{PolynomialCoeffs, PolynomialValues};

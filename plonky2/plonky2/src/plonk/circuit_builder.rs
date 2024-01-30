@@ -1,4 +1,3 @@
-use alloc::sync::Arc;
 use std::cmp::max;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::time::Instant;
@@ -21,8 +20,8 @@ use crate::gates::arithmetic_base::ArithmeticGate;
 use crate::gates::arithmetic_extension::ArithmeticExtensionGate;
 use crate::gates::constant::ConstantGate;
 use crate::gates::gate::{CurrentSlot, Gate, GateInstance, GateRef};
-use crate::gates::lookup::{BitwiseLookup, BitwiseLookupGate, Lookup, LookupGate};
-use crate::gates::lookup_table::{BitwiseLookupTable, LookupTable};
+use crate::gates::lookup::{BitwiseLookup, BitwiseLookupGate};
+use crate::gates::lookup_table::BitwiseLookupTable;
 use crate::gates::noop::NoopGate;
 use crate::gates::public_input::PublicInputGate;
 use crate::gates::selectors::{selector_ends_lookups, selector_polynomials, selectors_lookup};

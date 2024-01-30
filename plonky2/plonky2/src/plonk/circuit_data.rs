@@ -15,7 +15,7 @@ use crate::fri::structure::{
 };
 use crate::fri::{FriConfig, FriParams};
 use crate::gates::gate::GateRef;
-use crate::gates::lookup::{BitwiseLookup, Lookup};
+use crate::gates::lookup::BitwiseLookup;
 use crate::gates::lookup_table::BitwiseLookupTable;
 use crate::gates::selectors::SelectorsInfo;
 use crate::hash::hash_types::{HashOutTarget, MerkleCapTarget, RichField};

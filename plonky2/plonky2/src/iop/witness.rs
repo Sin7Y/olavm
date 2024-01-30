@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use itertools::{zip_eq, Itertools};
+use itertools::Itertools;
 use plonky2_field::extension::{Extendable, FieldExtension};
 use plonky2_field::types::Field;
 

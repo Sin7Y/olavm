@@ -10,8 +10,6 @@ mod serial;
 
 pub mod ntt;
 
-use crate::cfft::ntt::*;
-
 #[cfg(test)]
 mod tests;
 
