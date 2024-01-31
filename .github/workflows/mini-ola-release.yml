@@ -1,0 +1,117 @@
+name: mini-ola Release
+on:
+  push:
+    branches: ["pre-alpha"]
+  pull_request:
+    branches: ["pre-alpha"]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+
+  linux-x86-64:
+    name: Linux x86-64
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive   
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rustfmt
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: 15    
+    - name: Build
+      run: cargo build --release
+    - name: Upload binary
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/mini-ola
+        asset_name: mini-ola-linux-x86-64
+        tag: ${{ github.ref }}    
+  mac-intel:
+    name: Mac Intel
+    runs-on: macos-latest
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive   
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rustfmt
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: 15      
+    - name: Build
+      run: cargo build --release
+    - name: Upload binary
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/mini-ola
+        asset_name: mini-ola-mac-intel
+        tag: ${{ github.ref }}     
+  macos-arm:
+    name: Mac ARM
+    runs-on: macos-latest-xlarge
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive  
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rustfmt
+    - name: Get LLVM
+      run: curl -sSL --output clang+llvm-15.0.7-arm64-apple-darwin22.0.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/clang+llvm-15.0.7-arm64-apple-darwin22.0.tar.xz
+    - name: Extract LLVM
+      run: tar Jxf clang+llvm-15.0.7-arm64-apple-darwin22.0.tar.xz && mv clang+llvm-15.0.7-arm64-apple-darwin22.0 llvm15.0
+    - name: Add LLVM to Path
+      run: echo "$(pwd)/llvm15.0/bin" >> $GITHUB_PATH 
+    - name: Build
+      run: cargo build --release
+    - name: Upload binary
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/mini-ola
+        asset_name: mini-ola-mac-arm
+        tag: ${{ github.ref }}    
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive   
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rustfmt
+    - name: Download LLVM
+      run: curl -sSL -o c:\llvm.zip https://github.com/hyperledger/solang-llvm/releases/download/llvm15-1/llvm15.0-win.zip
+    - name: Extract LLVM
+      run: unzip c:\llvm.zip -d c:/
+    - name: Add LLVM to Path
+      run: echo "c:\llvm15.0\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+    - name: Build
+      run: cargo build --release
+    - name: Upload binary
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/mini-ola.exe
+        asset_name: mini-ola-windows.exe
+        tag: ${{ github.ref }}  
