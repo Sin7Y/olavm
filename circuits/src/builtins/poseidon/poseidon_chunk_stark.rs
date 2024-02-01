@@ -286,6 +286,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonChunk
 
 mod test {
     use core::trace::trace::{PoseidonChunkRow, Trace};
+    use core::types::Field;
     use std::path::PathBuf;
 
     use crate::builtins::poseidon::columns::{
