@@ -78,6 +78,11 @@ pub fn test_by_asm_json(path: String) {
         now.elapsed().as_millis(),
         traces[0].get(0).unwrap().values.len()
     );
+    println!(
+        "program generate_traces time:{}, len{}",
+        now.elapsed().as_millis(),
+        traces[0].get(0).unwrap().values.len()
+    );
     let now = Instant::now();
 
     let config = StarkConfig::standard_fast_config();
