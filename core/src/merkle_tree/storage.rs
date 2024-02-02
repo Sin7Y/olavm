@@ -155,9 +155,9 @@ impl Storage {
                                 // we can safely assume that if we have a new write, it was done in
                                 // a previous block and thus the new
                                 // index is valid.
-                                info!("leaf:{:?}", leaf.clone());
+                                debug!("leaf:{:?}", leaf.clone());
                                 if let Some(&index) = new_writes.get(&leaf) {
-                                    info!("index:{:?}", index);
+                                    debug!("index:{:?}", index);
                                     repeated_writes.push(RepeatedStorageWrite { index, value });
                                     index
                                 } else {
@@ -169,7 +169,7 @@ impl Storage {
                                     );
                                     initial_writes.push(InitialStorageWrite { key: leaf, value });
                                     new_writes.insert(leaf, index);
-                                    info!("current_index:{:?}", current_index);
+                                    debug!("current_index:{:?}", current_index);
 
                                     current_index += 1;
                                     index

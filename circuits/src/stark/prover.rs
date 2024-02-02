@@ -3,7 +3,7 @@ use std::any::type_name;
 use std::collections::BTreeMap;
 
 use anyhow::{ensure, Result};
-use log::info;
+use log::{error, info};
 use maybe_rayon::*;
 use plonky2::field::extension::Extendable;
 use plonky2::field::packable::Packable;
@@ -803,7 +803,7 @@ fn check_constraints<'a, F, C, S, const D: usize>(
             );
             if !check_failed && consumer.constraint_accs[0].is_nonzero() {
                 check_failed = true;
-                info!("{} constraint failed in line: {}", type_name::<S>(), i);
+                error!("{} constraint failed in line: {}", type_name::<S>(), i);
             }
             consumer.accumulators()
         })
