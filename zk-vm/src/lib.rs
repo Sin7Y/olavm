@@ -42,7 +42,7 @@ pub mod test;
 #[derive(Debug)]
 pub struct OlaVM {
     pub ola_state: NodeState<ZkHasher>,
-    pub account_tree: AccountTree,
+    // pub account_tree: AccountTree,
     // process, caller address, code address
     pub process_ctx: Vec<(Process, Program, Address, Address)>,
     pub ctx_info: TxCtxInfo,
@@ -65,7 +65,7 @@ impl OlaVM {
 
         OlaVM {
             ola_state,
-            account_tree,
+            // account_tree,
             process_ctx: Vec::new(),
             ctx_info,
             is_call: false,
@@ -74,7 +74,7 @@ impl OlaVM {
 
     pub fn new_call(tree_db_path: &Path, state_db_path: &Path, ctx_info: TxCtxInfo) -> Self {
         let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
-        let account_tree = AccountTree::new(acc_db);
+        // let account_tree = AccountTree::new(acc_db);
         let state_db = RocksDB::new(Database::Sequencer, state_db_path, false);
         let ola_state = NodeState::new(
             Contracts {
@@ -86,7 +86,7 @@ impl OlaVM {
 
         OlaVM {
             ola_state,
-            account_tree,
+            // account_tree,
             process_ctx: Vec::new(),
             ctx_info,
             is_call: true,
@@ -273,15 +273,15 @@ impl OlaVM {
         self.save_prophet(&code_hash, &prophets)?;
         self.save_contract_map(addr, &tree_key_to_u8_arr(&code_hash))?;
 
-        self.account_tree.process_block(vec![WitnessStorageLog {
-            storage_log: StorageLog::new_write(
-                StorageLogKind::RepeatedWrite,
-                addr.clone(),
-                code_hash,
-            ),
-            previous_value: tree_key_default(),
-        }]);
-        let _ = self.account_tree.save();
+        // self.account_tree.process_block(vec![WitnessStorageLog {
+        //     storage_log: StorageLog::new_write(
+        //         StorageLogKind::RepeatedWrite,
+        //         addr.clone(),
+        //         code_hash,
+        //     ),
+        //     previous_value: tree_key_default(),
+        // }]);
+        // let _ = self.account_tree.save();
         Ok(code_hash)
     }
 
@@ -377,14 +377,14 @@ impl OlaVM {
                     debug!("end contract:{:?}", process.addr_code);
                     if self.process_ctx.is_empty() {
                         assert_eq!(env_idx, 0);
-                        let hash_roots = gen_storage_hash_table(
-                            &mut process,
-                            &mut program,
-                            &mut self.account_tree,
-                        )
-                        .map_err(StateError::GenStorageTableError)?;
-                        let _ = gen_storage_table(&mut process, &mut program, hash_roots)
-                            .map_err(StateError::GenStorageTableError)?;
+                        // let hash_roots = gen_storage_hash_table(
+                        //     &mut process,
+                        //     &mut program,
+                        //     &mut self.account_tree,
+                        // )
+                        // .map_err(StateError::GenStorageTableError)?;
+                        // let _ = gen_storage_table(&mut process, &mut program, hash_roots)
+                        //     .map_err(StateError::GenStorageTableError)?;
                         let trace = std::mem::replace(&mut program.trace, Trace::default());
                         self.ola_state
                             .txs_trace
