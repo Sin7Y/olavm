@@ -153,14 +153,16 @@ impl StateStorage {
         contract_addr: &TreeValue,
         code_hash: &Vec<u8>,
     ) -> Result<(), StateError> {
-        let mut batch = WriteBatch::default();
-        let cf = self
-            .db
-            .cf_sequencer_handle(SequencerColumnFamily::ContractMap);
-        let code_key = tree_key_to_u8_arr(contract_addr);
-        batch.put_cf(cf, &code_key, code_hash);
+        // todo to be deleted
+        // let mut batch = WriteBatch::default();
+        // let cf = self
+        //     .db
+        //     .cf_sequencer_handle(SequencerColumnFamily::ContractMap);
+        // let code_key = tree_key_to_u8_arr(contract_addr);
+        // batch.put_cf(cf, &code_key, code_hash);
 
-        self.db.write(batch).map_err(StateError::StorageIoError)
+        // self.db.write(batch).map_err(StateError::StorageIoError)
+        Ok(())
     }
 
     pub fn get_contract_map(&self, contract_addr: &TreeValue) -> Result<Vec<u8>, StateError> {
