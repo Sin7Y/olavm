@@ -51,8 +51,8 @@ pub struct OlaVM {
 
 impl OlaVM {
     pub fn new(tree_db_path: &Path, state_db_path: &Path, ctx_info: TxCtxInfo) -> Self {
-        let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
-        let account_tree = AccountTree::new(acc_db);
+        // let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
+        // let account_tree = AccountTree::new(acc_db);
         let state_db = RocksDB::new(Database::Sequencer, state_db_path, false);
 
         let ola_state = NodeState::new(
@@ -73,7 +73,7 @@ impl OlaVM {
     }
 
     pub fn new_call(tree_db_path: &Path, state_db_path: &Path, ctx_info: TxCtxInfo) -> Self {
-        let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
+        // let acc_db = RocksDB::new(Database::MerkleTree, tree_db_path, false);
         // let account_tree = AccountTree::new(acc_db);
         let state_db = RocksDB::new(Database::Sequencer, state_db_path, false);
         let ola_state = NodeState::new(
