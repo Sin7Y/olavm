@@ -121,7 +121,7 @@ impl Invoke {
             tx_hash: [0; 4].map(|n| GoldilocksField::from_canonical_u64(n)),
         };
 
-        let mut vm = OlaVM::new(
+        let mut vm = OlaVM::new_local(
             tree_db_path_buf.as_path(),
             state_db_path_buf.as_path(),
             tx_init_info,

@@ -140,6 +140,31 @@ impl RocksDB {
         }
     }
 
+    pub fn new_read_only<P: AsRef<Path>>(database: Database, path: P, tune_options: bool) -> Self {
+        let options = Self::rocksdb_options(tune_options);
+        let db = match database {
+            Database::MerkleTree => {
+                let cfs = MerkleTreeColumnFamily::all().iter().map(|cf| {
+                    ColumnFamilyDescriptor::new(cf.to_string(), Self::rocksdb_options(tune_options))
+                });
+                DB::open_cf_descriptors_read_only(&options, path, cfs, false)
+                    .expect("failed to init rocksdb")
+            }
+            Database::Sequencer => {
+                let cfs = SequencerColumnFamily::all().iter().map(|cf| {
+                    ColumnFamilyDescriptor::new(cf.to_string(), Self::rocksdb_options(tune_options))
+                });
+                DB::open_cf_descriptors_read_only(&options, path, cfs, false)
+                    .expect("failed to init rocksdb")
+            }
+        };
+
+        Self {
+            db,
+            _registry_entry: RegistryEntry::new(),
+        }
+    }
+
     fn rocksdb_options(tune_options: bool) -> Options {
         let mut options = Options::default();
         options.create_missing_column_families(true);
