@@ -1,8 +1,6 @@
 use crate::field::extension::Extendable;
 use crate::gates::lookup::BitwiseLookupGate;
-use crate::gates::lookup_table::{
-    BitwiseLookupTable, BitwiseLookupTableGate,
-};
+use crate::gates::lookup_table::{BitwiseLookupTable, BitwiseLookupTableGate};
 use crate::gates::noop::NoopGate;
 use crate::hash::hash_types::RichField;
 use crate::iop::target::Target;
