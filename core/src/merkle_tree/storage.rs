@@ -7,7 +7,7 @@ use crate::types::merkle_tree::{
 use crate::utils::{deserialize_block_number, serialize_block_number, serialize_tree_leaf};
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 use itertools::Itertools;
-use log::info;
+use log::{debug, info};
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use rocksdb::WriteBatch;

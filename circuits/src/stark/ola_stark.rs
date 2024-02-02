@@ -664,7 +664,6 @@ mod tests {
     use core::types::merkle_tree::{encode_addr, tree_key_default};
     use core::types::{Field, GoldilocksField};
     use core::vm::transaction::init_tx_context_mock;
-    use std::process::exit;
     use executor::load_tx::init_tape;
     use executor::trace::{gen_storage_hash_table, gen_storage_table};
     use executor::{BatchCacheManager, Process};
@@ -677,6 +676,7 @@ mod tests {
     use std::io::{BufRead, BufReader};
     use std::mem;
     use std::path::PathBuf;
+    use std::process::exit;
     use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
 
