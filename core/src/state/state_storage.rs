@@ -171,7 +171,9 @@ impl StateStorage {
             .map_err(StateError::GetProgramError)?;
         let res = self.db.get_cf(cf, addr_key);
         res.map_err(StateError::StorageIoError)?
-            .ok_or(StateError::ColumnFamilyEmpty)
+            .ok_or(StateError::GetProgramError(
+                "program hash get failed".to_string(),
+            ))
     }
 
     pub fn save_prophet(&mut self, code_hash: &TreeValue, prophet: &str) -> Result<(), StateError> {
