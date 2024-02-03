@@ -1,15 +1,30 @@
+use std::{
+    sync::{Arc, Mutex},
+    time::Instant,
+};
+
+use crate::{goldilocks_field::GoldilocksField, types::Field};
+
 #[cfg(feature = "cuda")]
 use lazy_static::lazy_static;
 
-pub const NTT_MAX_LENGTH: u64 = 1 << 24;
-#[allow(dead_code)]
-static mut GLOBAL_POINTER_INDATA: *mut *mut u64 = std::ptr::null_mut();
-#[allow(dead_code)]
-static mut GLOBAL_POINTER_OUTDATA: *mut *mut u64 = std::ptr::null_mut();
-#[allow(dead_code)]
-static mut GLOBAL_POINTER_PARAM: *mut *mut u64 = std::ptr::null_mut();
-#[allow(dead_code)]
-static mut GLOBAL_POINTER_MEMCACH: *mut *mut u64 = std::ptr::null_mut();
+use once_cell::sync::OnceCell;
+
+static mut IN_DATA: u64 = 0;
+static mut OUT_DATA: u64 = 0;
+static mut EXE_PARAM: u64 = 0;
+static mut MEM_CACH: u64 = 0;
+
+pub static mut GLOBAL_POINTER_INDATA_MID: *mut u64 = std::ptr::null_mut();
+pub static mut GLOBAL_POINTER_OUTDATA_MID: *mut u64 = std::ptr::null_mut();
+pub static mut GLOBAL_POINTER_PARAM_MID: *mut u64 = std::ptr::null_mut();
+pub static mut GLOBAL_POINTER_MEMCACH_MID: *mut u64 = std::ptr::null_mut();
+
+pub static mut NTT_MAX_LENGTH: u64 = 1 << 24;
+pub static mut GLOBAL_POINTER_INDATA: *mut *mut u64 = std::ptr::null_mut();
+pub static mut GLOBAL_POINTER_OUTDATA: *mut *mut u64 = std::ptr::null_mut();
+pub static mut GLOBAL_POINTER_PARAM: *mut *mut u64 = std::ptr::null_mut();
+pub static mut GLOBAL_POINTER_MEMCACH: *mut *mut u64 = std::ptr::null_mut();
 
 #[allow(improper_ctypes)]
 #[cfg(feature = "cuda")]
@@ -51,35 +66,27 @@ pub fn init_gpu() {}
 pub fn init_gpu() {
     static INSTANCE: OnceCell<()> = OnceCell::new();
     INSTANCE.get_or_init(|| {
-        let mut indata: Box<u64> = Box::new(0);
-        let mut indata_ptr_1: *mut u64 = Box::into_raw(indata);
-        let mut indata_ptr_2: *mut *mut u64 = &mut indata_ptr_1;
         unsafe {
-            GLOBAL_POINTER_INDATA = indata_ptr_2;
-        }
+            GLOBAL_POINTER_INDATA_MID = std::ptr::addr_of_mut!(IN_DATA);
+            GLOBAL_POINTER_INDATA = std::ptr::addr_of_mut!(GLOBAL_POINTER_INDATA_MID);
+            // GLOBAL_POINTER_INDATA_MID = &mut IN_DATA;
+            // GLOBAL_POINTER_INDATA = &mut GLOBAL_POINTER_INDATA_MID;
 
-        let mut outdata: Box<u64> = Box::new(0);
-        let mut outdata_ptr_1: *mut u64 = Box::into_raw(outdata);
-        let mut outdata_ptr_2: *mut *mut u64 = &mut outdata_ptr_1;
-        unsafe {
-            GLOBAL_POINTER_OUTDATA = outdata_ptr_2;
-        }
+            GLOBAL_POINTER_OUTDATA_MID = std::ptr::addr_of_mut!(OUT_DATA);
+            GLOBAL_POINTER_OUTDATA = std::ptr::addr_of_mut!(GLOBAL_POINTER_OUTDATA_MID);
+            // GLOBAL_POINTER_OUTDATA_MID = &mut OUT_DATA;
+            // GLOBAL_POINTER_OUTDATA = &mut GLOBAL_POINTER_OUTDATA_MID;
 
-        let mut exe_param: Box<u64> = Box::new(0);
-        let mut exe_param_ptr_1: *mut u64 = Box::into_raw(exe_param);
-        let mut exe_param_ptr_2: *mut *mut u64 = &mut exe_param_ptr_1;
-        unsafe {
-            GLOBAL_POINTER_PARAM = exe_param_ptr_2;
-        }
+            GLOBAL_POINTER_PARAM_MID = std::ptr::addr_of_mut!(EXE_PARAM);
+            GLOBAL_POINTER_PARAM = std::ptr::addr_of_mut!(GLOBAL_POINTER_PARAM_MID);
+            // GLOBAL_POINTER_PARAM_MID = &mut EXE_PARAM;
+            // GLOBAL_POINTER_PARAM = &mut GLOBAL_POINTER_PARAM_MID;
 
-        let mut mem_cach: Box<u64> = Box::new(0);
-        let mut mem_cach_ptr_1: *mut u64 = Box::into_raw(mem_cach);
-        let mut mem_cach_ptr_2: *mut *mut u64 = &mut mem_cach_ptr_1;
-        unsafe {
-            GLOBAL_POINTER_MEMCACH = mem_cach_ptr_2;
+            GLOBAL_POINTER_MEMCACH_MID = std::ptr::addr_of_mut!(MEM_CACH);
+            GLOBAL_POINTER_MEMCACH = std::ptr::addr_of_mut!(GLOBAL_POINTER_MEMCACH_MID);
+            // GLOBAL_POINTER_MEMCACH_MID = &mut MEM_CACH;
+            // GLOBAL_POINTER_MEMCACH = &mut GLOBAL_POINTER_MEMCACH_MID;
         }
-
-        println!("***************test nomal FFT and iFFT: *****************");
 
         let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
         unsafe {
@@ -91,6 +98,29 @@ pub fn init_gpu() {
                 GLOBAL_POINTER_MEMCACH,
                 extra_info.as_mut_ptr(),
             );
+            // println!("GLOBAL_MAX_NUM = {} ", NTT_MAX_LENGTH);
+            // println!(
+            //     "GLOBAL_POINTER_INDATA = {} {} {} {} {}",
+            //     *(*GLOBAL_POINTER_INDATA).offset(0),
+            //     *(*GLOBAL_POINTER_INDATA).offset(1),
+            //     *(*GLOBAL_POINTER_INDATA).offset(2),
+            //     *(*GLOBAL_POINTER_INDATA).offset(3),
+            //     *(*GLOBAL_POINTER_INDATA).offset(4)
+            // );
+            // println!(
+            //     "GLOBAL_POINTER_OUTDATA = {} {} {} {} {}",
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(0),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(1),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(2),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(3),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(4)
+            // );
+
+            // *(*GLOBAL_POINTER_INDATA).offset(1 << 23) = 1000 as u64;
+            // println!(
+            //     "GLOBAL_POINTER_INDATA = {} ",
+            //     *(*GLOBAL_POINTER_INDATA).offset(1 << 23)
+            // );
         }
     });
 }
@@ -120,14 +150,14 @@ where
     F: Field,
 {
     unsafe {
-        let gpu = GPU_LOCK.lock().unwrap();
+        let gpu: std::sync::MutexGuard<'_, u32> = GPU_LOCK.lock().unwrap();
 
         let start = Instant::now();
 
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
-                *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
+                *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
             }
         }
 
@@ -141,9 +171,16 @@ where
         {
             let start = Instant::now();
 
+            // // host configuration
+            // extra_info[0] = p;
+            // extra_info[1] = G;
+            // extra_info[2] = 8; // blowup_factor max value
+            // extra_info[3] = 0; // extend field flag
+            // extra_info[4] = 0; // blowup_factor real value
+            // extra_info[5] = 0; // InvNTT flag
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
             gpu_method(
-                p.len(),
+                p.len() as u64,
                 GLOBAL_POINTER_INDATA,
                 GLOBAL_POINTER_OUTDATA,
                 GLOBAL_POINTER_PARAM,
@@ -160,10 +197,12 @@ where
 
         let start = Instant::now();
         let mut res = Vec::with_capacity(p.len());
+        // let mut res = [F::ZERO; p.len()];
 
         for i in 0..p.len() {
-            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
-            res[i] = F::from_canonical_u64(val);
+            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+            // res[i] = F::from_canonical_u64(val as u64);
+            res.push(F::from_canonical_u64(val));
         }
 
         println!(
@@ -188,9 +227,9 @@ where
         let start = Instant::now();
 
         for (idx, f) in p.iter().enumerate() {
-            let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+            let val: u64 = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
-                *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
+                *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
             }
         }
         let domain_offset = domain_offset
@@ -199,7 +238,7 @@ where
             .unwrap()
             .0;
         let blowup_factor: u64 = blowup_factor as u64;
-        let result_len = (p2.len() as u64) * blowup_factor;
+        let result_len = (p.len() as u64) * blowup_factor;
         let mut result = vec![0; result_len as usize];
 
         println!("[cuda][before](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
@@ -207,10 +246,16 @@ where
         #[cfg(feature = "cuda")]
         {
             let start = Instant::now();
-
-            let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 1, blowup_factor, 0];
+            // // host configuration
+            // extra_info[0] = p;
+            // extra_info[1] = G;
+            // extra_info[2] = 8; // blowup_factor max value
+            // extra_info[3] = 0; // extend field flag
+            // extra_info[4] = 0; // blowup_factor real value
+            // extra_info[5] = 0; // InvNTT flag
+            let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, blowup_factor, 0];
             gpu_method(
-                p.len(),
+                p.len() as u64,
                 GLOBAL_POINTER_INDATA,
                 GLOBAL_POINTER_OUTDATA,
                 GLOBAL_POINTER_PARAM,
@@ -226,11 +271,12 @@ where
         // let res = result.par_iter().map(|&i|
         // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
-        let mut res = Vec::with_capacity(result_len);
+        let mut res = Vec::with_capacity(result_len as usize);
 
         for i in 0..result_len {
-            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
-            res[i] = F::from_canonical_u64(val);
+            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+            // res[i as usize] = F::from_canonical_u64(val);
+            res.push(F::from_canonical_u64(val));
         }
 
         println!("[cuda][after](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
@@ -246,32 +292,108 @@ where
     F: Field,
 {
     unsafe {
-        let gpu = GPU_LOCK.lock().unwrap();
+        let gpu: std::sync::MutexGuard<'_, u32> = GPU_LOCK.lock().unwrap();
 
         let start = Instant::now();
+        // println!("GLOBAL_MAX_NUM = {} ", NTT_MAX_LENGTH);
+        // println!(
+        //     "GLOBAL_POINTER_INDATA = {} {} {} {} {}",
+        //     *(*GLOBAL_POINTER_INDATA).offset(0),
+        //     *(*GLOBAL_POINTER_INDATA).offset(1),
+        //     *(*GLOBAL_POINTER_INDATA).offset(2),
+        //     *(*GLOBAL_POINTER_INDATA).offset(3),
+        //     *(*GLOBAL_POINTER_INDATA).offset(4)
+        // );
+        // println!(
+        //     "GLOBAL_POINTER_OUTDATA = {} {} {} {} {}",
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(0),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(1),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(2),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(3),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(4)
+        // );
+
+        // *(*GLOBAL_POINTER_INDATA).offset(1 << 23) = 1000 as u64;
+        // println!(
+        //     "GLOBAL_POINTER_INDATA = {} ",
+        //     *(*GLOBAL_POINTER_INDATA).offset(1 << 23)
+        // );
+        //println!("p[0] = {} ;p[end] = {}", p[0], p[p.len() - 1]);
 
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
-                *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
+                *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+                // println!(
+                //     "GLOBAL_POINTER_INDATA = {} ;p = {}",
+                //     *(*GLOBAL_POINTER_INDATA).offset(idx as isize),
+                //     p[idx]
+                // );
             }
         }
+
+        // let file: File =
+        //     File::create("/home/wpf/work/debug_data/GLOBAL_POINTER_INDATA.txt").
+        // unwrap(); let mut writer = BufWriter::new(file);
+        // unsafe {
+        //     for i in 0..p.len() {
+        //         writeln!(writer, "{}", (*(*GLOBAL_POINTER_INDATA).offset(i as
+        // isize))).unwrap();     }
+        // }
 
         println!(
             "[cuda][before](run_interpolate_poly) data_len = {}, cost_time = {:?}",
             p.len(),
             start.elapsed()
         );
+        // println!(
+        //     "GLOBAL_POINTER_INDATA = {} {} {} {} {} {} {} {} {} {}",
+        //     *(*GLOBAL_POINTER_INDATA).offset(0),
+        //     *(*GLOBAL_POINTER_INDATA).offset(1),
+        //     *(*GLOBAL_POINTER_INDATA).offset(2),
+        //     *(*GLOBAL_POINTER_INDATA).offset(3),
+        //     *(*GLOBAL_POINTER_INDATA).offset(4),
+        //     *(*GLOBAL_POINTER_INDATA).offset(10),
+        //     *(*GLOBAL_POINTER_INDATA).offset(11),
+        //     *(*GLOBAL_POINTER_INDATA).offset(12),
+        //     *(*GLOBAL_POINTER_INDATA).offset(13),
+        //     *(*GLOBAL_POINTER_INDATA).offset(14),
+        // );
+        // println!(
+        //     "GLOBAL_POINTER_OUTDATA = {} {} {} {} {} {} {} {} {} {}",
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(0),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(1),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(2),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(3),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(4),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(10),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(11),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(12),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(13),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(14)
+        // );
+
+        // println!(
+        //     "GLOBAL_POINTER_OUTDATA [0]= {} ;GLOBAL_POINTER_OUTDATA [end]= {}",
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(0 as isize),
+        //     *(*GLOBAL_POINTER_OUTDATA).offset(p.len() as isize - 1)
+        // );
 
         #[cfg(feature = "cuda")]
         {
             let start = Instant::now();
-
+            // // host configuration
+            // extra_info[0] = p;
+            // extra_info[1] = G;
+            // extra_info[2] = 8; // blowup_factor max value
+            // extra_info[3] = 0; // extend field flag
+            // extra_info[4] = 0; // blowup_factor real value
+            // extra_info[5] = 0; // InvNTT flag
             let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 1];
             gpu_method(
-                p.len(),
-                GLOBAL_POINTER_OUTDATA,
+                p.len() as u64,
                 GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_OUTDATA,
                 GLOBAL_POINTER_PARAM,
                 GLOBAL_POINTER_MEMCACH,
                 extra_info.as_mut_ptr(),
@@ -282,6 +404,45 @@ where
                 p.len(),
                 start.elapsed()
             );
+
+            // for i in 0..p.len() {
+            //     println!(
+            //         "GLOBAL_POINTER_INDATA[{i}] = {} ;",
+            //         *(*GLOBAL_POINTER_OUTDATA).offset(i as isize),
+            //     );
+            // }
+            // println!(
+            //     "GLOBAL_POINTER_INDATA = {} {} {} {} {} {} {} {} {} {}",
+            //     *(*GLOBAL_POINTER_INDATA).offset(0),
+            //     *(*GLOBAL_POINTER_INDATA).offset(1),
+            //     *(*GLOBAL_POINTER_INDATA).offset(2),
+            //     *(*GLOBAL_POINTER_INDATA).offset(3),
+            //     *(*GLOBAL_POINTER_INDATA).offset(4),
+            //     *(*GLOBAL_POINTER_INDATA).offset(10),
+            //     *(*GLOBAL_POINTER_INDATA).offset(11),
+            //     *(*GLOBAL_POINTER_INDATA).offset(12),
+            //     *(*GLOBAL_POINTER_INDATA).offset(13),
+            //     *(*GLOBAL_POINTER_INDATA).offset(14),
+            // );
+            // println!(
+            //     "GLOBAL_POINTER_OUTDATA = {} {} {} {} {} {} {} {} {} {}",
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(0),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(1),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(2),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(3),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(4),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(10),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(11),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(12),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(13),
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(14)
+            // );
+
+            // *(*GLOBAL_POINTER_INDATA).offset(1 << 23) = 1000 as u64;
+            // println!(
+            //     "GLOBAL_POINTER_OUTDATA = {} ",
+            //     *(*GLOBAL_POINTER_OUTDATA).offset(1 << 23)
+            // );
         }
 
         let start = Instant::now();
@@ -289,12 +450,35 @@ where
         // let res = p2.par_iter().map(|&i|
         // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
-        let mut res = Vec::with_capacity(p.len());
+        let mut res: Vec<F> = Vec::with_capacity(p.len());
 
         for i in 0..p.len() {
-            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
-            res[i] = F::from_canonical_u64(val);
+            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+            // res[i] = F::from_canonical_u64(val);
+            res.push(F::from_canonical_u64(val));
         }
+
+        // let file2: File =
+        //     File::create("/home/wpf/work/debug_data/GLOBAL_POINTER_OUTDATA.txt").
+        // unwrap(); let mut writer2 = BufWriter::new(file2);
+        // unsafe {
+        //     for i in 0..p.len() {
+        //         writeln!(
+        //             writer2,
+        //             "{}",
+        //             (*(*GLOBAL_POINTER_OUTDATA).offset(i as isize))
+        //         )
+        //         .unwrap();
+        //     }
+        // }
+
+        // for i in 0..p.len() {
+        //     println!(
+        //             "GLOBAL_POINTER_OUTDATA = {} ;res = {}",
+        //             *(*GLOBAL_POINTER_OUTDATA).offset(i as isize),
+        //             res[i]
+        //         );
+        // }
 
         println!(
             "[cuda][after](run_interpolate_poly) data_len = {}, cost_time = {:?}",
@@ -320,7 +504,7 @@ where
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
-                *(*GLOBAL_POINTER_INDATA).offset(idx) = val;
+                *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
             }
         }
 
@@ -342,12 +526,18 @@ where
 
             // interpolate_poly_with_offset(p2.as_mut_ptr(), p2.len() as u64,
             // domain_offset);
-
-            let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 1, 1];
+            // // host configuration
+            // extra_info[0] = p;
+            // extra_info[1] = G;
+            // extra_info[2] = 8; // blowup_factor max value
+            // extra_info[3] = 0; // extend field flag
+            // extra_info[4] = 8; // blowup_factor real value
+            // extra_info[5] = 0; // InvNTT flag
+            let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 8, 1];
             gpu_method(
-                p.len(),
-                GLOBAL_POINTER_OUTDATA,
+                p.len() as u64,
                 GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_OUTDATA,
                 GLOBAL_POINTER_PARAM,
                 GLOBAL_POINTER_MEMCACH,
                 extra_info.as_mut_ptr(),
@@ -368,8 +558,9 @@ where
         let mut res = Vec::with_capacity(p.len());
 
         for i in 0..p.len() {
-            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i);
-            res[i] = F::from_canonical_u64(val);
+            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+            // res[i] = F::from_canonical_u64(val);
+            res.push(F::from_canonical_u64(val));
         }
 
         println!(
