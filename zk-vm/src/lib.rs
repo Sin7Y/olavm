@@ -211,7 +211,10 @@ impl OlaVM {
             let bin_program: BinaryProgram = match bincode::deserialize(&contract) {
                 Ok(data) => data,
                 Err(e) => {
-                    return Err(StateError::GetProgramError(format!("{:?}", e)));
+                    return Err(StateError::GetProgramError(format!(
+                        "deserialize program error, {:?}",
+                        e
+                    )));
                 }
             };
 
