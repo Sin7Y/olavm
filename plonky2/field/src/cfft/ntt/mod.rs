@@ -161,11 +161,11 @@ where
             }
         }
 
-        println!(
-            "[cuda][before](run_evaluate_poly) data_len = {}, cost_time = {:?}",
-            p.len(),
-            start.elapsed()
-        );
+        // println!(
+        //     "[cuda][before](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+        //     p.len(),
+        //     start.elapsed()
+        // );
 
         #[cfg(feature = "cuda")]
         {
@@ -188,11 +188,11 @@ where
                 extra_info.as_mut_ptr(),
             );
 
-            println!(
-                "[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}",
-                p.len(),
-                start.elapsed()
-            );
+            // println!(
+            //     "[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+            //     p.len(),
+            //     start.elapsed()
+            // );
         }
 
         let start = Instant::now();
@@ -205,11 +205,11 @@ where
             res.push(F::from_canonical_u64(val));
         }
 
-        println!(
-            "[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}",
-            p.len(),
-            start.elapsed()
-        );
+        // println!(
+        //     "[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+        //     p.len(),
+        //     start.elapsed()
+        // );
 
         res
     }
@@ -241,7 +241,9 @@ where
         let result_len = (p.len() as u64) * blowup_factor;
         let mut result = vec![0; result_len as usize];
 
-        println!("[cuda][before](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
+        // println!("[cuda][before](run_evaluate_poly_with_offset) data_len = {},
+        // blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor,
+        // start.elapsed());
 
         #[cfg(feature = "cuda")]
         {
@@ -263,7 +265,9 @@ where
                 extra_info.as_mut_ptr(),
             );
 
-            println!("[cuda](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
+            // println!("[cuda](run_evaluate_poly_with_offset) data_len = {},
+            // blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor,
+            // start.elapsed());
         }
 
         let start = Instant::now();
@@ -279,7 +283,9 @@ where
             res.push(F::from_canonical_u64(val));
         }
 
-        println!("[cuda][after](run_evaluate_poly_with_offset) data_len = {}, blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor, start.elapsed());
+        // println!("[cuda][after](run_evaluate_poly_with_offset) data_len = {},
+        // blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor,
+        // start.elapsed());
 
         res
     }
@@ -341,11 +347,12 @@ where
         // isize))).unwrap();     }
         // }
 
-        println!(
-            "[cuda][before](run_interpolate_poly) data_len = {}, cost_time = {:?}",
-            p.len(),
-            start.elapsed()
-        );
+        // println!(
+        //     "[cuda][before](run_interpolate_poly) data_len = {}, cost_time = {:?}",
+        //     p.len(),
+        //     start.elapsed()
+        // );
+
         // println!(
         //     "GLOBAL_POINTER_INDATA = {} {} {} {} {} {} {} {} {} {}",
         //     *(*GLOBAL_POINTER_INDATA).offset(0),
@@ -399,11 +406,11 @@ where
                 extra_info.as_mut_ptr(),
             );
 
-            println!(
-                "[cuda](run_interpolate_poly) data_len = {}, cost_time = {:?}",
-                p.len(),
-                start.elapsed()
-            );
+            // println!(
+            //     "[cuda](run_interpolate_poly) data_len = {}, cost_time =
+            // {:?}",     p.len(),
+            //     start.elapsed()
+            // );
 
             // for i in 0..p.len() {
             //     println!(
@@ -480,11 +487,11 @@ where
         //         );
         // }
 
-        println!(
-            "[cuda][after](run_interpolate_poly) data_len = {}, cost_time = {:?}",
-            p.len(),
-            start.elapsed()
-        );
+        // println!(
+        //     "[cuda][after](run_interpolate_poly) data_len = {}, cost_time = {:?}",
+        //     p.len(),
+        //     start.elapsed()
+        // );
 
         res
     }
@@ -514,11 +521,11 @@ where
             .unwrap()
             .0;
 
-        println!(
-            "[cuda][before](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}",
-            p.len(),
-            start.elapsed()
-        );
+        // println!(
+        //     "[cuda][before](run_interpolate_poly_with_offset) data_len = {},
+        // cost_time = {:?}",     p.len(),
+        //     start.elapsed()
+        // );
 
         #[cfg(feature = "cuda")]
         {
@@ -543,11 +550,11 @@ where
                 extra_info.as_mut_ptr(),
             );
 
-            println!(
-                "[cuda](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}",
-                p.len(),
-                start.elapsed()
-            );
+            // println!(
+            //     "[cuda](run_interpolate_poly_with_offset) data_len = {},
+            // cost_time = {:?}",     p.len(),
+            //     start.elapsed()
+            // );
         }
 
         let start = Instant::now();
@@ -563,11 +570,11 @@ where
             res.push(F::from_canonical_u64(val));
         }
 
-        println!(
-            "[cuda][after](run_interpolate_poly_with_offset) data_len = {}, cost_time = {:?}",
-            p.len(),
-            start.elapsed()
-        );
+        // println!(
+        //     "[cuda][after](run_interpolate_poly_with_offset) data_len = {}, cost_time
+        // = {:?}",     p.len(),
+        //     start.elapsed()
+        // );
 
         res
     }

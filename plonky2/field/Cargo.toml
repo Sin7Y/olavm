@@ -5,7 +5,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["rand"]
+default = ["rand","cuda"]
 rand = ["dep:rand"]
 parallel = ["maybe_rayon/parallel"]
 cuda = ["cxx", "cmake", "tokio", "crossbeam", "lazy_static", "futures"]

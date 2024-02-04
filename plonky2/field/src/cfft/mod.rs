@@ -9,6 +9,7 @@ mod concurrent;
 mod serial;
 
 pub mod ntt;
+use crate::cfft::ntt::*;
 
 #[cfg(test)]
 mod tests;
@@ -159,11 +160,11 @@ where
                 *item1 = item2;
             }
 
-            println!(
-                "[cuda](interpolate_poly) data_len = {}, cost_time = {:?}",
-                evaluations.len(),
-                start.elapsed()
-            );
+            // println!(
+            //     "[cuda](interpolate_poly) data_len = {}, cost_time = {:?}",
+            //     evaluations.len(),
+            //     start.elapsed()
+            // );
         }
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {
@@ -212,11 +213,11 @@ where
                 *item1 = item2;
             }
 
-            println!(
-                "[cuda](interpolate_poly_with_offset) data_len = {}, cost_time = {:?}",
-                evaluations.len(),
-                start.elapsed()
-            );
+            // println!(
+            //     "[cuda](interpolate_poly_with_offset) data_len = {},
+            // cost_time = {:?}",     evaluations.len(),
+            //     start.elapsed()
+            // );
         }
     } else {
         if cfg!(feature = "parallel") && evaluations.len() >= MIN_CONCURRENT_SIZE {

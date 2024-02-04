@@ -14,7 +14,7 @@ fn main() {
     //     .build();
     // dst.push("lib");
     // println!("cargo:rustc-link-search=native={}", dst.display());
-    let ex_cuda_lib_path: &str = "cuda/build";
+    let ex_cuda_lib_path: &str = "plonky2/field/cuda/build";
     println!("cargo:rustc-link-search=native={}", ex_cuda_lib_path);
     println!("cargo:rustc-link-lib=static=cuda_lib");
 

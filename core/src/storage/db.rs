@@ -262,7 +262,7 @@ impl RocksDB {
 impl Drop for RocksDB {
     fn drop(&mut self) {
         self.db.cancel_all_background_work(true);
-        plonky2::field::cfft::ntt::free_gpu();
+        // plonky2::field::cfft::ntt::free_gpu();
     }
 }
 
