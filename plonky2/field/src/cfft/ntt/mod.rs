@@ -67,37 +67,40 @@ pub fn init_gpu() {
     static INSTANCE: OnceCell<()> = OnceCell::new();
     INSTANCE.get_or_init(|| {
         unsafe {
-            GLOBAL_POINTER_INDATA_MID = std::ptr::addr_of_mut!(IN_DATA);
-            GLOBAL_POINTER_INDATA = std::ptr::addr_of_mut!(GLOBAL_POINTER_INDATA_MID);
-            // GLOBAL_POINTER_INDATA_MID = &mut IN_DATA;
-            // GLOBAL_POINTER_INDATA = &mut GLOBAL_POINTER_INDATA_MID;
+            if GLOBAL_POINTER_INDATA.is_null()
+                && GLOBAL_POINTER_OUTDATA.is_null()
+                && GLOBAL_POINTER_PARAM.is_null()
+                && GLOBAL_POINTER_MEMCACH.is_null()
+            {
+                GLOBAL_POINTER_INDATA_MID = std::ptr::addr_of_mut!(IN_DATA);
+                GLOBAL_POINTER_INDATA = std::ptr::addr_of_mut!(GLOBAL_POINTER_INDATA_MID);
+                // GLOBAL_POINTER_INDATA_MID = &mut IN_DATA;
+                // GLOBAL_POINTER_INDATA = &mut GLOBAL_POINTER_INDATA_MID;
 
-            GLOBAL_POINTER_OUTDATA_MID = std::ptr::addr_of_mut!(OUT_DATA);
-            GLOBAL_POINTER_OUTDATA = std::ptr::addr_of_mut!(GLOBAL_POINTER_OUTDATA_MID);
-            // GLOBAL_POINTER_OUTDATA_MID = &mut OUT_DATA;
-            // GLOBAL_POINTER_OUTDATA = &mut GLOBAL_POINTER_OUTDATA_MID;
+                GLOBAL_POINTER_OUTDATA_MID = std::ptr::addr_of_mut!(OUT_DATA);
+                GLOBAL_POINTER_OUTDATA = std::ptr::addr_of_mut!(GLOBAL_POINTER_OUTDATA_MID);
+                // GLOBAL_POINTER_OUTDATA_MID = &mut OUT_DATA;
+                // GLOBAL_POINTER_OUTDATA = &mut GLOBAL_POINTER_OUTDATA_MID;
 
-            GLOBAL_POINTER_PARAM_MID = std::ptr::addr_of_mut!(EXE_PARAM);
-            GLOBAL_POINTER_PARAM = std::ptr::addr_of_mut!(GLOBAL_POINTER_PARAM_MID);
-            // GLOBAL_POINTER_PARAM_MID = &mut EXE_PARAM;
-            // GLOBAL_POINTER_PARAM = &mut GLOBAL_POINTER_PARAM_MID;
+                GLOBAL_POINTER_PARAM_MID = std::ptr::addr_of_mut!(EXE_PARAM);
+                GLOBAL_POINTER_PARAM = std::ptr::addr_of_mut!(GLOBAL_POINTER_PARAM_MID);
+                // GLOBAL_POINTER_PARAM_MID = &mut EXE_PARAM;
+                // GLOBAL_POINTER_PARAM = &mut GLOBAL_POINTER_PARAM_MID;
 
-            GLOBAL_POINTER_MEMCACH_MID = std::ptr::addr_of_mut!(MEM_CACH);
-            GLOBAL_POINTER_MEMCACH = std::ptr::addr_of_mut!(GLOBAL_POINTER_MEMCACH_MID);
-            // GLOBAL_POINTER_MEMCACH_MID = &mut MEM_CACH;
-            // GLOBAL_POINTER_MEMCACH = &mut GLOBAL_POINTER_MEMCACH_MID;
-        }
-
-        let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
-        unsafe {
-            gpu_init(
-                NTT_MAX_LENGTH,
-                GLOBAL_POINTER_INDATA,
-                GLOBAL_POINTER_OUTDATA,
-                GLOBAL_POINTER_PARAM,
-                GLOBAL_POINTER_MEMCACH,
-                extra_info.as_mut_ptr(),
-            );
+                GLOBAL_POINTER_MEMCACH_MID = std::ptr::addr_of_mut!(MEM_CACH);
+                GLOBAL_POINTER_MEMCACH = std::ptr::addr_of_mut!(GLOBAL_POINTER_MEMCACH_MID);
+                // GLOBAL_POINTER_MEMCACH_MID = &mut MEM_CACH;
+                // GLOBAL_POINTER_MEMCACH = &mut GLOBAL_POINTER_MEMCACH_MID;
+                let mut extra_info: [u64; 6] = [0xffffffff00000001, 7, 8, 0, 0, 0];
+                gpu_init(
+                    NTT_MAX_LENGTH,
+                    GLOBAL_POINTER_INDATA,
+                    GLOBAL_POINTER_OUTDATA,
+                    GLOBAL_POINTER_PARAM,
+                    GLOBAL_POINTER_MEMCACH,
+                    extra_info.as_mut_ptr(),
+                );
+            }
             // println!("GLOBAL_MAX_NUM = {} ", NTT_MAX_LENGTH);
             // println!(
             //     "GLOBAL_POINTER_INDATA = {} {} {} {} {}",
@@ -132,13 +135,20 @@ pub fn free_gpu() {}
 pub fn free_gpu() {
     static INSTANCE: OnceCell<()> = OnceCell::new();
     INSTANCE.get_or_init(|| unsafe {
-        gpu_free(
-            NTT_MAX_LENGTH,
-            GLOBAL_POINTER_INDATA,
-            GLOBAL_POINTER_OUTDATA,
-            GLOBAL_POINTER_PARAM,
-            GLOBAL_POINTER_MEMCACH,
-        );
+        if GLOBAL_POINTER_INDATA.is_null()
+            && GLOBAL_POINTER_OUTDATA.is_null()
+            && GLOBAL_POINTER_PARAM.is_null()
+            && GLOBAL_POINTER_MEMCACH.is_null()
+        {
+        } else {
+            gpu_free(
+                NTT_MAX_LENGTH,
+                GLOBAL_POINTER_INDATA,
+                GLOBAL_POINTER_OUTDATA,
+                GLOBAL_POINTER_PARAM,
+                GLOBAL_POINTER_MEMCACH,
+            );
+        }
     });
 }
 
