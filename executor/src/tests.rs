@@ -58,7 +58,7 @@ fn executor_run_test_program(
         debug_info: program.debug_info,
         prophets: prophets,
         pre_exe_flag: false,
-        print_flag: true,
+        print_flag: false,
     };
 
     for inst in instructions {
@@ -1955,6 +1955,34 @@ fn address_array_test() {
             false,
             Some(calldata_0),
         );
+    }
+}
+
+
+#[test]
+fn fib_array_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/fib_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[1].clone();
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[Value::U32(10)]).unwrap();
+        println!("input_0:{:?}", input);
+
+        // let calldata_0 = input
+        //     .iter()
+        //     .map(|e| GoldilocksField::from_canonical_u64(*e))
+        //     .collect();
+        // executor_run_test_program(
+        //     "../assembler/test_data/bin/address_array.json",
+        //     "address_array_trace.txt",
+        //     false,
+        //     Some(calldata_0),
+        // );
     }
 }
 
