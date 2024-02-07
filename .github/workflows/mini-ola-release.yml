@@ -34,7 +34,7 @@ jobs:
         file: target/release/mini-ola
         asset_name: mini-ola-linux-x86-64
         tag: ${{ github.ref }}
-        override: true
+        overwrite: true
   mac-intel:
     name: Mac Intel
     runs-on: macos-latest
@@ -56,7 +56,7 @@ jobs:
         file: target/release/mini-ola
         asset_name: mini-ola-mac-intel
         tag: ${{ github.ref }}
-        override: true
+        overwrite: true
   macos-arm:
     name: Mac ARM
     runs-on: macos-latest-xlarge
@@ -78,7 +78,7 @@ jobs:
         file: target/release/mini-ola
         asset_name: mini-ola-mac-arm
         tag: ${{ github.ref }}
-        override: true
+        overwrite: true
   windows:
     name: Windows
     runs-on: windows-latest
@@ -100,4 +100,4 @@ jobs:
         file: target/release/mini-ola.exe
         asset_name: mini-ola-windows.exe
         tag: ${{ github.ref }}
-        override: true
+        overwrite: true
