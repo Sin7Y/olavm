@@ -78,4 +78,10 @@ pub enum ProcessorError {
 
     #[error("SStore failed")]
     SStoreError,
+
+    #[error("MemoryAccessError: {0}")]
+    MemoryAccessError(String),
+
+    #[error("TapeAccessError: {0}")]
+    TapeAccessError(String),
 }
