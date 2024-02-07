@@ -230,7 +230,7 @@ impl FromStr for AsmRow {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let regex_label_call = Regex::new(r"^(?P<label_call>[[:word:]]+):$").unwrap();
+        let regex_label_call = Regex::new(r"^(?P<label_call>\w+(\.\d+)?):$").unwrap();
         let caps_call = regex_label_call.captures(s);
         if caps_call.is_some() {
             let caps = caps_call.unwrap();
@@ -363,6 +363,12 @@ mod tests {
         let row_label_call_str = "bar:";
         let row_label_call = AsmRow::from_str(row_label_call_str).unwrap();
         assert_eq!(row_label_call, AsmRow::LabelCall(String::from("bar")));
+        let row_label_call_with_num_str = "main.1:";
+        let row_label_call_with_num = AsmRow::from_str(row_label_call_with_num_str).unwrap();
+        assert_eq!(
+            row_label_call_with_num,
+            AsmRow::LabelCall(String::from("main.1"))
+        );
 
         let row_label_jmp_str = ".LBL0_0:";
         let row_label_jmp = AsmRow::from_str(row_label_jmp_str).unwrap();
