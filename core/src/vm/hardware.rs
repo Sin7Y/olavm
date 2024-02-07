@@ -1,6 +1,22 @@
+use anyhow::bail;
 use enum_iterator::Sequence;
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use std::ops::Range;
 use std::str::FromStr;
+
+use super::error::ProcessorError;
+
+// pub const MEM_SPAN_SIZE: u64 = u32::MAX as u64;
+// pub const PSP_START_ADDR: u64 = GoldilocksField::ORDER - MEM_SPAN_SIZE;
+// pub const HP_START_ADDR: u64 = GoldilocksField::ORDER - 2 * MEM_SPAN_SIZE;
+
+const MAX_VALUE: u64 = 0xFFFFFFFF00000001;
+const MEM_MAX_ADDR: u64 = 0xFFFFFFFF00000001;
+const MEM_REGION_SPAN: u64 = u32::MAX as u64;
+const MEM_STACK_REGION: Range<u64> = 0u64..(MEM_MAX_ADDR - 2 * MEM_REGION_SPAN);
+const MEM_HEAP_REGION: Range<u64> = MEM_STACK_REGION.end..(MEM_MAX_ADDR - MEM_REGION_SPAN);
+const MEM_PROPHET_REGION: Range<u64> = MEM_HEAP_REGION.end..MEM_MAX_ADDR;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Sequence)]
 pub enum OlaRegister {
@@ -156,10 +172,262 @@ impl FromStr for OlaSpecialRegister {
     }
 }
 
+#[derive(Debug)]
+pub struct OlaMemory {
+    psp: u64,
+    stack_region: HashMap<u64, u64>,
+    heap_region: HashMap<u64, u64>,
+    prophet_region: HashMap<u64, u64>,
+}
+
+impl Default for OlaMemory {
+    fn default() -> Self {
+        OlaMemory {
+            psp: MEM_PROPHET_REGION.start,
+            stack_region: HashMap::new(),
+            heap_region: HashMap::new(),
+            prophet_region: HashMap::new(),
+        }
+    }
+}
+
+impl OlaMemory {
+    pub fn read(&self, addr: u64) -> anyhow::Result<u64> {
+        if MEM_STACK_REGION.contains(&addr) {
+            match self.stack_region.get(&addr) {
+                Some(v) => Ok(*v),
+                None => bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to read from address never inited: {}",
+                    addr
+                ))),
+            }
+        } else if MEM_HEAP_REGION.contains(&addr) {
+            match self.heap_region.get(&addr) {
+                Some(v) => Ok(*v),
+                None => bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to read from address never inited: {}",
+                    addr
+                ))),
+            }
+        } else if MEM_PROPHET_REGION.contains(&addr) {
+            match self.prophet_region.get(&addr) {
+                Some(v) => Ok(*v),
+                None => bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to read from address never inited: {}",
+                    addr
+                ))),
+            }
+        } else {
+            bail!(ProcessorError::MemoryAccessError(format!(
+                "[memory] trying to read from invalid address: {}",
+                addr
+            )))
+        }
+    }
+
+    pub fn write(&mut self, addr: u64, val: u64) -> anyhow::Result<()> {
+        if val > MAX_VALUE {
+            bail!(ProcessorError::MemoryAccessError(format!(
+                "[memory] trying to write an invalid value: {}",
+                val
+            )))
+        }
+        if MEM_STACK_REGION.contains(&addr) {
+            self.stack_region.insert(addr, val);
+        } else if MEM_HEAP_REGION.contains(&addr) {
+            self.heap_region.insert(addr, val);
+        } else {
+            bail!(ProcessorError::MemoryAccessError(format!(
+                "[memory] trying to write to invalid address: {}",
+                addr
+            )))
+        }
+        anyhow::Ok(())
+    }
+
+    pub fn write_prophet(&mut self, val: u64) -> anyhow::Result<()> {
+        if val > MAX_VALUE {
+            bail!(ProcessorError::MemoryAccessError(format!(
+                "[memory] trying to write an invalid value: {}",
+                val
+            )))
+        }
+        self.prophet_region.insert(self.psp, val);
+        self.psp += 1;
+        anyhow::Ok(())
+    }
+
+    pub fn batch_write(&mut self, from: u64, values: Vec<u64>) -> anyhow::Result<()> {
+        if from < MEM_STACK_REGION.end {
+            if from + values.len() as u64 >= MEM_STACK_REGION.end {
+                bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to batch write across stack and heap: {} - {}",
+                    from,
+                    from + values.len() as u64
+                )))
+            }
+            for (i, v) in values.into_iter().enumerate() {
+                self.stack_region.insert(from + i as u64, v);
+            }
+        } else if from < MEM_HEAP_REGION.end {
+            if from + values.len() as u64 >= MEM_HEAP_REGION.end {
+                bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to batch write across heap and prophet: {} - {}",
+                    from,
+                    from + values.len() as u64
+                )))
+            }
+            for (i, v) in values.into_iter().enumerate() {
+                self.heap_region.insert(from + i as u64, v);
+            }
+        } else if from < MEM_PROPHET_REGION.end {
+            let len = values.len() as u64;
+            if from + values.len() as u64 >= MEM_PROPHET_REGION.end {
+                bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to batch write overflow prophet region: {} - {}",
+                    from,
+                    from + values.len() as u64
+                )))
+            }
+            for (i, v) in values.into_iter().enumerate() {
+                self.prophet_region.insert(from + i as u64, v);
+            }
+            self.psp += len;
+        } else {
+            bail!(ProcessorError::MemoryAccessError(format!(
+                "[memory] trying to batch write from invalid address: {}",
+                from
+            )))
+        }
+
+        anyhow::Ok(())
+    }
+
+    pub fn batch_read(&self, from: u64, len: u64) -> anyhow::Result<Vec<u64>> {
+        if from < MEM_STACK_REGION.end {
+            if from + len >= MEM_STACK_REGION.end {
+                bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to batch read across stack and heap: {} - {}",
+                    from,
+                    from + len
+                )))
+            }
+            let mut res = Vec::with_capacity(len as usize);
+            for i in 0..len {
+                match self.stack_region.get(&(from + i)) {
+                    Some(v) => res.push(*v),
+                    None => bail!(ProcessorError::MemoryAccessError(format!(
+                        "[memory] trying to read from address never inited: {}",
+                        from + i
+                    ))),
+                }
+            }
+            Ok(res)
+        } else if from < MEM_HEAP_REGION.end {
+            if from + len >= MEM_HEAP_REGION.end {
+                bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to batch read across heap and prophet: {} - {}",
+                    from,
+                    from + len
+                )))
+            }
+            let mut res = Vec::with_capacity(len as usize);
+            for i in 0..len {
+                match self.heap_region.get(&(from + i)) {
+                    Some(v) => res.push(*v),
+                    None => bail!(ProcessorError::MemoryAccessError(format!(
+                        "[memory] trying to read from address never inited: {}",
+                        from + i
+                    ))),
+                }
+            }
+            Ok(res)
+        } else if from < MEM_PROPHET_REGION.end {
+            if from + len >= MEM_PROPHET_REGION.end {
+                bail!(ProcessorError::MemoryAccessError(format!(
+                    "[memory] trying to batch read overflow prophet region: {} - {}",
+                    from,
+                    from + len
+                )))
+            }
+            let mut res = Vec::with_capacity(len as usize);
+            for i in 0..len {
+                match self.prophet_region.get(&(from + i)) {
+                    Some(v) => res.push(*v),
+                    None => bail!(ProcessorError::MemoryAccessError(format!(
+                        "[memory] trying to read from address never inited: {}",
+                        from + i
+                    ))),
+                }
+            }
+            Ok(res)
+        } else {
+            bail!(ProcessorError::MemoryAccessError(format!(
+                "[memory] trying to batch read from invalid address: {}",
+                from
+            )))
+        }
+    }
+}
+
+pub struct OlaTape {
+    tp: u64,
+    addr_to_value: HashMap<u64, u64>,
+}
+
+impl Default for OlaTape {
+    fn default() -> Self {
+        Self {
+            tp: 0,
+            addr_to_value: Default::default(),
+        }
+    }
+}
+
+impl OlaTape {
+    pub fn write(&mut self, val: u64) {
+        self.addr_to_value.insert(self.tp, val);
+        self.tp += 1;
+    }
+
+    pub fn read_top(&self, addr: u64) -> anyhow::Result<u64> {
+        match self.addr_to_value.get(&addr).copied() {
+            Some(v) => Ok(v),
+            None => bail!(ProcessorError::TapeAccessError(format!(
+                "[Tape]: try to read addr never init: {}",
+                addr
+            ))),
+        }
+    }
+
+    pub fn read_stack<const LEN: usize>(&self) -> anyhow::Result<[u64; LEN]> {
+        if LEN > self.tp as usize {
+            bail!(ProcessorError::TapeAccessError(format!(
+                "[Tape]: too long to load, tp: {}, len: {}",
+                self.tp, LEN
+            )))
+        }
+        let mut res = [0u64; LEN];
+        for i in 0..LEN {
+            match self.addr_to_value.get(&(self.tp - 1 - i as u64)).copied() {
+                Some(v) => res[LEN - 1 - i] = v,
+                None => bail!(ProcessorError::TapeAccessError(format!(
+                    "[Tape]: try to read addr never init: {}",
+                    self.tp - i as u64
+                ))),
+            }
+        }
+        Ok(res)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::vm::hardware::OlaTape;
     use crate::vm::hardware::{OlaRegister, OlaSpecialRegister};
     use std::str::FromStr;
+
+    use super::OlaMemory;
 
     #[test]
     fn test_hardware_parse() {
@@ -168,5 +436,29 @@ mod tests {
 
         let psp = OlaSpecialRegister::from_str("psp").unwrap();
         assert_eq!(psp, OlaSpecialRegister::PSP);
+    }
+
+    #[test]
+    fn test_tape() {
+        let mut tape = OlaTape::default();
+        (1000u64..1050u64).for_each(|v| tape.write(v));
+        let res = tape.read_stack::<10>().unwrap();
+        assert_eq!(
+            res,
+            [1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049]
+        );
+        let res = tape.read_top(49).unwrap();
+        assert_eq!(res, 1049);
+    }
+
+    #[test]
+    fn test_memory() {
+        let mut mem = OlaMemory::default();
+        let _ = mem.batch_write(0, vec![1000, 1001, 1002, 1003, 1004]);
+        let _ = mem.write(5, 1005);
+        let res = mem.read(5).unwrap();
+        assert_eq!(res, 1005);
+        let res = mem.batch_read(0, 5).unwrap();
+        assert_eq!(res, [1000, 1001, 1002, 1003, 1004]);
     }
 }
