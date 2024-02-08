@@ -1132,6 +1132,7 @@ dependencies = [
  "itertools",
  "log",
  "num",
+ "num_cpus",
  "plonky2",
  "rand 0.8.5",
  "regex",

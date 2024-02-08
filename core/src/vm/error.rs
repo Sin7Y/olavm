@@ -84,4 +84,7 @@ pub enum ProcessorError {
 
     #[error("TapeAccessError: {0}")]
     TapeAccessError(String),
+
+    #[error("IO Error: {0}")]
+    IoError(String),
 }

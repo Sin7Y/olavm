@@ -10,7 +10,10 @@ use crate::{
 };
 
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field},
+    field::{
+        goldilocks_field::GoldilocksField,
+        types::{Field, PrimeField64},
+    },
     hash::poseidon::{self, Poseidon},
 };
 
@@ -74,6 +77,27 @@ pub fn calculate_arbitrary_poseidon(inputs: &[GoldilocksField]) -> [GoldilocksFi
         state = calculate_poseidon(state);
     }
     state[0..4].try_into().expect("slice with incorrect length")
+}
+
+pub fn calculate_arbitrary_poseidon_u64s(inputs_u64: &[u64]) -> [u64; 4] {
+    let inputs = inputs_u64
+        .iter()
+        .map(|x| GoldilocksField::from_canonical_u64(*x))
+        .collect::<Vec<GoldilocksField>>();
+    let mut state: [GoldilocksField; POSEIDON_STATE_WIDTH] =
+        [GoldilocksField::ZERO; POSEIDON_STATE_WIDTH];
+
+    for input_chunk in inputs.chunks(8) {
+        let end = min(input_chunk.len(), 8);
+        state[0..end].copy_from_slice(&input_chunk[0..end]);
+        state = calculate_poseidon(state);
+    }
+    state[0..4]
+        .iter()
+        .map(|x| x.to_canonical_u64())
+        .collect::<Vec<u64>>()
+        .try_into()
+        .expect("slice with incorrect length")
 }
 
 pub fn calculate_poseidon_and_generate_intermediate_trace(
