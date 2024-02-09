@@ -1,11 +1,6 @@
 name: CI checks
 
-on:
-  push:
-    branches: ["peinlcy/prover", "dev/pierre"]
-  pull_request:
-    branches: ["peinlcy/prover", "dev/pierre", "main"]
-  workflow_dispatch:
+on: [push, pull_request]
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,17 +11,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Cache Rust toolchain
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/bin
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.rustup
-          key: ${{ runner.os }}-rustup-${{ hashFiles('**/rust-toolchain') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-rustup-${{ hashFiles('**/rust-toolchain') }}-
+      # - name: Cache Rust toolchain
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       ~/.cargo/bin
+      #       ~/.cargo/registry
+      #       ~/.cargo/git
+      #       ~/.rustup
+      #     key: ${{ runner.os }}-rustup-${{ hashFiles('**/rust-toolchain') }}-${{ github.sha }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-rustup-${{ hashFiles('**/rust-toolchain') }}-
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
