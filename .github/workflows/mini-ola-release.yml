@@ -24,7 +24,7 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
       with:
-        toolchain: nightly-2024-01-19
+        toolchain: nightly-2023-08-21
         components: rustfmt
         override: true
     - name: Build
@@ -48,7 +48,7 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
       with:
-        toolchain: nightly-2024-01-19
+        toolchain: nightly-2023-08-21
         components: rustfmt  
         override: true
     - name: Build
@@ -72,7 +72,7 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
       with:
-        toolchain: nightly-2024-01-19
+        toolchain: nightly-2023-08-21
         components: rustfmt
         override: true
     - name: Build
@@ -96,7 +96,7 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
       with:
-        toolchain: nightly-2024-01-19
+        toolchain: nightly-2023-08-21
         components: rustfmt
         override: true
     - name: Build
