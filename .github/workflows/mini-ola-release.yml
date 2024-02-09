@@ -24,7 +24,9 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
       with:
+        toolchain: nightly-2024-01-19
         components: rustfmt
+        override: true
     - name: Build
       run: cargo build --release --package mini-ola
     - name: Upload binary
@@ -46,7 +48,9 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
       with:
+        toolchain: nightly-2024-01-19
         components: rustfmt  
+        override: true
     - name: Build
       run: cargo build --release --package mini-ola
     - name: Upload binary
@@ -68,7 +72,9 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
       with:
+        toolchain: nightly-2024-01-19
         components: rustfmt
+        override: true
     - name: Build
       run: cargo build --release --package mini-ola
     - name: Upload binary
@@ -90,7 +96,9 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@nightly
       with:
+        toolchain: nightly-2024-01-19
         components: rustfmt
+        override: true
     - name: Build
       run: cargo build --release --package mini-ola
     - name: Upload binary
