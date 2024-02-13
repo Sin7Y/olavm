@@ -87,4 +87,7 @@ pub enum ProcessorError {
 
     #[error("IO Error: {0}")]
     IoError(String),
+
+    #[error("Failed to init instructions from BinaryProgram: {0}")]
+    InstructionsInitError(String),
 }

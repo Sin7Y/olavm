@@ -53,11 +53,12 @@ use std::time::Instant;
 mod decode;
 
 mod ecdsa;
-pub(crate) mod exe_env;
+pub(crate) mod contract_executor;
 pub mod load_tx;
 pub mod storage;
 mod tape;
 pub mod ola_storage;
+pub mod config;
 #[cfg(test)]
 mod tests;
 pub mod trace;
