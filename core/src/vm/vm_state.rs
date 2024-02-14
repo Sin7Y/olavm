@@ -43,7 +43,14 @@ pub struct TapeDiff {
 }
 
 #[derive(Debug, Clone)]
+pub struct SpecRegisterDiff {
+    pub pc: Option<u64>,
+    pub psp: Option<u64>,
+}
+
+#[derive(Debug, Clone)]
 pub enum OlaStateDiff {
+    SpecReg(SpecRegisterDiff),
     Register(Vec<RegisterDiff>),
     Memory(Vec<MemoryDiff>),
     Storage(Vec<StorageDiff>),
