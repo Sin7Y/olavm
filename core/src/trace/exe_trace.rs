@@ -65,12 +65,13 @@ pub struct TapeExePiece {
 
 #[derive(Debug, Clone)]
 pub struct ExeTraceStepDiff {
-    cpu: Option<CpuExePiece>,
-    mem: Option<Vec<MemExePiece>>,
-    rc: Option<RcExePiece>,
-    bitwise: Option<BitwiseExePiece>,
-    cmp: Option<CmpExePiece>,
-    poseidon: Option<PoseidonPiece>,
-    storage: Option<StorageExePiece>,
-    tape: Option<TapeExePiece>,
+    pub pc: u64,
+    pub cpu: Option<CpuExePiece>,
+    pub mem: Option<Vec<MemExePiece>>,
+    pub rc: Option<RcExePiece>,
+    pub bitwise: Option<BitwiseExePiece>,
+    pub cmp: Option<CmpExePiece>,
+    pub poseidon: Option<PoseidonPiece>,
+    pub storage: Option<StorageExePiece>,
+    pub tape: Option<TapeExePiece>,
 }
