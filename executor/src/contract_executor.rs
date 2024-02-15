@@ -20,7 +20,7 @@ use anyhow::Ok;
 
 use crate::{config::ExecuteMode, ola_storage::OlaCachedStorage};
 
-pub(crate) struct OlaContractExecutor<'a> {
+pub(crate) struct OlaContractExecutor<'tx, 'batch> {
     mode: ExecuteMode,
     context: ExeContext,
     clk: u64,
@@ -28,17 +28,17 @@ pub(crate) struct OlaContractExecutor<'a> {
     psp: u64,
     registers: [u64; NUM_GENERAL_PURPOSE_REGISTER],
     memory: OlaMemory,
-    tape: &'a OlaTape,
-    storage: &'a OlaCachedStorage,
+    tape: &'tx OlaTape,
+    storage: &'batch OlaCachedStorage,
     instructions: Vec<BinaryInstruction>,
 }
 
-impl<'a> OlaContractExecutor<'a> {
+impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
     pub fn new(
         mode: ExecuteMode,
         context: ExeContext,
-        tape: &'a OlaTape,
-        storage: &'a OlaCachedStorage,
+        tape: &'tx OlaTape,
+        storage: &'batch OlaCachedStorage,
         program: BinaryProgram,
     ) -> anyhow::Result<Self> {
         let instructions = decode_binary_program_to_instructions(program);
