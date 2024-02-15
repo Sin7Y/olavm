@@ -17,8 +17,8 @@ pub const NUM_GENERAL_PURPOSE_REGISTER: usize = 10;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ExeContext {
-    storage_addr: ContraceAddress,
-    code_addr: ContraceAddress,
+    storage_addr: ContractAddress,
+    code_addr: ContractAddress,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Sequence)]
@@ -424,7 +424,7 @@ impl OlaTape {
     }
 }
 
-pub type ContraceAddress = [u64; 4];
+pub type ContractAddress = [u64; 4];
 pub type OlaStorageKey = [u64; 4];
 pub type OlaStorageValue = [u64; 4];
 

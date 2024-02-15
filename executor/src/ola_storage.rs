@@ -1,14 +1,16 @@
 use core::{
     crypto::poseidon_trace::calculate_arbitrary_poseidon_u64s,
+    program::binary_program::BinaryProgram,
     util::converts::{bytes_to_u64s, u64s_to_bytes},
     vm::{
         error::ProcessorError,
-        hardware::{ContraceAddress, OlaStorage, OlaStorageKey, OlaStorageValue},
+        hardware::{ContractAddress, OlaStorage, OlaStorageKey, OlaStorageValue},
     },
 };
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, num::NonZeroUsize, path::PathBuf};
 
 use anyhow::bail;
+use lru::LruCache;
 use rocksdb::{BlockBasedOptions, ColumnFamilyDescriptor, Options, DB};
 
 #[derive(Debug, Clone, Copy)]
@@ -91,24 +93,86 @@ impl DiskStorageReader {
             )),
         }
     }
+
+    pub fn load_program(&self, contract_addr: ContractAddress) -> anyhow::Result<BinaryProgram> {
+        let prog_hash_treekey = self.get_program_treekey(contract_addr);
+        let prog_hash = self.load(prog_hash_treekey)?;
+        match prog_hash {
+            Some(hash) => {
+                let c = self
+                    .db
+                    .cf_handle(&SequencerColumnFamily::FactoryDeps.to_string());
+                match c {
+                    Some(cf) => {
+                        let key = u64s_to_bytes(&hash);
+                        let loaded = self.db.get_cf(cf, key).map_err(|e| {
+                            ProcessorError::ProgLoadError(format!(
+                                "load program bytes failed: {}",
+                                e
+                            ))
+                        })?;
+                        match loaded {
+                            Some(bytes) => {
+                                let program: BinaryProgram = match bincode::deserialize(&bytes) {
+                                    Ok(deserialized) => deserialized,
+                                    Err(e) => {
+                                        bail!(ProcessorError::ProgLoadError(format!(
+                                            "program deserialize error: {}",
+                                            e
+                                        )))
+                                    }
+                                };
+                                Ok(program)
+                            }
+                            None => bail!(ProcessorError::ProgLoadError(
+                                "program bytes not found.".to_string(),
+                            )),
+                        }
+                    }
+                    None => bail!(ProcessorError::ProgLoadError(
+                        "Column family factory_deps doesn't exist".to_string(),
+                    )),
+                }
+            }
+            None => bail!(ProcessorError::ProgLoadError(format!(
+                "program hash load failed at address: {:?}",
+                contract_addr
+            ))),
+        }
+    }
+
+    fn get_program_treekey(&self, contract_addr: ContractAddress) -> OlaStorageKey {
+        let slot_to_hash = [[0u64; 4], contract_addr].concat();
+        let key = calculate_arbitrary_poseidon_u64s(&slot_to_hash);
+        let deployer_addr = [0u64, 0, 0, 32770];
+        let concat_addr_slot = [deployer_addr, key].concat();
+        calculate_arbitrary_poseidon_u64s(&concat_addr_slot)
+    }
 }
 
 pub struct OlaCachedStorage {
-    address: ContraceAddress,
+    address: ContractAddress,
     cached_storage: HashMap<OlaStorageKey, OlaStorageValue>,
     tx_cached_storage: HashMap<OlaStorageKey, OlaStorageValue>,
     disk_storage_reader: DiskStorageReader,
+    prog_cache: LruCache<ContractAddress, BinaryProgram>,
 }
 
 impl OlaCachedStorage {
-    pub fn new(address: ContraceAddress, storage_db_path: String) -> anyhow::Result<Self> {
+    pub fn new(address: ContractAddress, storage_db_path: String) -> anyhow::Result<Self> {
         let disk_storage_reader = DiskStorageReader::new(storage_db_path)?;
+        let prog_cache = LruCache::new(NonZeroUsize::new(50).unwrap());
         Ok(Self {
             address,
             cached_storage: HashMap::new(),
             tx_cached_storage: HashMap::new(),
             disk_storage_reader,
+            prog_cache,
         })
+    }
+
+    pub fn set_storage_addr(&mut self, address: ContractAddress) {
+        self.address = address;
     }
 
     pub fn read(&mut self, slot_key: OlaStorageKey) -> anyhow::Result<Option<OlaStorageValue>> {
@@ -127,6 +191,16 @@ impl OlaCachedStorage {
             }
             None => Ok(None),
         }
+    }
+
+    pub fn get_program(&mut self) -> anyhow::Result<BinaryProgram> {
+        let cached = self.prog_cache.get(&self.address);
+        if let Some(program) = cached {
+            return Ok(program.clone());
+        }
+        let program = self.disk_storage_reader.load_program(self.address)?;
+        self.prog_cache.put(self.address, program.clone());
+        Ok(program)
     }
 
     fn get_tree_key(&self, slot_key: OlaStorageKey) -> OlaStorageKey {

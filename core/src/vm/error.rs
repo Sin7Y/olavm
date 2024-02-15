@@ -93,4 +93,7 @@ pub enum ProcessorError {
 
     #[error("InvalidInstruction: {0}")]
     InvalidInstruction(String),
+
+    #[error("ProgLoadError: {0}")]
+    ProgLoadError(String),
 }
