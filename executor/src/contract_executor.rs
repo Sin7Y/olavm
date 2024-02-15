@@ -83,9 +83,8 @@ impl<'a> OlaContractExecutor<'a> {
             | OlaOpcode::GTE => self.process_two_operands_arithmetic_op(instruction),
 
             OlaOpcode::ASSERT => self.process_assert(instruction),
-            OlaOpcode::MOV => todo!(),
-            OlaOpcode::JMP => todo!(),
-            OlaOpcode::CJMP => todo!(),
+            OlaOpcode::MOV => self.process_mov(instruction),
+            OlaOpcode::JMP | OlaOpcode::CJMP => self.process_jmp(instruction),
             OlaOpcode::CALL => todo!(),
             OlaOpcode::RET => todo!(),
             OlaOpcode::MLOAD => todo!(),
@@ -300,6 +299,168 @@ impl<'a> OlaContractExecutor<'a> {
                     opcode: self.instructions[self.pc as usize].opcode,
                     op0: Some(op0),
                     op1: None,
+                    dst: None,
+                }),
+                mem: None,
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_mov(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        // todo handle moving psp
+        // let is_moving_psp = instruction.op0
+        //     == Some(OlaOperand::SpecialReg {
+        //         special_reg: OlaSpecialRegister::PSP,
+        //     });
+        let op1 = match instruction.op1 {
+            Some(op1) => self.get_operand_value(op1)?,
+            None => {
+                return Err(ProcessorError::InvalidInstruction(format!(
+                    "op1 must set for {}",
+                    instruction.opcode.to_string()
+                ))
+                .into())
+            }
+        };
+        let dst_reg = match instruction.dst {
+            Some(dst) => match dst {
+                OlaOperand::RegisterOperand { register } => register,
+                _ => {
+                    return Err(ProcessorError::InvalidInstruction(format!(
+                        "dst must be a register for {}",
+                        instruction.opcode.to_string()
+                    ))
+                    .into())
+                }
+            },
+            None => {
+                return Err(ProcessorError::InvalidInstruction(format!(
+                    "dst must set for {}",
+                    instruction.opcode.to_string()
+                ))
+                .into())
+            }
+        };
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+        let reg_diff = OlaStateDiff::Register(vec![RegisterDiff {
+            register: dst_reg,
+            value: op1,
+        }]);
+        let state_diff = vec![spec_reg_diff, reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                pc: self.pc,
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode: self.instructions[self.pc as usize].opcode,
+                    op0: None,
+                    op1: Some(op1),
+                    dst: Some(op1),
+                }),
+                mem: None,
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_jmp(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let is_cjmp = instruction.opcode == OlaOpcode::CJMP;
+        // if is cjmp, op0 should be set and must be binary, otherwise it should not be
+        // set
+        let op0 = match instruction.op0 {
+            Some(op0) => {
+                if is_cjmp {
+                    let val_op0 = self.get_operand_value(op0)?;
+                    if val_op0 != 1 || val_op0 != 0 {
+                        return Err(ProcessorError::InvalidInstruction(format!(
+                            "cjmp op0 must be binary",
+                        ))
+                        .into());
+                    }
+                    Some(val_op0)
+                } else {
+                    return Err(ProcessorError::InvalidInstruction(format!(
+                        "op0 cannot be set set for {}",
+                        instruction.opcode.to_string()
+                    ))
+                    .into());
+                }
+            }
+            None => {
+                if is_cjmp {
+                    return Err(ProcessorError::InvalidInstruction(format!(
+                        "op0 must set for {}",
+                        instruction.opcode.to_string()
+                    ))
+                    .into());
+                } else {
+                    None
+                }
+            }
+        };
+        let op1 = match instruction.op1 {
+            Some(op1) => self.get_operand_value(op1)?,
+            None => {
+                return Err(ProcessorError::InvalidInstruction(format!(
+                    "op1 must set for {}",
+                    instruction.opcode.to_string()
+                ))
+                .into())
+            }
+        };
+        let is_jumping = if is_cjmp { op0 == Some(1) } else { true };
+        let new_pc = if is_jumping {
+            op1
+        } else {
+            self.pc + inst_len as u64
+        };
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(new_pc),
+            psp: None,
+        });
+        let state_diff = vec![spec_reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                pc: self.pc,
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode: self.instructions[self.pc as usize].opcode,
+                    op0,
+                    op1: Some(op1),
                     dst: None,
                 }),
                 mem: None,
