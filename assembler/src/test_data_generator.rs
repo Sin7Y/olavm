@@ -329,6 +329,11 @@ mod tests {
         generate_from_file("address_array_asm.json".to_string(), "address_array.json".to_string());
     }
 
+    #[test]
+    fn generate_u256_basic() {
+        generate_from_file("u256_basic_asm.json".to_string(), "u256_basic.json".to_string());
+    }
+
     fn generate_from_file(input_file_name: String, output_file_name: String) {
         let _ = fs::create_dir_all("test_data/bin/sccall");
         let input_path = format!("test_data/asm/{}", input_file_name);

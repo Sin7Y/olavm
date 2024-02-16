@@ -1986,3 +1986,30 @@ fn fib_array_test() {
     }
 }
 
+#[test]
+fn u256_baisc_test() {
+    let abi: Abi = {
+        let file = File::open("../assembler/test_data/abi/u256_baisc_abi.json")
+            .expect("failed to open ABI file");
+
+        serde_json::from_reader(file).expect("failed to parse ABI")
+    };
+
+    {
+        let func = abi.functions[0].clone();
+        let input = abi.encode_input_with_signature(func.signature().as_str(), &[]).unwrap();
+        println!("input_0:{:?}", input);
+
+        let calldata_0 = input
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(*e))
+            .collect();
+        executor_run_test_program(
+            "../assembler/test_data/bin/u256_basic.json",
+            "u256_basic_trace.txt",
+            false,
+            Some(calldata_0),
+        );
+    }
+}
+
