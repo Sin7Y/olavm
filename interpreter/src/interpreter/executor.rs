@@ -672,7 +672,62 @@ impl<'a> Traversal for Executor<'a> {
 
     fn travel_printf(&mut self, node: &PrintfNode) -> NumberResult {
         let flag_ret = self.travel(&node.flag)?.get_single().get_number();
-        if flag_ret == 3 {
+        if flag_ret == 4 {
+            let addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
+            println!(
+                "print u256 limbs:={},{},{},{},{},{},{},{}",
+                self.vm_mem.trace.get(&addr).unwrap().last().unwrap().value,
+                self.vm_mem
+                    .trace
+                    .get(&(addr + 1))
+                    .unwrap()
+                    .last()
+                    .unwrap()
+                    .value,
+                self.vm_mem
+                    .trace
+                    .get(&(addr + 2))
+                    .unwrap()
+                    .last()
+                    .unwrap()
+                    .value,
+                self.vm_mem
+                    .trace
+                    .get(&(addr + 3))
+                    .unwrap()
+                    .last()
+                    .unwrap()
+                    .value,
+                self.vm_mem
+                    .trace
+                    .get(&(addr + 4))
+                    .unwrap()
+                    .last()
+                    .unwrap()
+                    .value,
+                self.vm_mem
+                    .trace
+                    .get(&(addr + 5))
+                    .unwrap()
+                    .last()
+                    .unwrap()
+                    .value,
+                self.vm_mem
+                    .trace
+                    .get(&(addr + 6))
+                    .unwrap()
+                    .last()
+                    .unwrap()
+                    .value,
+                self.vm_mem
+                    .trace
+                    .get(&(addr + 7))
+                    .unwrap()
+                    .last()
+                    .unwrap()
+                    .value,
+            );
+        } else if flag_ret == 3 {
             println!(
                 "print value={}",
                 self.travel(&node.val_addr)?.get_single().get_number()
