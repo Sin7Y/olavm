@@ -393,6 +393,13 @@ impl OlaTape {
         self.tp += 1;
     }
 
+    pub fn batch_write(&mut self, vals: &[u64]) {
+        for v in vals {
+            self.addr_to_value.insert(self.tp, *v);
+            self.tp += 1;
+        }
+    }
+
     pub fn read_top(&self, addr: u64) -> anyhow::Result<u64> {
         match self.addr_to_value.get(&addr).copied() {
             Some(v) => Ok(v),

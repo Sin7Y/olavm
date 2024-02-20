@@ -60,6 +60,7 @@ mod tape;
 pub mod ola_storage;
 pub mod config;
 mod tx_exe_manager;
+mod batch_exe_manager;
 #[cfg(test)]
 mod tests;
 pub mod trace;
