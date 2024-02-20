@@ -159,11 +159,11 @@ pub struct OlaCachedStorage {
 }
 
 impl OlaCachedStorage {
-    pub fn new(address: ContractAddress, storage_db_path: String) -> anyhow::Result<Self> {
+    pub fn new(storage_db_path: String) -> anyhow::Result<Self> {
         let disk_storage_reader = DiskStorageReader::new(storage_db_path)?;
         let prog_cache = LruCache::new(NonZeroUsize::new(50).unwrap());
         Ok(Self {
-            address,
+            address: ContractAddress::default(),
             cached_storage: HashMap::new(),
             tx_cached_storage: HashMap::new(),
             disk_storage_reader,
