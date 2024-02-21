@@ -9,6 +9,7 @@ use crate::{goldilocks_field::GoldilocksField, types::Field};
 use lazy_static::lazy_static;
 
 use once_cell::sync::OnceCell;
+use maybe_rayon::*;
 
 static mut IN_DATA: u64 = 0;
 static mut OUT_DATA: u64 = 0;
@@ -164,12 +165,19 @@ where
 
         let start = Instant::now();
 
-        for (idx, f) in p.iter().enumerate() {
+        let _ = p.par_iter().enumerate().map(|(idx, f)| {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
                 *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
             }
-        }
+        }).collect::<Vec<()>>();
+
+        // for (idx, f) in p.iter().enumerate() {
+        //     let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     unsafe {
+        //         *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+        //     }
+        // }
 
         // println!(
         //     "[cuda][before](run_evaluate_poly) data_len = {}, cost_time = {:?}",
@@ -206,14 +214,18 @@ where
         }
 
         let start = Instant::now();
-        let mut res = Vec::with_capacity(p.len());
-        // let mut res = [F::ZERO; p.len()];
-
-        for i in 0..p.len() {
+        let mut res = vec![F::ZERO; 1 << 24];
+        let _ = (0..p.len()).into_par_iter().map(|i| {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
-            // res[i] = F::from_canonical_u64(val as u64);
-            res.push(F::from_canonical_u64(val));
-        }
+            res[i] = F::from_canonical_u64(val as u64);
+        }).collect::<Vec<()>>();
+        res.truncate(p.len());
+
+        // let mut res = Vec::with_capacity(p.len());
+        // for i in 0..p.len() {
+        //     let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+        //     res.push(F::from_canonical_u64(val));
+        // }
 
         // println!(
         //     "[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}",
@@ -236,12 +248,19 @@ where
 
         let start = Instant::now();
 
-        for (idx, f) in p.iter().enumerate() {
-            let val: u64 = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        let _ = p.par_iter().enumerate().map(|(idx, f)| {
+            let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
                 *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
             }
-        }
+        }).collect::<Vec<()>>();
+
+        // for (idx, f) in p.iter().enumerate() {
+        //     let val: u64 = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     unsafe {
+        //         *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+        //     }
+        // }
         let domain_offset = domain_offset
             .as_any()
             .downcast_ref::<GoldilocksField>()
@@ -336,17 +355,24 @@ where
         // );
         //println!("p[0] = {} ;p[end] = {}", p[0], p[p.len() - 1]);
 
-        for (idx, f) in p.iter().enumerate() {
+        let _ = p.par_iter().enumerate().map(|(idx, f)| {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
                 *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
-                // println!(
-                //     "GLOBAL_POINTER_INDATA = {} ;p = {}",
-                //     *(*GLOBAL_POINTER_INDATA).offset(idx as isize),
-                //     p[idx]
-                // );
             }
-        }
+        }).collect::<Vec<()>>();
+
+        // for (idx, f) in p.iter().enumerate() {
+        //     let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     unsafe {
+        //         *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+        //         // println!(
+        //         //     "GLOBAL_POINTER_INDATA = {} ;p = {}",
+        //         //     *(*GLOBAL_POINTER_INDATA).offset(idx as isize),
+        //         //     p[idx]
+        //         // );
+        //     }
+        // }
 
         // let file: File =
         //     File::create("/home/wpf/work/debug_data/GLOBAL_POINTER_INDATA.txt").
@@ -467,13 +493,20 @@ where
         // let res = p2.par_iter().map(|&i|
         // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
-        let mut res: Vec<F> = Vec::with_capacity(p.len());
-
-        for i in 0..p.len() {
+        let mut res = vec![F::ZERO; 1 << 24];
+        let _ = (0..p.len()).into_par_iter().map(|i| {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
-            // res[i] = F::from_canonical_u64(val);
-            res.push(F::from_canonical_u64(val));
-        }
+            res[i] = F::from_canonical_u64(val as u64);
+        }).collect::<Vec<()>>();
+        res.truncate(p.len());
+
+        // let mut res: Vec<F> = Vec::with_capacity(p.len());
+
+        // for i in 0..p.len() {
+        //     let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+        //     // res[i] = F::from_canonical_u64(val);
+        //     res.push(F::from_canonical_u64(val));
+        // }
 
         // let file2: File =
         //     File::create("/home/wpf/work/debug_data/GLOBAL_POINTER_OUTDATA.txt").
@@ -518,12 +551,19 @@ where
 
         let start = Instant::now();
 
-        for (idx, f) in p.iter().enumerate() {
+        let _ = p.par_iter().enumerate().map(|(idx, f)| {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
                 *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
             }
-        }
+        }).collect::<Vec<()>>();
+
+        // for (idx, f) in p.iter().enumerate() {
+        //     let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     unsafe {
+        //         *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+        //     }
+        // }
 
         let domain_offset = domain_offset
             .as_any()
@@ -572,13 +612,20 @@ where
         // let res = p2.par_iter().map(|&i|
         // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
-        let mut res = Vec::with_capacity(p.len());
-
-        for i in 0..p.len() {
+        let mut res = vec![F::ZERO; 1 << 24];
+        let _ = (0..p.len()).into_par_iter().map(|i| {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
-            // res[i] = F::from_canonical_u64(val);
-            res.push(F::from_canonical_u64(val));
-        }
+            res[i] = F::from_canonical_u64(val as u64);
+        }).collect::<Vec<()>>();
+        res.truncate(p.len());
+
+        // let mut res = Vec::with_capacity(p.len());
+
+        // for i in 0..p.len() {
+        //     let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+        //     // res[i] = F::from_canonical_u64(val);
+        //     res.push(F::from_canonical_u64(val));
+        // }
 
         // println!(
         //     "[cuda][after](run_interpolate_poly_with_offset) data_len = {}, cost_time
