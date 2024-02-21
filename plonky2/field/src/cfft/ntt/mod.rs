@@ -214,7 +214,7 @@ where
         }
 
         let start = Instant::now();
-        let mut res = vec![F::ZERO; 1 << 24];
+        let mut res = vec![F::ZERO; NTT_MAX_LENGTH];
         let _ = (0..p.len()).into_par_iter().map(|i| {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
             res[i] = F::from_canonical_u64(val as u64);
@@ -493,7 +493,7 @@ where
         // let res = p2.par_iter().map(|&i|
         // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
-        let mut res = vec![F::ZERO; 1 << 24];
+        let mut res = vec![F::ZERO; NTT_MAX_LENGTH];
         let _ = (0..p.len()).into_par_iter().map(|i| {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
             res[i] = F::from_canonical_u64(val as u64);
@@ -612,7 +612,7 @@ where
         // let res = p2.par_iter().map(|&i|
         // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
-        let mut res = vec![F::ZERO; 1 << 24];
+        let mut res = vec![F::ZERO; NTT_MAX_LENGTH];
         let _ = (0..p.len()).into_par_iter().map(|i| {
             let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
             res[i] = F::from_canonical_u64(val as u64);
