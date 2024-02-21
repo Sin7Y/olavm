@@ -1,6 +1,9 @@
-use core::vm::hardware::{ContractAddress, ExeContext, OlaTape};
+use core::vm::hardware::{ContractAddress, OlaTape};
 
-use crate::{batch_exe_manager::BlockExeInfo, config::ExecuteMode, ola_storage::OlaCachedStorage};
+use crate::{
+    batch_exe_manager::BlockExeInfo, config::ExecuteMode, contract_executor::OlaContractExecutor,
+    ola_storage::OlaCachedStorage,
+};
 
 const ENTRY_POINT_ADDRESS: [u64; 4] = [0, 0, 0, 32769];
 
@@ -19,14 +22,14 @@ pub(crate) struct OlaTapeInitInfo {
     pub tx_hash: Option<[u64; 4]>,
 }
 
-pub(crate) struct TxExeManager<'batch> {
+pub(crate) struct TxExeManager<'tx, 'batch> {
     mode: ExecuteMode,
-    env_stack: Vec<ExeContext>,
+    env_stack: Vec<OlaContractExecutor<'tx, 'batch>>,
     tape: OlaTape,
     storage: &'batch mut OlaCachedStorage,
 }
 
-impl<'batch> TxExeManager<'batch> {
+impl<'tx, 'batch> TxExeManager<'tx, 'batch> {
     pub fn new(
         mode: ExecuteMode,
         block_info: BlockExeInfo,
@@ -66,6 +69,16 @@ impl<'batch> TxExeManager<'batch> {
     }
 
     pub fn call(&mut self) -> anyhow::Result<Vec<u64>> {
+        todo!()
+    }
+}
+
+impl<'tx, 'batch> ContractCallStackHandler for TxExeManager<'tx, 'batch> {
+    fn call(&mut self, callee: ContractAddress) {
+        todo!()
+    }
+
+    fn end(&mut self) {
         todo!()
     }
 }

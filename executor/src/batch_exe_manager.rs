@@ -40,7 +40,6 @@ impl BlockExeManager {
     }
 
     pub fn invoke(&mut self, tx: OlaTapeInitInfo) -> anyhow::Result<()> {
-        let mut tx_exe_manager = TxExeManager::new(ExecuteMode::Invoke, tx, &mut self.storage);
-        tx_exe_manager.invoke()
+        todo!()
     }
 }
