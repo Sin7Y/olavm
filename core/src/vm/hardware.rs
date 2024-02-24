@@ -410,20 +410,20 @@ impl OlaTape {
         }
     }
 
-    pub fn read_stack<const LEN: usize>(&self) -> anyhow::Result<[u64; LEN]> {
-        if LEN > self.tp as usize {
+    pub fn read_stack(&self, len: u64) -> anyhow::Result<Vec<u64>> {
+        if len > self.tp {
             bail!(ProcessorError::TapeAccessError(format!(
                 "[Tape]: too long to load, tp: {}, len: {}",
-                self.tp, LEN
+                self.tp, len
             )))
         }
-        let mut res = [0u64; LEN];
-        for i in 0..LEN {
-            match self.addr_to_value.get(&(self.tp - 1 - i as u64)).copied() {
-                Some(v) => res[LEN - 1 - i] = v,
+        let mut res = Vec::with_capacity(len as usize);
+        for i in 0..len {
+            match self.addr_to_value.get(&(self.tp - 1 - i)).copied() {
+                Some(v) => res.push(v),
                 None => bail!(ProcessorError::TapeAccessError(format!(
                     "[Tape]: try to read addr never init: {}",
-                    self.tp - i as u64
+                    self.tp - i
                 ))),
             }
         }

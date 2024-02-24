@@ -17,6 +17,7 @@ pub struct MemExePiece {
     pub clk: u64,
     pub addr: u64,
     pub value: u64,
+    pub is_write: bool,
     pub opcode: Option<OlaOpcode>,
 }
 
@@ -50,10 +51,10 @@ pub struct PoseidonPiece {
 
 #[derive(Debug, Clone)]
 pub struct StorageExePiece {
-    pub access_idx: u64,
     pub is_write: bool,
-    pub pre_value: Option<u64>,
-    pub value: u64,
+    pub tree_key: [u64; 4],
+    pub pre_value: Option<[u64; 4]>,
+    pub value: [u64; 4],
 }
 
 #[derive(Debug, Clone)]
@@ -72,5 +73,5 @@ pub struct ExeTraceStepDiff {
     pub cmp: Option<CmpExePiece>,
     pub poseidon: Option<PoseidonPiece>,
     pub storage: Option<StorageExePiece>,
-    pub tape: Option<TapeExePiece>,
+    pub tape: Option<Vec<TapeExePiece>>,
 }
