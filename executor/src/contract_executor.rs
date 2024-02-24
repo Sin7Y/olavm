@@ -1,10 +1,14 @@
 use core::{
+    crypto::poseidon_trace::calculate_arbitrary_poseidon_u64s,
     program::{
         binary_program::{BinaryInstruction, BinaryProgram},
         decoder::decode_binary_program_to_instructions,
     },
-    trace::exe_trace::{CpuExePiece, ExeTraceStepDiff, MemExePiece},
-    types::{Field, GoldilocksField},
+    trace::exe_trace::{
+        CpuExePiece, ExeTraceStepDiff, MemExePiece, PoseidonPiece, RcExePiece, StorageExePiece,
+        TapeExePiece,
+    },
+    types::{Field, GoldilocksField, PrimeField64},
     vm::{
         error::ProcessorError,
         hardware::{
@@ -13,14 +17,16 @@ use core::{
         },
         opcodes::OlaOpcode,
         operands::OlaOperand,
-        vm_state::{MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff},
+        vm_state::{MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff, StorageDiff},
     },
 };
+use std::vec;
 
 use anyhow::Ok;
 
 use crate::{
-    config::ExecuteMode, ola_storage::OlaCachedStorage, tx_exe_manager::ContractCallStackHandler,
+    config::ExecuteMode, ecdsa::msg_ecdsa_verify, ola_storage::OlaCachedStorage,
+    tx_exe_manager::ContractCallStackHandler,
 };
 
 pub(crate) struct OlaContractExecutor<'tx, 'batch> {
@@ -32,7 +38,7 @@ pub(crate) struct OlaContractExecutor<'tx, 'batch> {
     registers: [u64; NUM_GENERAL_PURPOSE_REGISTER],
     memory: OlaMemory,
     tape: &'tx OlaTape,
-    storage: &'batch OlaCachedStorage,
+    storage: &'batch mut OlaCachedStorage,
     instructions: Vec<BinaryInstruction>,
     call_handler: &'tx dyn ContractCallStackHandler,
 }
@@ -42,7 +48,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         mode: ExecuteMode,
         context: ExeContext,
         tape: &'tx OlaTape,
-        storage: &'batch OlaCachedStorage,
+        storage: &'batch mut OlaCachedStorage,
         program: BinaryProgram,
         call_handler: &'tx dyn ContractCallStackHandler,
     ) -> anyhow::Result<Self> {
@@ -95,18 +101,16 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
             OlaOpcode::RET => self.process_ret(instruction),
             OlaOpcode::MLOAD => self.process_mload(instruction),
             OlaOpcode::MSTORE => self.process_mstore(instruction),
-            OlaOpcode::END => todo!(),
-            OlaOpcode::RC => todo!(),
-
-            OlaOpcode::NOT => todo!(),
-
-            OlaOpcode::POSEIDON => todo!(),
-            OlaOpcode::SLOAD => todo!(),
-            OlaOpcode::SSTORE => todo!(),
-            OlaOpcode::TLOAD => todo!(),
-            OlaOpcode::TSTORE => todo!(),
-            OlaOpcode::SCCALL => todo!(),
-            OlaOpcode::SIGCHECK => todo!(),
+            OlaOpcode::END => self.process_end(instruction),
+            OlaOpcode::RC => self.process_rc(instruction),
+            OlaOpcode::NOT => self.process_not(instruction),
+            OlaOpcode::POSEIDON => self.process_poseidon(instruction),
+            OlaOpcode::SLOAD => self.process_sload(instruction),
+            OlaOpcode::SSTORE => self.process_sstore(instruction),
+            OlaOpcode::TLOAD => self.process_tload(instruction),
+            OlaOpcode::TSTORE => self.process_tstore(instruction),
+            OlaOpcode::SCCALL => self.process_sccall(instruction),
+            OlaOpcode::SIGCHECK => self.process_sigcheck(instruction),
         }
     }
 
@@ -178,11 +182,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
 
         let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, res);
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu_mem(
-                opcode,
-                (Some(op0), Some(op1), Some(res)),
-                None,
-            ))
+            Some(self.get_trace_step_diff_only_cpu(opcode, (Some(op0), Some(op1), Some(res))))
         } else {
             None
         };
@@ -222,7 +222,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
 
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu_mem(opcode, (None, Some(op1), None), None))
+            Some(self.get_trace_step_diff_only_cpu(opcode, (None, Some(op1), None)))
         } else {
             None
         };
@@ -284,7 +284,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         let is_cjmp = instruction.opcode == OlaOpcode::CJMP;
         // if is cjmp, op0 should be set and must be binary, otherwise it should not be
         // set
-        let op0 = match instruction.op0 {
+        let op0 = match instruction.clone().op0 {
             Some(op0) => {
                 if is_cjmp {
                     let val_op0 = self.get_operand_value(op0)?;
@@ -315,16 +315,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                 }
             }
         };
-        let op1 = match instruction.op1 {
-            Some(op1) => self.get_operand_value(op1)?,
-            None => {
-                return Err(ProcessorError::InvalidInstruction(format!(
-                    "op1 must set for {}",
-                    instruction.opcode.to_string()
-                ))
-                .into())
-            }
-        };
+        let op1 = self.get_op1(instruction)?;
         let is_jumping = if is_cjmp { op0 == Some(1) } else { true };
         let new_pc = if is_jumping {
             op1
@@ -337,7 +328,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         });
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu_mem(opcode, (op0, Some(op1), None), None))
+            Some(self.get_trace_step_diff_only_cpu(opcode, (op0, Some(op1), None)))
         } else {
             None
         };
@@ -348,14 +339,118 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         &self,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
-        todo!()
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let op1 = self.get_op1(instruction)?;
+        let ret_pc = self.pc + inst_len as u64;
+        let fp = self.get_fp();
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(op1),
+            psp: None,
+        });
+        let mem_diff = OlaStateDiff::Memory(vec![MemoryDiff {
+            addr: fp - 1,
+            value: ret_pc,
+        }]);
+        let state_diff = vec![spec_reg_diff, mem_diff];
+        let trace_diff = if self.is_trace_needed() {
+            let ret_pc = self.memory.read(fp - 2)?;
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: None,
+                    op1: Some(op1),
+                    dst: None,
+                }),
+                mem: Some(vec![
+                    MemExePiece {
+                        clk: self.clk,
+                        addr: fp - 1,
+                        value: ret_pc,
+                        is_write: true,
+                        opcode: Some(opcode),
+                    },
+                    MemExePiece {
+                        clk: self.clk,
+                        addr: fp - 2,
+                        value: ret_pc,
+                        is_write: false,
+                        opcode: Some(opcode),
+                    },
+                ]),
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
     }
 
     fn process_ret(
         &self,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
-        todo!()
+        let opcode = instruction.opcode;
+        let fp = self.get_fp();
+        let ret_pc = self.memory.read(fp - 1)?;
+        let ret_fp = self.memory.read(fp - 2)?;
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(ret_pc),
+            psp: None,
+        });
+        let reg_diff = OlaStateDiff::Register(vec![RegisterDiff {
+            register: OlaRegister::R9,
+            value: ret_fp,
+        }]);
+        let state_diff = vec![spec_reg_diff, reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: None,
+                    op1: None,
+                    dst: None,
+                }),
+                mem: Some(vec![
+                    MemExePiece {
+                        clk: self.clk,
+                        addr: fp - 1,
+                        value: ret_pc,
+                        is_write: false,
+                        opcode: Some(opcode),
+                    },
+                    MemExePiece {
+                        clk: self.clk,
+                        addr: fp - 2,
+                        value: ret_fp,
+                        is_write: false,
+                        opcode: Some(opcode),
+                    },
+                ]),
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
     }
 
     fn process_mload(
@@ -368,11 +463,31 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         let value = self.memory.read(op1)?;
         let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, value);
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu_mem(
-                opcode,
-                (None, Some(op1), Some(value)),
-                Some(vec![(op1, value)]),
-            ))
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: None,
+                    op1: Some(op1),
+                    dst: None,
+                }),
+                mem: Some(vec![MemExePiece {
+                    clk: self.clk,
+                    addr: op1,
+                    value,
+                    is_write: false,
+                    opcode: Some(opcode),
+                }]),
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
         } else {
             None
         };
@@ -393,15 +508,473 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         let mem_diff = OlaStateDiff::Memory(vec![MemoryDiff { addr, value }]);
         let state_diff = vec![spec_reg_diff, mem_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu_mem(
-                opcode,
-                (Some(addr), Some(value), None),
-                Some(vec![(addr, value)]),
-            ))
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: Some(addr),
+                    op1: Some(value),
+                    dst: None,
+                }),
+                mem: Some(vec![MemExePiece {
+                    clk: self.clk,
+                    addr,
+                    value,
+                    is_write: true,
+                    opcode: Some(opcode),
+                }]),
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
         } else {
             None
         };
         Ok((state_diff, trace_diff))
+    }
+
+    fn process_end(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        todo!()
+    }
+
+    fn process_rc(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let op1 = self.get_op1(instruction)?;
+        if op1 > u32::MAX as u64 {
+            return Err((ProcessorError::U32RangeCheckFail).into());
+        }
+
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+
+        let state_diff = vec![spec_reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: None,
+                    op1: Some(op1),
+                    dst: None,
+                }),
+                mem: None,
+                rc: Some(RcExePiece { value: op1 as u32 }),
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_not(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction)?;
+        let res = (GoldilocksField::NEG_ONE - GoldilocksField::from_canonical_u64(op1))
+            .to_canonical_u64();
+        let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, res);
+        let trace_diff = if self.is_trace_needed() {
+            Some(self.get_trace_step_diff_only_cpu(opcode, (None, Some(op1), Some(res))))
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_poseidon(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let (op0, op1, dst) = self.get_op0_op1_and_dst(instruction)?;
+        let inputs = self.memory.batch_read(op0, op1)?;
+        let outputs = calculate_arbitrary_poseidon_u64s(&inputs);
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+        let mem_diff = OlaStateDiff::Memory(
+            [dst, dst + 1, dst + 2, dst + 3]
+                .iter()
+                .zip(outputs.iter())
+                .map(|(addr, value)| MemoryDiff {
+                    addr: *addr,
+                    value: *value,
+                })
+                .collect(),
+        );
+        let state_diff: Vec<OlaStateDiff> = vec![spec_reg_diff, mem_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: Some(op0),
+                    op1: Some(op1),
+                    dst: Some(dst),
+                }),
+                mem: None,
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: Some(PoseidonPiece {
+                    clk: self.clk,
+                    src_addr: op0,
+                    dst_addr: dst,
+                    inputs,
+                }),
+                tape: None,
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_sload(
+        &mut self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let (op0, op1) = self.get_op0_op1(instruction)?;
+        let storage_key = self
+            .memory
+            .batch_read(op0, 4)?
+            .try_into()
+            .expect("Wrong number of elements");
+        let loaded_value = self.storage.read(storage_key)?;
+        let value = match loaded_value {
+            Some(value) => value,
+            None => [0, 0, 0, 0],
+        };
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+        let mem_diff = OlaStateDiff::Memory(
+            [op1, op1 + 1, op1 + 2, op1 + 3]
+                .iter()
+                .zip(value.iter())
+                .map(|(addr, value)| MemoryDiff {
+                    addr: *addr,
+                    value: *value,
+                })
+                .collect(),
+        );
+        let state_diff = vec![spec_reg_diff, mem_diff];
+        let trace_diff = if self.is_trace_needed() {
+            let tree_key = self.storage.get_tree_key(storage_key);
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: Some(op0),
+                    op1: Some(op1),
+                    dst: None,
+                }),
+                mem: Some(
+                    [op1, op1 + 1, op1 + 2, op1 + 3]
+                        .iter()
+                        .zip(value.iter())
+                        .map(|(addr, value)| MemExePiece {
+                            clk: self.clk,
+                            addr: *addr,
+                            value: *value,
+                            is_write: true,
+                            opcode: Some(opcode),
+                        })
+                        .collect(),
+                ),
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: Some(StorageExePiece {
+                    is_write: false,
+                    tree_key,
+                    pre_value: None,
+                    value,
+                }),
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_sstore(
+        &mut self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let (op0, op1) = self.get_op0_op1(instruction)?;
+        let storage_key: [u64; 4] = self
+            .memory
+            .batch_read(op0, 4)?
+            .try_into()
+            .expect("Wrong number of elements");
+        let value: [u64; 4] = self
+            .memory
+            .batch_read(op1, 4)?
+            .try_into()
+            .expect("Wrong number of elements");
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+        let state_diff = vec![spec_reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            let pre_value = self.storage.read(storage_key)?;
+            let tree_key = self.storage.get_tree_key(storage_key);
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: Some(op0),
+                    op1: Some(op1),
+                    dst: None,
+                }),
+                mem: None,
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: Some(StorageExePiece {
+                    is_write: true,
+                    tree_key,
+                    pre_value,
+                    value,
+                }),
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_tload(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let (op0, op1, dst) = self.get_op0_op1_and_dst(instruction)?;
+        let values = if op0 == 0 {
+            let v = self.tape.read_top(op1)?;
+            vec![v]
+        } else if op0 == 1 {
+            self.tape.read_stack(op1)?
+        } else {
+            return Err(ProcessorError::TapeAccessError(format!(
+                "[tload] invalid op0: {}, op0 must be binary",
+                op0
+            ))
+            .into());
+        };
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+        let mem_diff = OlaStateDiff::Memory(
+            (dst..dst + values.len() as u64)
+                .zip(values.iter())
+                .map(|(addr, value)| MemoryDiff {
+                    addr,
+                    value: *value,
+                })
+                .collect(),
+        );
+        let state_diff = vec![spec_reg_diff, mem_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: Some(op0),
+                    op1: Some(op1),
+                    dst: None,
+                }),
+                mem: Some(
+                    (dst..dst + values.len() as u64)
+                        .zip(values.iter())
+                        .map(|(addr, value)| MemExePiece {
+                            clk: self.clk,
+                            addr,
+                            is_write: true,
+                            value: *value,
+                            opcode: Some(opcode),
+                        })
+                        .collect(),
+                ),
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: Some(
+                    (dst..dst + values.len() as u64)
+                        .zip(values.iter())
+                        .map(|(addr, value)| TapeExePiece {
+                            addr,
+                            value: *value,
+                            opcode: Some(opcode),
+                        })
+                        .collect(),
+                ),
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_tstore(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let (op0, op1) = self.get_op0_op1(instruction)?;
+        let values = self.memory.batch_read(op0, op1)?;
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+        let state_diff = vec![spec_reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: Some(op0),
+                    op1: Some(op1),
+                    dst: None,
+                }),
+                mem: Some(
+                    (op0..op0 + op1)
+                        .zip(values.iter())
+                        .map(|(addr, value)| MemExePiece {
+                            clk: self.clk,
+                            addr,
+                            value: *value,
+                            is_write: false,
+                            opcode: Some(opcode),
+                        })
+                        .collect(),
+                ),
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: Some(
+                    (op0..op0 + op1)
+                        .zip(values.iter())
+                        .map(|(addr, value)| TapeExePiece {
+                            addr,
+                            value: *value,
+                            opcode: Some(opcode),
+                        })
+                        .collect(),
+                ),
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn process_sccall(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        todo!()
+    }
+
+    fn process_sigcheck(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction)?;
+        let params = self.memory.batch_read(op1, 20)?;
+        let msg_hash: [u64; 4] = (&params[0..4])
+            .try_into()
+            .expect("Slice with incorrect length");
+        let pubkey_x: [u64; 4] = (&params[4..8])
+            .try_into()
+            .expect("Slice with incorrect length");
+        let pubkey_y: [u64; 4] = (&params[8..12])
+            .try_into()
+            .expect("Slice with incorrect length");
+        let r: [u64; 4] = (&params[12..16])
+            .try_into()
+            .expect("Slice with incorrect length");
+        let s: [u64; 4] = (&params[16..20])
+            .try_into()
+            .expect("Slice with incorrect length");
+        let verified = msg_ecdsa_verify(msg_hash, pubkey_x, pubkey_y, r, s)?;
+        let res = if verified { 1 } else { 0 };
+        let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, res);
+        // todo ecdsa piece
+        let trace_diff = if self.is_trace_needed() {
+            Some(self.get_trace_step_diff_only_cpu(opcode, (None, Some(op1), Some(res))))
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
+    }
+
+    fn get_fp(&self) -> u64 {
+        self.registers[OlaRegister::R9.index() as usize]
     }
 
     fn get_state_diff_only_dst_reg(
@@ -421,26 +994,11 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         vec![spec_reg_diff, reg_diff]
     }
 
-    fn get_trace_step_diff_only_cpu_mem(
+    fn get_trace_step_diff_only_cpu(
         &self,
         opcode: OlaOpcode,
         op0_op1_dst: (Option<u64>, Option<u64>, Option<u64>),
-        mem_addr_val: Option<Vec<(u64, u64)>>,
     ) -> ExeTraceStepDiff {
-        let mem = match mem_addr_val {
-            Some(mem_addr_val) => Some(
-                mem_addr_val
-                    .iter()
-                    .map(|(addr, value)| MemExePiece {
-                        clk: self.clk,
-                        addr: *addr,
-                        value: *value,
-                        opcode: Some(opcode),
-                    })
-                    .collect(),
-            ),
-            None => None,
-        };
         ExeTraceStepDiff {
             cpu: Some(CpuExePiece {
                 clk: self.clk,
@@ -452,7 +1010,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                 op1: op0_op1_dst.1,
                 dst: op0_op1_dst.2,
             }),
-            mem,
+            mem: None,
             rc: None,
             bitwise: None,
             cmp: None,
@@ -460,6 +1018,20 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
             tape: None,
             storage: None,
         }
+    }
+
+    fn get_op1(&self, instruction: BinaryInstruction) -> anyhow::Result<u64> {
+        let op1 = match instruction.op1 {
+            Some(op1) => self.get_operand_value(op1)?,
+            None => {
+                return Err(ProcessorError::InvalidInstruction(format!(
+                    "op1 must set for {}",
+                    instruction.opcode.to_string()
+                ))
+                .into())
+            }
+        };
+        Ok(op1)
     }
 
     fn get_op1_and_dst_reg(
@@ -566,6 +1138,43 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
             }
         };
         Ok((op0, op1, dst_reg))
+    }
+
+    fn get_op0_op1_and_dst(
+        &self,
+        instruction: BinaryInstruction,
+    ) -> anyhow::Result<(u64, u64, u64)> {
+        let op0 = match instruction.op0 {
+            Some(op0) => self.get_operand_value(op0)?,
+            None => {
+                return Err(ProcessorError::InvalidInstruction(format!(
+                    "op0 must set for {}",
+                    instruction.opcode.to_string()
+                ))
+                .into())
+            }
+        };
+        let op1 = match instruction.op1 {
+            Some(op1) => self.get_operand_value(op1)?,
+            None => {
+                return Err(ProcessorError::InvalidInstruction(format!(
+                    "op1 must set for {}",
+                    instruction.opcode.to_string()
+                ))
+                .into())
+            }
+        };
+        let dst = match instruction.dst {
+            Some(dst) => self.get_operand_value(dst)?,
+            None => {
+                return Err(ProcessorError::InvalidInstruction(format!(
+                    "dst must set for {}",
+                    instruction.opcode.to_string()
+                ))
+                .into())
+            }
+        };
+        Ok((op0, op1, dst))
     }
 
     fn get_operand_value(&self, operand: OlaOperand) -> anyhow::Result<u64> {

@@ -203,7 +203,7 @@ impl OlaCachedStorage {
         Ok(program)
     }
 
-    fn get_tree_key(&self, slot_key: OlaStorageKey) -> OlaStorageKey {
+    pub fn get_tree_key(&self, slot_key: OlaStorageKey) -> OlaStorageKey {
         let mut inputs: Vec<u64> = Vec::new();
         inputs.extend_from_slice(self.address.clone().as_ref());
         inputs.extend_from_slice(&slot_key);
