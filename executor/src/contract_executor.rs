@@ -25,11 +25,12 @@ use std::vec;
 use anyhow::Ok;
 
 use crate::{
-    config::ExecuteMode, ecdsa::msg_ecdsa_verify, ola_storage::OlaCachedStorage,
-    tx_exe_manager::ContractCallStackHandler,
+    config::ExecuteMode, ecdsa::msg_ecdsa_verify, exe_trace::tx::TxTraceManager,
+    ola_storage::OlaCachedStorage, tx_exe_manager::ContractCallStackHandler,
 };
 
 pub(crate) struct OlaContractExecutor<'tx, 'batch> {
+    trace_manager: TxTraceManager,
     mode: ExecuteMode,
     context: ExeContext,
     clk: u64,
@@ -45,6 +46,7 @@ pub(crate) struct OlaContractExecutor<'tx, 'batch> {
 
 impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
     pub fn new(
+        trace_manager: TxTraceManager,
         mode: ExecuteMode,
         context: ExeContext,
         tape: &'tx OlaTape,
@@ -60,27 +62,29 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                         "instructions cannot be empry".to_string(),
                     )
                     .into());
-                } else {
-                    Ok(Self {
-                        mode,
-                        context,
-                        clk: 0,
-                        pc: 0,
-                        psp: 0,
-                        registers: [0; NUM_GENERAL_PURPOSE_REGISTER],
-                        memory: OlaMemory::default(),
-                        tape,
-                        storage,
-                        instructions,
-                        call_handler,
-                    })
                 }
+                Ok(Self {
+                    trace_manager,
+                    mode,
+                    context,
+                    clk: 0,
+                    pc: 0,
+                    psp: 0,
+                    registers: [0; NUM_GENERAL_PURPOSE_REGISTER],
+                    memory: OlaMemory::default(),
+                    tape,
+                    storage,
+                    instructions,
+                    call_handler,
+                })
             }
-            Result::Err(err) => return Err(ProcessorError::InstructionsInitError(err).into()),
+            Result::Err(err) => Err(ProcessorError::InstructionsInitError(err).into()),
         }
     }
 
-    fn run_on_step(
+    // pub fn run(&mut self) -> {}
+
+    fn run_one_step(
         &mut self,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
@@ -630,6 +634,28 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                 })
                 .collect(),
         );
+        let mut mem_trace: Vec<MemExePiece> = (op0..op0 + op1)
+            .zip(inputs.iter())
+            .map(|(addr, value)| MemExePiece {
+                clk: self.clk,
+                addr,
+                value: *value,
+                is_write: false,
+                opcode: Some(opcode),
+            })
+            .collect();
+        let mem_trace_write: Vec<MemExePiece> = [dst, dst + 1, dst + 2, dst + 3]
+            .iter()
+            .zip(outputs.iter())
+            .map(|(addr, value)| MemExePiece {
+                clk: self.clk,
+                addr: *addr,
+                value: *value,
+                is_write: true,
+                opcode: Some(opcode),
+            })
+            .collect();
+        mem_trace.extend(mem_trace_write);
         let state_diff: Vec<OlaStateDiff> = vec![spec_reg_diff, mem_diff];
         let trace_diff = if self.is_trace_needed() {
             Some(ExeTraceStepDiff {
@@ -643,7 +669,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                     op1: Some(op1),
                     dst: Some(dst),
                 }),
-                mem: None,
+                mem: Some(mem_trace),
                 rc: None,
                 bitwise: None,
                 cmp: None,

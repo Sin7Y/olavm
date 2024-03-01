@@ -2,7 +2,7 @@ use core::vm::hardware::{ContractAddress, OlaTape};
 
 use crate::{
     batch_exe_manager::BlockExeInfo, config::ExecuteMode, contract_executor::OlaContractExecutor,
-    ola_storage::OlaCachedStorage,
+    exe_trace::tx::TxTraceManager, ola_storage::OlaCachedStorage,
 };
 
 const ENTRY_POINT_ADDRESS: [u64; 4] = [0, 0, 0, 32769];
@@ -27,6 +27,7 @@ pub(crate) struct TxExeManager<'tx, 'batch> {
     env_stack: Vec<OlaContractExecutor<'tx, 'batch>>,
     tape: OlaTape,
     storage: &'batch mut OlaCachedStorage,
+    trace_manager: TxTraceManager,
 }
 
 impl<'tx, 'batch> TxExeManager<'tx, 'batch> {
@@ -36,13 +37,17 @@ impl<'tx, 'batch> TxExeManager<'tx, 'batch> {
         tx: OlaTapeInitInfo,
         storage: &'batch mut OlaCachedStorage,
     ) -> Self {
-        let mut tape: OlaTape = OlaTape::default();
-        Self {
+        let tape: OlaTape = OlaTape::default();
+        let trace_manager: TxTraceManager = TxTraceManager::default();
+        let manager = Self {
             mode,
             env_stack: Vec::new(),
             tape,
             storage,
-        }
+            trace_manager,
+        };
+        manager.init_tape(block_info, tx);
+        manager
     }
 
     fn init_tape(&self, block_info: BlockExeInfo, tx: OlaTapeInitInfo) -> OlaTape {
