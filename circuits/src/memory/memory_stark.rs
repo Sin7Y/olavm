@@ -241,7 +241,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MemoryStark<F
                 * (nv_region_heap - region_heap - P::ONES)
                 * (nv_addr - addr - nv_diff_addr),
         );
-        // constaint rw_addr_unchanged, for stack and heap
+        // constraint rw_addr_unchanged, for stack and heap
         yield_constr.constraint_transition(
             (P::ONES - nv[COL_MEM_TX_IDX] + lv[COL_MEM_TX_IDX])
                 * (P::ONES - nv[COL_MEM_ENV_IDX] + lv[COL_MEM_ENV_IDX])

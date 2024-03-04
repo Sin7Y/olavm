@@ -92,7 +92,7 @@ unsafe fn add_with_wraparound(a: u64, b: u64) -> u64 {
         adj = lateout(reg) adj,
         options(pure, nomem, nostack),
     );
-    res + adj // adj is EPSILON if wraparound occured and 0 otherwise
+    res + adj // adj is EPSILON if wraparound occurred and 0 otherwise
 }
 
 /// Subtraction of a and (b >> 32) modulo ORDER accounting for wraparound.
