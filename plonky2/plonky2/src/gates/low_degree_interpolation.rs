@@ -55,8 +55,8 @@ impl<F: RichField + Extendable<D>, const D: usize> LowDegreeInterpolationGate<F,
         self.end_coeffs() + i - 2
     }
 
-    /// `powers_evalutation_point(i)` is the wire index of
-    /// `evalutation_point^i`.
+    /// `powers_evaluation_point(i)` is the wire index of
+    /// `evaluation_point^i`.
     pub fn powers_evaluation_point(&self, i: usize) -> Range<usize> {
         debug_assert!(0 < i && i < self.num_points());
         if i == 1 {
