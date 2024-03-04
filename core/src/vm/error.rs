@@ -96,4 +96,7 @@ pub enum ProcessorError {
 
     #[error("ProgLoadError: {0}")]
     ProgLoadError(String),
+
+    #[error("Too many cpu lifecycle: {0}")]
+    CpuLifeCycleOverflow(u64),
 }
