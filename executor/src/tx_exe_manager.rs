@@ -125,7 +125,65 @@ impl<'batch> TxExeManager<'batch> {
         Ok(())
     }
 
-    pub fn call(&mut self) -> anyhow::Result<Vec<u64>> {
-        todo!()
+    pub fn call(&mut self, entry_contract: ContractAddress) -> anyhow::Result<Vec<u64>> {
+        let program = self.storage.get_program(entry_contract)?;
+        let entry_env = OlaContractExecutor::new(
+            ExecuteMode::Call,
+            ExeContext {
+                storage_addr: entry_contract,
+                code_addr: entry_contract,
+            },
+            program,
+        )?;
+        self.env_stack.push(entry_env);
+        let mut output: Vec<u64> = vec![];
+        loop {
+            let env = self.env_stack.pop();
+            if let Some(mut executor) = env {
+                let result =
+                    executor.resume(&mut self.tape, self.storage, &mut self.trace_manager)?;
+                match result {
+                    OlaContractExecutorState::Running => {
+                        anyhow::bail!("Invalid Executor result, cannot be Running.")
+                    }
+                    OlaContractExecutorState::DelegateCalling(callee_addr) => {
+                        let callee_program = self.storage.get_program(callee_addr)?;
+                        let storage_addr = executor.get_storage_addr();
+                        self.env_stack.push(executor);
+                        let callee = OlaContractExecutor::new(
+                            ExecuteMode::Call,
+                            ExeContext {
+                                storage_addr,
+                                code_addr: callee_addr,
+                            },
+                            callee_program,
+                        )?;
+                        self.env_stack.push(callee);
+                    }
+                    OlaContractExecutorState::Calling(callee_addr) => {
+                        let callee_program = self.storage.get_program(callee_addr)?;
+                        self.env_stack.push(executor);
+                        let callee = OlaContractExecutor::new(
+                            ExecuteMode::Invoke,
+                            ExeContext {
+                                storage_addr: callee_addr,
+                                code_addr: callee_addr,
+                            },
+                            callee_program,
+                        )?;
+                        self.env_stack.push(callee);
+                    }
+                    OlaContractExecutorState::End(o) => {
+                        if self.env_stack.is_empty() {
+                            output = o;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        Ok(output)
     }
 }
