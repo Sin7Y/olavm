@@ -151,7 +151,6 @@ impl DiskStorageReader {
 }
 
 pub struct OlaCachedStorage {
-    address: ContractAddress,
     cached_storage: HashMap<OlaStorageKey, OlaStorageValue>,
     tx_cached_storage: HashMap<OlaStorageKey, OlaStorageValue>,
     disk_storage_reader: DiskStorageReader,
@@ -163,7 +162,6 @@ impl OlaCachedStorage {
         let disk_storage_reader = DiskStorageReader::new(storage_db_path)?;
         let prog_cache = LruCache::new(NonZeroUsize::new(50).unwrap());
         Ok(Self {
-            address: ContractAddress::default(),
             cached_storage: HashMap::new(),
             tx_cached_storage: HashMap::new(),
             disk_storage_reader,
@@ -171,12 +169,12 @@ impl OlaCachedStorage {
         })
     }
 
-    pub fn set_storage_addr(&mut self, address: ContractAddress) {
-        self.address = address;
-    }
-
-    pub fn read(&mut self, slot_key: OlaStorageKey) -> anyhow::Result<Option<OlaStorageValue>> {
-        let tree_key = self.get_tree_key(slot_key);
+    pub fn read(
+        &mut self,
+        contract_addr: ContractAddress,
+        slot_key: OlaStorageKey,
+    ) -> anyhow::Result<Option<OlaStorageValue>> {
+        let tree_key = self.get_tree_key(contract_addr, slot_key);
         if let Some(value) = self.tx_cached_storage.get(&tree_key) {
             return Ok(Some(*value));
         }
@@ -193,31 +191,44 @@ impl OlaCachedStorage {
         }
     }
 
-    pub fn get_program(&mut self, contract_address: ContractAddress) -> anyhow::Result<BinaryProgram> {
-        let cached = self.prog_cache.get(&contract_address);
+    pub fn get_program(&mut self, contract_addr: ContractAddress) -> anyhow::Result<BinaryProgram> {
+        let cached = self.prog_cache.get(&contract_addr);
         if let Some(program) = cached {
             return Ok(program.clone());
         }
-        let program = self.disk_storage_reader.load_program(contract_address)?;
-        self.prog_cache.put(contract_address, program.clone());
+        let program = self.disk_storage_reader.load_program(contract_addr)?;
+        self.prog_cache.put(contract_addr, program.clone());
         Ok(program)
     }
 
-    pub fn get_tree_key(&self, slot_key: OlaStorageKey) -> OlaStorageKey {
+    pub fn get_tree_key(
+        &self,
+        storage_addr: ContractAddress,
+        slot_key: OlaStorageKey,
+    ) -> OlaStorageKey {
         let mut inputs: Vec<u64> = Vec::new();
-        inputs.extend_from_slice(self.address.clone().as_ref());
+        inputs.extend_from_slice(&storage_addr);
         inputs.extend_from_slice(&slot_key);
         calculate_arbitrary_poseidon_u64s(&inputs)
     }
 }
 
 impl OlaStorage for OlaCachedStorage {
-    fn sload(&mut self, slot_key: OlaStorageKey) -> anyhow::Result<Option<OlaStorageValue>> {
-        self.read(slot_key)
+    fn sload(
+        &mut self,
+        contract_addr: ContractAddress,
+        slot_key: OlaStorageKey,
+    ) -> anyhow::Result<Option<OlaStorageValue>> {
+        self.read(contract_addr, slot_key)
     }
 
-    fn sstore(&mut self, slot_key: OlaStorageKey, value: OlaStorageValue) {
-        let tree_key = self.get_tree_key(slot_key);
+    fn sstore(
+        &mut self,
+        contract_addr: ContractAddress,
+        slot_key: OlaStorageKey,
+        value: OlaStorageValue,
+    ) {
+        let tree_key = self.get_tree_key(contract_addr, slot_key);
         self.tx_cached_storage.insert(tree_key, value);
     }
 

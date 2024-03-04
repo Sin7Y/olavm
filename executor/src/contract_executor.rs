@@ -209,7 +209,11 @@ impl OlaContractExecutor {
                 OlaStateDiff::Storage(d) => {
                     // todo save storage log
                     d.iter().for_each(|storage_diff| {
-                        storage.sstore(storage_diff.key, storage_diff.value);
+                        storage.sstore(
+                            self.context.storage_addr,
+                            storage_diff.key,
+                            storage_diff.value,
+                        );
                     });
                 }
                 OlaStateDiff::Tape(d) => d.iter().for_each(|tape_diff| {
@@ -874,7 +878,7 @@ impl OlaContractExecutor {
             .batch_read(op0, 4)?
             .try_into()
             .expect("Wrong number of elements");
-        let loaded_value = storage.read(storage_key)?;
+        let loaded_value = storage.read(self.context.storage_addr, storage_key)?;
         let value = match loaded_value {
             Some(value) => value,
             None => [0, 0, 0, 0],
@@ -918,7 +922,7 @@ impl OlaContractExecutor {
             .collect();
 
         let trace_diff = if self.is_trace_needed() {
-            let tree_key = storage.get_tree_key(storage_key);
+            let tree_key = storage.get_tree_key(self.context.storage_addr, storage_key);
             Some(ExeTraceStepDiff {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
@@ -978,8 +982,8 @@ impl OlaContractExecutor {
         });
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            let pre_value = storage.read(storage_key)?;
-            let tree_key = storage.get_tree_key(storage_key);
+            let pre_value = storage.read(self.context.storage_addr, storage_key)?;
+            let tree_key = storage.get_tree_key(self.context.storage_addr, storage_key);
             Some(ExeTraceStepDiff {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,

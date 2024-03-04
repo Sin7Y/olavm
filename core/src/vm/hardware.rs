@@ -436,8 +436,17 @@ pub type OlaStorageKey = [u64; 4];
 pub type OlaStorageValue = [u64; 4];
 
 pub trait OlaStorage {
-    fn sload(&mut self, slot_key: OlaStorageKey) -> anyhow::Result<Option<OlaStorageValue>>;
-    fn sstore(&mut self, slot_key: OlaStorageKey, value: OlaStorageValue);
+    fn sload(
+        &mut self,
+        contract_addr: ContractAddress,
+        slot_key: OlaStorageKey,
+    ) -> anyhow::Result<Option<OlaStorageValue>>;
+    fn sstore(
+        &mut self,
+        contract_addr: ContractAddress,
+        slot_key: OlaStorageKey,
+        value: OlaStorageValue,
+    );
     fn on_tx_success(&mut self);
     fn on_tx_failed(&mut self);
 }
