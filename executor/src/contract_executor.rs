@@ -12,12 +12,12 @@ use core::{
     vm::{
         error::ProcessorError,
         hardware::{
-            ExeContext, OlaMemory, OlaRegister, OlaSpecialRegister, OlaTape,
-            NUM_GENERAL_PURPOSE_REGISTER,
+            ContractAddress, ExeContext, OlaMemory, OlaRegister, OlaSpecialRegister, OlaStorage,
+            OlaTape, NUM_GENERAL_PURPOSE_REGISTER,
         },
         opcodes::OlaOpcode,
         operands::OlaOperand,
-        vm_state::{MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff, StorageDiff},
+        vm_state::{MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff},
     },
 };
 use std::vec;
@@ -26,11 +26,20 @@ use anyhow::Ok;
 
 use crate::{
     config::ExecuteMode, ecdsa::msg_ecdsa_verify, exe_trace::tx::TxTraceManager,
-    ola_storage::OlaCachedStorage, tx_exe_manager::ContractCallStackHandler,
+    ola_storage::OlaCachedStorage,
 };
 
-pub(crate) struct OlaContractExecutor<'tx, 'batch> {
-    trace_manager: TxTraceManager,
+const MAX_CLK: u64 = 1000_000_000_000;
+
+#[derive(Debug, Clone)]
+pub(crate) enum OlaContractExecutorState {
+    Running,
+    DelegateCalling(ContractAddress),
+    Calling(ContractAddress),
+    End(Vec<u64>),
+}
+
+pub(crate) struct OlaContractExecutor {
     mode: ExecuteMode,
     context: ExeContext,
     clk: u64,
@@ -38,21 +47,16 @@ pub(crate) struct OlaContractExecutor<'tx, 'batch> {
     psp: u64,
     registers: [u64; NUM_GENERAL_PURPOSE_REGISTER],
     memory: OlaMemory,
-    tape: &'tx OlaTape,
-    storage: &'batch mut OlaCachedStorage,
     instructions: Vec<BinaryInstruction>,
-    call_handler: &'tx dyn ContractCallStackHandler,
+    output: Vec<u64>,
+    state: OlaContractExecutorState,
 }
 
-impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
+impl OlaContractExecutor {
     pub fn new(
-        trace_manager: TxTraceManager,
         mode: ExecuteMode,
         context: ExeContext,
-        tape: &'tx OlaTape,
-        storage: &'batch mut OlaCachedStorage,
         program: BinaryProgram,
-        call_handler: &'tx dyn ContractCallStackHandler,
     ) -> anyhow::Result<Self> {
         let instructions = decode_binary_program_to_instructions(program);
         match instructions {
@@ -64,7 +68,6 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                     .into());
                 }
                 Ok(Self {
-                    trace_manager,
                     mode,
                     context,
                     clk: 0,
@@ -72,23 +75,161 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                     psp: 0,
                     registers: [0; NUM_GENERAL_PURPOSE_REGISTER],
                     memory: OlaMemory::default(),
-                    tape,
-                    storage,
                     instructions,
-                    call_handler,
+                    output: vec![],
+                    state: OlaContractExecutorState::Running,
                 })
             }
             Result::Err(err) => Err(ProcessorError::InstructionsInitError(err).into()),
         }
     }
 
-    // pub fn run(&mut self) -> {}
+    pub fn get_code_addr(&self) -> ContractAddress {
+        self.context.code_addr
+    }
+
+    pub fn get_storage_addr(&self) -> ContractAddress {
+        self.context.storage_addr
+    }
+
+    pub fn resume(
+        &mut self,
+        tape: &mut OlaTape,
+        storage: &mut OlaCachedStorage,
+        trace_manager: &mut TxTraceManager,
+    ) -> anyhow::Result<OlaContractExecutorState> {
+        loop {
+            if let Some(instruction) = self.instructions.get(self.pc as usize) {
+                let step_result =
+                    self.run_one_step(instruction.clone(), tape, storage, trace_manager)?;
+                match step_result {
+                    OlaContractExecutorState::Running => {
+                        if self.clk >= MAX_CLK {
+                            return Err(ProcessorError::CpuLifeCycleOverflow(self.clk).into());
+                        }
+                        // continue
+                    }
+                    OlaContractExecutorState::DelegateCalling(callee) => {
+                        return Ok(OlaContractExecutorState::DelegateCalling(callee))
+                    }
+                    OlaContractExecutorState::Calling(callee) => {
+                        return Ok(OlaContractExecutorState::Calling(callee))
+                    }
+                    OlaContractExecutorState::End(output) => {
+                        return Ok(OlaContractExecutorState::End(output))
+                    }
+                }
+            } else {
+                return Err(ProcessorError::PcVistInv(self.pc).into());
+            }
+        }
+    }
 
     fn run_one_step(
         &mut self,
         instruction: BinaryInstruction,
+        tape: &mut OlaTape,
+        storage: &mut OlaCachedStorage,
+        trace_manager: &mut TxTraceManager,
+    ) -> anyhow::Result<OlaContractExecutorState> {
+        let opcode = instruction.opcode;
+        // cache sccall params
+        let sccall_is_delegate_callee = if opcode == OlaOpcode::SCCALL {
+            let (op0, op1) = self.get_op0_op1(instruction.clone())?;
+            let callee: [u64; 4] = self
+                .memory
+                .batch_read(op0, 4)?
+                .try_into()
+                .expect("Wrong number of elements");
+            Some((op1, callee))
+        } else {
+            None
+        };
+
+        // get state diff
+        let (state_diff, trace_diff) = self.get_step_diff(instruction, tape, storage)?;
+        // apply state diff and trace diff
+        self.apply_state_diff(tape, storage, state_diff)?;
+        if let Some(step_diff) = trace_diff {
+            trace_manager.on_step(step_diff);
+        }
+
+        // result
+        match opcode {
+            OlaOpcode::SCCALL => {
+                self.output.clear();
+                let (is_delegate_call, callee) = sccall_is_delegate_callee.unwrap();
+                let state = if is_delegate_call == 1 {
+                    OlaContractExecutorState::DelegateCalling(callee)
+                } else {
+                    OlaContractExecutorState::Calling(callee)
+                };
+                self.state = state.clone();
+                Ok(state)
+            }
+            OlaOpcode::END => {
+                let state = OlaContractExecutorState::End(self.output.clone());
+                self.state = state.clone();
+                Ok(state)
+            }
+            _ => Ok(OlaContractExecutorState::Running),
+        }
+    }
+
+    fn apply_state_diff(
+        &mut self,
+        tape: &mut OlaTape,
+        storage: &mut OlaCachedStorage,
+        state_diff: Vec<OlaStateDiff>,
+    ) -> anyhow::Result<()> {
+        self.clk += 1;
+        for diff in state_diff {
+            match diff {
+                OlaStateDiff::SpecReg(d) => {
+                    if let Some(pc) = d.pc {
+                        self.pc = pc;
+                    }
+                    if let Some(psp) = d.psp {
+                        self.psp = psp;
+                    }
+                }
+                OlaStateDiff::Register(d) => {
+                    d.iter().for_each(|reg_diff| {
+                        self.registers[reg_diff.register.index() as usize] = reg_diff.value
+                    });
+                }
+                OlaStateDiff::Memory(d) => {
+                    for mem_diff in d {
+                        let res = self.memory.write(mem_diff.addr, mem_diff.value);
+                        if res.is_err() {
+                            return res;
+                        }
+                    }
+                }
+                OlaStateDiff::Storage(d) => {
+                    // todo save storage log
+                    d.iter().for_each(|storage_diff| {
+                        storage.sstore(storage_diff.key, storage_diff.value);
+                    });
+                }
+                OlaStateDiff::Tape(d) => d.iter().for_each(|tape_diff| {
+                    // tape write might be output, might be sccall params.
+                    // self.output records all tape write, and will be clear when sccall.
+                    self.output.push(tape_diff.value);
+                    tape.write(tape_diff.value);
+                }),
+            }
+        }
+        Ok(())
+    }
+
+    fn get_step_diff(
+        &mut self,
+        instruction: BinaryInstruction,
+        tape: &mut OlaTape,
+        storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
-        match instruction.opcode {
+        let (state_diff, trace_diff) = match instruction.opcode {
             OlaOpcode::ADD
             | OlaOpcode::MUL
             | OlaOpcode::EQ
@@ -97,7 +238,6 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
             | OlaOpcode::XOR
             | OlaOpcode::NEQ
             | OlaOpcode::GTE => self.process_two_operands_arithmetic_op(instruction),
-
             OlaOpcode::ASSERT => self.process_assert(instruction),
             OlaOpcode::MOV => self.process_mov(instruction),
             OlaOpcode::JMP | OlaOpcode::CJMP => self.process_jmp(instruction),
@@ -109,13 +249,15 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
             OlaOpcode::RC => self.process_rc(instruction),
             OlaOpcode::NOT => self.process_not(instruction),
             OlaOpcode::POSEIDON => self.process_poseidon(instruction),
-            OlaOpcode::SLOAD => self.process_sload(instruction),
-            OlaOpcode::SSTORE => self.process_sstore(instruction),
-            OlaOpcode::TLOAD => self.process_tload(instruction),
+            OlaOpcode::SLOAD => self.process_sload(instruction, storage),
+            OlaOpcode::SSTORE => self.process_sstore(instruction, storage),
+            OlaOpcode::TLOAD => self.process_tload(instruction, tape),
             OlaOpcode::TSTORE => self.process_tstore(instruction),
             OlaOpcode::SCCALL => self.process_sccall(instruction),
             OlaOpcode::SIGCHECK => self.process_sigcheck(instruction),
-        }
+        }?;
+        // todo prophet
+        Ok((state_diff, trace_diff))
     }
 
     fn process_two_operands_arithmetic_op(
@@ -547,7 +689,38 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         &self,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
-        todo!()
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+
+        let state_diff = vec![spec_reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: None,
+                    op1: None,
+                    dst: None,
+                }),
+                mem: None,
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
     }
 
     fn process_rc(
@@ -691,6 +864,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
     fn process_sload(
         &mut self,
         instruction: BinaryInstruction,
+        storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
@@ -700,7 +874,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
             .batch_read(op0, 4)?
             .try_into()
             .expect("Wrong number of elements");
-        let loaded_value = self.storage.read(storage_key)?;
+        let loaded_value = storage.read(storage_key)?;
         let value = match loaded_value {
             Some(value) => value,
             None => [0, 0, 0, 0],
@@ -720,8 +894,31 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                 .collect(),
         );
         let state_diff = vec![spec_reg_diff, mem_diff];
+        let mem_read_trace: Vec<MemExePiece> = [op0, op0 + 1, op0 + 2, op0 + 3]
+            .iter()
+            .zip(storage_key.iter())
+            .map(|(addr, value)| MemExePiece {
+                clk: self.clk,
+                addr: *addr,
+                value: *value,
+                is_write: false,
+                opcode: Some(opcode),
+            })
+            .collect();
+        let mem_write_trace: Vec<MemExePiece> = [op1, op1 + 1, op1 + 2, op1 + 3]
+            .iter()
+            .zip(value.iter())
+            .map(|(addr, value)| MemExePiece {
+                clk: self.clk,
+                addr: *addr,
+                value: *value,
+                is_write: true,
+                opcode: Some(opcode),
+            })
+            .collect();
+
         let trace_diff = if self.is_trace_needed() {
-            let tree_key = self.storage.get_tree_key(storage_key);
+            let tree_key = storage.get_tree_key(storage_key);
             Some(ExeTraceStepDiff {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
@@ -734,16 +931,9 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                     dst: None,
                 }),
                 mem: Some(
-                    [op1, op1 + 1, op1 + 2, op1 + 3]
-                        .iter()
-                        .zip(value.iter())
-                        .map(|(addr, value)| MemExePiece {
-                            clk: self.clk,
-                            addr: *addr,
-                            value: *value,
-                            is_write: true,
-                            opcode: Some(opcode),
-                        })
+                    mem_read_trace
+                        .into_iter()
+                        .chain(mem_write_trace.into_iter())
                         .collect(),
                 ),
                 rc: None,
@@ -767,6 +957,7 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
     fn process_sstore(
         &mut self,
         instruction: BinaryInstruction,
+        storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
@@ -787,8 +978,8 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         });
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            let pre_value = self.storage.read(storage_key)?;
-            let tree_key = self.storage.get_tree_key(storage_key);
+            let pre_value = storage.read(storage_key)?;
+            let tree_key = storage.get_tree_key(storage_key);
             Some(ExeTraceStepDiff {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
@@ -800,7 +991,28 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
                     op1: Some(op1),
                     dst: None,
                 }),
-                mem: None,
+                mem: Some(
+                    [
+                        op0,
+                        op0 + 1,
+                        op0 + 2,
+                        op0 + 3,
+                        op1,
+                        op1 + 1,
+                        op1 + 2,
+                        op1 + 3,
+                    ]
+                    .iter()
+                    .zip(storage_key.iter().chain(value.iter()))
+                    .map(|(addr, value)| MemExePiece {
+                        clk: self.clk,
+                        addr: *addr,
+                        value: *value,
+                        is_write: true,
+                        opcode: Some(opcode),
+                    })
+                    .collect(),
+                ),
                 rc: None,
                 bitwise: None,
                 cmp: None,
@@ -822,15 +1034,16 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
     fn process_tload(
         &self,
         instruction: BinaryInstruction,
+        tape: &mut OlaTape,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
         let (op0, op1, dst) = self.get_op0_op1_and_dst(instruction)?;
         let values = if op0 == 0 {
-            let v = self.tape.read_top(op1)?;
+            let v = tape.read_top(op1)?;
             vec![v]
         } else if op0 == 1 {
-            self.tape.read_stack(op1)?
+            tape.read_stack(op1)?
         } else {
             return Err(ProcessorError::TapeAccessError(format!(
                 "[tload] invalid op0: {}, op0 must be binary",
@@ -961,7 +1174,55 @@ impl<'tx, 'batch> OlaContractExecutor<'tx, 'batch> {
         &self,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
-        todo!()
+        let inst_len = instruction.binary_length();
+        let opcode = instruction.opcode;
+        let (op0, op1) = self.get_op0_op1(instruction.clone())?;
+        let callee: [u64; 4] = self
+            .memory
+            .batch_read(op0, 4)?
+            .try_into()
+            .expect("Wrong number of elements");
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+            psp: None,
+        });
+        let state_diff = vec![spec_reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(ExeTraceStepDiff {
+                cpu: Some(CpuExePiece {
+                    clk: self.clk,
+                    pc: self.pc,
+                    psp: self.psp,
+                    registers: self.registers,
+                    opcode,
+                    op0: Some(op0),
+                    op1: Some(op1),
+                    dst: None,
+                }),
+                mem: Some(
+                    [op0, op0 + 1, op0 + 2, op0 + 3]
+                        .iter()
+                        .zip(callee.iter())
+                        .map(|(addr, value)| MemExePiece {
+                            clk: self.clk,
+                            addr: *addr,
+                            value: *value,
+                            is_write: false,
+                            opcode: Some(opcode),
+                        })
+                        .collect(),
+                ),
+                rc: None,
+                bitwise: None,
+                cmp: None,
+                poseidon: None,
+                tape: None,
+                storage: None,
+            })
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
     }
 
     fn process_sigcheck(

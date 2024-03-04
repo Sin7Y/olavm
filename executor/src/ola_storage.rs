@@ -193,13 +193,13 @@ impl OlaCachedStorage {
         }
     }
 
-    pub fn get_program(&mut self) -> anyhow::Result<BinaryProgram> {
-        let cached = self.prog_cache.get(&self.address);
+    pub fn get_program(&mut self, contract_address: ContractAddress) -> anyhow::Result<BinaryProgram> {
+        let cached = self.prog_cache.get(&contract_address);
         if let Some(program) = cached {
             return Ok(program.clone());
         }
-        let program = self.disk_storage_reader.load_program(self.address)?;
-        self.prog_cache.put(self.address, program.clone());
+        let program = self.disk_storage_reader.load_program(contract_address)?;
+        self.prog_cache.put(contract_address, program.clone());
         Ok(program)
     }
 

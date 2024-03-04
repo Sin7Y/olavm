@@ -17,8 +17,8 @@ pub const NUM_GENERAL_PURPOSE_REGISTER: usize = 10;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ExeContext {
-    storage_addr: ContractAddress,
-    code_addr: ContractAddress,
+    pub storage_addr: ContractAddress,
+    pub code_addr: ContractAddress,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Sequence)]
