@@ -81,7 +81,6 @@ impl<'batch> TxExeManager<'batch> {
         loop {
             let env = self.env_stack.pop();
             if let Some(mut executor) = env {
-                self.storage.set_storage_addr(executor.get_storage_addr());
                 let result =
                     executor.resume(&mut self.tape, self.storage, &mut self.trace_manager)?;
                 match result {
