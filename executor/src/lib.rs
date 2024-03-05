@@ -65,6 +65,7 @@ mod tape;
 mod tests;
 pub mod trace;
 mod tx_exe_manager;
+mod test;
 
 #[macro_export]
 macro_rules! memory_zone_detect {
