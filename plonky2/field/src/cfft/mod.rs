@@ -10,7 +10,7 @@ mod serial;
 
 pub mod ntt;
 use crate::cfft::ntt::*;
-
+use maybe_rayon::*;
 #[cfg(test)]
 mod tests;
 
@@ -50,6 +50,9 @@ where
             for (item1, &item2) in p.iter_mut().zip(p2.iter()) {
                 *item1 = item2;
             }
+            // p2.par_iter().zip(p.par_iter_mut()).for_each(|(&a, b)| {
+            //     *b = a;
+            // });
         }
     } else {
         if cfg!(feature = "parallel") && p.len() >= MIN_CONCURRENT_SIZE {
@@ -159,6 +162,11 @@ where
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
                 *item1 = item2;
             }
+            // p2.par_iter()
+            //     .zip(evaluations.par_iter_mut())
+            //     .for_each(|(&a, b)| {
+            //         *b = a;
+            //     });
 
             // println!(
             //     "[cuda](interpolate_poly) data_len = {}, cost_time = {:?}",
@@ -212,11 +220,15 @@ where
             for (item1, &item2) in evaluations.iter_mut().zip(p2.iter()) {
                 *item1 = item2;
             }
+            // p2.par_iter()
+            //     .zip(evaluations.par_iter_mut())
+            //     .for_each(|(&a, b)| {
+            //         *b = a;
+            //     });
 
             // println!(
             //     "[cuda](interpolate_poly_with_offset) data_len = {},
             // cost_time = {:?}",     evaluations.len(),
-            //     start.elapsed()
             // );
         }
     } else {

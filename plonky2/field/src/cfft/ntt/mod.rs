@@ -1,13 +1,14 @@
+use crate::{goldilocks_field::GoldilocksField, types::Field};
+use std::ptr;
 use std::{
     sync::{Arc, Mutex},
     time::Instant,
 };
 
-use crate::{goldilocks_field::GoldilocksField, types::Field};
-
 #[cfg(feature = "cuda")]
 use lazy_static::lazy_static;
 
+use maybe_rayon::*;
 use once_cell::sync::OnceCell;
 
 static mut IN_DATA: u64 = 0;
@@ -164,6 +165,27 @@ where
 
         let start = Instant::now();
 
+        // let mut_slice = unsafe {
+        // std::slice::from_raw_parts_mut(*GLOBAL_POINTER_INDATA, p.len()) };
+        // let p_slice = unsafe { std::slice::from_raw_parts(p.as_ptr(), p.len()) };
+        // p_slice
+        //     .par_iter()
+        //     .zip(mut_slice.par_iter_mut())
+        //     .for_each(|(a, b)| {
+        //         *b = a.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     });
+
+        // let _ = p
+        //     .par_iter()
+        //     .enumerate()
+        //     .map(|(idx, f)| {
+        //         let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //         unsafe {
+        //             *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+        //         }
+        //     })
+        //     .collect::<Vec<()>>();
+
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
@@ -171,11 +193,11 @@ where
             }
         }
 
-        // println!(
-        //     "[cuda][before](run_evaluate_poly) data_len = {}, cost_time = {:?}",
-        //     p.len(),
-        //     start.elapsed()
-        // );
+        println!(
+            "[cuda][before](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         #[cfg(feature = "cuda")]
         {
@@ -198,28 +220,50 @@ where
                 extra_info.as_mut_ptr(),
             );
 
-            // println!(
-            //     "[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}",
-            //     p.len(),
-            //     start.elapsed()
-            // );
+            println!(
+                "[cuda](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+                p.len(),
+                start.elapsed()
+            );
         }
 
         let start = Instant::now();
-        let mut res = Vec::with_capacity(p.len());
-        // let mut res = [F::ZERO; p.len()];
 
-        for i in 0..p.len() {
-            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
-            // res[i] = F::from_canonical_u64(val as u64);
-            res.push(F::from_canonical_u64(val));
-        }
+        // let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA,
+        // p.len()) }; let res = slice_ptr
+        //     .par_iter()
+        //     .map(|&x| F::from_canonical_u64(x))
+        //     .collect();
 
-        // println!(
-        //     "[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}",
-        //     p.len(),
-        //     start.elapsed()
-        // );
+        let mut res = Vec::with_capacity(0);
+        let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA, p.len()) }; // let mut res = vec![F::ZERO; p.len()];
+        res.par_extend(
+            slice_ptr
+                .par_iter()
+                .cloned()
+                .map(|x| F::from_canonical_u64(x)),
+        );
+
+        // let mut res: Vec<F> = Vec::with_capacity(p.len());
+        // let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA,
+        // p.len()) }; res.par_iter_mut()
+        //     .zip(slice_ptr.par_iter())
+        //     .for_each(|(element, &other_value)| {
+        //         *element = F::from_canonical_u64(other_value as u64);
+        //     });
+
+        // let mut res: Vec<F> = Vec::with_capacity(p.len());
+        // for i in 0..p.len() {
+        //     let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+        //     // res[i] = F::from_canonical_u64(val as u64);
+        //     res.push(F::from_canonical_u64(val));
+        // }
+
+        println!(
+            "[cuda][after](run_evaluate_poly) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         res
     }
@@ -232,9 +276,30 @@ where
     F: Field,
 {
     unsafe {
-        let gpu = GPU_LOCK.lock().unwrap();
+        let gpu: std::sync::MutexGuard<'_, u32> = GPU_LOCK.lock().unwrap();
 
-        let start = Instant::now();
+        let start: Instant = Instant::now();
+
+        // let mut_slice: &mut [u64] =
+        //     unsafe { std::slice::from_raw_parts_mut(*GLOBAL_POINTER_INDATA, p.len())
+        // }; let p_slice = unsafe { std::slice::from_raw_parts(p.as_ptr(),
+        // p.len()) }; p_slice
+        //     .par_iter()
+        //     .zip(mut_slice.par_iter_mut())
+        //     .for_each(|(a, b)| {
+        //         *b = a.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     });
+
+        // let _ = p
+        //     .par_iter()
+        //     .enumerate()
+        //     .map(|(idx, f)| {
+        //         let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //         unsafe {
+        //             *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+        //         }
+        //     })
+        //     .collect::<Vec<()>>();
 
         for (idx, f) in p.iter().enumerate() {
             let val: u64 = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
@@ -242,6 +307,7 @@ where
                 *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
             }
         }
+
         let domain_offset = domain_offset
             .as_any()
             .downcast_ref::<GoldilocksField>()
@@ -251,9 +317,13 @@ where
         let result_len = (p.len() as u64) * blowup_factor;
         let mut result = vec![0; result_len as usize];
 
-        // println!("[cuda][before](run_evaluate_poly_with_offset) data_len = {},
-        // blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor,
-        // start.elapsed());
+        println!(
+            "[cuda][before](run_evaluate_poly_with_offset) data_len = {},
+        blowup_factor = {}, cost_time = {:?}",
+            p.len(),
+            blowup_factor,
+            start.elapsed()
+        );
 
         #[cfg(feature = "cuda")]
         {
@@ -275,27 +345,60 @@ where
                 extra_info.as_mut_ptr(),
             );
 
-            // println!("[cuda](run_evaluate_poly_with_offset) data_len = {},
-            // blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor,
-            // start.elapsed());
+            println!(
+                "[cuda](run_evaluate_poly_with_offset) data_len = {},
+            blowup_factor = {}, cost_time = {:?}",
+                p.len(),
+                blowup_factor,
+                start.elapsed()
+            );
         }
 
         let start = Instant::now();
 
+        // let slice_ptr =
+        //     unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA, result_len
+        // as usize) }; let res = slice_ptr
+        //     .par_iter()
+        //     .map(|&x| F::from_canonical_u64(x))
+        //     .collect();
+
         // let res = result.par_iter().map(|&i|
         // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
-        let mut res = Vec::with_capacity(result_len as usize);
+        let mut res = Vec::with_capacity(0);
+        let slice_ptr =
+            unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA, result_len as usize) };
+        res.par_extend(
+            slice_ptr
+                .par_iter()
+                .cloned()
+                .map(|x| F::from_canonical_u64(x)),
+        );
 
-        for i in 0..result_len {
-            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
-            // res[i as usize] = F::from_canonical_u64(val);
-            res.push(F::from_canonical_u64(val));
-        }
+        // let mut res: Vec<F> = Vec::with_capacity(result_len as usize);
+        // let slice_ptr =
+        //     unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA, result_len
+        // as usize) }; res.par_iter_mut()
+        //     .zip(slice_ptr.par_iter())
+        //     .for_each(|(element, &other_value)| {
+        //         *element = F::from_canonical_u64(other_value as u64);
+        //     });
 
-        // println!("[cuda][after](run_evaluate_poly_with_offset) data_len = {},
-        // blowup_factor = {}, cost_time = {:?}", p.len(), blowup_factor,
-        // start.elapsed());
+        // let mut res: Vec<F> = Vec::with_capacity(result_len as usize);
+        // for i in 0..result_len {
+        //     let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+        //     // res[i as usize] = F::from_canonical_u64(val);
+        //     res.push(F::from_canonical_u64(val));
+        // }
+
+        println!(
+            "[cuda][after](run_evaluate_poly_with_offset) data_len = {},
+        blowup_factor = {}, cost_time = {:?}",
+            p.len(),
+            blowup_factor,
+            start.elapsed()
+        );
 
         res
     }
@@ -311,6 +414,29 @@ where
         let gpu: std::sync::MutexGuard<'_, u32> = GPU_LOCK.lock().unwrap();
 
         let start = Instant::now();
+
+        // let mut mut_slice: &mut [u64] =
+        //     unsafe { std::slice::from_raw_parts_mut(*GLOBAL_POINTER_INDATA, p.len())
+        // }; let p_slice = unsafe { std::slice::from_raw_parts(p.as_ptr(),
+        // p.len()) }; mut_slice
+        //     .par_iter_mut()
+        //     .zip(p_slice.par_iter().cloned())
+        //     .for_each(|(dest, src)| {
+        //         *dest = src.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     });
+
+        // let mut_slice: &mut [u64] =
+        //     unsafe { std::slice::from_raw_parts_mut(*GLOBAL_POINTER_INDATA, p.len())
+        // }; let p_slice = unsafe { std::slice::from_raw_parts(p.as_ptr(),
+        // p.len()) }; p_slice
+        //     .par_iter()
+        //     .zip(mut_slice.par_iter_mut())
+        //     .for_each(|(a, b)| {
+        //         *b = a.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     });
+
+        // let vec_p = Vec::from(p);
+
         // println!("GLOBAL_MAX_NUM = {} ", NTT_MAX_LENGTH);
         // println!(
         //     "GLOBAL_POINTER_INDATA = {} {} {} {} {}",
@@ -336,32 +462,36 @@ where
         // );
         //println!("p[0] = {} ;p[end] = {}", p[0], p[p.len() - 1]);
 
+        // let _ = p
+        //     .par_iter()
+        //     .enumerate()
+        //     .map(|(idx, f)| {
+        //         let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //         unsafe {
+        //             *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+        //         }
+        //     })
+        //     .collect::<Vec<()>>();
+
         for (idx, f) in p.iter().enumerate() {
-            let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+            let val: u64 = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
                 *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
-                // println!(
-                //     "GLOBAL_POINTER_INDATA = {} ;p = {}",
-                //     *(*GLOBAL_POINTER_INDATA).offset(idx as isize),
-                //     p[idx]
-                // );
             }
         }
 
-        // let file: File =
-        //     File::create("/home/wpf/work/debug_data/GLOBAL_POINTER_INDATA.txt").
-        // unwrap(); let mut writer = BufWriter::new(file);
-        // unsafe {
-        //     for i in 0..p.len() {
-        //         writeln!(writer, "{}", (*(*GLOBAL_POINTER_INDATA).offset(i as
-        // isize))).unwrap();     }
-        // }
+        // destination_vector
+        //     .par_iter_mut()
+        //     .zip(&source_vector)
+        //     .for_each(|(dest, &src)| {
+        //         *dest = src;
+        //     });
 
-        // println!(
-        //     "[cuda][before](run_interpolate_poly) data_len = {}, cost_time = {:?}",
-        //     p.len(),
-        //     start.elapsed()
-        // );
+        println!(
+            "[cuda][before](run_interpolate_poly) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         // println!(
         //     "GLOBAL_POINTER_INDATA = {} {} {} {} {} {} {} {} {} {}",
@@ -416,11 +546,12 @@ where
                 extra_info.as_mut_ptr(),
             );
 
-            // println!(
-            //     "[cuda](run_interpolate_poly) data_len = {}, cost_time =
-            // {:?}",     p.len(),
-            //     start.elapsed()
-            // );
+            println!(
+                "[cuda](run_interpolate_poly) data_len = {}, cost_time =
+            {:?}",
+                p.len(),
+                start.elapsed()
+            );
 
             // for i in 0..p.len() {
             //     println!(
@@ -464,44 +595,46 @@ where
 
         let start = Instant::now();
 
-        // let res = p2.par_iter().map(|&i|
-        // F::from_canonical_u64(i)).collect::<Vec<F>>();
+        // let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA,
+        // p.len()) }; let res = slice_ptr
+        //     .par_iter()
+        //     .map(|&x| F::from_canonical_u64(x))
+        //     .collect();
 
-        let mut res: Vec<F> = Vec::with_capacity(p.len());
+        // let res = p2
+        //     .par_iter()
+        //     .map(|&i| F::from_canonical_u64(i))
+        //     .collect::<Vec<F>>();
 
-        for i in 0..p.len() {
-            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
-            // res[i] = F::from_canonical_u64(val);
-            res.push(F::from_canonical_u64(val));
-        }
+        let mut res: Vec<F> = Vec::with_capacity(0);
+        let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA, p.len()) };
+        res.par_extend(
+            slice_ptr
+                .par_iter()
+                .cloned()
+                .map(|x| F::from_canonical_u64(x)),
+        );
 
-        // let file2: File =
-        //     File::create("/home/wpf/work/debug_data/GLOBAL_POINTER_OUTDATA.txt").
-        // unwrap(); let mut writer2 = BufWriter::new(file2);
-        // unsafe {
-        //     for i in 0..p.len() {
-        //         writeln!(
-        //             writer2,
-        //             "{}",
-        //             (*(*GLOBAL_POINTER_OUTDATA).offset(i as isize))
-        //         )
-        //         .unwrap();
-        //     }
-        // }
+        // let mut res: Vec<F> = Vec::with_capacity(p.len());
+        // let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA,
+        // p.len()) }; res.par_iter_mut()
+        //     .zip(slice_ptr)
+        //     .for_each(|(element, &other_value)| {
+        //         *element = F::from_canonical_u64(other_value as u64);
+        //     });
 
+        // let mut res: Vec<F> = Vec::with_capacity(p.len());
         // for i in 0..p.len() {
-        //     println!(
-        //             "GLOBAL_POINTER_OUTDATA = {} ;res = {}",
-        //             *(*GLOBAL_POINTER_OUTDATA).offset(i as isize),
-        //             res[i]
-        //         );
+        //     let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+        //     // res[i] = F::from_canonical_u64(val);
+        //     res.push(F::from_canonical_u64(val));
         // }
 
-        // println!(
-        //     "[cuda][after](run_interpolate_poly) data_len = {}, cost_time = {:?}",
-        //     p.len(),
-        //     start.elapsed()
-        // );
+        println!(
+            "[cuda][after](run_interpolate_poly) data_len = {}, cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         res
     }
@@ -518,6 +651,27 @@ where
 
         let start = Instant::now();
 
+        // let mut_slice = unsafe {
+        // std::slice::from_raw_parts_mut(*GLOBAL_POINTER_INDATA, p.len()) };
+        // let p_slice = unsafe { std::slice::from_raw_parts(p.as_ptr(), p.len()) };
+        // p_slice
+        //     .par_iter()
+        //     .zip(mut_slice.par_iter_mut())
+        //     .for_each(|(a, b)| {
+        //         *b = a.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //     });
+
+        // let _ = p
+        //     .par_iter()
+        //     .enumerate()
+        //     .map(|(idx, f)| {
+        //         let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        //         unsafe {
+        //             *(*GLOBAL_POINTER_INDATA).offset(idx as isize) = val;
+        //         }
+        //     })
+        //     .collect::<Vec<()>>();
+
         for (idx, f) in p.iter().enumerate() {
             let val = f.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
             unsafe {
@@ -531,11 +685,12 @@ where
             .unwrap()
             .0;
 
-        // println!(
-        //     "[cuda][before](run_interpolate_poly_with_offset) data_len = {},
-        // cost_time = {:?}",     p.len(),
-        //     start.elapsed()
-        // );
+        println!(
+            "[cuda][before](run_interpolate_poly_with_offset) data_len = {},
+        cost_time = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         #[cfg(feature = "cuda")]
         {
@@ -560,32 +715,69 @@ where
                 extra_info.as_mut_ptr(),
             );
 
-            // println!(
-            //     "[cuda](run_interpolate_poly_with_offset) data_len = {},
-            // cost_time = {:?}",     p.len(),
-            //     start.elapsed()
-            // );
+            println!(
+                "[cuda](run_interpolate_poly_with_offset) data_len = {},
+            cost_time = {:?}",
+                p.len(),
+                start.elapsed()
+            );
         }
 
         let start = Instant::now();
 
+        // let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA,
+        // p.len()) }; let res = slice_ptr
+        //     .par_iter()
+        //     .map(|&x| F::from_canonical_u64(x))
+        //     .collect();
+
         // let res = p2.par_iter().map(|&i|
         // F::from_canonical_u64(i)).collect::<Vec<F>>();
 
-        let mut res = Vec::with_capacity(p.len());
+        let mut res = Vec::with_capacity(0);
+        let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA, p.len()) };
+        res.par_extend(
+            slice_ptr
+                .par_iter()
+                .cloned()
+                .map(|x| F::from_canonical_u64(x)),
+        );
 
-        for i in 0..p.len() {
-            let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
-            // res[i] = F::from_canonical_u64(val);
-            res.push(F::from_canonical_u64(val));
-        }
+        // let mut res: Vec<F> = Vec::with_capacity(p.len());
+        // let slice_ptr = unsafe { std::slice::from_raw_parts(*GLOBAL_POINTER_OUTDATA,
+        // p.len()) }; res.par_iter_mut()
+        //     .zip(slice_ptr.par_iter())
+        //     .for_each(|(element, &other_value)| {
+        //         *element = F::from_canonical_u64(other_value as u64);
+        //     });
 
-        // println!(
-        //     "[cuda][after](run_interpolate_poly_with_offset) data_len = {}, cost_time
-        // = {:?}",     p.len(),
-        //     start.elapsed()
-        // );
+        // let mut res: Vec<F> = Vec::with_capacity(p.len());
+        // for i in 0..p.len() {
+        //     let val = *(*GLOBAL_POINTER_OUTDATA).offset(i as isize);
+        //     // res[i] = F::from_canonical_u64(val);
+        //     res.push(F::from_canonical_u64(val));
+        // }
+
+        println!(
+            "[cuda][after](run_interpolate_poly_with_offset) data_len = {}, cost_time
+        = {:?}",
+            p.len(),
+            start.elapsed()
+        );
 
         res
     }
+}
+
+pub fn parall_copy<F>(p: &[F], data: &mut [u64])
+where
+    F: Field,
+{
+    data.par_iter_mut()
+        .zip(p.par_iter().cloned())
+        .for_each(|(dest, src)| {
+            *dest = src.as_any().downcast_ref::<GoldilocksField>().unwrap().0;
+        });
+
+    std::thread::sleep(std::time::Duration::from_micros(1));
 }
