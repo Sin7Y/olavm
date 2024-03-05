@@ -1,4 +1,5 @@
 use core::program::binary_program::OlaProphet;
+use core::vm::hardware::OlaMemory;
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -16,8 +17,6 @@ use crate::sema::symbol::Symbol::FuncSymbol;
 use crate::utils::number::Number::{Bool, Nil};
 use crate::utils::number::NumberRet::{Multiple, Single};
 use crate::utils::number::{Number, NumberResult, NumberRet};
-use core::types::PrimeField64;
-use core::vm::memory::MemoryTree;
 use log::debug;
 
 #[macro_export]
@@ -102,17 +101,18 @@ pub struct Executor<'a> {
     call_stack: CallStack,
     context: Vec<String>,
     outputs: Vec<String>,
-    pub vm_mem: &'a MemoryTree,
+    // pub vm_mem: &'a MemoryTree,
+    mem: &'a OlaMemory,
     stack_depth: usize,
 }
 
 impl<'a> Executor<'a> {
-    pub fn new(prophet: &OlaProphet, values: Vec<u64>, vm_mem: &'a MemoryTree) -> Self {
+    pub fn new(prophet: &OlaProphet, values: Vec<u64>, mem: &'a OlaMemory) -> Self {
         let mut executor = Executor {
             call_stack: CallStack::new(),
             context: Vec::new(),
             outputs: Vec::new(),
-            vm_mem,
+            mem,
             stack_depth: GLOBAL_LEVEL,
         };
         executor.call_stack.records.push(RuntimeRecord::new(
@@ -679,81 +679,33 @@ impl<'a> Traversal for Executor<'a> {
             );
         } else if flag_ret == 2 {
             let addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
+            let limbs = self.mem.batch_read(addr, 4).unwrap();
             println!(
                 "print addr:={},{},{},{}",
-                self.vm_mem.trace.get(&addr).unwrap().last().unwrap().value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 1))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 2))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 3))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
+                limbs.get(0).unwrap(),
+                limbs.get(1).unwrap(),
+                limbs.get(2).unwrap(),
+                limbs.get(3).unwrap(),
             );
         } else if flag_ret == 1 {
-            let mut addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
-            let len = self
-                .vm_mem
-                .trace
-                .get(&addr)
+            let addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
+            let len = self.mem.read(addr).unwrap();
+            let str: Vec<u8> = self
+                .mem
+                .batch_read(addr + 1, len)
                 .unwrap()
-                .last()
-                .unwrap()
-                .value
-                .to_canonical_u64();
-            addr += 1;
-            let mut str = Vec::new();
-            for i in 0..len {
-                str.push(
-                    self.vm_mem
-                        .trace
-                        .get(&(addr + i))
-                        .unwrap()
-                        .last()
-                        .unwrap()
-                        .value
-                        .to_canonical_u64() as u8,
-                );
-            }
+                .iter()
+                .map(|v| *v as u8)
+                .collect();
             println!("print str={}", String::from_utf8(str).unwrap());
         } else if flag_ret == 0 {
-            let mut addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
-            let len = self
-                .vm_mem
-                .trace
-                .get(&addr)
-                .unwrap()
-                .last()
-                .unwrap()
-                .value
-                .to_canonical_u64();
-            addr += 1;
-            for i in 0..len {
-                let value = self
-                    .vm_mem
-                    .trace
-                    .get(&(addr + i))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value
-                    .to_canonical_u64();
-                println!("print mem:{},value:{}", addr + i, value);
-            }
+            let addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
+            let len = self.mem.read(addr).unwrap();
+            (addr + 1..addr + 1 + len)
+                .zip(self.mem.batch_read(addr + 1, len).unwrap())
+                .for_each(|(addr, val)| {
+                    println!("print mem:{}, value:{}", addr, val);
+                });
         }
         Ok(Single(Nil))
     }

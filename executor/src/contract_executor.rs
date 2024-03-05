@@ -1,7 +1,7 @@
 use core::{
     crypto::poseidon_trace::calculate_arbitrary_poseidon_u64s,
     program::{
-        binary_program::{BinaryInstruction, BinaryProgram},
+        binary_program::{BinaryInstruction, BinaryProgram, OlaProphet},
         decoder::decode_binary_program_to_instructions,
     },
     trace::exe_trace::{
@@ -23,6 +23,8 @@ use core::{
 use std::vec;
 
 use anyhow::Ok;
+use interpreter::{interpreter::Interpreter, utils::number::NumberRet};
+use regex::Regex;
 
 use crate::{
     config::ExecuteMode, ecdsa::msg_ecdsa_verify, exe_trace::tx::TxTraceManager,
@@ -233,7 +235,8 @@ impl OlaContractExecutor {
         tape: &mut OlaTape,
         storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
-        let (state_diff, trace_diff) = match instruction.opcode {
+        let prophet_attached = instruction.prophet.clone();
+        let (mut state_diff, mut trace_diff) = match instruction.opcode {
             OlaOpcode::ADD
             | OlaOpcode::MUL
             | OlaOpcode::EQ
@@ -260,7 +263,34 @@ impl OlaContractExecutor {
             OlaOpcode::SCCALL => self.process_sccall(instruction),
             OlaOpcode::SIGCHECK => self.process_sigcheck(instruction),
         }?;
-        // todo prophet
+
+        if let Some(prophet) = prophet_attached {
+            let (exe_mem_diffs, trace_mem_diffs) = self.process_prophet(prophet)?;
+            state_diff.push(OlaStateDiff::Memory(exe_mem_diffs));
+            if trace_diff.is_some() {
+                let mut diff = trace_diff.unwrap();
+                if let Some(origin_mem) = diff.mem {
+                    let mut mem = origin_mem;
+                    mem.extend(trace_mem_diffs);
+                    diff.mem = Some(mem)
+                } else {
+                    diff.mem = Some(trace_mem_diffs);
+                }
+                return Ok((state_diff, Some(diff)));
+            } else {
+                trace_diff = Some(ExeTraceStepDiff {
+                    cpu: None,
+                    mem: Some(trace_mem_diffs),
+                    rc: None,
+                    bitwise: None,
+                    cmp: None,
+                    poseidon: None,
+                    storage: None,
+                    tape: None,
+                });
+                return Ok((state_diff, trace_diff));
+            }
+        }
         Ok((state_diff, trace_diff))
     }
 
@@ -1487,6 +1517,99 @@ impl OlaContractExecutor {
                 OlaSpecialRegister::PSP => Ok(self.psp.clone()),
             },
         }
+    }
+
+    fn process_prophet(
+        &mut self,
+        prophet: OlaProphet,
+    ) -> anyhow::Result<(Vec<MemoryDiff>, Vec<MemExePiece>)> {
+        let re = Regex::new(r"^%\{([\s\S]*)%}$").map_err(|err| {
+            ProcessorError::RegexNewError(format!("Regex::new failed with err: {}", err))
+        })?;
+        let code = re
+            .captures(&prophet.code)
+            .ok_or(ProcessorError::RegexCaptureError(String::from(
+                "Regex capture failed in prophet code",
+            )))?
+            .get(1)
+            .ok_or(ProcessorError::ArrayIndexError(String::from(
+                "Empty data at index 1 in prophet.code",
+            )))?
+            .as_str();
+        let mut interpreter = Interpreter::new(code);
+
+        let mut flatten_inputs: Vec<u64> = vec![];
+        for input in prophet.clone().inputs {
+            // reg 1,2,3 then memory mode, -3, -4, -5...(count from -3)
+            let enqueued_len = flatten_inputs.len();
+            let origin_values: Vec<u64> = if enqueued_len < 3 && enqueued_len + input.length < 3 {
+                // all using register values
+                (enqueued_len + 1..enqueued_len + input.length)
+                    .map(|reg_index| self.registers[reg_index])
+                    .collect()
+            } else if enqueued_len < 3 && enqueued_len + input.length >= 3 {
+                // some use register, some use mem
+                let register_loaded: Vec<u64> = (enqueued_len + 1..4)
+                    .map(|reg_index| self.registers[reg_index])
+                    .collect();
+                let mut mem_loaded: Vec<u64> = self.memory.batch_read(
+                    self.get_fp() - 3,
+                    (input.length - register_loaded.len()) as u64,
+                )?;
+                mem_loaded.reverse();
+                register_loaded
+                    .iter()
+                    .chain(mem_loaded.iter())
+                    .cloned()
+                    .collect()
+            } else {
+                // enqueued_len >= 3
+                let batch_read_start =
+                    self.get_fp() - enqueued_len as u64 - input.length as u64 + 1;
+                let mut loaded = self
+                    .memory
+                    .batch_read(batch_read_start, input.length as u64)?;
+                loaded.reverse();
+                loaded
+            };
+
+            if input.is_ref {
+                for addr in origin_values {
+                    flatten_inputs.push(self.memory.read(addr)?);
+                }
+            } else {
+                flatten_inputs.extend(origin_values);
+            };
+        }
+
+        let out = interpreter
+            .run(&prophet, flatten_inputs, &self.memory)
+            .map_err(|err| ProcessorError::InterpreterRunError(err))?;
+        let mut exe_diffs: Vec<MemoryDiff> = vec![];
+        let mut trace_diffs: Vec<MemExePiece> = vec![];
+        match out {
+            NumberRet::Single(_) => return Err(ProcessorError::ParseIntError.into()),
+            NumberRet::Multiple(mut values) => {
+                let _ = values.pop();
+                for value in values {
+                    let exe_diff = MemoryDiff {
+                        addr: self.psp,
+                        value: value.get_number() as u64,
+                    };
+                    let trace_diff = MemExePiece {
+                        clk: 0,
+                        addr: self.psp,
+                        value: value.get_number() as u64,
+                        is_write: true,
+                        opcode: None,
+                    };
+                    exe_diffs.push(exe_diff);
+                    trace_diffs.push(trace_diff);
+                    self.psp += 1;
+                }
+            }
+        }
+        Ok((exe_diffs, trace_diffs))
     }
 
     fn is_trace_needed(&self) -> bool {
