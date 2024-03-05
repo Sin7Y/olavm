@@ -52,19 +52,19 @@ use std::time::Instant;
 
 mod decode;
 
-mod ecdsa;
+mod batch_exe_manager;
+pub mod config;
 pub(crate) mod contract_executor;
+mod ecdsa;
+mod exe_trace;
 pub mod load_tx;
+pub mod ola_storage;
 pub mod storage;
 mod tape;
-pub mod ola_storage;
-pub mod config;
-mod tx_exe_manager;
-mod batch_exe_manager;
-mod exe_trace;
 #[cfg(test)]
 mod tests;
 pub mod trace;
+mod tx_exe_manager;
 
 #[macro_export]
 macro_rules! memory_zone_detect {
@@ -381,80 +381,82 @@ impl Process {
     }
 
     pub fn prophet(&mut self, prophet: &mut OlaProphet) -> Result<(), ProcessorError> {
-        debug!("prophet code:{}", prophet.code);
+        println!("refactoring, prophet not work now.");
+        // debug!("prophet code:{}", prophet.code);
 
-        let re = Regex::new(r"^%\{([\s\S]*)%}$").map_err(|err| {
-            ProcessorError::RegexNewError(format!("Regex::new failed with err: {}", err))
-        })?;
-        let code = re
-            .captures(&prophet.code)
-            .ok_or(ProcessorError::RegexCaptureError(String::from(
-                "Regex capture failed in prophet code",
-            )))?
-            .get(1)
-            .ok_or(ProcessorError::ArrayIndexError(String::from(
-                "Empty data at index 1 in prophet.code",
-            )))?
-            .as_str();
-        debug!("code:{}", code);
-        let mut interpreter = Interpreter::new(code);
+        // let re = Regex::new(r"^%\{([\s\S]*)%}$").map_err(|err| {
+        //     ProcessorError::RegexNewError(format!("Regex::new failed with err: {}",
+        // err)) })?;
+        // let code = re
+        //     .captures(&prophet.code)
+        //     .ok_or(ProcessorError::RegexCaptureError(String::from(
+        //         "Regex capture failed in prophet code",
+        //     )))?
+        //     .get(1)
+        //     .ok_or(ProcessorError::ArrayIndexError(String::from(
+        //         "Empty data at index 1 in prophet.code",
+        //     )))?
+        //     .as_str();
+        // debug!("code:{}", code);
+        // let mut interpreter = Interpreter::new(code);
 
-        let mut values = Vec::new();
+        // let mut values = Vec::new();
 
-        let reg_cnt = PROPHET_INPUT_REG_END_INDEX;
-        let mut reg_index = PROPHET_INPUT_REG_START_INDEX;
-        let mut fp = PROPHET_INPUT_FP_START_OFFSET;
-        for input in prophet.inputs.iter() {
-            if input.length == 1 {
-                let value = self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut fp)?;
-                values.push(value);
-            } else {
-                let mut index = 0;
-                while index < input.length {
-                    let value =
-                        self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut fp)?;
-                    values.push(value);
-                    index += 1;
-                }
-            }
-        }
+        // let reg_cnt = PROPHET_INPUT_REG_END_INDEX;
+        // let mut reg_index = PROPHET_INPUT_REG_START_INDEX;
+        // let mut fp = PROPHET_INPUT_FP_START_OFFSET;
+        // for input in prophet.inputs.iter() {
+        //     if input.length == 1 {
+        //         let value = self.read_prophet_input(&input, reg_cnt, &mut reg_index,
+        // &mut fp)?;         values.push(value);
+        //     } else {
+        //         let mut index = 0;
+        //         while index < input.length {
+        //             let value =
+        //                 self.read_prophet_input(&input, reg_cnt, &mut reg_index, &mut
+        // fp)?;             values.push(value);
+        //             index += 1;
+        //         }
+        //     }
+        // }
 
-        prophet.ctx.push((HEAP_PTR.to_string(), self.hp.0));
-        let out = interpreter
-            .run(prophet, values, &self.memory)
-            .map_err(|err| ProcessorError::InterpreterRunError(err))?;
-        // todo: need process error!
-        debug!("interpreter:{:?}", out);
-        match out {
-            Single(_) => return Err(ProcessorError::ParseIntError),
-            Multiple(mut values) => {
-                self.psp_start = self.psp;
-                self.hp = GoldilocksField(
-                    values
-                        .pop()
-                        .ok_or(ProcessorError::ArrayIndexError(String::from(
-                            "Multiple value empty",
-                        )))?
-                        .get_number() as u64,
-                );
-                debug!("prophet addr:{}", self.psp.0);
-                for value in values {
-                    self.memory.write(
-                        self.psp.0,
-                        0, //write， clk is 0
-                        GoldilocksField::from_canonical_u64(0 as u64),
-                        GoldilocksField::from_canonical_u64(MemoryType::WriteOnce as u64),
-                        GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
-                        GoldilocksField::from_canonical_u64(FilterLockForMain::False as u64),
-                        GoldilocksField::from_canonical_u64(1_u64),
-                        GoldilocksField::from_canonical_u64(0_u64),
-                        GoldilocksField(value.get_number() as u64),
-                        self.env_idx,
-                    );
-                    self.psp += GoldilocksField::ONE;
-                }
-            }
-        }
+        // prophet.ctx.push((HEAP_PTR.to_string(), self.hp.0));
+        // let out = interpreter
+        //     .run(prophet, values, &self.memory)
+        //     .map_err(|err| ProcessorError::InterpreterRunError(err))?;
+        // // todo: need process error!
+        // debug!("interpreter:{:?}", out);
+        // match out {
+        //     Single(_) => return Err(ProcessorError::ParseIntError),
+        //     Multiple(mut values) => {
+        //         self.psp_start = self.psp;
+        //         self.hp = GoldilocksField(
+        //             values
+        //                 .pop()
+        //                 .ok_or(ProcessorError::ArrayIndexError(String::from(
+        //                     "Multiple value empty",
+        //                 )))?
+        //                 .get_number() as u64,
+        //         );
+        //         debug!("prophet addr:{}", self.psp.0);
+        //         for value in values {
+        //             self.memory.write(
+        //                 self.psp.0,
+        //                 0, //write， clk is 0
+        //                 GoldilocksField::from_canonical_u64(0 as u64),
+        //                 GoldilocksField::from_canonical_u64(MemoryType::WriteOnce as
+        // u64),                 
+        // GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
+        //                 GoldilocksField::from_canonical_u64(FilterLockForMain::False
+        // as u64),                 GoldilocksField::from_canonical_u64(1_u64),
+        //                 GoldilocksField::from_canonical_u64(0_u64),
+        //                 GoldilocksField(value.get_number() as u64),
+        //                 self.env_idx,
+        //             );
+        //             self.psp += GoldilocksField::ONE;
+        //         }
+        //     }
+        // }
         Ok(())
     }
 
