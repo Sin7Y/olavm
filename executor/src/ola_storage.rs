@@ -100,7 +100,7 @@ impl DiskStorageWriter {
         Ok(())
     }
 
-    fn save(&self, tree_key: OlaStorageKey, value: OlaStorageValue) -> anyhow::Result<()> {
+    pub fn save(&self, tree_key: OlaStorageKey, value: OlaStorageValue) -> anyhow::Result<()> {
         let c = self.db.cf_handle(&SequencerColumnFamily::State.to_string());
         match c {
             Some(cf) => {
@@ -293,6 +293,10 @@ impl OlaCachedStorage {
         inputs.extend_from_slice(&storage_addr);
         inputs.extend_from_slice(&slot_key);
         calculate_arbitrary_poseidon_u64s(&inputs)
+    }
+
+    pub fn get_cached_modification(&self) -> HashMap<OlaStorageKey, OlaStorageValue> {
+        self.cached_storage.clone()
     }
 }
 
