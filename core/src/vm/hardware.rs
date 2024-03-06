@@ -371,6 +371,51 @@ impl OlaMemory {
             )))
         }
     }
+
+    pub fn dump(&self) {
+        println!("--------- stack -----------");
+        let mut stack_region_vec: Vec<(&u64, &u64)> = self.stack_region.iter().collect();
+        stack_region_vec.sort_by_key(|&(key, _)| key);
+        let mut count = 0;
+        for (key, value) in stack_region_vec {
+            print!("{}: {}", key, value);
+            count += 1;
+            if count % 10 == 0 {
+                println!();
+            }
+        }
+        if count % 10 != 0 {
+            println!();
+        }
+        println!("--------- heap -----------");
+        let mut heap_region_vec: Vec<(&u64, &u64)> = self.heap_region.iter().collect();
+        heap_region_vec.sort_by_key(|&(key, _)| key);
+        let mut count = 0;
+        for (key, value) in heap_region_vec {
+            print!("{}: {}", key, value);
+            count += 1;
+            if count % 10 == 0 {
+                println!();
+            }
+        }
+        if count % 10 != 0 {
+            println!();
+        }
+        println!("--------- prophet -----------");
+        let mut prophet_region_vec: Vec<(&u64, &u64)> = self.prophet_region.iter().collect();
+        prophet_region_vec.sort_by_key(|&(key, _)| key);
+        let mut count = 0;
+        for (key, value) in prophet_region_vec {
+            print!("{}: {}", key, value);
+            count += 1;
+            if count % 10 == 0 {
+                println!();
+            }
+        }
+        if count % 10 != 0 {
+            println!();
+        }
+    }
 }
 
 pub struct OlaTape {

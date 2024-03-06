@@ -298,6 +298,12 @@ impl OlaCachedStorage {
     pub fn get_cached_modification(&self) -> HashMap<OlaStorageKey, OlaStorageValue> {
         self.cached_storage.clone()
     }
+
+    pub fn dump_tx(&self) {
+        self.tx_cached_storage.iter().for_each(|(addr, value)| {
+            println!("[{:?}]: [{:?}]", addr, value);
+        });
+    }
 }
 
 impl OlaStorage for OlaCachedStorage {

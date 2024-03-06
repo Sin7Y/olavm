@@ -99,4 +99,7 @@ pub enum ProcessorError {
 
     #[error("Too many cpu lifecycle: {0}")]
     CpuLifeCycleOverflow(u64),
+
+    #[error("Cannot sstore in call")]
+    StorageStoreOnCallError,
 }

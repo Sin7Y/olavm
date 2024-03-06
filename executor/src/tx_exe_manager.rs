@@ -70,7 +70,7 @@ impl<'batch> TxExeManager<'batch> {
     pub fn invoke(&mut self, entry_contract: ContractAddress) -> anyhow::Result<()> {
         let program = self.storage.get_program(entry_contract)?;
         let entry_env = OlaContractExecutor::new(
-            ExecuteMode::Invoke,
+            self.mode,
             ExeContext {
                 storage_addr: entry_contract,
                 code_addr: entry_contract,
@@ -92,7 +92,7 @@ impl<'batch> TxExeManager<'batch> {
                         let storage_addr = executor.get_storage_addr();
                         self.env_stack.push(executor);
                         let callee = OlaContractExecutor::new(
-                            ExecuteMode::Invoke,
+                            self.mode,
                             ExeContext {
                                 storage_addr,
                                 code_addr: callee_addr,
@@ -105,7 +105,7 @@ impl<'batch> TxExeManager<'batch> {
                         let callee_program = self.storage.get_program(callee_addr)?;
                         self.env_stack.push(executor);
                         let callee = OlaContractExecutor::new(
-                            ExecuteMode::Invoke,
+                            self.mode,
                             ExeContext {
                                 storage_addr: callee_addr,
                                 code_addr: callee_addr,
@@ -128,7 +128,7 @@ impl<'batch> TxExeManager<'batch> {
     pub fn call(&mut self, entry_contract: ContractAddress) -> anyhow::Result<Vec<u64>> {
         let program = self.storage.get_program(entry_contract)?;
         let entry_env = OlaContractExecutor::new(
-            ExecuteMode::Call,
+            self.mode,
             ExeContext {
                 storage_addr: entry_contract,
                 code_addr: entry_contract,
@@ -151,7 +151,7 @@ impl<'batch> TxExeManager<'batch> {
                         let storage_addr = executor.get_storage_addr();
                         self.env_stack.push(executor);
                         let callee = OlaContractExecutor::new(
-                            ExecuteMode::Call,
+                            self.mode,
                             ExeContext {
                                 storage_addr,
                                 code_addr: callee_addr,
@@ -164,7 +164,7 @@ impl<'batch> TxExeManager<'batch> {
                         let callee_program = self.storage.get_program(callee_addr)?;
                         self.env_stack.push(executor);
                         let callee = OlaContractExecutor::new(
-                            ExecuteMode::Invoke,
+                            self.mode,
                             ExeContext {
                                 storage_addr: callee_addr,
                                 code_addr: callee_addr,
