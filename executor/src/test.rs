@@ -52,7 +52,7 @@ mod tests {
             tx_hash: None,
         };
         let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Call, block_info, tx, &mut storage);
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage);
         tx_exe_manager.call(address)
     }
 
@@ -85,13 +85,9 @@ mod tests {
             tx_hash: None,
         };
         let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Invoke, block_info, tx, &mut storage);
-        let res = tx_exe_manager.invoke(address);
-        if res.is_ok() {
-            storage.on_tx_success()
-        } else {
-            storage.on_tx_failed()
-        }
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage);
+        let _ = tx_exe_manager.invoke(address)?;
+        storage.on_tx_success();
         let cached = storage.get_cached_modification();
         for (key, value) in cached {
             writer.save(key, value)?;

@@ -13,4 +13,5 @@ pub(crate) enum ExecuteMode {
     Invoke,
     Call,
     PreExecute,
+    Debug,
 }

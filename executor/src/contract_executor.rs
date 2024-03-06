@@ -102,24 +102,31 @@ impl OlaContractExecutor {
     ) -> anyhow::Result<OlaContractExecutorState> {
         loop {
             if let Some(instruction) = self.instructions.get(self.pc as usize) {
+                let instruction = instruction.clone();
                 let step_result =
-                    self.run_one_step(instruction.clone(), tape, storage, trace_manager)?;
-                match step_result {
-                    OlaContractExecutorState::Running => {
-                        if self.clk >= MAX_CLK {
-                            return Err(ProcessorError::CpuLifeCycleOverflow(self.clk).into());
+                    self.run_one_step(instruction.clone(), tape, storage, trace_manager);
+                if step_result.is_ok() {
+                    match step_result.unwrap() {
+                        OlaContractExecutorState::Running => {
+                            if self.clk >= MAX_CLK {
+                                return Err(ProcessorError::CpuLifeCycleOverflow(self.clk).into());
+                            }
+                            // continue
                         }
-                        // continue
+                        OlaContractExecutorState::DelegateCalling(callee) => {
+                            return Ok(OlaContractExecutorState::DelegateCalling(callee))
+                        }
+                        OlaContractExecutorState::Calling(callee) => {
+                            return Ok(OlaContractExecutorState::Calling(callee))
+                        }
+                        OlaContractExecutorState::End(output) => {
+                            return Ok(OlaContractExecutorState::End(output))
+                        }
                     }
-                    OlaContractExecutorState::DelegateCalling(callee) => {
-                        return Ok(OlaContractExecutorState::DelegateCalling(callee))
-                    }
-                    OlaContractExecutorState::Calling(callee) => {
-                        return Ok(OlaContractExecutorState::Calling(callee))
-                    }
-                    OlaContractExecutorState::End(output) => {
-                        return Ok(OlaContractExecutorState::End(output))
-                    }
+                } else {
+                    let err = step_result.err().unwrap();
+                    self.on_step_err(instruction, storage, err.to_string());
+                    return Err(err.into());
                 }
             } else {
                 return Err(ProcessorError::PcVistInv(self.pc).into());
@@ -993,6 +1000,9 @@ impl OlaContractExecutor {
         instruction: BinaryInstruction,
         storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        if self.mode == ExecuteMode::Call {
+            return Err(ProcessorError::StorageStoreOnCallError.into());
+        }
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
         let (op0, op1) = self.get_op0_op1(instruction)?;
@@ -1613,6 +1623,28 @@ impl OlaContractExecutor {
     }
 
     fn is_trace_needed(&self) -> bool {
-        self.mode == ExecuteMode::Invoke
+        self.mode == ExecuteMode::Invoke || self.mode == ExecuteMode::Debug
+    }
+
+    fn on_step_err(
+        &mut self,
+        instruction: BinaryInstruction,
+        storage: &mut OlaCachedStorage,
+        err: String,
+    ) {
+        if self.mode == ExecuteMode::Debug {
+            println!("========== step error ===========");
+            println!("instruction: {}", instruction);
+            println!("err: {}", err);
+            println!("---------------------------------");
+            println!("clk: {}", self.clk);
+            println!("pc: {}", self.pc);
+            println!("psp: {}", self.psp);
+            println!("registers: {:?}", self.registers);
+            println!("---------- memory --------------");
+            self.memory.dump();
+            println!("---------- storage -------------");
+            storage.dump_tx();
+        }
     }
 }
