@@ -256,10 +256,9 @@ impl BinaryInstruction {
                 register: reg.clone(),
             });
 
-        let immediate_value = immediate_value.ok_or("Empty immediate value")?;
         let op1 = if is_op1_imm {
             Some(OlaOperand::ImmediateOperand {
-                value: immediate_value,
+                value: immediate_value.ok_or("Empty immediate value")?,
             })
         } else {
             let matched_op1_reg = all::<OlaRegister>()
@@ -276,7 +275,7 @@ impl BinaryInstruction {
             if opcode == OlaOpcode::MSTORE || opcode == OlaOpcode::MLOAD {
                 Some(OlaOperand::RegisterWithFactor {
                     register: matched_op1_reg?,
-                    factor: immediate_value,
+                    factor: immediate_value.ok_or("Empty immediate value")?,
                 })
             } else {
                 if matched_op1_reg.is_ok() {

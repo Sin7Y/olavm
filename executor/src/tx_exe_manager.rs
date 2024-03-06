@@ -1,4 +1,4 @@
-use core::vm::hardware::{ContractAddress, ExeContext, OlaTape};
+use core::vm::hardware::{ContractAddress, ExeContext, OlaStorage, OlaTape};
 
 use anyhow::Ok;
 
