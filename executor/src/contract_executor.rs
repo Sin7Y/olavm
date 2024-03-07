@@ -20,7 +20,7 @@ use core::{
         vm_state::{MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff},
     },
 };
-use std::vec;
+use std::{collections::HashMap, vec};
 
 use anyhow::Ok;
 use interpreter::{interpreter::Interpreter, utils::number::NumberRet};
@@ -49,7 +49,7 @@ pub(crate) struct OlaContractExecutor {
     psp: u64,
     registers: [u64; NUM_GENERAL_PURPOSE_REGISTER],
     memory: OlaMemory,
-    instructions: Vec<BinaryInstruction>,
+    instructions: HashMap<u64, BinaryInstruction>,
     output: Vec<u64>,
     state: OlaContractExecutorState,
 }
@@ -62,13 +62,20 @@ impl OlaContractExecutor {
     ) -> anyhow::Result<Self> {
         let instructions = decode_binary_program_to_instructions(program);
         match instructions {
-            Result::Ok(instructions) => {
-                if instructions.is_empty() {
+            Result::Ok(instruction_vec) => {
+                if instruction_vec.is_empty() {
                     return Err(ProcessorError::InstructionsInitError(
                         "instructions cannot be empry".to_string(),
                     )
                     .into());
                 }
+                let mut instructions: HashMap<u64, BinaryInstruction> = HashMap::new();
+                let mut index: u64 = 0;
+                instruction_vec.iter().for_each(|instruction| {
+                    instructions.insert(index, instruction.clone());
+                    index += instruction.binary_length() as u64;
+                });
+
                 Ok(Self {
                     mode,
                     context,
@@ -101,8 +108,23 @@ impl OlaContractExecutor {
         trace_manager: &mut TxTraceManager,
     ) -> anyhow::Result<OlaContractExecutorState> {
         loop {
-            if let Some(instruction) = self.instructions.get(self.pc as usize) {
+            if let Some(instruction) = self.instructions.get(&self.pc) {
                 let instruction = instruction.clone();
+
+                // println!(
+                //     "clk: {}, pc: {}, {}",
+                //     self.clk,
+                //     self.pc,
+                //     instruction.clone()
+                // );
+                // self.registers
+                //     .into_iter()
+                //     .enumerate()
+                //     .for_each(|(index, value)| {
+                //         print!("reg{}: {}\t", index, value);
+                //     });
+                // println!();
+
                 let step_result =
                     self.run_one_step(instruction.clone(), tape, storage, trace_manager);
                 if step_result.is_ok() {
@@ -443,7 +465,7 @@ impl OlaContractExecutor {
                     pc: self.pc,
                     psp: self.psp,
                     registers: self.registers,
-                    opcode: self.instructions[self.pc as usize].opcode,
+                    opcode: self.instructions[&self.pc].opcode,
                     op0: None,
                     op1: Some(op1),
                     dst: Some(op1),
@@ -541,7 +563,8 @@ impl OlaContractExecutor {
         }]);
         let state_diff = vec![spec_reg_diff, mem_diff];
         let trace_diff = if self.is_trace_needed() {
-            let ret_pc = self.memory.read(fp - 2)?;
+            let ret_pc = self.pc + inst_len as u64;
+            let ret_fp = self.memory.read(fp - 2)?;
             Some(ExeTraceStepDiff {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
@@ -564,7 +587,7 @@ impl OlaContractExecutor {
                     MemExePiece {
                         clk: self.clk,
                         addr: fp - 2,
-                        value: ret_pc,
+                        value: ret_fp,
                         is_write: false,
                         opcode: Some(opcode),
                     },
@@ -687,7 +710,7 @@ impl OlaContractExecutor {
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (addr, value) = self.get_op0_op1(instruction)?;
+        let (value, addr) = self.get_op0_op1(instruction)?;
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
             psp: None,
@@ -1514,12 +1537,16 @@ impl OlaContractExecutor {
             OlaOperand::RegisterOperand { register } => {
                 Ok(self.registers[register.index() as usize])
             }
-            OlaOperand::RegisterWithOffset { register, offset } => {
-                Ok(self.registers[register.index() as usize] + offset.to_u64()?)
-            }
-            OlaOperand::RegisterWithFactor { register, factor } => {
-                Ok(self.registers[register.index() as usize] * factor.to_u64()?)
-            }
+            OlaOperand::RegisterWithOffset { register, offset } => Ok(
+                (GoldilocksField::from_canonical_u64(self.registers[register.index() as usize])
+                    + GoldilocksField::from_canonical_u64(offset.to_u64()?))
+                .to_canonical_u64(),
+            ),
+            OlaOperand::RegisterWithFactor { register, factor } => Ok(
+                (GoldilocksField::from_canonical_u64(self.registers[register.index() as usize])
+                    * GoldilocksField::from_canonical_u64(factor.to_u64()?))
+                .to_canonical_u64(),
+            ),
             OlaOperand::SpecialReg { special_reg } => match special_reg {
                 OlaSpecialRegister::PC => {
                     anyhow::bail!("pc cannot be an operand")

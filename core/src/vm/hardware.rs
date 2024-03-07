@@ -382,6 +382,8 @@ impl OlaMemory {
             count += 1;
             if count % 10 == 0 {
                 println!();
+            } else {
+                print!("\t");
             }
         }
         if count % 10 != 0 {
@@ -396,6 +398,8 @@ impl OlaMemory {
             count += 1;
             if count % 10 == 0 {
                 println!();
+            } else {
+                print!("\t");
             }
         }
         if count % 10 != 0 {
@@ -410,6 +414,8 @@ impl OlaMemory {
             count += 1;
             if count % 10 == 0 {
                 println!();
+            } else {
+                print!("\t");
             }
         }
         if count % 10 != 0 {

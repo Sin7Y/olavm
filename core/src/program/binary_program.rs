@@ -243,74 +243,138 @@ impl BinaryInstruction {
             None
         };
 
-        let op0 = all::<OlaRegister>()
-            .collect::<Vec<_>>()
-            .iter()
-            .map(|reg| {
-                let mask = reg.binary_bit_mask_as_op0();
-                let matched = instruction_u64 & mask != 0;
-                (reg, matched)
-            })
-            .find(|(_reg, matched)| matched.clone())
-            .map(|(reg, _matched)| OlaOperand::RegisterOperand {
-                register: reg.clone(),
-            });
-
-        let op1 = if is_op1_imm {
-            Some(OlaOperand::ImmediateOperand {
-                value: immediate_value.ok_or("Empty immediate value")?,
-            })
-        } else {
-            let matched_op1_reg = all::<OlaRegister>()
+        if opcode == OlaOpcode::MSTORE || opcode == OlaOpcode::MLOAD {
+            let matched_op0_reg = all::<OlaRegister>()
                 .collect::<Vec<_>>()
                 .iter()
                 .map(|reg| {
-                    let mask = reg.binary_bit_mask_as_op1();
+                    let mask = reg.binary_bit_mask_as_op0();
                     let matched = instruction_u64 & mask != 0;
                     (reg, matched)
                 })
                 .find(|(_reg, matched)| matched.clone())
                 .map(|(reg, _matched)| reg.clone())
-                .ok_or("No matched op1 register");
-            if opcode == OlaOpcode::MSTORE || opcode == OlaOpcode::MLOAD {
-                Some(OlaOperand::RegisterWithFactor {
-                    register: matched_op1_reg?,
-                    factor: immediate_value.ok_or("Empty immediate value")?,
+                .ok_or("No matched op0 register for mstore");
+            let op1 = if is_op1_imm {
+                Some(OlaOperand::RegisterWithOffset {
+                    register: matched_op0_reg?,
+                    offset: immediate_value.ok_or("Empty immediate value")?,
                 })
             } else {
-                if matched_op1_reg.is_ok() {
-                    Some(OlaOperand::RegisterOperand {
-                        register: matched_op1_reg?,
+                Some(OlaOperand::RegisterWithFactor {
+                    register: matched_op0_reg?,
+                    factor: immediate_value.ok_or("Empty immediate value")?,
+                })
+            };
+            let op0 = if opcode == OlaOpcode::MSTORE {
+                all::<OlaRegister>()
+                    .collect::<Vec<_>>()
+                    .iter()
+                    .map(|reg| {
+                        let mask = reg.binary_bit_mask_as_dst();
+                        let matched = instruction_u64 & mask != 0;
+                        (reg, matched)
                     })
-                } else if opcode == OlaOpcode::MOV {
-                    Some(OlaOperand::SpecialReg {
-                        special_reg: OlaSpecialRegister::PSP,
+                    .find(|(_reg, matched)| matched.clone())
+                    .map(|(reg, _matched)| OlaOperand::RegisterOperand {
+                        register: reg.clone(),
+                    })
+            } else {
+                None
+            };
+            let dst = if opcode == OlaOpcode::MLOAD {
+                all::<OlaRegister>()
+                    .collect::<Vec<_>>()
+                    .iter()
+                    .map(|reg| {
+                        let mask = reg.binary_bit_mask_as_dst();
+                        let matched = instruction_u64 & mask != 0;
+                        (reg, matched)
+                    })
+                    .find(|(_reg, matched)| matched.clone())
+                    .map(|(reg, _matched)| OlaOperand::RegisterOperand {
+                        register: reg.clone(),
+                    })
+            } else {
+                None
+            };
+            Ok(BinaryInstruction {
+                opcode,
+                op0,
+                op1,
+                dst,
+                prophet,
+            })
+        } else {
+            let op0 = all::<OlaRegister>()
+                .collect::<Vec<_>>()
+                .iter()
+                .map(|reg| {
+                    let mask = reg.binary_bit_mask_as_op0();
+                    let matched = instruction_u64 & mask != 0;
+                    (reg, matched)
+                })
+                .find(|(_reg, matched)| matched.clone())
+                .map(|(reg, _matched)| OlaOperand::RegisterOperand {
+                    register: reg.clone(),
+                });
+
+            let op1 = if is_op1_imm {
+                Some(OlaOperand::ImmediateOperand {
+                    value: immediate_value.ok_or("Empty immediate value")?,
+                })
+            } else {
+                let matched_op1_reg = all::<OlaRegister>()
+                    .collect::<Vec<_>>()
+                    .iter()
+                    .map(|reg| {
+                        let mask = reg.binary_bit_mask_as_op1();
+                        let matched = instruction_u64 & mask != 0;
+                        (reg, matched)
+                    })
+                    .find(|(_reg, matched)| matched.clone())
+                    .map(|(reg, _matched)| reg.clone())
+                    .ok_or("No matched op1 register");
+                if opcode == OlaOpcode::MSTORE || opcode == OlaOpcode::MLOAD {
+                    Some(OlaOperand::RegisterWithFactor {
+                        register: matched_op1_reg?,
+                        factor: immediate_value.ok_or("Empty immediate value")?,
                     })
                 } else {
-                    None
+                    if matched_op1_reg.is_ok() {
+                        Some(OlaOperand::RegisterOperand {
+                            register: matched_op1_reg?,
+                        })
+                    } else if opcode == OlaOpcode::MOV {
+                        Some(OlaOperand::SpecialReg {
+                            special_reg: OlaSpecialRegister::PSP,
+                        })
+                    } else {
+                        None
+                    }
                 }
-            }
-        };
+            };
 
-        let dst = all::<OlaRegister>()
-            .collect::<Vec<_>>()
-            .iter()
-            .map(|reg| {
-                let mask = reg.binary_bit_mask_as_dst();
-                let matched = instruction_u64 & mask != 0;
-                (reg, matched)
+            let dst = all::<OlaRegister>()
+                .collect::<Vec<_>>()
+                .iter()
+                .map(|reg| {
+                    let mask = reg.binary_bit_mask_as_dst();
+                    let matched = instruction_u64 & mask != 0;
+                    (reg, matched)
+                })
+                .find(|(_reg, matched)| matched.clone())
+                .map(|(reg, _matched)| OlaOperand::RegisterOperand {
+                    register: reg.clone(),
+                });
+            Ok(BinaryInstruction {
+                opcode,
+                op0,
+                op1,
+                dst,
+                prophet,
             })
-            .find(|(_reg, matched)| matched.clone())
-            .map(|(reg, _matched)| OlaOperand::RegisterOperand {
-                register: reg.clone(),
-            });
-        Ok(BinaryInstruction {
-            opcode,
-            op0,
-            op1,
-            dst,
-            prophet,
-        })
+        }
     }
 
     pub fn get_asm_form_code(&self) -> String {
