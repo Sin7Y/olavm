@@ -112,18 +112,25 @@ impl OlaContractExecutor {
                 let instruction = instruction.clone();
 
                 // println!(
-                //     "clk: {}, pc: {}, {}",
+                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ tp: {}, clk: {}, pc: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
+                //     tape.tp(),
                 //     self.clk,
                 //     self.pc,
                 //     instruction.clone()
                 // );
+                // println!("--------------- registers ---------------");
                 // self.registers
                 //     .into_iter()
                 //     .enumerate()
                 //     .for_each(|(index, value)| {
-                //         print!("reg{}: {}\t", index, value);
+                //         print!("r{}({}), ", index, value);
                 //     });
                 // println!();
+                // println!("--------------- memory ---------------");
+                // self.memory.dump();
+                // println!("--------------- tape ---------------");
+                // tape.dump();
+                
 
                 let step_result =
                     self.run_one_step(instruction.clone(), tape, storage, trace_manager);

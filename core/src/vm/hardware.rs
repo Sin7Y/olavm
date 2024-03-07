@@ -382,13 +382,13 @@ impl OlaMemory {
         for (key, value) in stack_region_vec {
             print!("{}: {}", key, value);
             count += 1;
-            if count % 10 == 0 {
+            if count % 5 == 0 {
                 println!();
             } else {
                 print!("\t");
             }
         }
-        if count % 10 != 0 {
+        if count % 5 != 0 {
             println!();
         }
         println!("--------- heap -----------");
@@ -398,13 +398,13 @@ impl OlaMemory {
         for (key, value) in heap_region_vec {
             print!("{}: {}", key, value);
             count += 1;
-            if count % 10 == 0 {
+            if count % 5 == 0 {
                 println!();
             } else {
                 print!("\t");
             }
         }
-        if count % 10 != 0 {
+        if count % 5 != 0 {
             println!();
         }
         println!("--------- prophet -----------");
@@ -414,13 +414,13 @@ impl OlaMemory {
         for (key, value) in prophet_region_vec {
             print!("{}: {}", key, value);
             count += 1;
-            if count % 10 == 0 {
+            if count % 5 == 0 {
                 println!();
             } else {
                 print!("\t");
             }
         }
-        if count % 10 != 0 {
+        if count % 5 != 0 {
             println!();
         }
     }
@@ -441,6 +441,9 @@ impl Default for OlaTape {
 }
 
 impl OlaTape {
+    pub fn tp(&self) -> u64 {
+        self.tp
+    }
     pub fn write(&mut self, val: u64) {
         self.addr_to_value.insert(self.tp, val);
         self.tp += 1;
@@ -480,7 +483,26 @@ impl OlaTape {
                 ))),
             }
         }
+        res.reverse();
         Ok(res)
+    }
+
+    pub fn dump(&self) {
+        let mut addr_value_vec: Vec<(&u64, &u64)> = self.addr_to_value.iter().collect();
+        addr_value_vec.sort_by_key(|&(key, _)| key);
+        let mut count = 0;
+        for (key, value) in addr_value_vec {
+            print!("{}: {}", key, value);
+            count += 1;
+            if count % 5 == 0 {
+                println!();
+            } else {
+                print!("\t");
+            }
+        }
+        if count % 5 != 0 {
+            println!();
+        }
     }
 }
 
