@@ -185,10 +185,12 @@ pub struct OlaMemory {
 
 impl Default for OlaMemory {
     fn default() -> Self {
+        let mut heap_region = HashMap::new();
+        heap_region.insert(MEM_HEAP_REGION.start, MEM_HEAP_REGION.start + 1);
         OlaMemory {
             psp: MEM_PROPHET_REGION.start,
             stack_region: HashMap::new(),
-            heap_region: HashMap::new(),
+            heap_region,
             prophet_region: HashMap::new(),
         }
     }
