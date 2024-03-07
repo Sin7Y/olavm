@@ -37,7 +37,7 @@ impl<'batch> TxExeManager<'batch> {
         tx: OlaTapeInitInfo,
         storage: &'batch mut OlaCachedStorage,
     ) -> Self {
-        let manager = Self {
+        let mut manager = Self {
             mode,
             env_stack: Vec::new(),
             tape: OlaTape::default(),
@@ -48,23 +48,21 @@ impl<'batch> TxExeManager<'batch> {
         manager
     }
 
-    fn init_tape(&self, block_info: BlockExeInfo, tx: OlaTapeInitInfo) -> OlaTape {
-        let mut tape: OlaTape = OlaTape::default();
-        tape.write(block_info.block_number);
-        tape.write(block_info.block_timestamp);
-        tape.batch_write(&block_info.sequencer_address);
-        tape.write(tx.version);
-        tape.write(block_info.chain_id);
-        tape.batch_write(&tx.origin_address);
-        tape.write(tx.nonce.unwrap_or(0));
-        tape.batch_write(&tx.signature_r.unwrap_or([0; 4]));
-        tape.batch_write(&tx.signature_s.unwrap_or([0; 4]));
-        tape.batch_write(&tx.tx_hash.unwrap_or([0; 4]));
-        tape.batch_write(&tx.calldata);
-        tape.batch_write(&tx.origin_address);
-        tape.batch_write(&ENTRY_POINT_ADDRESS);
-        tape.batch_write(&ENTRY_POINT_ADDRESS);
-        tape
+    fn init_tape(&mut self, block_info: BlockExeInfo, tx: OlaTapeInitInfo) {
+        self.tape.write(block_info.block_number);
+        self.tape.write(block_info.block_timestamp);
+        self.tape.batch_write(&block_info.sequencer_address);
+        self.tape.write(tx.version);
+        self.tape.write(block_info.chain_id);
+        self.tape.batch_write(&tx.origin_address);
+        self.tape.write(tx.nonce.unwrap_or(0));
+        self.tape.batch_write(&tx.signature_r.unwrap_or([0; 4]));
+        self.tape.batch_write(&tx.signature_s.unwrap_or([0; 4]));
+        self.tape.batch_write(&tx.tx_hash.unwrap_or([0; 4]));
+        self.tape.batch_write(&tx.calldata);
+        self.tape.batch_write(&tx.origin_address);
+        self.tape.batch_write(&ENTRY_POINT_ADDRESS);
+        self.tape.batch_write(&ENTRY_POINT_ADDRESS);
     }
 
     pub fn invoke(&mut self, entry_contract: ContractAddress) -> anyhow::Result<()> {
