@@ -1587,7 +1587,7 @@ impl OlaContractExecutor {
             let enqueued_len = flatten_inputs.len();
             let origin_values: Vec<u64> = if enqueued_len < 3 && enqueued_len + input.length < 3 {
                 // all using register values
-                (enqueued_len + 1..enqueued_len + input.length)
+                (enqueued_len + 1..enqueued_len + 1 + input.length)
                     .map(|reg_index| self.registers[reg_index])
                     .collect()
             } else if enqueued_len < 3 && enqueued_len + input.length >= 3 {
