@@ -185,10 +185,7 @@ impl OlaContractExecutor {
             None
         };
 
-        // get state diff
-        let (state_diff, trace_diff) = self.get_step_diff(instruction, tape, storage)?;
-        // apply state diff and trace diff
-        self.apply_state_diff(tape, storage, state_diff)?;
+        let trace_diff = self.process_step(instruction, tape, storage)?;
         if let Some(step_diff) = trace_diff {
             trace_manager.on_step(step_diff);
         }
@@ -266,12 +263,12 @@ impl OlaContractExecutor {
         Ok(())
     }
 
-    fn get_step_diff(
+    fn process_step(
         &mut self,
         instruction: BinaryInstruction,
         tape: &mut OlaTape,
         storage: &mut OlaCachedStorage,
-    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+    ) -> anyhow::Result<Option<ExeTraceStepDiff>> {
         let prophet_attached = instruction.prophet.clone();
         let (mut state_diff, mut trace_diff) = match instruction.opcode {
             OlaOpcode::ADD
@@ -300,10 +297,12 @@ impl OlaContractExecutor {
             OlaOpcode::SCCALL => self.process_sccall(instruction),
             OlaOpcode::SIGCHECK => self.process_sigcheck(instruction),
         }?;
+        self.apply_state_diff(tape, storage, state_diff)?;
 
         if let Some(prophet) = prophet_attached {
             let (exe_mem_diffs, trace_mem_diffs) = self.process_prophet(prophet)?;
-            state_diff.push(OlaStateDiff::Memory(exe_mem_diffs));
+            let state_diff = vec![OlaStateDiff::Memory(exe_mem_diffs)];
+            self.apply_state_diff(tape, storage, state_diff)?;
             if trace_diff.is_some() {
                 let mut diff = trace_diff.unwrap();
                 if let Some(origin_mem) = diff.mem {
@@ -313,7 +312,7 @@ impl OlaContractExecutor {
                 } else {
                     diff.mem = Some(trace_mem_diffs);
                 }
-                return Ok((state_diff, Some(diff)));
+                return Ok(Some(diff));
             } else {
                 trace_diff = Some(ExeTraceStepDiff {
                     cpu: None,
@@ -325,10 +324,10 @@ impl OlaContractExecutor {
                     storage: None,
                     tape: None,
                 });
-                return Ok((state_diff, trace_diff));
+                return Ok(trace_diff);
             }
         }
-        Ok((state_diff, trace_diff))
+        Ok(trace_diff)
     }
 
     fn process_two_operands_arithmetic_op(
