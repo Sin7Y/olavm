@@ -28,6 +28,7 @@ pub(crate) struct TxExeManager<'batch> {
     tape: OlaTape,
     storage: &'batch mut OlaCachedStorage,
     trace_manager: TxTraceManager,
+    entry_contract: ContractAddress,
 }
 
 impl<'batch> TxExeManager<'batch> {
@@ -36,19 +37,31 @@ impl<'batch> TxExeManager<'batch> {
         block_info: BlockExeInfo,
         tx: OlaTapeInitInfo,
         storage: &'batch mut OlaCachedStorage,
+        entry_contract: Option<ContractAddress>,
     ) -> Self {
+        let entry_contract = if let Some(addr) = entry_contract {
+            addr
+        } else {
+            ENTRY_POINT_ADDRESS
+        };
         let mut manager = Self {
             mode,
             env_stack: Vec::new(),
             tape: OlaTape::default(),
             storage,
             trace_manager: TxTraceManager::default(),
+            entry_contract,
         };
-        manager.init_tape(block_info, tx);
+        manager.init_tape(block_info, tx, entry_contract);
         manager
     }
 
-    fn init_tape(&mut self, block_info: BlockExeInfo, tx: OlaTapeInitInfo) {
+    fn init_tape(
+        &mut self,
+        block_info: BlockExeInfo,
+        tx: OlaTapeInitInfo,
+        entry_contract: ContractAddress,
+    ) {
         self.tape.write(block_info.block_number);
         self.tape.write(block_info.block_timestamp);
         self.tape.batch_write(&block_info.sequencer_address);
@@ -61,17 +74,17 @@ impl<'batch> TxExeManager<'batch> {
         self.tape.batch_write(&tx.tx_hash.unwrap_or([0; 4]));
         self.tape.batch_write(&tx.calldata);
         self.tape.batch_write(&tx.origin_address);
-        self.tape.batch_write(&ENTRY_POINT_ADDRESS);
-        self.tape.batch_write(&ENTRY_POINT_ADDRESS);
+        self.tape.batch_write(&entry_contract);
+        self.tape.batch_write(&entry_contract);
     }
 
-    pub fn invoke(&mut self, entry_contract: ContractAddress) -> anyhow::Result<()> {
-        let program = self.storage.get_program(entry_contract)?;
+    pub fn invoke(&mut self) -> anyhow::Result<()> {
+        let program = self.storage.get_program(self.entry_contract)?;
         let entry_env = OlaContractExecutor::new(
             self.mode,
             ExeContext {
-                storage_addr: entry_contract,
-                code_addr: entry_contract,
+                storage_addr: self.entry_contract,
+                code_addr: self.entry_contract,
             },
             program,
         )?;
@@ -123,13 +136,13 @@ impl<'batch> TxExeManager<'batch> {
         Ok(())
     }
 
-    pub fn call(&mut self, entry_contract: ContractAddress) -> anyhow::Result<Vec<u64>> {
-        let program = self.storage.get_program(entry_contract)?;
+    pub fn call(&mut self) -> anyhow::Result<Vec<u64>> {
+        let program = self.storage.get_program(self.entry_contract)?;
         let entry_env = OlaContractExecutor::new(
             self.mode,
             ExeContext {
-                storage_addr: entry_contract,
-                code_addr: entry_contract,
+                storage_addr: self.entry_contract,
+                code_addr: self.entry_contract,
             },
             program,
         )?;

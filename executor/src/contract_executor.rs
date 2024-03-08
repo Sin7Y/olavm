@@ -130,7 +130,6 @@ impl OlaContractExecutor {
                 // self.memory.dump();
                 // println!("--------------- tape ---------------");
                 // tape.dump();
-                
 
                 let step_result =
                     self.run_one_step(instruction.clone(), tape, storage, trace_manager);
@@ -504,7 +503,7 @@ impl OlaContractExecutor {
             Some(op0) => {
                 if is_cjmp {
                     let val_op0 = self.get_operand_value(op0)?;
-                    if val_op0 != 1 || val_op0 != 0 {
+                    if val_op0 != 1 && val_op0 != 0 {
                         return Err(ProcessorError::InvalidInstruction(format!(
                             "cjmp op0 must be binary",
                         ))
