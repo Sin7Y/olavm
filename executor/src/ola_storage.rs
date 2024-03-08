@@ -255,9 +255,9 @@ impl OlaCachedStorage {
     pub fn read(
         &mut self,
         contract_addr: ContractAddress,
-        slot_key: OlaStorageKey,
+        storage_key: OlaStorageKey,
     ) -> anyhow::Result<Option<OlaStorageValue>> {
-        let tree_key = self.get_tree_key(contract_addr, slot_key);
+        let tree_key = self.get_tree_key(contract_addr, storage_key);
         if let Some(value) = self.tx_cached_storage.get(&tree_key) {
             return Ok(Some(*value));
         }
@@ -287,11 +287,11 @@ impl OlaCachedStorage {
     pub fn get_tree_key(
         &self,
         storage_addr: ContractAddress,
-        slot_key: OlaStorageKey,
+        storage_key: OlaStorageKey,
     ) -> OlaStorageKey {
         let mut inputs: Vec<u64> = Vec::new();
         inputs.extend_from_slice(&storage_addr);
-        inputs.extend_from_slice(&slot_key);
+        inputs.extend_from_slice(&storage_key);
         calculate_arbitrary_poseidon_u64s(&inputs)
     }
 
@@ -310,18 +310,18 @@ impl OlaStorage for OlaCachedStorage {
     fn sload(
         &mut self,
         contract_addr: ContractAddress,
-        slot_key: OlaStorageKey,
+        storage_key: OlaStorageKey,
     ) -> anyhow::Result<Option<OlaStorageValue>> {
-        self.read(contract_addr, slot_key)
+        self.read(contract_addr, storage_key)
     }
 
     fn sstore(
         &mut self,
         contract_addr: ContractAddress,
-        slot_key: OlaStorageKey,
+        storage_key: OlaStorageKey,
         value: OlaStorageValue,
     ) {
-        let tree_key = self.get_tree_key(contract_addr, slot_key);
+        let tree_key = self.get_tree_key(contract_addr, storage_key);
         self.tx_cached_storage.insert(tree_key, value);
     }
 
