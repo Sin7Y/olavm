@@ -130,6 +130,8 @@ impl OlaContractExecutor {
                 // self.memory.dump();
                 // println!("--------------- tape ---------------");
                 // tape.dump();
+                // println!("--------------- storage ---------------");
+                // storage.dump_tx();
 
                 let step_result =
                     self.run_one_step(instruction.clone(), tape, storage, trace_manager);
@@ -248,7 +250,7 @@ impl OlaContractExecutor {
                     d.iter().for_each(|storage_diff| {
                         storage.sstore(
                             self.context.storage_addr,
-                            storage_diff.key,
+                            storage_diff.storage_key,
                             storage_diff.value,
                         );
                     });
@@ -1046,11 +1048,10 @@ impl OlaContractExecutor {
             psp: None,
         });
 
-        let tree_key = storage.get_tree_key(self.context.storage_addr, storage_key);
         let pre_value = storage.read(self.context.storage_addr, storage_key)?;
         let is_init = pre_value.is_none();
         let storage_diff = OlaStateDiff::Storage(vec![StorageDiff {
-            key: tree_key,
+            storage_key,
             pre_value,
             value,
             is_init,

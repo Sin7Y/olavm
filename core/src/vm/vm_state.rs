@@ -30,7 +30,7 @@ pub struct MemoryDiff {
 
 #[derive(Debug, Clone)]
 pub struct StorageDiff {
-    pub key: [u64; 4],
+    pub storage_key: [u64; 4],
     pub pre_value: Option<[u64; 4]>,
     pub value: [u64; 4],
     pub is_init: bool,
