@@ -8,10 +8,35 @@ mod tests {
     };
     use anyhow::Ok;
     use core::{
-        program::binary_program::BinaryProgram,
+        program::{
+            binary_program::{BinaryInstruction, BinaryProgram},
+            decoder::decode_binary_program_to_instructions,
+        },
         vm::hardware::{ContractAddress, OlaStorage},
     };
-    use std::{fs::File, io::BufReader, path::PathBuf};
+    use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
+
+    #[test]
+    fn test_program() {
+        let mut path = get_test_dir();
+        path.push("contracts/vote_simple_bin.json");
+        let file = File::open(path).unwrap();
+        let reader = BufReader::new(file);
+        let program: BinaryProgram = serde_json::from_reader(reader).unwrap();
+        let instructions = decode_binary_program_to_instructions(program).unwrap();
+        let mut instruction_map: HashMap<u64, BinaryInstruction> = HashMap::new();
+        let mut index: u64 = 0;
+        instructions.iter().for_each(|instruction| {
+            instruction_map.insert(index, instruction.clone());
+            index += instruction.binary_length() as u64;
+        });
+        for pc in 3000u64..3100 {
+            let instruction = instruction_map.get(&pc);
+            if let Some(instruction) = instruction {
+                println!("{}: {}", pc, instruction.get_asm_form_code());
+            }
+        }
+    }
 
     #[test]
     fn test_simple_vote() {
