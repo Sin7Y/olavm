@@ -41,13 +41,13 @@ mod tests {
     #[test]
     fn test_simple_vote() {
         let mut writer = get_writer().unwrap();
-        let address = [0, 0, 1, 0];
+        let address = [991, 992, 993, 994];
         deploy(&mut writer, "contracts/vote_simple_bin.json", address).unwrap();
         let init_calldata = vec![7, 1, 2, 3, 4, 5, 6, 7, 8, 3826510503];
-        invoke(&mut writer, address, init_calldata, None, None, None).unwrap();
+        invoke(&mut writer, address, init_calldata, Some(0), None, None).unwrap();
         let vote_calldata = vec![4, 1, 597976998];
-        invoke(&mut writer, address, vote_calldata, None, None, None).unwrap();
-        let check_calldata = vec![0, 1621094845];
+        invoke(&mut writer, address, vote_calldata, Some(1), None,
+        None).unwrap(); let check_calldata = vec![0, 1621094845];
         let result = call(address, check_calldata, None).unwrap();
         println!("result: {:?}", result);
     }
@@ -76,9 +76,14 @@ mod tests {
             signature_s: None,
             tx_hash: None,
         };
-        let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage);
-        tx_exe_manager.call(address)
+        let mut tx_exe_manager: TxExeManager = TxExeManager::new(
+            ExecuteMode::Debug,
+            block_info,
+            tx,
+            &mut storage,
+            Some(address),
+        );
+        tx_exe_manager.call()
     }
 
     fn invoke(
@@ -109,9 +114,14 @@ mod tests {
             signature_s: None,
             tx_hash: None,
         };
-        let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage);
-        let _ = tx_exe_manager.invoke(address)?;
+        let mut tx_exe_manager: TxExeManager = TxExeManager::new(
+            ExecuteMode::Debug,
+            block_info,
+            tx,
+            &mut storage,
+            Some(address),
+        );
+        let _ = tx_exe_manager.invoke()?;
         storage.on_tx_success();
         let cached = storage.get_cached_modification();
         for (key, value) in cached {
