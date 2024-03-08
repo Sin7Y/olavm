@@ -83,18 +83,18 @@ impl BinaryInstruction {
     pub const BIT_SHIFT_OP1_IMM: usize = 62;
 
     pub fn binary_length(&self) -> u8 {
-        let mut len = 1;
-        len += match self.op0 {
-            Some(OlaOperand::ImmediateOperand { .. })
-            | Some(OlaOperand::RegisterWithOffset { .. }) => 1,
-            _ => 0,
-        };
-        len += match self.op1 {
-            Some(OlaOperand::ImmediateOperand { .. })
-            | Some(OlaOperand::RegisterWithOffset { .. }) => 1,
-            _ => 0,
-        };
-        len
+        if self.opcode == OlaOpcode::MLOAD || self.opcode == OlaOpcode::MSTORE {
+            2
+        } else {
+            let mut len = 1;
+            len += match self.op1 {
+                Some(OlaOperand::ImmediateOperand { .. })
+                | Some(OlaOperand::RegisterWithOffset { .. })
+                | Some(OlaOperand::RegisterWithFactor { .. }) => 1,
+                _ => 0,
+            };
+            len
+        }
     }
 
     pub fn encode(&self) -> Result<Vec<String>, String> {
