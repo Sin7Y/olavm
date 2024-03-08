@@ -17,7 +17,7 @@ use core::{
         },
         opcodes::OlaOpcode,
         operands::OlaOperand,
-        vm_state::{MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff},
+        vm_state::{MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff, StorageDiff},
     },
 };
 use std::{collections::HashMap, vec};
@@ -352,16 +352,12 @@ impl OlaContractExecutor {
         }
 
         let res = match opcode {
-            OlaOpcode::ADD => {
-                (GoldilocksField::from_canonical_u64(op0)
-                    + GoldilocksField::from_canonical_u64(op1))
-                .0
-            }
-            OlaOpcode::MUL => {
-                (GoldilocksField::from_canonical_u64(op0)
-                    * GoldilocksField::from_canonical_u64(op1))
-                .0
-            }
+            OlaOpcode::ADD => (GoldilocksField::from_canonical_u64(op0)
+                + GoldilocksField::from_canonical_u64(op1))
+            .to_canonical_u64(),
+            OlaOpcode::MUL => (GoldilocksField::from_canonical_u64(op0)
+                * GoldilocksField::from_canonical_u64(op1))
+            .to_canonical_u64(),
             OlaOpcode::EQ => {
                 if op0 == op1 {
                     1
@@ -1049,7 +1045,17 @@ impl OlaContractExecutor {
             pc: Some(self.pc + inst_len as u64),
             psp: None,
         });
-        let state_diff = vec![spec_reg_diff];
+
+        let tree_key = storage.get_tree_key(self.context.storage_addr, storage_key);
+        let pre_value = storage.read(self.context.storage_addr, storage_key)?;
+        let is_init = pre_value.is_none();
+        let storage_diff = OlaStateDiff::Storage(vec![StorageDiff {
+            key: tree_key,
+            pre_value,
+            value,
+            is_init,
+        }]);
+        let state_diff = vec![spec_reg_diff, storage_diff];
         let trace_diff = if self.is_trace_needed() {
             let pre_value = storage.read(self.context.storage_addr, storage_key)?;
             let tree_key = storage.get_tree_key(self.context.storage_addr, storage_key);
