@@ -186,6 +186,7 @@ impl OlaContractExecutor {
         };
 
         let trace_diff = self.process_step(instruction, tape, storage)?;
+        self.clk += 1;
         if let Some(step_diff) = trace_diff {
             trace_manager.on_step(step_diff);
         }
@@ -218,7 +219,6 @@ impl OlaContractExecutor {
         storage: &mut OlaCachedStorage,
         state_diff: Vec<OlaStateDiff>,
     ) -> anyhow::Result<()> {
-        self.clk += 1;
         for diff in state_diff {
             match diff {
                 OlaStateDiff::SpecReg(d) => {
@@ -297,6 +297,7 @@ impl OlaContractExecutor {
             OlaOpcode::SCCALL => self.process_sccall(instruction),
             OlaOpcode::SIGCHECK => self.process_sigcheck(instruction),
         }?;
+
         self.apply_state_diff(tape, storage, state_diff)?;
 
         if let Some(prophet) = prophet_attached {
