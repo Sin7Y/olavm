@@ -17,7 +17,9 @@ use core::{
         },
         opcodes::OlaOpcode,
         operands::OlaOperand,
-        vm_state::{MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff, StorageDiff},
+        vm_state::{
+            MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff, StorageDiff, TapeDiff,
+        },
     },
 };
 use std::{collections::HashMap, vec};
@@ -1211,7 +1213,16 @@ impl OlaContractExecutor {
             pc: Some(self.pc + inst_len as u64),
             psp: None,
         });
-        let state_diff = vec![spec_reg_diff];
+        let tape_diff = OlaStateDiff::Tape(
+            (op0..op0 + op1)
+                .zip(values.iter())
+                .map(|(addr, value)| TapeDiff {
+                    addr,
+                    value: *value,
+                })
+                .collect(),
+        );
+        let state_diff = vec![spec_reg_diff, tape_diff];
         let trace_diff = if self.is_trace_needed() {
             Some(ExeTraceStepDiff {
                 cpu: Some(CpuExePiece {
