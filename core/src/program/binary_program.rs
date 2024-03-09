@@ -244,7 +244,20 @@ impl BinaryInstruction {
         };
 
         if opcode == OlaOpcode::MSTORE || opcode == OlaOpcode::MLOAD {
-            let matched_op0_reg = all::<OlaRegister>()
+            let value_reg = all::<OlaRegister>()
+                .collect::<Vec<_>>()
+                .iter()
+                .map(|reg| {
+                    let mask = reg.binary_bit_mask_as_dst();
+                    let matched = instruction_u64 & mask != 0;
+                    (reg, matched)
+                })
+                .find(|(_reg, matched)| matched.clone())
+                .map(|(reg, _matched)| OlaOperand::RegisterOperand {
+                    register: reg.clone(),
+                })
+                .ok_or("No matched dst register for mstore")?;
+            let anchor = all::<OlaRegister>()
                 .collect::<Vec<_>>()
                 .iter()
                 .map(|reg| {
@@ -253,56 +266,37 @@ impl BinaryInstruction {
                     (reg, matched)
                 })
                 .find(|(_reg, matched)| matched.clone())
-                .map(|(reg, _matched)| reg.clone())
-                .ok_or("No matched op0 register for mstore");
-            let op1 = if is_op1_imm {
-                Some(OlaOperand::RegisterWithOffset {
-                    register: matched_op0_reg?,
-                    offset: immediate_value.ok_or("Empty immediate value")?,
+                .map(|(reg, _matched)| OlaOperand::RegisterOperand {
+                    register: reg.clone(),
                 })
+                .ok_or("No matched op0 register for mstore")?;
+            let offset = if is_op1_imm {
+                OlaOperand::ImmediateOperand {
+                    value: immediate_value.ok_or("Empty immediate value")?,
+                }
             } else {
-                Some(OlaOperand::RegisterWithFactor {
-                    register: matched_op0_reg?,
+                let offset_reg = all::<OlaRegister>()
+                    .collect::<Vec<_>>()
+                    .iter()
+                    .map(|reg| {
+                        let mask = reg.binary_bit_mask_as_op1();
+                        let matched = instruction_u64 & mask != 0;
+                        (reg, matched)
+                    })
+                    .find(|(_reg, matched)| matched.clone())
+                    .map(|(reg, _matched)| reg.clone())
+                    .ok_or("No matched op1 register for mstore")?;
+                OlaOperand::RegisterWithFactor {
+                    register: offset_reg,
                     factor: immediate_value.ok_or("Empty immediate value")?,
-                })
+                }
             };
-            let op0 = if opcode == OlaOpcode::MSTORE {
-                all::<OlaRegister>()
-                    .collect::<Vec<_>>()
-                    .iter()
-                    .map(|reg| {
-                        let mask = reg.binary_bit_mask_as_dst();
-                        let matched = instruction_u64 & mask != 0;
-                        (reg, matched)
-                    })
-                    .find(|(_reg, matched)| matched.clone())
-                    .map(|(reg, _matched)| OlaOperand::RegisterOperand {
-                        register: reg.clone(),
-                    })
-            } else {
-                None
-            };
-            let dst = if opcode == OlaOpcode::MLOAD {
-                all::<OlaRegister>()
-                    .collect::<Vec<_>>()
-                    .iter()
-                    .map(|reg| {
-                        let mask = reg.binary_bit_mask_as_dst();
-                        let matched = instruction_u64 & mask != 0;
-                        (reg, matched)
-                    })
-                    .find(|(_reg, matched)| matched.clone())
-                    .map(|(reg, _matched)| OlaOperand::RegisterOperand {
-                        register: reg.clone(),
-                    })
-            } else {
-                None
-            };
+
             Ok(BinaryInstruction {
                 opcode,
-                op0,
-                op1,
-                dst,
+                op0: Some(anchor),
+                op1: Some(offset),
+                dst: Some(value_reg),
                 prophet,
             })
         } else {

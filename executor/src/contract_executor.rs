@@ -673,7 +673,11 @@ impl OlaContractExecutor {
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction)?;
+        let (anchor, offset, value_reg) = self.get_op0_op1_and_dst_reg(instruction)?;
+        let op1 = (GoldilocksField::from_canonical_u64(anchor)
+            + GoldilocksField::from_canonical_u64(offset))
+        .to_canonical_u64();
+        let dst_reg = value_reg;
         let value = self.memory.read(op1)?;
         let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, value);
         let trace_diff = if self.is_trace_needed() {
@@ -714,7 +718,11 @@ impl OlaContractExecutor {
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (value, addr) = self.get_op0_op1(instruction)?;
+        let (anchor, offset, value_reg) = self.get_op0_op1_and_dst_reg(instruction)?;
+        let value = self.registers[value_reg.index() as usize];
+        let addr = (GoldilocksField::from_canonical_u64(anchor)
+            + GoldilocksField::from_canonical_u64(offset))
+        .to_canonical_u64();
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
             psp: None,
