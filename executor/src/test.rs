@@ -46,8 +46,8 @@ mod tests {
         let init_calldata = vec![7, 1, 2, 3, 4, 5, 6, 7, 8, 3826510503];
         invoke(&mut writer, address, init_calldata, Some(0), None, None).unwrap();
         let vote_calldata = vec![4, 1, 597976998];
-        invoke(&mut writer, address, vote_calldata, Some(1), None,
-        None).unwrap(); let check_calldata = vec![0, 1621094845];
+        invoke(&mut writer, address, vote_calldata, Some(1), None, None).unwrap();
+        let check_calldata = vec![0, 1621094845];
         let result = call(address, check_calldata, None).unwrap();
         println!("result: {:?}", result);
     }
