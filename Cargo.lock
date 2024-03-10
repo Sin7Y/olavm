@@ -2144,6 +2144,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "olasm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assembler",
+ "bincode",
+ "clap 4.4.18",
+ "clap_complete",
+ "colored",
+ "core",
+ "ethereum-types",
+ "executor",
+ "hex",
+ "ola-lang-abi",
+ "rand 0.8.5",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "shellexpand",
+ "thiserror",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
