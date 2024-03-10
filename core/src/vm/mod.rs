@@ -6,3 +6,4 @@ pub mod opcodes;
 pub mod operands;
 pub mod transaction;
 pub mod vm_state;
+pub mod types;

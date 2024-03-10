@@ -1,4 +1,7 @@
-use core::vm::hardware::{ContractAddress, ExeContext, OlaStorage, OlaTape};
+use core::vm::{
+    hardware::{ContractAddress, ExeContext, OlaStorage, OlaTape},
+    types::{Event, Hash},
+};
 
 use anyhow::Ok;
 
@@ -22,10 +25,37 @@ pub(crate) struct OlaTapeInitInfo {
     pub tx_hash: Option<[u64; 4]>,
 }
 
+pub(crate) struct TxEventManager {
+    biz_contract_address: ContractAddress,
+    events: Vec<Event>,
+}
+
+impl TxEventManager {
+    fn new(biz_contract_address: ContractAddress) -> Self {
+        Self {
+            biz_contract_address,
+            events: Vec::new(),
+        }
+    }
+
+    pub fn address(&self) -> ContractAddress {
+        self.biz_contract_address
+    }
+
+    pub fn on_event(&mut self, topics: Vec<Hash>, data: Vec<u64>) {
+        self.events.push(Event {
+            address: self.biz_contract_address,
+            topics,
+            data,
+        });
+    }
+}
+
 pub(crate) struct TxExeManager<'batch> {
     mode: ExecuteMode,
     env_stack: Vec<OlaContractExecutor>,
     tape: OlaTape,
+    tx_event_manager: TxEventManager,
     storage: &'batch mut OlaCachedStorage,
     trace_manager: TxTraceManager,
     entry_contract: ContractAddress,
@@ -44,10 +74,13 @@ impl<'batch> TxExeManager<'batch> {
         } else {
             ENTRY_POINT_ADDRESS
         };
+        // todo, or extract biz_contract_address from tx calldata
+        let biz_contract_address = entry_contract;
         let mut manager = Self {
             mode,
             env_stack: Vec::new(),
             tape: OlaTape::default(),
+            tx_event_manager: TxEventManager::new(biz_contract_address),
             storage,
             trace_manager: TxTraceManager::default(),
             entry_contract,
@@ -78,7 +111,7 @@ impl<'batch> TxExeManager<'batch> {
         self.tape.batch_write(&entry_contract);
     }
 
-    pub fn invoke(&mut self) -> anyhow::Result<()> {
+    pub fn invoke(&mut self) -> anyhow::Result<Vec<Event>> {
         let program = self.storage.get_program(self.entry_contract)?;
         let entry_env = OlaContractExecutor::new(
             self.mode,
@@ -92,8 +125,12 @@ impl<'batch> TxExeManager<'batch> {
         loop {
             let env = self.env_stack.pop();
             if let Some(mut executor) = env {
-                let result =
-                    executor.resume(&mut self.tape, self.storage, &mut self.trace_manager)?;
+                let result = executor.resume(
+                    &mut self.tape,
+                    &mut self.tx_event_manager,
+                    self.storage,
+                    &mut self.trace_manager,
+                )?;
                 match result {
                     OlaContractExecutorState::Running => {
                         anyhow::bail!("Invalid Executor result, cannot be Running.")
@@ -133,7 +170,7 @@ impl<'batch> TxExeManager<'batch> {
                 break;
             }
         }
-        Ok(())
+        Ok(self.tx_event_manager.events.clone())
     }
 
     pub fn call(&mut self) -> anyhow::Result<Vec<u64>> {
@@ -151,8 +188,12 @@ impl<'batch> TxExeManager<'batch> {
         loop {
             let env = self.env_stack.pop();
             if let Some(mut executor) = env {
-                let result =
-                    executor.resume(&mut self.tape, self.storage, &mut self.trace_manager)?;
+                let result = executor.resume(
+                    &mut self.tape,
+                    &mut self.tx_event_manager,
+                    self.storage,
+                    &mut self.trace_manager,
+                )?;
                 match result {
                     OlaContractExecutorState::Running => {
                         anyhow::bail!("Invalid Executor result, cannot be Running.")

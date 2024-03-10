@@ -17,6 +17,7 @@ use core::{
         },
         opcodes::OlaOpcode,
         operands::OlaOperand,
+        types::{Event, Hash},
         vm_state::{
             MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff, StorageDiff, TapeDiff,
         },
@@ -30,7 +31,7 @@ use regex::Regex;
 
 use crate::{
     config::ExecuteMode, ecdsa::msg_ecdsa_verify, exe_trace::tx::TxTraceManager,
-    ola_storage::OlaCachedStorage,
+    ola_storage::OlaCachedStorage, tx_exe_manager::TxEventManager,
 };
 
 const MAX_CLK: u64 = 1000_000_000_000;
@@ -106,6 +107,7 @@ impl OlaContractExecutor {
     pub fn resume(
         &mut self,
         tape: &mut OlaTape,
+        tx_event_manager: &mut TxEventManager,
         storage: &mut OlaCachedStorage,
         trace_manager: &mut TxTraceManager,
     ) -> anyhow::Result<OlaContractExecutorState> {
@@ -135,8 +137,13 @@ impl OlaContractExecutor {
                 // println!("--------------- storage ---------------");
                 // storage.dump_tx();
 
-                let step_result =
-                    self.run_one_step(instruction.clone(), tape, storage, trace_manager);
+                let step_result = self.run_one_step(
+                    instruction.clone(),
+                    tape,
+                    tx_event_manager,
+                    storage,
+                    trace_manager,
+                );
                 if step_result.is_ok() {
                     match step_result.unwrap() {
                         OlaContractExecutorState::Running => {
@@ -170,6 +177,7 @@ impl OlaContractExecutor {
         &mut self,
         instruction: BinaryInstruction,
         tape: &mut OlaTape,
+        tx_event_manager: &mut TxEventManager,
         storage: &mut OlaCachedStorage,
         trace_manager: &mut TxTraceManager,
     ) -> anyhow::Result<OlaContractExecutorState> {
@@ -187,7 +195,7 @@ impl OlaContractExecutor {
             None
         };
 
-        let trace_diff = self.process_step(instruction, tape, storage)?;
+        let trace_diff = self.process_step(instruction, tape, tx_event_manager, storage)?;
         self.clk += 1;
         if let Some(step_diff) = trace_diff {
             trace_manager.on_step(step_diff);
@@ -269,6 +277,7 @@ impl OlaContractExecutor {
         &mut self,
         instruction: BinaryInstruction,
         tape: &mut OlaTape,
+        tx_event_manager: &mut TxEventManager,
         storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<Option<ExeTraceStepDiff>> {
         let prophet_attached = instruction.prophet.clone();
@@ -298,6 +307,7 @@ impl OlaContractExecutor {
             OlaOpcode::TSTORE => self.process_tstore(instruction),
             OlaOpcode::SCCALL => self.process_sccall(instruction),
             OlaOpcode::SIGCHECK => self.process_sigcheck(instruction),
+            OlaOpcode::EVENT => self.process_event(instruction, tx_event_manager),
         }?;
 
         self.apply_state_diff(tape, storage, state_diff)?;
@@ -1357,6 +1367,37 @@ impl OlaContractExecutor {
             None
         };
         Ok((state_diff, trace_diff))
+    }
+
+    fn process_event(
+        &self,
+        instruction: BinaryInstruction,
+        tx_event_manager: &mut TxEventManager,
+    ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        if self.mode == ExecuteMode::Call {
+            return Err(ProcessorError::EventOnCallError.into());
+        }
+        let opcode = instruction.opcode;
+        let (op0, op1) = self.get_op0_op1(instruction)?;
+        let topic_len = self.memory.read(op0)?;
+        let unfolded = self.memory.batch_read(op0 + 1, topic_len as u64)?;
+        if unfolded.len() % 4 != 0 {
+            return Err(ProcessorError::InvalidTopicLength(unfolded.len() as u64).into());
+        }
+        let topics: Vec<Hash> = unfolded
+            .chunks_exact(4)
+            .map(|chunk| {
+                let mut topic = [0u64; 4];
+                topic.copy_from_slice(&chunk);
+                topic
+            })
+            .collect();
+        let data_length = self.memory.read(op1)?;
+        let data = self.memory.batch_read(op1 + 1, data_length)?;
+
+        tx_event_manager.on_event(topics, data);
+        // todo add trace
+        Ok((vec![], None))
     }
 
     fn get_fp(&self) -> u64 {

@@ -407,14 +407,19 @@ impl BinaryInstruction {
 
             OlaOpcode::MSTORE => {
                 format!(
-                    "{} {} {}",
+                    "{} {} {} {}",
                     self.opcode.token(),
                     self.op1.clone().unwrap().get_asm_token(),
-                    self.op0.clone().unwrap().get_asm_token()
+                    self.op0.clone().unwrap().get_asm_token(),
+                    self.dst.clone().unwrap().get_asm_token()
                 )
             }
 
-            OlaOpcode::CJMP | OlaOpcode::SCCALL | OlaOpcode::SLOAD | OlaOpcode::SSTORE => {
+            OlaOpcode::CJMP
+            | OlaOpcode::SCCALL
+            | OlaOpcode::SLOAD
+            | OlaOpcode::SSTORE
+            | OlaOpcode::EVENT => {
                 format!(
                     "{} {} {}",
                     self.opcode.token(),

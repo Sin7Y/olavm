@@ -31,6 +31,7 @@ pub enum OlaOpcode {
     TSTORE,
     SCCALL,
     SIGCHECK,
+    EVENT,
 }
 
 impl Display for OlaOpcode {
@@ -70,6 +71,7 @@ impl OlaOpcode {
             OlaOpcode::TSTORE => "tstore".to_string(),
             OlaOpcode::SCCALL => "sccall".to_string(),
             OlaOpcode::SIGCHECK => "sigcheck".to_string(),
+            OlaOpcode::EVENT => "event".to_string(),
         }
     }
 
@@ -101,6 +103,7 @@ impl OlaOpcode {
             OlaOpcode::TSTORE => 8,
             OlaOpcode::SCCALL => 7,
             OlaOpcode::SIGCHECK => 6,
+            OlaOpcode::EVENT => 5,
         }
     }
 
