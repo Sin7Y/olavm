@@ -10,8 +10,10 @@ members = [
     "plonky2/maybe_rayon",
     "assembler",
     "interpreter",
-    "zk-vm"
-, "mini-ola"]
+    "zk-vm",
+    "mini-ola",
+    "olasm",
+]
 
 [profile.release]
 codegen-units = 1
