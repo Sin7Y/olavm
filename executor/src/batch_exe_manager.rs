@@ -6,7 +6,7 @@ use crate::{
     tx_exe_manager::{OlaTapeInitInfo, TxExeManager},
 };
 
-pub(crate) struct BlockExeInfo {
+pub struct BlockExeInfo {
     pub block_number: u64,
     pub block_timestamp: u64,
     pub sequencer_address: [u64; 4],
