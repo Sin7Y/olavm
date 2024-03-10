@@ -52,7 +52,7 @@ use std::time::Instant;
 
 mod decode;
 
-mod batch_exe_manager;
+pub mod batch_exe_manager;
 pub mod config;
 pub(crate) mod contract_executor;
 mod ecdsa;
@@ -61,11 +61,11 @@ pub mod load_tx;
 pub mod ola_storage;
 pub mod storage;
 mod tape;
+mod test;
 #[cfg(test)]
 mod tests;
 pub mod trace;
-mod tx_exe_manager;
-mod test;
+pub mod tx_exe_manager;
 
 #[macro_export]
 macro_rules! memory_zone_detect {
@@ -446,7 +446,7 @@ impl Process {
         //                 0, //write， clk is 0
         //                 GoldilocksField::from_canonical_u64(0 as u64),
         //                 GoldilocksField::from_canonical_u64(MemoryType::WriteOnce as
-        // u64),                 
+        // u64),
         // GoldilocksField::from_canonical_u64(MemoryOperation::Write as u64),
         //                 GoldilocksField::from_canonical_u64(FilterLockForMain::False
         // as u64),                 GoldilocksField::from_canonical_u64(1_u64),

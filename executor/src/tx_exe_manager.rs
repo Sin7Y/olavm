@@ -15,7 +15,7 @@ use crate::{
 
 const ENTRY_POINT_ADDRESS: [u64; 4] = [0, 0, 0, 32769];
 
-pub(crate) struct OlaTapeInitInfo {
+pub struct OlaTapeInitInfo {
     pub version: u64,
     pub origin_address: [u64; 4],
     pub calldata: Vec<u64>,
@@ -51,7 +51,7 @@ impl TxEventManager {
     }
 }
 
-pub(crate) struct TxExeManager<'batch> {
+pub struct TxExeManager<'batch> {
     mode: ExecuteMode,
     env_stack: Vec<OlaContractExecutor>,
     tape: OlaTape,

@@ -9,7 +9,7 @@ pub const ADDR_U64_DEFAULT_ACCOUNT: ContractAddress = [0, 0, 0, 32774];
 pub const ADDR_U64_SYSTEM_CONTEXT: ContractAddress = [0, 0, 0, 32779];
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub(crate) enum ExecuteMode {
+pub enum ExecuteMode {
     Invoke,
     Call,
     PreExecute,
