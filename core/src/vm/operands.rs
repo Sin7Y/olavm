@@ -35,7 +35,7 @@ impl OlaOperand {
                 format!("{}", register)
             }
             OlaOperand::RegisterWithOffset { register, offset } => {
-                format!("[{},{}]", register, offset.hex)
+                format!("{}+{}", register, offset.hex)
             }
             OlaOperand::SpecialReg { special_reg } => {
                 format!("{}", special_reg)

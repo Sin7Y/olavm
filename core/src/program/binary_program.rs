@@ -392,11 +392,7 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::MOV
-            | OlaOpcode::NOT
-            | OlaOpcode::MLOAD
-            | OlaOpcode::TSTORE
-            | OlaOpcode::SIGCHECK => {
+            OlaOpcode::MOV | OlaOpcode::NOT | OlaOpcode::TSTORE | OlaOpcode::SIGCHECK => {
                 format!(
                     "{} {} {}",
                     self.opcode.token(),
@@ -405,13 +401,29 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::MSTORE => {
+            OlaOpcode::MLOAD => {
+                let anchor = self.op0.clone().unwrap().get_asm_token();
+                let offset = self.op1.clone().unwrap().get_asm_token();
+                let dst_reg = self.dst.clone().unwrap().get_asm_token();
                 format!(
-                    "{} {} {} {}",
+                    "{} {} [{}+{}]",
                     self.opcode.token(),
-                    self.op1.clone().unwrap().get_asm_token(),
-                    self.op0.clone().unwrap().get_asm_token(),
-                    self.dst.clone().unwrap().get_asm_token()
+                    dst_reg,
+                    anchor,
+                    offset
+                )
+            }
+
+            OlaOpcode::MSTORE => {
+                let anchor = self.op0.clone().unwrap().get_asm_token();
+                let offset = self.op1.clone().unwrap().get_asm_token();
+                let value_reg = self.dst.clone().unwrap().get_asm_token();
+                format!(
+                    "{} [{}+{}] {}",
+                    self.opcode.token(),
+                    anchor,
+                    offset,
+                    value_reg
                 )
             }
 
