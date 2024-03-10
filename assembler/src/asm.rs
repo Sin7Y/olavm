@@ -163,7 +163,8 @@ fn split_ola_asm_pieces(
         | OlaOpcode::SCCALL
         | OlaOpcode::SLOAD
         | OlaOpcode::SSTORE
-        | OlaOpcode::SIGCHECK => {
+        | OlaOpcode::SIGCHECK
+        | OlaOpcode::EVENT => {
             if ops.len() != 2 {
                 return Err(format!("invalid operand size: {}", asm_line));
             }

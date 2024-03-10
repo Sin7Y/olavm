@@ -102,4 +102,10 @@ pub enum ProcessorError {
 
     #[error("Cannot sstore in call")]
     StorageStoreOnCallError,
+
+    #[error("InvalidInstruction: {0}")]
+    InvalidTopicLength(u64),
+
+    #[error("Cannot event in call")]
+    EventOnCallError,
 }

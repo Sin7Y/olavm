@@ -12,7 +12,10 @@ mod tests {
             binary_program::{BinaryInstruction, BinaryProgram},
             decoder::decode_binary_program_to_instructions,
         },
-        vm::hardware::{ContractAddress, OlaStorage},
+        vm::{
+            hardware::{ContractAddress, OlaStorage},
+            types::Event,
+        },
     };
     use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
 
@@ -30,12 +33,13 @@ mod tests {
             instruction_map.insert(index, instruction.clone());
             index += instruction.binary_length() as u64;
         });
-        for pc in 3000u64..3100 {
-            let instruction = instruction_map.get(&pc);
-            if let Some(instruction) = instruction {
-                println!("{}: {}", pc, instruction.get_asm_form_code());
-            }
-        }
+        // print instructions ordered by keys asend
+        let mut keys: Vec<u64> = instruction_map.keys().cloned().collect();
+        keys.sort();
+        keys.iter().for_each(|key| {
+            let instruction = instruction_map.get(key).unwrap();
+            println!("{}: {:?}", key, instruction);
+        });
     }
 
     #[test]
@@ -44,9 +48,9 @@ mod tests {
         let address = [991, 992, 993, 994];
         deploy(&mut writer, "contracts/vote_simple_bin.json", address).unwrap();
         let init_calldata = vec![7, 1, 2, 3, 4, 5, 6, 7, 8, 3826510503];
-        invoke(&mut writer, address, init_calldata, Some(0), None, None).unwrap();
+        let _ = invoke(&mut writer, address, init_calldata, Some(0), None, None).unwrap();
         let vote_calldata = vec![4, 1, 597976998];
-        invoke(&mut writer, address, vote_calldata, Some(1), None, None).unwrap();
+        let _ = invoke(&mut writer, address, vote_calldata, Some(1), None, None).unwrap();
         let check_calldata = vec![0, 1621094845];
         let result = call(address, check_calldata, None).unwrap();
         println!("result: {:?}", result);
@@ -93,7 +97,7 @@ mod tests {
         nonce: Option<u64>,
         caller: Option<ContractAddress>,
         block: Option<BlockExeInfo>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Vec<Event>> {
         let mut storage = get_storage().unwrap();
 
         let block_info = match block {
@@ -121,13 +125,13 @@ mod tests {
             &mut storage,
             Some(address),
         );
-        let _ = tx_exe_manager.invoke()?;
+        let events = tx_exe_manager.invoke()?;
         storage.on_tx_success();
         let cached = storage.get_cached_modification();
         for (key, value) in cached {
             writer.save(key, value)?;
         }
-        Ok(())
+        Ok(events)
     }
 
     fn deploy_system_contracts(writer: &mut DiskStorageWriter) -> anyhow::Result<()> {
