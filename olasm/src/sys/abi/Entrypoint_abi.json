@@ -1,0 +1,351 @@
+[
+  {
+    "name": "system_entrance",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      },
+      {
+        "name": "_isETHCall",
+        "type": "bool"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "system_context",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_blockNumber",
+        "type": "u32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validateTxStructure",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "callTx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "fields"
+      }
+    ]
+  },
+  {
+    "name": "sendTx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validateTx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validateDeployment",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "getSignedHash",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash"
+      }
+    ]
+  },
+  {
+    "name": "getTransactionHash",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_signedHash",
+        "type": "hash"
+      },
+      {
+        "name": "signature",
+        "type": "fields"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash"
+      }
+    ]
+  },
+  {
+    "name": "get_account_version",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "validate_from",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validate_nonce",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address"
+      },
+      {
+        "name": "_nonce",
+        "type": "u32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validate_tx",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_txHash",
+        "type": "hash"
+      },
+      {
+        "name": "_signedHash",
+        "type": "hash"
+      },
+      {
+        "name": "_tx",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "data",
+            "type": "fields"
+          },
+          {
+            "name": "codes",
+            "type": "fields"
+          }
+        ]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "validate_chainid",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "hashL2Bytecode",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_bytecode",
+        "type": "fields"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "hash"
+      }
+    ]
+  }
+]

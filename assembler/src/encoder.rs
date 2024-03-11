@@ -8,6 +8,13 @@ use log::debug;
 use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
 
+pub fn encode_asm_from_json_string(json: String) -> Result<BinaryProgram, String> {
+    let bundle: AsmBundle = serde_json::from_str(json.as_str()).unwrap();
+    let relocated = asm_relocate(bundle).unwrap();
+    let program = encode_to_binary(relocated).unwrap();
+    Ok(program)
+}
+
 pub fn encode_asm_from_json_file(path: String) -> Result<BinaryProgram, String> {
     let json_str = std::fs::read_to_string(path).unwrap();
     let bundle: AsmBundle = serde_json::from_str(json_str.as_str()).unwrap();
