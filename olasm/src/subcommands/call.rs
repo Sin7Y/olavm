@@ -118,7 +118,7 @@ impl Call {
         };
 
         let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, Some(to));
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, to);
         let result = tx_exe_manager.call()?;
         println!("Call success with result: {:?}", result);
         Ok(())

@@ -1,4 +1,7 @@
-use core::{util::converts::bytes_to_u64s, vm::hardware::OlaStorage};
+use core::{
+    util::converts::bytes_to_u64s,
+    vm::hardware::{ContractAddress, OlaStorage},
+};
 use std::{
     fs::File,
     path::PathBuf,
@@ -9,11 +12,11 @@ use clap::Parser;
 use ethereum_types::H256;
 use executor::{
     batch_exe_manager::BlockExeInfo,
-    config::ExecuteMode,
+    config::{ExecuteMode, ADDR_U64_ENTRYPOINT},
     ola_storage::{DiskStorageWriter, OlaCachedStorage},
     tx_exe_manager::{OlaTapeInitInfo, TxExeManager},
 };
-use ola_lang_abi::{Abi, Param, Value};
+use ola_lang_abi::{Abi, FixedArray4, Param, Value};
 
 use crate::utils::{address_from_hex_be, h256_to_u64_array, ExpandedPathbufParser};
 
@@ -21,6 +24,8 @@ use super::parser::ToValue;
 
 #[derive(Debug, Parser)]
 pub struct Invoke {
+    #[clap(long, help = "Wether use system contract as entrance.")]
+    sys: bool,
     #[clap(long, help = "Path of rocksdb database")]
     db: Option<PathBuf>,
     #[clap(long, help = "Caller Address")]
@@ -105,10 +110,17 @@ impl Invoke {
             .iter()
             .map(|(p, i)| ToValue::parse_input((**p).clone(), i.clone()))
             .collect();
-        let calldata = abi
+        let biz_calldata = abi
             .encode_input_with_signature(func.signature().as_str(), params.as_slice())
             .unwrap();
+        let calldata = if self.sys {
+            build_entry_point_calldata(caller_address, to, biz_calldata, None)?
+        } else {
+            biz_calldata
+        };
+        let entry_contract = if self.sys { ADDR_U64_ENTRYPOINT } else { to };
 
+        // todo: signature.
         let tx = OlaTapeInitInfo {
             version: 0,
             origin_address: caller_address,
@@ -119,14 +131,20 @@ impl Invoke {
             tx_hash: None,
         };
 
-        let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, Some(to));
+        let mut tx_exe_manager: TxExeManager = TxExeManager::new(
+            ExecuteMode::Debug,
+            block_info,
+            tx,
+            &mut storage,
+            entry_contract,
+        );
         let events = tx_exe_manager.invoke()?;
         storage.on_tx_success();
         let cached = storage.get_cached_modification();
         for (key, value) in cached.clone() {
             writer.save(key, value)?;
         }
+
         let storage_change_size = cached.len();
         let event_size = events.len();
         println!(
@@ -147,4 +165,39 @@ impl Invoke {
         }
         Ok(())
     }
+}
+
+fn build_entry_point_calldata(
+    from: ContractAddress,
+    to: ContractAddress,
+    biz_calldata: Vec<u64>,
+    codes: Option<Vec<u64>>,
+) -> anyhow::Result<Vec<u64>> {
+    let entry_point_abi_str = include_str!("../sys/abi/Entrypoint_abi.json");
+    let abi: Abi = serde_json::from_str(entry_point_abi_str).unwrap();
+
+    let func = abi
+        .functions
+        .iter()
+        .find(|func| func.name == "system_entrance".to_string())
+        .expect("system_entrance function not found");
+
+    let code_value = match codes {
+        Some(codes) => Value::Fields(codes),
+        None => Value::Fields(vec![]),
+    };
+
+    let params = [
+        Value::Tuple(vec![
+            ("from".to_string(), Value::Address(FixedArray4(from))),
+            ("to".to_string(), Value::Address(FixedArray4(to))),
+            ("data".to_string(), Value::Fields(biz_calldata)),
+            ("codes".to_string(), code_value),
+        ]),
+        Value::Bool(false),
+    ];
+    let input = abi
+        .encode_input_with_signature(func.signature().as_str(), &params)
+        .unwrap();
+    Ok(input)
 }

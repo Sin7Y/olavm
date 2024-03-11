@@ -13,8 +13,6 @@ use crate::{
     ola_storage::OlaCachedStorage,
 };
 
-const ENTRY_POINT_ADDRESS: [u64; 4] = [0, 0, 0, 32769];
-
 pub struct OlaTapeInitInfo {
     pub version: u64,
     pub origin_address: [u64; 4],
@@ -67,13 +65,8 @@ impl<'batch> TxExeManager<'batch> {
         block_info: BlockExeInfo,
         tx: OlaTapeInitInfo,
         storage: &'batch mut OlaCachedStorage,
-        entry_contract: Option<ContractAddress>,
+        entry_contract: ContractAddress,
     ) -> Self {
-        let entry_contract = if let Some(addr) = entry_contract {
-            addr
-        } else {
-            ENTRY_POINT_ADDRESS
-        };
         // todo, or extract biz_contract_address from tx calldata
         let biz_contract_address = entry_contract;
         let mut manager = Self {
