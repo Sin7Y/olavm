@@ -85,7 +85,7 @@ mod tests {
             block_info,
             tx,
             &mut storage,
-            Some(address),
+            address,
         );
         tx_exe_manager.call()
     }
@@ -123,7 +123,7 @@ mod tests {
             block_info,
             tx,
             &mut storage,
-            Some(address),
+            address,
         );
         let events = tx_exe_manager.invoke()?;
         storage.on_tx_success();
