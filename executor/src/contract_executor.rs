@@ -116,11 +116,11 @@ impl OlaContractExecutor {
                 let instruction = instruction.clone();
 
                 // println!(
-                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ tp: {}, clk: {}, pc: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
-                //     tape.tp(),
+                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
                 //     self.clk,
                 //     self.pc,
-                //     instruction.clone()
+                //     tape.tp(),
+                //     instruction.get_asm_form_code()
                 // );
                 // println!("--------------- registers ---------------");
                 // self.registers
@@ -136,6 +136,7 @@ impl OlaContractExecutor {
                 // tape.dump();
                 // println!("--------------- storage ---------------");
                 // storage.dump_tx();
+                // println!();
 
                 let step_result = self.run_one_step(
                     instruction.clone(),
