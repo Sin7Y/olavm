@@ -115,28 +115,28 @@ impl OlaContractExecutor {
             if let Some(instruction) = self.instructions.get(&self.pc) {
                 let instruction = instruction.clone();
 
-                // println!(
-                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
-                //     self.clk,
-                //     self.pc,
-                //     tape.tp(),
-                //     instruction.get_asm_form_code()
-                // );
-                // println!("--------------- registers ---------------");
-                // self.registers
-                //     .into_iter()
-                //     .enumerate()
-                //     .for_each(|(index, value)| {
-                //         print!("r{}({}), ", index, value);
-                //     });
-                // println!();
-                // println!("--------------- memory ---------------");
-                // self.memory.dump();
-                // println!("--------------- tape ---------------");
-                // tape.dump();
-                // println!("--------------- storage ---------------");
-                // storage.dump_tx();
-                // println!();
+                println!(
+                    "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
+                    self.clk,
+                    self.pc,
+                    tape.tp(),
+                    instruction.get_asm_form_code()
+                );
+                println!("--------------- registers ---------------");
+                self.registers
+                    .into_iter()
+                    .enumerate()
+                    .for_each(|(index, value)| {
+                        print!("r{}({}), ", index, value);
+                    });
+                println!();
+                println!("--------------- memory ---------------");
+                self.memory.dump();
+                println!("--------------- tape ---------------");
+                tape.dump();
+                println!("--------------- storage ---------------");
+                storage.dump_tx();
+                println!();
 
                 let step_result = self.run_one_step(
                     instruction.clone(),
@@ -165,7 +165,7 @@ impl OlaContractExecutor {
                     }
                 } else {
                     let err = step_result.err().unwrap();
-                    self.on_step_err(instruction, storage, err.to_string());
+                    self.on_step_err(instruction, tape, storage, err.to_string());
                     return Err(err.into());
                 }
             } else {
@@ -1730,20 +1730,32 @@ impl OlaContractExecutor {
     fn on_step_err(
         &mut self,
         instruction: BinaryInstruction,
+        tape: &mut OlaTape,
         storage: &mut OlaCachedStorage,
         err: String,
     ) {
         if self.mode == ExecuteMode::Debug {
             println!("========== step error ===========");
-            println!("instruction: {}", instruction);
+            println!("instruction: {}", instruction.get_asm_form_code());
             println!("err: {}", err);
-            println!("---------------------------------");
-            println!("clk: {}", self.clk);
-            println!("pc: {}", self.pc);
-            println!("psp: {}", self.psp);
-            println!("registers: {:?}", self.registers);
+            println!("------------ cpu -----------------");
+            println!(
+                "clk: {}, pc: {}, tp: {}, psp: {}",
+                self.clk,
+                self.pc,
+                tape.tp(),
+                self.psp
+            );
+            self.registers
+                .into_iter()
+                .enumerate()
+                .for_each(|(index, value)| {
+                    print!("r{}({}), ", index, value);
+                });
             println!("---------- memory --------------");
             self.memory.dump();
+            println!("--------------- tape ---------------");
+            tape.dump();
             println!("---------- storage -------------");
             storage.dump_tx();
         }
