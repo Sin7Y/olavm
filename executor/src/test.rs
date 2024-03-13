@@ -43,6 +43,16 @@ mod tests {
     }
 
     #[test]
+    fn test_u256() {
+        let mut writer = get_writer().unwrap();
+        let address = [0, 0, 0, 43981];
+        deploy(&mut writer, "contracts/u256_basic_bin.json", address).unwrap();
+        let calldata = vec![0u64, 2590488802];
+        let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        println!("events: {:?}", events)
+    }
+
+    #[test]
     fn test_simple_vote() {
         let mut writer = get_writer().unwrap();
         let address = [991, 992, 993, 994];
@@ -80,13 +90,8 @@ mod tests {
             signature_s: None,
             tx_hash: None,
         };
-        let mut tx_exe_manager: TxExeManager = TxExeManager::new(
-            ExecuteMode::Debug,
-            block_info,
-            tx,
-            &mut storage,
-            address,
-        );
+        let mut tx_exe_manager: TxExeManager =
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address);
         tx_exe_manager.call()
     }
 
@@ -118,13 +123,8 @@ mod tests {
             signature_s: None,
             tx_hash: None,
         };
-        let mut tx_exe_manager: TxExeManager = TxExeManager::new(
-            ExecuteMode::Debug,
-            block_info,
-            tx,
-            &mut storage,
-            address,
-        );
+        let mut tx_exe_manager: TxExeManager =
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address);
         let events = tx_exe_manager.invoke()?;
         storage.on_tx_success();
         let cached = storage.get_cached_modification();
