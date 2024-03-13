@@ -11,7 +11,7 @@ clap_complete = "4.4.4"
 anyhow = "1.0.75"
 thiserror = "1.0"
 hex = "0.4.3"
-ola-lang-abi = "1.0.5"
+ola-lang-abi = "1.0.7"
 shellexpand = "3.1.0"
 colored = "2.0.0"
 core = { package = "core", path = "../core" }

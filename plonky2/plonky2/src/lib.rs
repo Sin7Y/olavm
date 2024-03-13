@@ -8,7 +8,6 @@
 #![allow(clippy::return_self_not_must_use)]
 #![feature(generic_const_exprs)]
 #![feature(specialization)]
-#![feature(stdsimd)]
 
 extern crate alloc;
 
