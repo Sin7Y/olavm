@@ -1,6 +1,9 @@
-use core::vm::{
-    hardware::{ContractAddress, ExeContext, OlaStorage, OlaTape},
-    types::{Event, Hash},
+use core::{
+    program::binary_program::BinaryProgram,
+    vm::{
+        hardware::{ContractAddress, ExeContext, OlaTape},
+        types::{Event, Hash},
+    },
 };
 
 use anyhow::Ok;
@@ -51,7 +54,8 @@ impl TxEventManager {
 
 pub struct TxExeManager<'batch> {
     mode: ExecuteMode,
-    env_stack: Vec<OlaContractExecutor>,
+    next_env_idx: usize,
+    env_stack: Vec<(usize, OlaContractExecutor)>,
     tape: OlaTape,
     tx_event_manager: TxEventManager,
     storage: &'batch mut OlaCachedStorage,
@@ -71,6 +75,7 @@ impl<'batch> TxExeManager<'batch> {
         let biz_contract_address = entry_contract;
         let mut manager = Self {
             mode,
+            next_env_idx: 0,
             env_stack: Vec::new(),
             tape: OlaTape::default(),
             tx_event_manager: TxEventManager::new(biz_contract_address),
@@ -114,9 +119,9 @@ impl<'batch> TxExeManager<'batch> {
             },
             program,
         )?;
-        self.env_stack.push(entry_env);
+        self.enqueue_env(entry_env);
         loop {
-            let env = self.env_stack.pop();
+            let env = self.pop_env();
             if let Some(mut executor) = env {
                 let result = executor.resume(
                     &mut self.tape,
@@ -131,7 +136,7 @@ impl<'batch> TxExeManager<'batch> {
                     OlaContractExecutorState::DelegateCalling(callee_addr) => {
                         let callee_program = self.storage.get_program(callee_addr)?;
                         let storage_addr = executor.get_storage_addr();
-                        self.env_stack.push(executor);
+                        self.enqueue_env(executor);
                         let callee = OlaContractExecutor::new(
                             self.mode,
                             ExeContext {
@@ -140,11 +145,11 @@ impl<'batch> TxExeManager<'batch> {
                             },
                             callee_program,
                         )?;
-                        self.env_stack.push(callee);
+                        self.enqueue_env(callee);
                     }
                     OlaContractExecutorState::Calling(callee_addr) => {
                         let callee_program = self.storage.get_program(callee_addr)?;
-                        self.env_stack.push(executor);
+                        self.enqueue_env(executor);
                         let callee = OlaContractExecutor::new(
                             self.mode,
                             ExeContext {
@@ -153,7 +158,7 @@ impl<'batch> TxExeManager<'batch> {
                             },
                             callee_program,
                         )?;
-                        self.env_stack.push(callee);
+                        self.enqueue_env(callee);
                     }
                     OlaContractExecutorState::End(_) => {
                         // no need to do anything
@@ -176,10 +181,10 @@ impl<'batch> TxExeManager<'batch> {
             },
             program,
         )?;
-        self.env_stack.push(entry_env);
+        self.enqueue_env(entry_env);
         let mut output: Vec<u64> = vec![];
         loop {
-            let env = self.env_stack.pop();
+            let env = self.pop_env();
             if let Some(mut executor) = env {
                 let result = executor.resume(
                     &mut self.tape,
@@ -194,7 +199,7 @@ impl<'batch> TxExeManager<'batch> {
                     OlaContractExecutorState::DelegateCalling(callee_addr) => {
                         let callee_program = self.storage.get_program(callee_addr)?;
                         let storage_addr = executor.get_storage_addr();
-                        self.env_stack.push(executor);
+                        self.enqueue_env(executor);
                         let callee = OlaContractExecutor::new(
                             self.mode,
                             ExeContext {
@@ -203,11 +208,11 @@ impl<'batch> TxExeManager<'batch> {
                             },
                             callee_program,
                         )?;
-                        self.env_stack.push(callee);
+                        self.enqueue_env(callee);
                     }
                     OlaContractExecutorState::Calling(callee_addr) => {
                         let callee_program = self.storage.get_program(callee_addr)?;
-                        self.env_stack.push(executor);
+                        self.enqueue_env(executor);
                         let callee = OlaContractExecutor::new(
                             self.mode,
                             ExeContext {
@@ -216,7 +221,7 @@ impl<'batch> TxExeManager<'batch> {
                             },
                             callee_program,
                         )?;
-                        self.env_stack.push(callee);
+                        self.enqueue_env(callee);
                     }
                     OlaContractExecutorState::End(o) => {
                         if self.env_stack.is_empty() {
@@ -230,5 +235,35 @@ impl<'batch> TxExeManager<'batch> {
             }
         }
         Ok(output)
+    }
+
+    fn pop_env(&mut self) -> Option<OlaContractExecutor> {
+        if let Some((env_idx, env)) = self.env_stack.pop() {
+            self.trace_manager.set_env(
+                env_idx,
+                ExeContext {
+                    storage_addr: env.get_storage_addr(),
+                    code_addr: env.get_code_addr(),
+                },
+            );
+            Some(env)
+        } else {
+            None
+        }
+    }
+
+    fn enqueue_env(&mut self, env: OlaContractExecutor) {
+        let storage_addr = env.get_storage_addr();
+        let code_addr = env.get_code_addr();
+        self.env_stack.push((self.next_env_idx, env));
+        self.trace_manager.set_env(
+            self.next_env_idx,
+            ExeContext {
+                storage_addr,
+                code_addr: code_addr.clone(),
+            },
+        );
+        // self.trace_manager.on_program((code_addr, byte_code));
+        self.next_env_idx += 1;
     }
 }

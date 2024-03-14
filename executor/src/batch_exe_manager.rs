@@ -1,4 +1,4 @@
-use core::vm::hardware::ContractAddress;
+use core::vm::hardware::{ContractAddress, OlaStorage};
 
 use crate::{
     config::ExecuteMode,
@@ -6,6 +6,16 @@ use crate::{
     tx_exe_manager::{OlaTapeInitInfo, TxExeManager},
 };
 
+// pub struct InvokeResult {
+//     pub trace: Trace,
+//     pub storage_queries: Vec<StorageQuery>,
+// }
+
+pub struct TxResult {
+    
+}
+
+#[derive(Debug, Copy, Clone)]
 pub struct BlockExeInfo {
     pub block_number: u64,
     pub block_timestamp: u64,
@@ -40,6 +50,30 @@ impl BlockExeManager {
     }
 
     pub fn invoke(&mut self, tx: OlaTapeInitInfo) -> anyhow::Result<()> {
+        self.storage.clear_tx_cache();
+        // todo
+        let address = [1, 1, 1, 1];
+        let mut tx_exe_manager: TxExeManager = TxExeManager::new(
+            ExecuteMode::Invoke,
+            self.block_info.clone(),
+            tx,
+            &mut self.storage,
+            address,
+        );
+        let result = tx_exe_manager.invoke();
+        match result {
+            Ok(events) => {}
+            Err(e) => {
+                self.storage.clear_tx_cache();
+                return Err(e);
+            }
+            
+        }
+        self.storage.on_tx_success();
+        // let cached = storage.get_cached_modification();
+        // for (key, value) in cached {
+        //     writer.save(key, value)?;
+        // }
         todo!()
     }
 }

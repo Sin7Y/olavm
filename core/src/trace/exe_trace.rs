@@ -1,4 +1,9 @@
-use crate::vm::{hardware::NUM_GENERAL_PURPOSE_REGISTER, opcodes::OlaOpcode};
+use std::collections::HashMap;
+
+use crate::vm::{
+    hardware::{ContractAddress, ExeContext, NUM_GENERAL_PURPOSE_REGISTER},
+    opcodes::OlaOpcode,
+};
 
 #[derive(Debug, Clone)]
 pub struct CpuExePiece {
@@ -74,4 +79,19 @@ pub struct ExeTraceStepDiff {
     pub poseidon: Option<PoseidonPiece>,
     pub storage: Option<StorageExePiece>,
     pub tape: Option<Vec<TapeExePiece>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TxExeTrace {
+    pub programs: HashMap<ContractAddress, Vec<u64>>, // contract address to bytecode
+    pub sorted_cpu: Vec<(u64, ExeContext, Vec<CpuExePiece>)>, /* env_idx-context-step, sorted by
+                                                       * execution order. */
+    pub env_mem: HashMap<u64, Vec<MemExePiece>>, // env_id to mem, mem not sorted yet.
+    pub rc: Vec<RcExePiece>,                     /* rc only triggered by range_check
+                                                  * opcode. */
+    pub bitwise: Vec<BitwiseExePiece>,
+    pub cmp: Vec<CmpExePiece>,
+    pub poseidon: Vec<PoseidonPiece>, // poseidon only triggered by poseidon opcode.
+    pub storage: Vec<StorageExePiece>,
+    pub tape: Vec<TapeExePiece>,
 }

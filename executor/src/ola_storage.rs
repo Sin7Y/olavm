@@ -299,6 +299,10 @@ impl OlaCachedStorage {
         self.cached_storage.clone()
     }
 
+    pub fn get_cached_tx_modification(&self) -> HashMap<OlaStorageKey, OlaStorageValue> {
+        self.tx_cached_storage.clone()
+    }
+
     pub fn dump_tx(&self) {
         self.tx_cached_storage.iter().for_each(|(addr, value)| {
             println!("[{:?}]: [{:?}]", addr, value);
@@ -329,7 +333,7 @@ impl OlaStorage for OlaCachedStorage {
         self.cached_storage.extend(self.tx_cached_storage.drain());
     }
 
-    fn on_tx_failed(&mut self) {
+    fn clear_tx_cache(&mut self) {
         self.tx_cached_storage.clear();
     }
 }

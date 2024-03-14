@@ -523,7 +523,7 @@ pub trait OlaStorage {
         value: OlaStorageValue,
     );
     fn on_tx_success(&mut self);
-    fn on_tx_failed(&mut self);
+    fn clear_tx_cache(&mut self);
 }
 
 #[cfg(test)]
