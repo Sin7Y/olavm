@@ -76,8 +76,7 @@ mod tests {
         let mut path = get_test_dir();
         path.push(abi_path);
         let abi: Abi = {
-            let file =
-                File::open(path).expect("failed to open ABI file");
+            let file = File::open(path).expect("failed to open ABI file");
 
             serde_json::from_reader(file).expect("failed to parse ABI")
         };
@@ -211,8 +210,6 @@ mod tests {
             let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
             println!("events: {:?}", events)
         }
-
-
     }
 
     fn call(
