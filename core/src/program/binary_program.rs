@@ -1,7 +1,6 @@
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::num::ParseIntError;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -58,15 +57,16 @@ impl BinaryProgram {
         }
     }
 
-    pub fn bytecode_u64_array(&self) -> Result<Vec<u64>, ParseIntError> {
+    pub fn bytecode_u64s(&self) -> anyhow::Result<Vec<u64>> {
         let bytecodes: Vec<&str> = self.bytecode.split('\n').collect();
-        bytecodes
-            .iter()
-            .map(|&c| {
-                let instruction_without_prefix = c.trim_start_matches("0x");
-                u64::from_str_radix(instruction_without_prefix, 16)
-            })
-            .collect()
+        let mut u64s: Vec<u64> = Vec::new();
+        for c in bytecodes {
+            let instruction_without_prefix = c.trim_start_matches("0x");
+            let u64 = u64::from_str_radix(instruction_without_prefix, 16)
+                .map_err(|e| anyhow::anyhow!("bytecode_u64_array error: {}", e))?;
+            u64s.push(u64);
+        }
+        anyhow::Ok(u64s)
     }
 }
 
