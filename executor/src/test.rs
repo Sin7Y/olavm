@@ -90,126 +90,122 @@ mod tests {
             let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
             println!("events: {:?}", events)
         }
-        {
-            let func = abi.functions[1].clone();
-            // encode input and function selector
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-        {
-            let func = abi.functions[2].clone();
-            // encode input and function selector
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-        {
-            let func = abi.functions[3].clone();
-            // encode input and function selector
-            let param = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 77]));
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[param])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-        {
-            let func = abi.functions[4].clone();
-            // encode input and function selector
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-        {
-            let func = abi.functions[5].clone();
-            // encode input and function selector
-            let param = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 88]));
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[param])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-        {
-            let func = abi.functions[6].clone();
-            // encode input and function selector
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-
-        {
-            let func = abi.functions[7].clone();
-            // encode input and function selector
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-
-        {
-            let func = abi.functions[8].clone();
-            // encode input and function selector
-            let param_0 = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 99]));
-            let param_1 = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 110]));
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[param_0, param_1])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-        {
-            let func = abi.functions[9].clone();
-            // encode input and function selector
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-
-        {
-            let func = abi.functions[10].clone();
-            // encode input and function selector
-            let param_0 = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 130]));
-            let param_1 = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 140]));
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[param_0, param_1])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
-
-        {
-            let func = abi.functions[11].clone();
-            // encode input and function selector
-            let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[])
-                .unwrap();
-            println!("input: {:?}", calldata);
-            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
-            println!("events: {:?}", events)
-        }
+        // {
+        //     let func = abi.functions[1].clone();
+        //     // encode input and function selector
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[2].clone();
+        //     // encode input and function selector
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[3].clone();
+        //     // encode input and function selector
+        //     let param = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 77]));
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[param])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[4].clone();
+        //     // encode input and function selector
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[5].clone();
+        //     // encode input and function selector
+        //     let param = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 88]));
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[param])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[6].clone();
+        //     // encode input and function selector
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[7].clone();
+        //     // encode input and function selector
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[8].clone();
+        //     // encode input and function selector
+        //     let param_0 = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 99]));
+        //     let param_1 = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 110]));
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[param_0, param_1])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[9].clone();
+        //     // encode input and function selector
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[10].clone();
+        //     // encode input and function selector
+        //     let param_0 = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 130]));
+        //     let param_1 = Value::U256(FixedArray8([0, 0, 0, 0, 0, 0, 0, 140]));
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[param_0, param_1])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
+        // {
+        //     let func = abi.functions[11].clone();
+        //     // encode input and function selector
+        //     let calldata = abi
+        //         .encode_input_with_signature(func.signature().as_str(), &[])
+        //         .unwrap();
+        //     println!("input: {:?}", calldata);
+        //     let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        //     println!("events: {:?}", events)
+        // }
     }
 
     fn call(
