@@ -5,6 +5,7 @@ use core::{
         types::{Event, Hash},
     },
 };
+use std::collections::HashMap;
 
 use anyhow::Ok;
 
@@ -61,6 +62,7 @@ pub struct TxExeManager<'batch> {
     storage: &'batch mut OlaCachedStorage,
     trace_manager: TxTraceManager,
     entry_contract: ContractAddress,
+    accessed_bytecodes: HashMap<ContractAddress, Vec<u64>>,
 }
 
 impl<'batch> TxExeManager<'batch> {
@@ -82,6 +84,7 @@ impl<'batch> TxExeManager<'batch> {
             storage,
             trace_manager: TxTraceManager::default(),
             entry_contract,
+            accessed_bytecodes: HashMap::new(),
         };
         manager.init_tape(block_info, tx, entry_contract);
         manager
@@ -111,6 +114,8 @@ impl<'batch> TxExeManager<'batch> {
 
     pub fn invoke(&mut self) -> anyhow::Result<Vec<Event>> {
         let program = self.storage.get_program(self.entry_contract)?;
+        self.accessed_bytecodes
+            .insert(self.entry_contract, program.bytecode_u64s()?);
         let entry_env = OlaContractExecutor::new(
             self.mode,
             ExeContext {
@@ -120,6 +125,7 @@ impl<'batch> TxExeManager<'batch> {
             program,
         )?;
         self.enqueue_env(entry_env);
+
         loop {
             let env = self.pop_env();
             if let Some(mut executor) = env {
@@ -137,6 +143,11 @@ impl<'batch> TxExeManager<'batch> {
                         let callee_program = self.storage.get_program(callee_addr)?;
                         let storage_addr = executor.get_storage_addr();
                         self.enqueue_env(executor);
+
+                        if !self.accessed_bytecodes.contains_key(&callee_addr) {
+                            self.accessed_bytecodes
+                                .insert(callee_addr, callee_program.bytecode_u64s()?);
+                        }
                         let callee = OlaContractExecutor::new(
                             self.mode,
                             ExeContext {
@@ -150,6 +161,11 @@ impl<'batch> TxExeManager<'batch> {
                     OlaContractExecutorState::Calling(callee_addr) => {
                         let callee_program = self.storage.get_program(callee_addr)?;
                         self.enqueue_env(executor);
+
+                        if !self.accessed_bytecodes.contains_key(&callee_addr) {
+                            self.accessed_bytecodes
+                                .insert(callee_addr, callee_program.bytecode_u64s()?);
+                        }
                         let callee = OlaContractExecutor::new(
                             self.mode,
                             ExeContext {
@@ -239,13 +255,15 @@ impl<'batch> TxExeManager<'batch> {
 
     fn pop_env(&mut self) -> Option<OlaContractExecutor> {
         if let Some((env_idx, env)) = self.env_stack.pop() {
-            self.trace_manager.set_env(
-                env_idx,
-                ExeContext {
-                    storage_addr: env.get_storage_addr(),
-                    code_addr: env.get_code_addr(),
-                },
-            );
+            if self.is_trace_needed() {
+                self.trace_manager.set_env(
+                    env_idx,
+                    ExeContext {
+                        storage_addr: env.get_storage_addr(),
+                        code_addr: env.get_code_addr(),
+                    },
+                );
+            }
             Some(env)
         } else {
             None
@@ -256,14 +274,19 @@ impl<'batch> TxExeManager<'batch> {
         let storage_addr = env.get_storage_addr();
         let code_addr = env.get_code_addr();
         self.env_stack.push((self.next_env_idx, env));
-        self.trace_manager.set_env(
-            self.next_env_idx,
-            ExeContext {
-                storage_addr,
-                code_addr: code_addr.clone(),
-            },
-        );
-        // self.trace_manager.on_program((code_addr, byte_code));
+        if self.is_trace_needed() {
+            self.trace_manager.set_env(
+                self.next_env_idx,
+                ExeContext {
+                    storage_addr,
+                    code_addr: code_addr.clone(),
+                },
+            );
+        }
         self.next_env_idx += 1;
+    }
+
+    fn is_trace_needed(&self) -> bool {
+        return self.mode == ExecuteMode::Invoke;
     }
 }

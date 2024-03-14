@@ -88,4 +88,18 @@ impl TxTraceManager {
             self.tape.extend(tape);
         }
     }
+
+    pub fn build_trace(&self, accessed_bytecodes: Vec<(ContractAddress, Vec<u64>)>) -> TxExeTrace {
+        TxExeTrace {
+            programs: accessed_bytecodes,
+            sorted_cpu: self.sorted_cpu.clone(),
+            env_mem: self.env_mem.clone(),
+            rc: self.rc.clone(),
+            bitwise: self.bitwise.clone(),
+            cmp: self.cmp.clone(),
+            poseidon: self.poseidon.clone(),
+            storage: self.storage.clone(),
+            tape: self.tape.clone(),
+        }
+    }
 }
