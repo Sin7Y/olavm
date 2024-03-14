@@ -2015,7 +2015,7 @@ fn u256_baisc_test() {
 
 
 #[test]
-fn u256_baisc_test() {
+fn u256_storage_test() {
     let abi: Abi = {
         let file = File::open("../assembler/test_data/abi/storage_u256_abi.json")
             .expect("failed to open ABI file");
