@@ -1,0 +1,152 @@
+[
+  {
+    "name": "set_value",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "storage_to_meory",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u256"
+      }
+    ]
+  },
+  {
+    "name": "get_value",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u256"
+      }
+    ]
+  },
+  {
+    "name": "set_age",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_age",
+        "type": "u256"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "get_age",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u256"
+      }
+    ]
+  },
+  {
+    "name": "set_key",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_key",
+        "type": "u256"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "get_key",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_index",
+        "type": "u32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u256"
+      }
+    ]
+  },
+  {
+    "name": "remove_key",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "set_person",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_age",
+        "type": "u256"
+      },
+      {
+        "name": "_height",
+        "type": "u256"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "get_person",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "age",
+            "type": "u256"
+          },
+          {
+            "name": "height",
+            "type": "u256"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "set_map",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_key",
+        "type": "u256"
+      },
+      {
+        "name": "_value",
+        "type": "u256"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "get_map",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_key",
+        "type": "u256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u256"
+      }
+    ]
+  }
+]

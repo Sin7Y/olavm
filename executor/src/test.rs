@@ -17,6 +17,7 @@ mod tests {
             types::Event,
         },
     };
+    use ola_lang_abi::Abi;
     use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
 
     #[test]
@@ -64,6 +65,30 @@ mod tests {
         let check_calldata = vec![0, 1621094845];
         let result = call(address, check_calldata, None).unwrap();
         println!("result: {:?}", result);
+    }
+
+    #[test]
+    fn test_storage_u256() {
+        let mut writer = get_writer().unwrap();
+        let address = [0, 0, 0, 123456];
+        deploy(&mut writer, "contracts/storage_u256_bin.json", address).unwrap();
+        let abi_path = "contracts-abi/storage_u256_abi.json";
+        let mut path = get_test_dir();
+        path.push(abi_path);
+        let abi: Abi = {
+            let file =
+                File::open(path).expect("failed to open ABI file");
+
+            serde_json::from_reader(file).expect("failed to parse ABI")
+        };
+        let func = abi.functions[1].clone();
+        // encode input and function selector
+        let calldata = abi
+            .encode_input_with_signature(func.signature().as_str(), &[])
+            .unwrap();
+        println!("input: {:?}", calldata);
+        let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+        println!("events: {:?}", events)
     }
 
     fn call(
