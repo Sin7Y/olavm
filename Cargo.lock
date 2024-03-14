@@ -1140,6 +1140,7 @@ dependencies = [
  "lru",
  "num",
  "num_cpus",
+ "ola-lang-abi",
  "plonky2",
  "rand 0.8.5",
  "regex",
@@ -1919,6 +1920,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
+name = "mini-goldilocks"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "110f76abe198422577a68d13ab3cfd75845830c080339a0a4243b4e45e780fa5"
+dependencies = [
+ "num",
+]
+
+[[package]]
 name = "mini-ola"
 version = "0.1.0"
 dependencies = [
@@ -2132,11 +2142,12 @@ dependencies = [
 
 [[package]]
 name = "ola-lang-abi"
-version = "1.0.5"
+version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "635f703fa64be2ec8afddd62c5d128db606f1ba538a1d2c0151f0ae780a88389"
+checksum = "fc8243de7e4f7d8bd038a1392673d9ce3ed0cc3a324ce24e1c2172ba8079eca1"
 dependencies = [
  "anyhow",
+ "mini-goldilocks",
  "nom",
  "serde",
  "serde_json",

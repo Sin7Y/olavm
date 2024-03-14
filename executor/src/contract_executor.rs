@@ -115,28 +115,28 @@ impl OlaContractExecutor {
             if let Some(instruction) = self.instructions.get(&self.pc) {
                 let instruction = instruction.clone();
 
-                println!(
-                    "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
-                    self.clk,
-                    self.pc,
-                    tape.tp(),
-                    instruction.get_asm_form_code()
-                );
-                println!("--------------- registers ---------------");
-                self.registers
-                    .into_iter()
-                    .enumerate()
-                    .for_each(|(index, value)| {
-                        print!("r{}({}), ", index, value);
-                    });
-                println!();
-                println!("--------------- memory ---------------");
-                self.memory.dump();
-                println!("--------------- tape ---------------");
-                tape.dump();
-                println!("--------------- storage ---------------");
-                storage.dump_tx();
-                println!();
+                // println!(
+                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
+                //     self.clk,
+                //     self.pc,
+                //     tape.tp(),
+                //     instruction.get_asm_form_code()
+                // );
+                // println!("--------------- registers ---------------");
+                // self.registers
+                //     .into_iter()
+                //     .enumerate()
+                //     .for_each(|(index, value)| {
+                //         print!("r{}({}), ", index, value);
+                //     });
+                // println!();
+                // println!("--------------- memory ---------------");
+                // self.memory.dump();
+                // println!("--------------- tape ---------------");
+                // tape.dump();
+                // println!("--------------- storage ---------------");
+                // storage.dump_tx();
+                // println!();
 
                 let step_result = self.run_one_step(
                     instruction.clone(),
