@@ -8,3 +8,4 @@
 executor/*.json
 db_test/*
 executor/db_test/*
+./db
