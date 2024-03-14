@@ -674,58 +674,17 @@ impl<'a> Traversal for Executor<'a> {
         let flag_ret = self.travel(&node.flag)?.get_single().get_number();
         if flag_ret == 4 {
             let addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
+            let limbs = self.mem.batch_read(addr, 8).unwrap();
             println!(
                 "print u256 limbs:={},{},{},{},{},{},{},{}",
-                self.vm_mem.trace.get(&addr).unwrap().last().unwrap().value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 1))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 2))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 3))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 4))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 5))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 6))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
-                self.vm_mem
-                    .trace
-                    .get(&(addr + 7))
-                    .unwrap()
-                    .last()
-                    .unwrap()
-                    .value,
+                limbs.get(0).unwrap(),
+                limbs.get(1).unwrap(),
+                limbs.get(2).unwrap(),
+                limbs.get(3).unwrap(),
+                limbs.get(4).unwrap(),
+                limbs.get(5).unwrap(),
+                limbs.get(6).unwrap(),
+                limbs.get(7).unwrap(),
             );
         } else if flag_ret == 3 {
             println!(
