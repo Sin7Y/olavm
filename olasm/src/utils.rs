@@ -89,10 +89,33 @@ pub fn h256_to_u64_array(h: &H256) -> [u64; 4] {
     ]
 }
 
+pub fn h256_to_u32_array(h: &H256) -> [u64; 8] {
+    let bytes = h.0;
+    [
+        u64::from_be_bytes(bytes[0..4].try_into().unwrap()),
+        u64::from_be_bytes(bytes[4..8].try_into().unwrap()),
+        u64::from_be_bytes(bytes[8..12].try_into().unwrap()),
+        u64::from_be_bytes(bytes[12..16].try_into().unwrap()),
+        u64::from_be_bytes(bytes[16..20].try_into().unwrap()),
+        u64::from_be_bytes(bytes[20..24].try_into().unwrap()),
+        u64::from_be_bytes(bytes[24..28].try_into().unwrap()),
+        u64::from_be_bytes(bytes[28..32].try_into().unwrap()),
+    ]
+}
+
 pub fn u64_array_to_h256(arr: &[u64; 4]) -> H256 {
     let mut bytes = [0u8; 32];
     for i in 0..arr.len() {
         bytes[i * 8..i * 8 + 8].clone_from_slice(&arr[i].to_be_bytes());
+    }
+    H256(bytes)
+}
+
+pub fn u32_array_to_h256(arr: &[u64; 8]) -> H256 {
+    let mut bytes = [0u8; 32];
+    let u32s: Vec<u32> = arr.into_iter().map(|x| *x as u32).collect();
+    for i in 0..arr.len() {
+        bytes[i * 4..i * 4 + 4].clone_from_slice(&u32s[i].to_be_bytes());
     }
     H256(bytes)
 }
