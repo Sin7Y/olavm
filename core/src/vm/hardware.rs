@@ -197,6 +197,9 @@ impl Default for OlaMemory {
 }
 
 impl OlaMemory {
+    pub fn hp(&self) -> u64 {
+        MEM_HEAP_REGION.start
+    }
     pub fn psp(&self) -> u64 {
         self.psp
     }
