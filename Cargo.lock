@@ -610,6 +610,7 @@ dependencies = [
  "byteorder",
  "enum-iterator",
  "env_logger 0.10.1",
+ "ethereum-types",
  "futures",
  "hex",
  "itertools",
