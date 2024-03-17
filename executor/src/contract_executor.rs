@@ -49,6 +49,7 @@ pub(crate) struct OlaContractExecutor {
     context: ExeContext,
     clk: u64,
     pc: u64,
+    psp_start: u64,
     registers: [u64; NUM_GENERAL_PURPOSE_REGISTER],
     memory: OlaMemory,
     instructions: HashMap<u64, BinaryInstruction>,
@@ -77,14 +78,16 @@ impl OlaContractExecutor {
                     instructions.insert(index, instruction.clone());
                     index += instruction.binary_length() as u64;
                 });
+                let memory = OlaMemory::default();
 
                 Ok(Self {
                     mode,
                     context,
                     clk: 0,
                     pc: 0,
+                    psp_start: memory.psp(),
                     registers: [0; NUM_GENERAL_PURPOSE_REGISTER],
-                    memory: OlaMemory::default(),
+                    memory,
                     instructions,
                     output: vec![],
                     state: OlaContractExecutorState::Running,
@@ -114,12 +117,16 @@ impl OlaContractExecutor {
                 let instruction = instruction.clone();
 
                 // println!(
-                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
+                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, psp: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
                 //     self.clk,
                 //     self.pc,
                 //     tape.tp(),
+                //     self.memory.psp(),
                 //     instruction.get_asm_form_code()
                 // );
+                // if instruction.prophet.is_some() {
+                //     println!("prophet: {:?}", instruction.prophet);
+                // }
                 // println!("--------------- registers ---------------");
                 // self.registers
                 //     .into_iter()
@@ -1594,7 +1601,7 @@ impl OlaContractExecutor {
                 OlaSpecialRegister::PC => {
                     anyhow::bail!("pc cannot be an operand")
                 }
-                OlaSpecialRegister::PSP => Ok(self.memory.psp()),
+                OlaSpecialRegister::PSP => Ok(self.psp_start),
             },
         }
     }
@@ -1661,15 +1668,17 @@ impl OlaContractExecutor {
                 flatten_inputs.extend(origin_values);
             };
         }
-
+        let mut cloned = prophet.clone();
+        cloned.ctx.push(("_heap_ptr".to_string(), self.memory.hp()));
         let out = interpreter
-            .run(&prophet, flatten_inputs, &self.memory)
+            .run(&cloned, flatten_inputs, &self.memory)
             .map_err(|err| ProcessorError::InterpreterRunError(err))?;
         let mut exe_diffs: Vec<MemoryDiff> = vec![];
         let mut trace_diffs: Vec<MemExePiece> = vec![];
         match out {
             NumberRet::Single(_) => return Err(ProcessorError::ParseIntError.into()),
             NumberRet::Multiple(mut values) => {
+                self.psp_start = self.memory.psp();
                 let _ = values.pop();
                 for value in values {
                     let exe_diff = MemoryDiff {
