@@ -17,7 +17,7 @@ use core::{
         },
         opcodes::OlaOpcode,
         operands::OlaOperand,
-        types::{Event, Hash},
+        types::Hash,
         vm_state::{
             MemoryDiff, OlaStateDiff, RegisterDiff, SpecRegisterDiff, StorageDiff, TapeDiff,
         },
@@ -49,7 +49,6 @@ pub(crate) struct OlaContractExecutor {
     context: ExeContext,
     clk: u64,
     pc: u64,
-    psp: u64,
     registers: [u64; NUM_GENERAL_PURPOSE_REGISTER],
     memory: OlaMemory,
     instructions: HashMap<u64, BinaryInstruction>,
@@ -84,7 +83,6 @@ impl OlaContractExecutor {
                     context,
                     clk: 0,
                     pc: 0,
-                    psp: 0,
                     registers: [0; NUM_GENERAL_PURPOSE_REGISTER],
                     memory: OlaMemory::default(),
                     instructions,
@@ -236,9 +234,6 @@ impl OlaContractExecutor {
                     if let Some(pc) = d.pc {
                         self.pc = pc;
                     }
-                    if let Some(psp) = d.psp {
-                        self.psp = psp;
-                    }
                 }
                 OlaStateDiff::Register(d) => {
                     d.iter().for_each(|reg_diff| {
@@ -282,7 +277,7 @@ impl OlaContractExecutor {
         storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<Option<ExeTraceStepDiff>> {
         let prophet_attached = instruction.prophet.clone();
-        let (mut state_diff, mut trace_diff) = match instruction.opcode {
+        let (state_diff, mut trace_diff) = match instruction.opcode {
             OlaOpcode::ADD
             | OlaOpcode::MUL
             | OlaOpcode::EQ
@@ -443,7 +438,6 @@ impl OlaContractExecutor {
 
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
 
         let state_diff = vec![spec_reg_diff];
@@ -460,15 +454,9 @@ impl OlaContractExecutor {
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
-        // todo handle moving psp
-        // let is_moving_psp = instruction.op0
-        //     == Some(OlaOperand::SpecialReg {
-        //         special_reg: OlaSpecialRegister::PSP,
-        //     });
         let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction)?;
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
         let reg_diff = OlaStateDiff::Register(vec![RegisterDiff {
             register: dst_reg,
@@ -480,7 +468,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode: self.instructions[&self.pc].opcode,
                     op0: None,
@@ -548,10 +536,7 @@ impl OlaContractExecutor {
         } else {
             self.pc + inst_len as u64
         };
-        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
-            pc: Some(new_pc),
-            psp: None,
-        });
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff { pc: Some(new_pc) });
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
             Some(self.get_trace_step_diff_only_cpu(opcode, (op0, Some(op1), None)))
@@ -570,10 +555,7 @@ impl OlaContractExecutor {
         let op1 = self.get_op1(instruction)?;
         let ret_pc = self.pc + inst_len as u64;
         let fp = self.get_fp();
-        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
-            pc: Some(op1),
-            psp: None,
-        });
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff { pc: Some(op1) });
         let mem_diff = OlaStateDiff::Memory(vec![MemoryDiff {
             addr: fp - 1,
             value: ret_pc,
@@ -586,7 +568,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: None,
@@ -630,10 +612,7 @@ impl OlaContractExecutor {
         let fp = self.get_fp();
         let ret_pc = self.memory.read(fp - 1)?;
         let ret_fp = self.memory.read(fp - 2)?;
-        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
-            pc: Some(ret_pc),
-            psp: None,
-        });
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff { pc: Some(ret_pc) });
         let reg_diff = OlaStateDiff::Register(vec![RegisterDiff {
             register: OlaRegister::R9,
             value: ret_fp,
@@ -644,7 +623,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: None,
@@ -698,7 +677,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: None,
@@ -738,7 +717,6 @@ impl OlaContractExecutor {
         .to_canonical_u64();
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
         let mem_diff = OlaStateDiff::Memory(vec![MemoryDiff { addr, value }]);
         let state_diff = vec![spec_reg_diff, mem_diff];
@@ -747,7 +725,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: Some(addr),
@@ -782,7 +760,6 @@ impl OlaContractExecutor {
         let opcode = instruction.opcode;
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
 
         let state_diff = vec![spec_reg_diff];
@@ -791,7 +768,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: None,
@@ -825,7 +802,6 @@ impl OlaContractExecutor {
 
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
 
         let state_diff = vec![spec_reg_diff];
@@ -834,7 +810,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: None,
@@ -884,7 +860,6 @@ impl OlaContractExecutor {
         let outputs = calculate_arbitrary_poseidon_u64s(&inputs);
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
         let mem_diff = OlaStateDiff::Memory(
             [dst, dst + 1, dst + 2, dst + 3]
@@ -924,7 +899,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: Some(op0),
@@ -970,7 +945,6 @@ impl OlaContractExecutor {
         };
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
         let mem_diff = OlaStateDiff::Memory(
             [op1, op1 + 1, op1 + 2, op1 + 3]
@@ -1012,7 +986,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: Some(op0),
@@ -1066,7 +1040,6 @@ impl OlaContractExecutor {
             .expect("Wrong number of elements");
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
 
         let pre_value = storage.read(self.context.storage_addr, storage_key)?;
@@ -1085,7 +1058,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: Some(op0),
@@ -1154,7 +1127,6 @@ impl OlaContractExecutor {
         };
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
         let mem_diff = OlaStateDiff::Memory(
             (dst..dst + values.len() as u64)
@@ -1171,7 +1143,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: Some(op0),
@@ -1222,7 +1194,6 @@ impl OlaContractExecutor {
         let values = self.memory.batch_read(op0, op1)?;
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
         let tape_diff = OlaStateDiff::Tape(
             (op0..op0 + op1)
@@ -1239,7 +1210,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: Some(op0),
@@ -1294,7 +1265,6 @@ impl OlaContractExecutor {
             .expect("Wrong number of elements");
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
@@ -1302,7 +1272,7 @@ impl OlaContractExecutor {
                 cpu: Some(CpuExePiece {
                     clk: self.clk,
                     pc: self.pc,
-                    psp: self.psp,
+                    psp: self.memory.psp(),
                     registers: self.registers,
                     opcode,
                     op0: Some(op0),
@@ -1413,7 +1383,6 @@ impl OlaContractExecutor {
     ) -> Vec<OlaStateDiff> {
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
-            psp: None,
         });
         let reg_diff = OlaStateDiff::Register(vec![RegisterDiff {
             register: dst_reg,
@@ -1431,7 +1400,7 @@ impl OlaContractExecutor {
             cpu: Some(CpuExePiece {
                 clk: self.clk,
                 pc: self.pc,
-                psp: self.psp,
+                psp: self.memory.psp(),
                 registers: self.registers,
                 opcode,
                 op0: op0_op1_dst.0,
@@ -1625,7 +1594,7 @@ impl OlaContractExecutor {
                 OlaSpecialRegister::PC => {
                     anyhow::bail!("pc cannot be an operand")
                 }
-                OlaSpecialRegister::PSP => Ok(self.psp.clone()),
+                OlaSpecialRegister::PSP => Ok(self.memory.psp()),
             },
         }
     }
@@ -1704,19 +1673,18 @@ impl OlaContractExecutor {
                 let _ = values.pop();
                 for value in values {
                     let exe_diff = MemoryDiff {
-                        addr: self.psp,
+                        addr: self.memory.psp(),
                         value: value.get_number() as u64,
                     };
                     let trace_diff = MemExePiece {
                         clk: 0,
-                        addr: self.psp,
+                        addr: self.memory.psp(),
                         value: value.get_number() as u64,
                         is_write: true,
                         opcode: None,
                     };
                     exe_diffs.push(exe_diff);
                     trace_diffs.push(trace_diff);
-                    self.psp += 1;
                 }
             }
         }
@@ -1744,7 +1712,7 @@ impl OlaContractExecutor {
                 self.clk,
                 self.pc,
                 tape.tp(),
-                self.psp
+                self.memory.psp(),
             );
             self.registers
                 .into_iter()
