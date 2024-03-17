@@ -1,4 +1,5 @@
 use core::program::binary_program::OlaProphet;
+use core::util::converts::u32s_be_to_u256;
 use core::vm::hardware::OlaMemory;
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -675,8 +676,10 @@ impl<'a> Traversal for Executor<'a> {
         if flag_ret == 4 {
             let addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;
             let limbs = self.mem.batch_read(addr, 8).unwrap();
+            let u256_str = u32s_be_to_u256(limbs.clone().try_into().unwrap()).unwrap();
             println!(
-                "print u256 limbs:={},{},{},{},{},{},{},{}",
+                "U256: 0x{:x}, limbs:=[{},{},{},{},{},{},{},{}]",
+                u256_str,
                 limbs.get(0).unwrap(),
                 limbs.get(1).unwrap(),
                 limbs.get(2).unwrap(),
