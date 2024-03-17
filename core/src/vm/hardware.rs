@@ -197,6 +197,9 @@ impl Default for OlaMemory {
 }
 
 impl OlaMemory {
+    pub fn psp(&self) -> u64 {
+        self.psp
+    }
     pub fn read(&self, addr: u64) -> anyhow::Result<u64> {
         if MEM_STACK_REGION.contains(&addr) {
             match self.stack_region.get(&addr) {
@@ -241,6 +244,8 @@ impl OlaMemory {
             self.stack_region.insert(addr, val);
         } else if MEM_HEAP_REGION.contains(&addr) {
             self.heap_region.insert(addr, val);
+        } else if MEM_PROPHET_REGION.contains(&addr) {
+            self.write_prophet(val)?;
         } else {
             bail!(ProcessorError::MemoryAccessError(format!(
                 "[memory] trying to write to invalid address: {}",
@@ -250,7 +255,7 @@ impl OlaMemory {
         anyhow::Ok(())
     }
 
-    pub fn write_prophet(&mut self, val: u64) -> anyhow::Result<()> {
+    fn write_prophet(&mut self, val: u64) -> anyhow::Result<()> {
         if val > MAX_VALUE {
             bail!(ProcessorError::MemoryAccessError(format!(
                 "[memory] trying to write an invalid value: {}",
