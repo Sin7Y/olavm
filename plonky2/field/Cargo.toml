@@ -17,6 +17,7 @@ itertools = "0.10.0"
 num = { version = "0.4", features = [ "rand" ] }
 rand = { optional = true, version = "0.8.4" }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
 unroll = "0.1.5"
 static_assertions = "1.1.0"
 maybe_rayon = { path = "../maybe_rayon" }

@@ -1,20 +1,22 @@
 pub(crate) mod division;
 
 use std::cmp::max;
+use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 use anyhow::{ensure, Result};
 use itertools::Itertools;
 use plonky2_util::log2_strict;
-use serde::{Deserialize, Serialize};
+use serde::de::{SeqAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::cfft::{
     evaluate_poly, evaluate_poly_with_offset, get_inv_twiddles, get_twiddles, interpolate_poly,
     interpolate_poly_with_offset,
 };
 use crate::extension::{Extendable, FieldExtension};
-use crate::types::Field;
+use crate::{goldilocks_field::GoldilocksField, types::Field};
 
 /// A polynomial in point-value form.
 ///
@@ -118,6 +120,50 @@ impl<F: Field> PolynomialValues<F> {
 impl<F: Field> From<Vec<F>> for PolynomialValues<F> {
     fn from(values: Vec<F>) -> Self {
         Self::new(values)
+    }
+}
+
+// use crate::goldilocks_field::_::_serde::ser::SerializeSeq;
+
+impl Serialize for PolynomialValues<GoldilocksField>  {
+    fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        self.values.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for PolynomialValues<GoldilocksField>
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct PolynomialValuesVisitor<GoldilocksField>(std::marker::PhantomData<GoldilocksField>);
+
+        impl<'de> Visitor<'de> for PolynomialValuesVisitor<GoldilocksField>
+        {
+            type Value = PolynomialValues<GoldilocksField>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("polynomial values")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let mut values = Vec::new();
+
+                while let Some(value) = seq.next_element()? {
+                    values.push(value);
+                }
+
+                Ok(PolynomialValues { values })
+            }
+        }
+
+        deserializer.deserialize_seq(PolynomialValuesVisitor(std::marker::PhantomData))
     }
 }
 
@@ -464,6 +510,18 @@ mod tests {
 
     use super::*;
     use crate::goldilocks_field::GoldilocksField;
+
+    #[test]
+    fn test_serialize() {
+        type F = GoldilocksField;
+
+        let k = 8;
+        let n = 1 << k;
+        let evals = PolynomialValues::new(F::rand_vec(n));
+        let data = serde_json::to_string(&evals.clone()).unwrap();
+        let evals_2: PolynomialValues<GoldilocksField> = serde_json::from_str(data.as_str()).unwrap();
+        assert_eq!(evals, evals_2);
+    }
 
     #[test]
     fn test_trimmed() {
