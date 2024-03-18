@@ -71,7 +71,7 @@ impl OlaOpcode {
             OlaOpcode::TSTORE => "tstore".to_string(),
             OlaOpcode::SCCALL => "sccall".to_string(),
             OlaOpcode::SIGCHECK => "sigcheck".to_string(),
-            OlaOpcode::EVENT => "event".to_string(),
+            OlaOpcode::EVENT => "log".to_string(),
         }
     }
 
