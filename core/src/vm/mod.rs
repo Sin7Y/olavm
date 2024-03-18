@@ -5,5 +5,5 @@ pub mod memory;
 pub mod opcodes;
 pub mod operands;
 pub mod transaction;
-pub mod vm_state;
 pub mod types;
+pub mod vm_state;

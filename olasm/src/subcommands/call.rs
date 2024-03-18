@@ -66,7 +66,7 @@ impl Call {
         };
 
         let db_path_string = db_home.as_path().to_str().unwrap().to_string();
-        let mut storage = OlaCachedStorage::new( db_path_string, None)?;
+        let mut storage = OlaCachedStorage::new(db_path_string, None)?;
         let block_info = BlockExeInfo {
             block_number,
             block_timestamp,

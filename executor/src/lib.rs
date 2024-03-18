@@ -60,8 +60,8 @@ mod exe_trace;
 pub mod load_tx;
 pub mod ola_storage;
 pub mod storage;
-pub mod test;
 mod tape;
+pub mod test;
 #[cfg(test)]
 mod tests;
 pub mod trace;

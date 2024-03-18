@@ -1,5 +1,5 @@
 use anyhow::{bail, Ok, Result};
-use ola_lang_abi::{FixedArray4, Param, Type, Value};
+use ola_lang_abi::{FixedArray4, FixedArray8, Param, Type, Value};
 
 use crate::utils::{h256_from_hex_be, h256_to_u64_array, u64_array_to_h256, OLA_FIELD_ORDER};
 
@@ -17,6 +17,7 @@ impl ToValue {
             ola_lang_abi::Type::Fields => Self::parse_fields(input),
             ola_lang_abi::Type::Array(t) => Self::parse_array(*t, input),
             ola_lang_abi::Type::Tuple(attrs) => Self::parse_tuple(attrs, input),
+            ola_lang_abi::Type::U256 => Self::parse_u256(input),
         };
         parse_result.unwrap()
     }
@@ -75,6 +76,7 @@ impl ToValue {
                             Param {
                                 name: "tmp".to_string(),
                                 type_: t.clone(),
+                                indexed: None,
                             },
                             i.clone(),
                         )
@@ -82,7 +84,7 @@ impl ToValue {
                     .collect();
                 Ok(Value::FixedArray(items, t))
             }
-            Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) => {
+            Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) | Type::U256 => {
                 bail!("Composite types in FixedArray has not been supported for cli tools.")
             }
         }
@@ -135,6 +137,7 @@ impl ToValue {
                             Param {
                                 name: "tmp".to_string(),
                                 type_: t.clone(),
+                                indexed: None,
                             },
                             i.clone(),
                         )
@@ -142,7 +145,7 @@ impl ToValue {
                     .collect();
                 Ok(Value::Array(items, t))
             }
-            Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) => {
+            Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) | Type::U256 => {
                 bail!("Composite types in Array has not been supported for cli tools.")
             }
         }
@@ -170,7 +173,7 @@ impl ToValue {
                     | Type::Bool
                     | Type::String
                     | Type::Fields => {}
-                    Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) => {
+                    Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) | Type::U256 => {
                         panic!("Composite types in Tuple has not been supported for cli tools.")
                     }
                 }
@@ -178,6 +181,7 @@ impl ToValue {
                     Param {
                         name: name.clone(),
                         type_: t.clone(),
+                        indexed: None,
                     },
                     i.clone(),
                 );
@@ -185,6 +189,11 @@ impl ToValue {
             })
             .collect();
         Ok(Value::Tuple(items))
+    }
+
+    fn parse_u256(input: String) -> Result<Value> {
+        let value = FixedArray8::from(input.as_str());
+        Ok(Value::U256(value))
     }
 }
 
@@ -202,6 +211,7 @@ impl FromValue {
             Value::Fields(input) => Self::parse_fields(input),
             Value::Array(input, t) => Self::parse_array(input, t),
             Value::Tuple(input) => Self::parse_tuple(input),
+            Value::U256(input) => Self::parse_u256(input),
         };
         parse_result.unwrap()
     }
@@ -250,7 +260,7 @@ impl FromValue {
                 ret += "]";
                 Ok(ret)
             }
-            Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) => {
+            Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) | Type::U256 => {
                 bail!("Composite types in FixedArray has not been supported for cli tools.")
             }
         }
@@ -292,7 +302,7 @@ impl FromValue {
                 ret += "]";
                 Ok(ret)
             }
-            Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) => {
+            Type::FixedArray(_, _) | Type::Array(_) | Type::Tuple(_) | Type::U256 => {
                 bail!("Composite types in Array has not been supported for cli tools.")
             }
         }
@@ -315,5 +325,10 @@ impl FromValue {
         ret += "}";
 
         Ok(ret)
+    }
+
+    fn parse_u256(input: FixedArray8) -> Result<String> {
+        let str = input.to_hex_string();
+        Ok(str)
     }
 }
