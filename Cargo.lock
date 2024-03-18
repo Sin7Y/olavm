@@ -2476,6 +2476,7 @@ dependencies = [
  "rand 0.8.5",
  "rcublas-sys",
  "serde",
+ "serde_json",
  "static_assertions",
  "tokio",
  "unroll",
