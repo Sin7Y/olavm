@@ -116,32 +116,33 @@ impl OlaContractExecutor {
             if let Some(instruction) = self.instructions.get(&self.pc) {
                 let instruction = instruction.clone();
 
-                // println!(
-                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, psp: {}, {}
-                // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",     self.clk,
-                //     self.pc,
-                //     tape.tp(),
-                //     self.memory.psp(),
-                //     instruction.get_asm_form_code()
-                // );
-                // if instruction.prophet.is_some() {
-                //     println!("prophet: {:?}", instruction.prophet);
-                // }
-                // println!("--------------- registers ---------------");
-                // self.registers
-                //     .into_iter()
-                //     .enumerate()
-                //     .for_each(|(index, value)| {
-                //         print!("r{}({}), ", index, value);
-                //     });
-                // println!();
-                // println!("--------------- memory ---------------");
-                // self.memory.dump();
-                // println!("--------------- tape ---------------");
-                // tape.dump();
-                // println!("--------------- storage ---------------");
-                // storage.dump_tx();
-                // println!();
+                println!(
+                    "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, psp: {}, {}
+                ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
+                    self.clk,
+                    self.pc,
+                    tape.tp(),
+                    self.memory.psp(),
+                    instruction.get_asm_form_code()
+                );
+                if instruction.prophet.is_some() {
+                    println!("prophet: {:?}", instruction.prophet);
+                }
+                println!("--------------- registers ---------------");
+                self.registers
+                    .into_iter()
+                    .enumerate()
+                    .for_each(|(index, value)| {
+                        print!("r{}({}), ", index, value);
+                    });
+                println!();
+                println!("--------------- memory ---------------");
+                self.memory.dump();
+                println!("--------------- tape ---------------");
+                tape.dump();
+                println!("--------------- storage ---------------");
+                storage.dump_tx();
+                println!();
 
                 let step_result = self.run_one_step(
                     instruction.clone(),
@@ -1351,30 +1352,35 @@ impl OlaContractExecutor {
         instruction: BinaryInstruction,
         tx_event_manager: &mut TxEventManager,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
+        let inst_len = instruction.binary_length();
         if self.mode == ExecuteMode::Call {
             return Err(ProcessorError::EventOnCallError.into());
         }
         let opcode = instruction.opcode;
         let (op0, op1) = self.get_op0_op1(instruction)?;
         let topic_len = self.memory.read(op0)?;
-        let unfolded = self.memory.batch_read(op0 + 1, topic_len as u64)?;
-        if unfolded.len() % 4 != 0 {
-            return Err(ProcessorError::InvalidTopicLength(unfolded.len() as u64).into());
+        let topic_start_addrs = self.memory.batch_read(op0 + 1, topic_len as u64)?;
+        let mut topics: Vec<Hash> = vec![];
+        for addr in topic_start_addrs {
+            let topic = self.memory.batch_read(addr, 4)?;
+            topics.push(topic.try_into().expect("Hash slice with incorrect length"));
         }
-        let topics: Vec<Hash> = unfolded
-            .chunks_exact(4)
-            .map(|chunk| {
-                let mut topic = [0u64; 4];
-                topic.copy_from_slice(&chunk);
-                topic
-            })
-            .collect();
+
         let data_length = self.memory.read(op1)?;
         let data = self.memory.batch_read(op1 + 1, data_length)?;
 
         tx_event_manager.on_event(topics, data);
-        // todo add trace
-        Ok((vec![], None))
+        let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
+            pc: Some(self.pc + inst_len as u64),
+        });
+
+        let state_diff = vec![spec_reg_diff];
+        let trace_diff = if self.is_trace_needed() {
+            Some(self.get_trace_step_diff_only_cpu(opcode, (Some(op0), Some(op1), None)))
+        } else {
+            None
+        };
+        Ok((state_diff, trace_diff))
     }
 
     fn get_fp(&self) -> u64 {
