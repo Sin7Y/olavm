@@ -1,19 +1,16 @@
-use core::vm::hardware::{ContractAddress, OlaStorage};
+use core::{
+    merkle_tree::log::StorageQuery,
+    tx::TxResult,
+    vm::hardware::{ContractAddress, OlaStorage, StorageAccessKind, StorageAccessLog},
+};
+
+use anyhow::Ok;
 
 use crate::{
     config::ExecuteMode,
     ola_storage::OlaCachedStorage,
     tx_exe_manager::{OlaTapeInitInfo, TxExeManager},
 };
-
-// pub struct InvokeResult {
-//     pub trace: Trace,
-//     pub storage_queries: Vec<StorageQuery>,
-// }
-
-pub struct TxResult {
-    
-}
 
 #[derive(Debug, Copy, Clone)]
 pub struct BlockExeInfo {
@@ -42,14 +39,14 @@ impl BlockExeManager {
             sequencer_address,
             chain_id,
         };
-        let storage = OlaCachedStorage::new(storage_db_path)?;
+        let storage = OlaCachedStorage::new(storage_db_path, Some(block_timestamp))?;
         Ok(Self {
             block_info,
             storage,
         })
     }
 
-    pub fn invoke(&mut self, tx: OlaTapeInitInfo) -> anyhow::Result<()> {
+    pub fn invoke(&mut self, tx: OlaTapeInitInfo) -> anyhow::Result<TxResult> {
         self.storage.clear_tx_cache();
         // todo
         let address = [1, 1, 1, 1];
@@ -60,20 +57,13 @@ impl BlockExeManager {
             &mut self.storage,
             address,
         );
-        let result = tx_exe_manager.invoke();
-        match result {
-            Ok(events) => {}
-            Err(e) => {
-                self.storage.clear_tx_cache();
-                return Err(e);
-            }
-            
-        }
+        let result = tx_exe_manager.invoke()?;
         self.storage.on_tx_success();
-        // let cached = storage.get_cached_modification();
-        // for (key, value) in cached {
-        //     writer.save(key, value)?;
-        // }
-        todo!()
+        self.on_tx_success(result.clone());
+        Ok(result)
+    }
+
+    fn on_tx_success(&mut self, tx_result: TxResult) {
+        // todo save tx result
     }
 }

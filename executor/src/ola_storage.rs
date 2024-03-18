@@ -4,7 +4,10 @@ use core::{
     util::converts::{bytes_to_u64s, u64s_to_bytes},
     vm::{
         error::ProcessorError,
-        hardware::{ContractAddress, OlaStorage, OlaStorageKey, OlaStorageValue},
+        hardware::{
+            ContractAddress, OlaStorage, OlaStorageKey, OlaStorageValue, StorageAccessKind,
+            StorageAccessLog,
+        },
     },
 };
 use std::{collections::HashMap, num::NonZeroUsize, path::PathBuf};
@@ -234,19 +237,25 @@ impl DiskStorageReader {
 }
 
 pub struct OlaCachedStorage {
+    block_timestamp: u64,
     cached_storage: HashMap<OlaStorageKey, OlaStorageValue>,
     tx_cached_storage: HashMap<OlaStorageKey, OlaStorageValue>,
+    storage_logs: Vec<StorageAccessLog>,
+    tx_storage_logs: Vec<StorageAccessLog>,
     disk_storage_reader: DiskStorageReader,
     prog_cache: LruCache<ContractAddress, BinaryProgram>,
 }
 
 impl OlaCachedStorage {
-    pub fn new(storage_db_path: String) -> anyhow::Result<Self> {
+    pub fn new(storage_db_path: String, block_timestamp: Option<u64>) -> anyhow::Result<Self> {
         let disk_storage_reader = DiskStorageReader::new(storage_db_path)?;
         let prog_cache = LruCache::new(NonZeroUsize::new(50).unwrap());
         Ok(Self {
+            block_timestamp: block_timestamp.unwrap_or_default(),
             cached_storage: HashMap::new(),
             tx_cached_storage: HashMap::new(),
+            storage_logs: Vec::new(),
+            tx_storage_logs: Vec::new(),
             disk_storage_reader,
             prog_cache,
         })
@@ -257,21 +266,71 @@ impl OlaCachedStorage {
         contract_addr: ContractAddress,
         storage_key: OlaStorageKey,
     ) -> anyhow::Result<Option<OlaStorageValue>> {
+        let pre_value = self.get_pre_value(contract_addr, storage_key)?;
+        self.tx_storage_logs.push(StorageAccessLog {
+            block_timestamp: self.block_timestamp,
+            kind: StorageAccessKind::Read,
+            contract_addr,
+            storage_key,
+            pre_value,
+            value: pre_value,
+        });
+        Ok(pre_value)
+    }
+
+    fn get_pre_value(
+        &mut self,
+        contract_addr: ContractAddress,
+        storage_key: OlaStorageKey,
+    ) -> anyhow::Result<Option<OlaStorageValue>> {
         let tree_key = self.get_tree_key(contract_addr, storage_key);
-        if let Some(value) = self.tx_cached_storage.get(&tree_key) {
-            return Ok(Some(*value));
-        }
-        if let Some(value) = self.cached_storage.get(&tree_key) {
-            return Ok(Some(*value));
-        }
-        let value = self.disk_storage_reader.load(tree_key)?;
-        match value {
-            Some(v) => {
-                self.cached_storage.insert(tree_key, v.clone());
-                Ok(Some(v))
+
+        let value = if let Some(value) = self.tx_cached_storage.get(&tree_key) {
+            Some(*value)
+        } else if let Some(value) = self.cached_storage.get(&tree_key) {
+            Some(*value)
+        } else {
+            let disk_loaded = self.disk_storage_reader.load(tree_key)?;
+            if let Some(v) = disk_loaded {
+                self.cached_storage.insert(tree_key, v);
             }
-            None => Ok(None),
-        }
+            disk_loaded
+        };
+        self.tx_storage_logs.push(StorageAccessLog {
+            block_timestamp: self.block_timestamp,
+            kind: StorageAccessKind::Read,
+            contract_addr,
+            storage_key,
+            pre_value: value,
+            value,
+        });
+        Ok(value)
+    }
+
+    fn write(
+        &mut self,
+        contract_addr: ContractAddress,
+        storage_key: OlaStorageKey,
+        value: OlaStorageValue,
+    ) -> anyhow::Result<()> {
+        let tree_key = self.get_tree_key(contract_addr, storage_key);
+        self.tx_cached_storage.insert(tree_key, value);
+
+        let pre_value = self.get_pre_value(contract_addr, storage_key)?;
+        let kind = if pre_value.is_some() {
+            StorageAccessKind::RepeatedWrite
+        } else {
+            StorageAccessKind::InitialWrite
+        };
+        self.tx_storage_logs.push(StorageAccessLog {
+            block_timestamp: self.block_timestamp,
+            kind,
+            contract_addr,
+            storage_key,
+            pre_value,
+            value: Some(value),
+        });
+        Ok(())
     }
 
     pub fn get_program(&mut self, contract_addr: ContractAddress) -> anyhow::Result<BinaryProgram> {
@@ -303,6 +362,10 @@ impl OlaCachedStorage {
         self.tx_cached_storage.clone()
     }
 
+    pub fn get_tx_storage_access_logs(&self) -> Vec<StorageAccessLog> {
+        self.tx_storage_logs.clone()
+    }
+
     pub fn dump_tx(&self) {
         self.tx_cached_storage.iter().for_each(|(addr, value)| {
             println!("[{:?}]: [{:?}]", addr, value);
@@ -324,16 +387,18 @@ impl OlaStorage for OlaCachedStorage {
         contract_addr: ContractAddress,
         storage_key: OlaStorageKey,
         value: OlaStorageValue,
-    ) {
-        let tree_key = self.get_tree_key(contract_addr, storage_key);
-        self.tx_cached_storage.insert(tree_key, value);
+    ) -> anyhow::Result<()> {
+        self.write(contract_addr, storage_key, value)?;
+        Ok(())
     }
 
     fn on_tx_success(&mut self) {
         self.cached_storage.extend(self.tx_cached_storage.drain());
+        self.storage_logs.append(&mut self.tx_storage_logs);
     }
 
     fn clear_tx_cache(&mut self) {
         self.tx_cached_storage.clear();
+        self.storage_logs.clear();
     }
 }

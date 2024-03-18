@@ -17,8 +17,15 @@ mod tests {
             types::Event,
         },
     };
+
     use ola_lang_abi::{Abi, FixedArray8, Value};
-    use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
+    use std::{
+        collections::HashMap,
+        fs::File,
+        io::BufReader,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     #[test]
     fn test_program() {
@@ -320,13 +327,13 @@ mod tests {
         };
         let mut tx_exe_manager: TxExeManager =
             TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address);
-        let events = tx_exe_manager.invoke()?;
+        let result = tx_exe_manager.invoke()?;
         storage.on_tx_success();
         let cached = storage.get_cached_modification();
         for (key, value) in cached {
             writer.save(key, value)?;
         }
-        Ok(events)
+        Ok(result.events)
     }
 
     fn deploy_system_contracts(writer: &mut DiskStorageWriter) -> anyhow::Result<()> {
@@ -364,7 +371,11 @@ mod tests {
     }
 
     fn get_storage() -> anyhow::Result<OlaCachedStorage> {
-        let storage = OlaCachedStorage::new(get_db_path())?;
+        let block_timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as u64;
+        let storage = OlaCachedStorage::new(get_db_path(), Some(block_timestamp))?;
         Ok(storage)
     }
 

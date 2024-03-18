@@ -73,7 +73,7 @@ impl Invoke {
 
         let db_path_string = db_home.as_path().to_str().unwrap().to_string();
         let writer = DiskStorageWriter::new(db_path_string.clone())?;
-        let mut storage = OlaCachedStorage::new(db_path_string)?;
+        let mut storage = OlaCachedStorage::new(db_path_string, Some(block_timestamp))?;
         let block_info = BlockExeInfo {
             block_number,
             block_timestamp,
@@ -138,7 +138,7 @@ impl Invoke {
             &mut storage,
             entry_contract,
         );
-        let events = tx_exe_manager.invoke()?;
+        let result = tx_exe_manager.invoke()?;
         storage.on_tx_success();
         let cached = storage.get_cached_modification();
         for (key, value) in cached.clone() {
@@ -146,7 +146,7 @@ impl Invoke {
         }
 
         let storage_change_size = cached.len();
-        let event_size = events.len();
+        let event_size = result.events.len();
         println!(
             "============ Invoke success with {} storage changes, {} events ============",
             storage_change_size, event_size
@@ -159,7 +159,7 @@ impl Invoke {
         }
         if event_size > 0 {
             println!("Events:");
-            for event in events {
+            for event in result.events {
                 println!("{:?}", event);
             }
         }
