@@ -244,7 +244,7 @@ mod tests {
     #[test]
     fn test_book_event() {
         let mut writer = get_writer().unwrap();
-        let address = [0, 0, 0, 123457];
+        let address = [0, 0, 0, 1234599];
         deploy(&mut writer, "contracts/books_bin.json", address).unwrap();
         let abi_path = "contracts-abi/books_abi.json";
         let mut path = get_test_dir();
@@ -260,7 +260,7 @@ mod tests {
             let param_1 = Value::String("hello".to_string());
             // encode input and function selector
             let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[param_0, param_1])
+                .encode_input_with_signature(func.signature().as_str(), &[])
                 .unwrap();
             println!("input: {:?}", calldata);
             let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
