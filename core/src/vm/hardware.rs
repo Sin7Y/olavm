@@ -529,9 +529,26 @@ pub trait OlaStorage {
         contract_addr: ContractAddress,
         slot_key: OlaStorageKey,
         value: OlaStorageValue,
-    );
+    ) -> anyhow::Result<()>;
     fn on_tx_success(&mut self);
     fn clear_tx_cache(&mut self);
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum StorageAccessKind {
+    Read,
+    RepeatedWrite,
+    InitialWrite,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StorageAccessLog {
+    pub block_timestamp: u64,
+    pub kind: StorageAccessKind,
+    pub contract_addr: ContractAddress,
+    pub storage_key: OlaStorageKey,
+    pub pre_value: Option<OlaStorageValue>,
+    pub value: Option<OlaStorageValue>,
 }
 
 #[cfg(test)]

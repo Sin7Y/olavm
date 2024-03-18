@@ -1,5 +1,6 @@
 use core::{
-    program::binary_program::BinaryProgram,
+    trace::exe_trace::TxExeTrace,
+    tx::TxResult,
     vm::{
         hardware::{ContractAddress, ExeContext, OlaTape},
         types::{Event, Hash},
@@ -112,7 +113,7 @@ impl<'batch> TxExeManager<'batch> {
         self.tape.batch_write(&entry_contract);
     }
 
-    pub fn invoke(&mut self) -> anyhow::Result<Vec<Event>> {
+    pub fn invoke(&mut self) -> anyhow::Result<TxResult> {
         let program = self.storage.get_program(self.entry_contract)?;
         self.accessed_bytecodes
             .insert(self.entry_contract, program.bytecode_u64s()?);
@@ -184,7 +185,12 @@ impl<'batch> TxExeManager<'batch> {
                 break;
             }
         }
-        Ok(self.tx_event_manager.events.clone())
+        let result = TxResult {
+            trace: self.get_tx_trace(),
+            storage_access_logs: self.storage.get_tx_storage_access_logs(),
+            events: self.tx_event_manager.events.clone(),
+        };
+        Ok(result)
     }
 
     pub fn call(&mut self) -> anyhow::Result<Vec<u64>> {
@@ -288,5 +294,10 @@ impl<'batch> TxExeManager<'batch> {
 
     fn is_trace_needed(&self) -> bool {
         return self.mode == ExecuteMode::Invoke;
+    }
+
+    fn get_tx_trace(&self) -> TxExeTrace {
+        self.trace_manager
+            .build_trace(self.accessed_bytecodes.clone().into_iter().collect())
     }
 }

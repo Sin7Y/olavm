@@ -117,8 +117,8 @@ impl OlaContractExecutor {
                 let instruction = instruction.clone();
 
                 // println!(
-                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, psp: {}, {} ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
-                //     self.clk,
+                //     "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ clk: {}, pc: {}, tp: {}, psp: {}, {}
+                // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",     self.clk,
                 //     self.pc,
                 //     tape.tp(),
                 //     self.memory.psp(),
@@ -256,14 +256,13 @@ impl OlaContractExecutor {
                     }
                 }
                 OlaStateDiff::Storage(d) => {
-                    // todo save storage log
-                    d.iter().for_each(|storage_diff| {
+                    for storage_diff in d {
                         storage.sstore(
                             self.context.storage_addr,
                             storage_diff.storage_key,
                             storage_diff.value,
-                        );
-                    });
+                        )?;
+                    }
                 }
                 OlaStateDiff::Tape(d) => d.iter().for_each(|tape_diff| {
                     // tape write might be output, might be sccall params.
