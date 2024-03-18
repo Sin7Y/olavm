@@ -252,6 +252,11 @@ mod tests {
     }
 
     #[test]
+    fn generate_storage_u32() {
+        generate_from_file("storage_u32_asm.json".to_string(), "storage_u32_bin.json".to_string());
+    }
+
+    #[test]
     fn generate_storage_u256() {
         generate_from_file("storage_u256_asm.json".to_string(), "storage_u256_bin.json".to_string());
     }
