@@ -1,0 +1,19 @@
+[
+  {
+    "name": "set_u32",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "get_u32",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  }
+]
