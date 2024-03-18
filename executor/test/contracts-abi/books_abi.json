@@ -1,0 +1,117 @@
+[
+  {
+    "name": "createBook",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "u32"
+      },
+      {
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "book_id",
+            "type": "u32"
+          },
+          {
+            "name": "book_name",
+            "type": "string"
+          },
+          {
+            "name": "author",
+            "type": "string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "getBookName",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_book",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "book_id",
+            "type": "u32"
+          },
+          {
+            "name": "book_name",
+            "type": "string"
+          },
+          {
+            "name": "author",
+            "type": "string"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ]
+  },
+  {
+    "name": "getBookId",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "_book",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "book_id",
+            "type": "u32"
+          },
+          {
+            "name": "book_name",
+            "type": "string"
+          },
+          {
+            "name": "author",
+            "type": "string"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32"
+      }
+    ]
+  },
+  {
+    "name": "BookCreated",
+    "type": "event",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "u32",
+        "indexed": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "indexed": true
+      },
+      {
+        "name": "author",
+        "type": "string"
+      }
+    ],
+    "anonymous": false
+  }
+]
