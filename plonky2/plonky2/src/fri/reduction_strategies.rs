@@ -1,9 +1,10 @@
 use std::time::Instant;
 
 use log::debug;
+use serde::{Deserialize, Serialize};
 
 /// A method for deciding what arity to use at each reduction layer.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum FriReductionStrategy {
     /// Specifies the exact sequence of arities (expressed in bits) to use.
     Fixed(Vec<usize>),

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::fri::reduction_strategies::FriReductionStrategy;
 
 mod challenges;
@@ -11,7 +13,7 @@ mod validate_shape;
 pub mod verifier;
 pub mod witness_util;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FriConfig {
     /// `rate = 2^{-rate_bits}`.
     pub rate_bits: usize,

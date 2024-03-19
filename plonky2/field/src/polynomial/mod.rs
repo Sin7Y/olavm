@@ -125,24 +125,23 @@ impl<F: Field> From<Vec<F>> for PolynomialValues<F> {
 
 // use crate::goldilocks_field::_::_serde::ser::SerializeSeq;
 
-impl Serialize for PolynomialValues<GoldilocksField>  {
+impl Serialize for PolynomialValues<GoldilocksField> {
     fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
     where
-        S: serde::Serializer {
+        S: serde::Serializer,
+    {
         self.values.serialize(serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for PolynomialValues<GoldilocksField>
-{
+impl<'de> Deserialize<'de> for PolynomialValues<GoldilocksField> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         struct PolynomialValuesVisitor<GoldilocksField>(std::marker::PhantomData<GoldilocksField>);
 
-        impl<'de> Visitor<'de> for PolynomialValuesVisitor<GoldilocksField>
-        {
+        impl<'de> Visitor<'de> for PolynomialValuesVisitor<GoldilocksField> {
             type Value = PolynomialValues<GoldilocksField>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -519,7 +518,8 @@ mod tests {
         let n = 1 << k;
         let evals = PolynomialValues::new(F::rand_vec(n));
         let data = serde_json::to_string(&evals.clone()).unwrap();
-        let evals_2: PolynomialValues<GoldilocksField> = serde_json::from_str(data.as_str()).unwrap();
+        let evals_2: PolynomialValues<GoldilocksField> =
+            serde_json::from_str(data.as_str()).unwrap();
         assert_eq!(evals, evals_2);
     }
 
