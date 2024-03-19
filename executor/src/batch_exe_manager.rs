@@ -1,13 +1,17 @@
 use core::{
-    merkle_tree::log::StorageQuery,
-    tx::TxResult,
-    vm::hardware::{ContractAddress, OlaStorage, StorageAccessKind, StorageAccessLog},
+    trace::exe_trace::TxExeTrace,
+    tx::{BatchResult, TxResult},
+    vm::{
+        hardware::{ContractAddress, OlaStorage, StorageAccessLog},
+        types::Event,
+    },
 };
+use std::mem;
 
 use anyhow::Ok;
 
 use crate::{
-    config::ExecuteMode,
+    config::{ExecuteMode, ADDR_U64_ENTRYPOINT},
     ola_storage::OlaCachedStorage,
     tx_exe_manager::{OlaTapeInitInfo, TxExeManager},
 };
@@ -23,6 +27,9 @@ pub struct BlockExeInfo {
 pub struct BlockExeManager {
     block_info: BlockExeInfo,
     storage: OlaCachedStorage,
+    tx_traces: Vec<TxExeTrace>,
+    storage_access_logs: Vec<StorageAccessLog>,
+    events: Vec<Event>,
 }
 
 impl BlockExeManager {
@@ -43,19 +50,20 @@ impl BlockExeManager {
         Ok(Self {
             block_info,
             storage,
+            tx_traces: vec![],
+            storage_access_logs: vec![],
+            events: vec![],
         })
     }
 
     pub fn invoke(&mut self, tx: OlaTapeInitInfo) -> anyhow::Result<TxResult> {
         self.storage.clear_tx_cache();
-        // todo
-        let address = [1, 1, 1, 1];
         let mut tx_exe_manager: TxExeManager = TxExeManager::new(
             ExecuteMode::Invoke,
             self.block_info.clone(),
             tx,
             &mut self.storage,
-            address,
+            ADDR_U64_ENTRYPOINT,
         );
         let result = tx_exe_manager.invoke()?;
         self.storage.on_tx_success();
@@ -64,6 +72,39 @@ impl BlockExeManager {
     }
 
     fn on_tx_success(&mut self, tx_result: TxResult) {
-        // todo save tx result
+        self.tx_traces.push(tx_result.trace);
+        self.storage_access_logs
+            .extend(tx_result.storage_access_logs);
+        self.events.extend(tx_result.events);
+    }
+
+    pub fn finish_batch(&mut self) -> anyhow::Result<BatchResult> {
+        // todo version
+        let tx = OlaTapeInitInfo {
+            version: 0,
+            origin_address: self.block_info.sequencer_address,
+            calldata: vec![self.block_info.block_number, 1, 2190639505],
+            nonce: None,
+            signature_r: None,
+            signature_s: None,
+            tx_hash: None,
+        };
+        let mut tx_exe_manager: TxExeManager = TxExeManager::new(
+            ExecuteMode::Invoke,
+            self.block_info.clone(),
+            tx,
+            &mut self.storage,
+            ADDR_U64_ENTRYPOINT,
+        );
+        let result = tx_exe_manager.invoke()?;
+        let block_tip_queries = self.storage.get_tx_storage_access_logs();
+        self.storage.on_tx_success();
+        self.on_tx_success(result.clone());
+        Ok(BatchResult {
+            tx_traces: mem::replace(&mut self.tx_traces, Vec::new()),
+            storage_access_logs: mem::replace(&mut self.storage_access_logs, Vec::new()),
+            events: mem::replace(&mut self.events, Vec::new()),
+            block_tip_queries,
+        })
     }
 }
