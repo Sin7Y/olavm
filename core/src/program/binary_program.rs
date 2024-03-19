@@ -392,7 +392,7 @@ impl BinaryInstruction {
                 )
             }
 
-            OlaOpcode::MOV | OlaOpcode::NOT | OlaOpcode::TSTORE | OlaOpcode::SIGCHECK => {
+            OlaOpcode::MOV | OlaOpcode::NOT | OlaOpcode::SIGCHECK => {
                 format!(
                     "{} {} {}",
                     self.opcode.token(),
@@ -431,6 +431,7 @@ impl BinaryInstruction {
             | OlaOpcode::SCCALL
             | OlaOpcode::SLOAD
             | OlaOpcode::SSTORE
+            | OlaOpcode::TSTORE
             | OlaOpcode::EVENT => {
                 format!(
                     "{} {} {}",
