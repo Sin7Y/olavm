@@ -12,7 +12,7 @@ use anyhow::Ok;
 
 use crate::{
     batch_exe_manager::BlockExeInfo,
-    config::ExecuteMode,
+    config::{ExecuteMode, ADDR_U64_ENTRYPOINT},
     contract_executor::{OlaContractExecutor, OlaContractExecutorState},
     exe_trace::tx::TxTraceManager,
     ola_storage::OlaCachedStorage,
@@ -74,8 +74,14 @@ impl<'batch> TxExeManager<'batch> {
         storage: &'batch mut OlaCachedStorage,
         entry_contract: ContractAddress,
     ) -> Self {
-        // todo, or extract biz_contract_address from tx calldata
-        let biz_contract_address = entry_contract;
+        let biz_contract_address = if entry_contract == ADDR_U64_ENTRYPOINT
+        /* todo and function selector is system_entrance */
+        {
+            // fixme: extract biz_contract_address from tx calldata
+            entry_contract
+        } else {
+            entry_contract
+        };
         let mut manager = Self {
             mode,
             next_env_idx: 0,
