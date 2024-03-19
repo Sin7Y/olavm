@@ -260,7 +260,7 @@ mod tests {
             let param_1 = Value::String("hello".to_string());
             // encode input and function selector
             let calldata = abi
-                .encode_input_with_signature(func.signature().as_str(), &[])
+                .encode_input_with_signature(func.signature().as_str(), &[param_0, param_1])
                 .unwrap();
             println!("input: {:?}", calldata);
             let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
