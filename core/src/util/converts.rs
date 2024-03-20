@@ -1,5 +1,7 @@
 use ethereum_types::{H256, U256};
 
+use crate::vm::hardware::ContractAddress;
+
 pub fn u64s_to_bytes(arr: &[u64]) -> Vec<u8> {
     arr.iter().flat_map(|w| w.to_be_bytes()).collect()
 }
@@ -137,4 +139,22 @@ pub fn address_from_hex_be(value: &str) -> anyhow::Result<[u8; 32]> {
         anyhow::bail!("Key out of range.");
     };
     Ok(parsed_bytes)
+}
+
+pub fn u8_arr_to_address(value: &[u8; 32]) -> ContractAddress {
+    value
+        .chunks(8)
+        .into_iter()
+        .enumerate()
+        .fold([0; 4], |mut address, (index, chunk)| {
+            address[index] = u64::from_be_bytes(
+                chunk
+                    .iter()
+                    .map(|e| *e)
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .expect("Convert u8 chunk to bytes failed"),
+            );
+            address
+        })
 }
