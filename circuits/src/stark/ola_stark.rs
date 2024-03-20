@@ -1,3 +1,4 @@
+use core::types::GoldilocksField;
 use std::iter;
 
 use super::config::StarkConfig;
@@ -22,6 +23,9 @@ use crate::program::program_stark::{self, ProgramStark};
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
+use serde::de::{self, MapAccess, Visitor};
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Clone)]
 pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
@@ -40,6 +44,264 @@ pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub prog_chunk_stark: ProgChunkStark<F, D>,
 
     pub cross_table_lookups: Vec<CrossTableLookup<F>>,
+}
+
+impl Serialize for OlaStark<GoldilocksField, 2> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("OlaStark", 13)?;
+        state.serialize_field("cpu_stark", &self.cpu_stark)?;
+        state.serialize_field("memory_stark", &self.memory_stark)?;
+        state.serialize_field("bitwise_stark", &self.bitwise_stark)?;
+        state.serialize_field("cmp_stark", &self.cmp_stark)?;
+        state.serialize_field("rangecheck_stark", &self.rangecheck_stark)?;
+        state.serialize_field("poseidon_stark", &self.poseidon_stark)?;
+        state.serialize_field("poseidon_chunk_stark", &self.poseidon_chunk_stark)?;
+        state.serialize_field("storage_access_stark", &self.storage_access_stark)?;
+        state.serialize_field("tape_stark", &self.tape_stark)?;
+        state.serialize_field("sccall_stark", &self.sccall_stark)?;
+        state.serialize_field("program_stark", &self.program_stark)?;
+        state.serialize_field("prog_chunk_stark", &self.prog_chunk_stark)?;
+        state.serialize_field("cross_table_lookups", &self.cross_table_lookups)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for OlaStark<GoldilocksField, 2> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            CpuStark,
+            MemoryStark,
+            BitwiseStark,
+            CmpStark,
+            RangeCheckStark,
+            PoseidonStark,
+            PoseidonChunkStark,
+            StorageAccessStark,
+            TapeStark,
+            SccallStark,
+            ProgramStark,
+            ProgChunkStark,
+            CrossTableLookups,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        formatter.write_str("a valid field identifier")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "cpu_stark" => Ok(Field::CpuStark),
+                            "memory_stark" => Ok(Field::MemoryStark),
+                            "bitwise_stark" => Ok(Field::BitwiseStark),
+                            "cmp_stark" => Ok(Field::CmpStark),
+                            "rangecheck_stark" => Ok(Field::RangeCheckStark),
+                            "poseidon_stark" => Ok(Field::PoseidonStark),
+                            "poseidon_chunk_stark" => Ok(Field::PoseidonChunkStark),
+                            "storage_access_stark" => Ok(Field::StorageAccessStark),
+                            "tape_stark" => Ok(Field::TapeStark),
+                            "sccall_stark" => Ok(Field::SccallStark),
+                            "program_stark" => Ok(Field::ProgramStark),
+                            "prog_chunk_stark" => Ok(Field::ProgChunkStark),
+                            "cross_table_lookups" => Ok(Field::CrossTableLookups),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct OlaStarkVisitor {
+            marker: std::marker::PhantomData<GoldilocksField>,
+        }
+
+        impl<'de> Visitor<'de> for OlaStarkVisitor {
+            type Value = OlaStark<GoldilocksField, 2>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct OlaStark")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<OlaStark<GoldilocksField, 2>, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut cpu_stark = None;
+                let mut memory_stark = None;
+                let mut bitwise_stark = None;
+                let mut cmp_stark = None;
+                let mut rangecheck_stark = None;
+                let mut poseidon_stark = None;
+                let mut poseidon_chunk_stark = None;
+                let mut storage_access_stark = None;
+                let mut tape_stark = None;
+                let mut sccall_stark = None;
+                let mut program_stark = None;
+                let mut prog_chunk_stark = None;
+                let mut cross_table_lookups = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::CpuStark => {
+                            if cpu_stark.is_some() {
+                                return Err(de::Error::duplicate_field("cpu_stark"));
+                            }
+                            cpu_stark = Some(map.next_value()?);
+                        }
+                        Field::MemoryStark => {
+                            if memory_stark.is_some() {
+                                return Err(de::Error::duplicate_field("memory_stark"));
+                            }
+                            memory_stark = Some(map.next_value()?);
+                        }
+                        Field::BitwiseStark => {
+                            if bitwise_stark.is_some() {
+                                return Err(de::Error::duplicate_field("bitwise_stark"));
+                            }
+                            bitwise_stark = Some(map.next_value()?);
+                        }
+                        Field::CmpStark => {
+                            if cmp_stark.is_some() {
+                                return Err(de::Error::duplicate_field("cmp_stark"));
+                            }
+                            cmp_stark = Some(map.next_value()?);
+                        }
+                        Field::RangeCheckStark => {
+                            if rangecheck_stark.is_some() {
+                                return Err(de::Error::duplicate_field("rangecheck_stark"));
+                            }
+                            rangecheck_stark = Some(map.next_value()?);
+                        }
+                        Field::PoseidonStark => {
+                            if poseidon_stark.is_some() {
+                                return Err(de::Error::duplicate_field("poseidon_stark"));
+                            }
+                            poseidon_stark = Some(map.next_value()?);
+                        }
+                        Field::PoseidonChunkStark => {
+                            if poseidon_chunk_stark.is_some() {
+                                return Err(de::Error::duplicate_field("poseidon_chunk_stark"));
+                            }
+                            poseidon_chunk_stark = Some(map.next_value()?);
+                        }
+                        Field::StorageAccessStark => {
+                            if storage_access_stark.is_some() {
+                                return Err(de::Error::duplicate_field("storage_access_stark"));
+                            }
+                            storage_access_stark = Some(map.next_value()?);
+                        }
+                        Field::TapeStark => {
+                            if tape_stark.is_some() {
+                                return Err(de::Error::duplicate_field("tape_stark"));
+                            }
+                            tape_stark = Some(map.next_value()?);
+                        }
+                        Field::SccallStark => {
+                            if sccall_stark.is_some() {
+                                return Err(de::Error::duplicate_field("sccall_stark"));
+                            }
+                            sccall_stark = Some(map.next_value()?);
+                        }
+                        Field::ProgramStark => {
+                            if program_stark.is_some() {
+                                return Err(de::Error::duplicate_field("program_stark"));
+                            }
+                            program_stark = Some(map.next_value()?);
+                        }
+                        Field::ProgChunkStark => {
+                            if prog_chunk_stark.is_some() {
+                                return Err(de::Error::duplicate_field("prog_chunk_stark"));
+                            }
+                            prog_chunk_stark = Some(map.next_value()?);
+                        }
+                        Field::CrossTableLookups => {
+                            if cross_table_lookups.is_some() {
+                                return Err(de::Error::duplicate_field("cross_table_lookups"));
+                            }
+                            cross_table_lookups = Some(map.next_value()?);
+                        }
+                    }
+                }
+                // let cpu_stark = cpu_stark.ok_or_else(||
+                // de::Error::missing_field("cpu_stark"))?;
+                let cpu_stark = cpu_stark.ok_or_else(|| de::Error::missing_field("cpu_stark"))?;
+                let memory_stark =
+                    memory_stark.ok_or_else(|| de::Error::missing_field("memory_stark"))?;
+                let bitwise_stark =
+                    bitwise_stark.ok_or_else(|| de::Error::missing_field("bitwise_stark"))?;
+                let cmp_stark = cmp_stark.ok_or_else(|| de::Error::missing_field("cmp_stark"))?;
+                let rangecheck_stark =
+                    rangecheck_stark.ok_or_else(|| de::Error::missing_field("rangecheck_stark"))?;
+                let poseidon_stark =
+                    poseidon_stark.ok_or_else(|| de::Error::missing_field("poseidon_stark"))?;
+                let poseidon_chunk_stark = poseidon_chunk_stark
+                    .ok_or_else(|| de::Error::missing_field("poseidon_chunk_stark"))?;
+                let storage_access_stark = storage_access_stark
+                    .ok_or_else(|| de::Error::missing_field("storage_access_stark"))?;
+                let tape_stark =
+                    tape_stark.ok_or_else(|| de::Error::missing_field("tape_stark"))?;
+                let sccall_stark =
+                    sccall_stark.ok_or_else(|| de::Error::missing_field("sccall_stark"))?;
+                let program_stark =
+                    program_stark.ok_or_else(|| de::Error::missing_field("program_stark"))?;
+                let prog_chunk_stark =
+                    prog_chunk_stark.ok_or_else(|| de::Error::missing_field("prog_chunk_stark"))?;
+                let cross_table_lookups = cross_table_lookups
+                    .ok_or_else(|| de::Error::missing_field("cross_table_lookups"))?;
+                Ok(OlaStark {
+                    cpu_stark,
+                    memory_stark,
+                    bitwise_stark,
+                    cmp_stark,
+                    rangecheck_stark,
+                    poseidon_stark,
+                    poseidon_chunk_stark,
+                    storage_access_stark,
+                    tape_stark,
+                    sccall_stark,
+                    program_stark,
+                    prog_chunk_stark,
+                    cross_table_lookups,
+                })
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &[
+            "cpu_stark",
+            "memory_stark",
+            "bitwise_stark",
+            "cmp_stark",
+            "rangecheck_stark",
+            "poseidon_stark",
+            "poseidon_chunk_stark",
+            "storage_access_stark",
+            "tape_stark",
+            "sccall_stark",
+            "program_stark",
+            "prog_chunk_stark",
+            "cross_table_lookups",
+        ];
+        deserializer.deserialize_struct("OlaStark", FIELDS, OlaStarkVisitor { marker: std::marker::PhantomData })
+    }
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> Default for OlaStark<F, D> {
@@ -100,7 +362,7 @@ impl<F: RichField + Extendable<D>, const D: usize> OlaStark<F, D> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Table {
     Cpu = 0,
     Memory = 1,
@@ -690,6 +952,23 @@ mod tests {
     type S = dyn Stark<F, D>;
 
     #[test]
+    fn test_serialize() {
+        let mut ola_stark = OlaStark::default();
+        assert_eq!(ola_stark.bitwise_stark.get_compress_challenge(), None);
+        assert_eq!(ola_stark.program_stark.get_compress_challenge(), None);
+        let challenge1 = GoldilocksField::rand();
+        let challenge2 = GoldilocksField::rand();
+        ola_stark.bitwise_stark.set_compress_challenge(challenge1);
+        ola_stark.program_stark.set_compress_challenge(challenge2);
+        assert_eq!(ola_stark.bitwise_stark.get_compress_challenge(), Some(challenge1));
+        assert_eq!(ola_stark.program_stark.get_compress_challenge(), Some(challenge2));
+        let data = serde_json::to_string(&ola_stark).unwrap();
+        let stark: OlaStark<GoldilocksField, 2> = serde_json::from_str(&data).unwrap();
+        assert_eq!(ola_stark.bitwise_stark.get_compress_challenge(), stark.bitwise_stark.get_compress_challenge());
+        assert_eq!(ola_stark.program_stark.get_compress_challenge(), stark.program_stark.get_compress_challenge());
+    }
+
+    #[test]
     fn fibo_loop_test() {
         let calldata = [10u64, 1u64, 2, 4185064725u64]
             .iter()
@@ -937,6 +1216,7 @@ mod tests {
 
         let mut ola_stark = OlaStark::default();
         let (traces, public_values) = generate_traces(program, &mut ola_stark, inputs);
+
         let config = StarkConfig::standard_fast_config();
         let proof = prove_with_traces::<F, C, D>(
             &ola_stark,

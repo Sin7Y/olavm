@@ -10,6 +10,7 @@ use plonky2::{
     hash::hash_types::RichField,
     plonk::circuit_builder::CircuitBuilder,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -60,7 +61,7 @@ pub fn ctl_filter_sccall_end<F: Field>() -> Column<F> {
     Column::linear_combination_with_constant([(COL_SCCALL_IS_PADDING, F::NEG_ONE)], F::ONE)
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct SCCallStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

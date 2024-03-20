@@ -1,5 +1,6 @@
 use crate::builtins::cmp::columns::*;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::stark::cross_table_lookup::Column;
@@ -12,7 +13,7 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use std::marker::PhantomData;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct CmpStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

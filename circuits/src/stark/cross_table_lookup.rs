@@ -1,4 +1,6 @@
+use core::types::GoldilocksField;
 use std::borrow::Borrow;
+use std::fmt;
 use std::iter::repeat;
 
 use anyhow::{ensure, Result};
@@ -13,6 +15,9 @@ use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::iop::target::Target;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::config::GenericConfig;
+use serde::de::{self, DeserializeOwned, MapAccess, Visitor};
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::config::StarkConfig;
 use super::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
@@ -29,6 +34,104 @@ use super::vars::{StarkEvaluationTargets, StarkEvaluationVars};
 pub struct Column<F: Field> {
     linear_combination: Vec<(usize, F)>,
     constant: F,
+}
+
+impl Serialize for Column<GoldilocksField> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_struct("Column", 2)?;
+        s.serialize_field("linear_combination", &self.linear_combination)?;
+        s.serialize_field("constant", &self.constant)?;
+        s.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Column<GoldilocksField> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            LinearCombination,
+            Constant,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        formatter.write_str("`linear_combination` or `constant`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "linear_combination" => Ok(Field::LinearCombination),
+                            "constant" => Ok(Field::Constant),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct ColumnVisitor(std::marker::PhantomData<GoldilocksField>);
+
+        impl<'de> Visitor<'de> for ColumnVisitor {
+            type Value = Column<GoldilocksField>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct Column")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Column<GoldilocksField>, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut linear_combination = None;
+                let mut constant = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::LinearCombination => {
+                            if linear_combination.is_some() {
+                                return Err(de::Error::duplicate_field("linear_combination"));
+                            }
+                            linear_combination = Some(map.next_value()?);
+                        }
+                        Field::Constant => {
+                            if constant.is_some() {
+                                return Err(de::Error::duplicate_field("constant"));
+                            }
+                            constant = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let linear_combination = linear_combination
+                    .ok_or_else(|| de::Error::missing_field("linear_combination"))?;
+                let constant = constant.ok_or_else(|| de::Error::missing_field("constant"))?;
+                Ok(Column {
+                    linear_combination,
+                    constant,
+                })
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["linear_combination", "constant"];
+        deserializer.deserialize_struct("Column", FIELDS, ColumnVisitor(std::marker::PhantomData))
+    }
 }
 
 impl<F: Field> Column<F> {
@@ -148,6 +251,121 @@ pub struct TableWithColumns<F: Field> {
     filter_column: Option<Column<F>>,
 }
 
+impl Serialize for TableWithColumns<GoldilocksField> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("TableWithColumns", 3)?;
+        state.serialize_field("table", &self.table)?;
+        state.serialize_field("columns", &self.columns)?;
+        state.serialize_field("filter_column", &self.filter_column)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for TableWithColumns<GoldilocksField> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            Table,
+            Columns,
+            FilterColumn,
+        };
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`table`, `columns` or `filter_column`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "table" => Ok(Field::Table),
+                            "columns" => Ok(Field::Columns),
+                            "filter_column" => Ok(Field::FilterColumn),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct TableWithColumnsVisitor(std::marker::PhantomData<GoldilocksField>);
+
+        impl<'de> Visitor<'de> for TableWithColumnsVisitor {
+            type Value = TableWithColumns<GoldilocksField>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct TableWithColumns")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<TableWithColumns<GoldilocksField>, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut table = None;
+                let mut columns = None;
+                let mut filter_column = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Table => {
+                            if table.is_some() {
+                                return Err(de::Error::duplicate_field("table"));
+                            }
+                            table = Some(map.next_value()?);
+                        }
+                        Field::Columns => {
+                            if columns.is_some() {
+                                return Err(de::Error::duplicate_field("columns"));
+                            }
+                            columns = Some(map.next_value()?);
+                        }
+                        Field::FilterColumn => {
+                            if filter_column.is_some() {
+                                return Err(de::Error::duplicate_field("filter_column"));
+                            }
+                            filter_column = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let table = table.ok_or_else(|| de::Error::missing_field("table"))?;
+                let columns = columns.ok_or_else(|| de::Error::missing_field("columns"))?;
+                let filter_column = filter_column; // Optional
+
+                Ok(TableWithColumns {
+                    table,
+                    columns,
+                    filter_column,
+                })
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["table", "columns", "filter_column"];
+        deserializer.deserialize_struct(
+            "TableWithColumns",
+            FIELDS,
+            TableWithColumnsVisitor(std::marker::PhantomData),
+        )
+    }
+}
+
 impl<F: Field> TableWithColumns<F> {
     pub fn new(table: Table, columns: Vec<Column<F>>, filter_column: Option<Column<F>>) -> Self {
         Self {
@@ -162,6 +380,109 @@ impl<F: Field> TableWithColumns<F> {
 pub struct CrossTableLookup<F: Field> {
     looking_tables: Vec<TableWithColumns<F>>,
     looked_table: TableWithColumns<F>,
+}
+
+impl Serialize for CrossTableLookup<GoldilocksField> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("CrossTableLookup", 2)?;
+        s.serialize_field("looking_tables", &self.looking_tables)?;
+        s.serialize_field("looked_table", &self.looked_table)?;
+        s.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for CrossTableLookup<GoldilocksField> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            LookingTables,
+            LookedTable,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        formatter.write_str("`looking_tables` or `looked_table`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "looking_tables" => Ok(Field::LookingTables),
+                            "looked_table" => Ok(Field::LookedTable),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct CrossTableLookupVisitor(std::marker::PhantomData<GoldilocksField>);
+
+        impl<'de> Visitor<'de> for CrossTableLookupVisitor {
+            type Value = CrossTableLookup<GoldilocksField>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct CrossTableLookup")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<CrossTableLookup<GoldilocksField>, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut looking_tables = None;
+                let mut looked_table = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::LookingTables => {
+                            if looking_tables.is_some() {
+                                return Err(de::Error::duplicate_field("looking_tables"));
+                            }
+                            looking_tables = Some(map.next_value()?);
+                        }
+                        Field::LookedTable => {
+                            if looked_table.is_some() {
+                                return Err(de::Error::duplicate_field("looked_table"));
+                            }
+                            looked_table = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let looking_tables =
+                    looking_tables.ok_or_else(|| de::Error::missing_field("looking_tables"))?;
+                let looked_table =
+                    looked_table.ok_or_else(|| de::Error::missing_field("looked_table"))?;
+                Ok(CrossTableLookup {
+                    looking_tables,
+                    looked_table,
+                })
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["looking_tables", "looked_table"];
+        deserializer.deserialize_struct(
+            "CrossTableLookup",
+            FIELDS,
+            CrossTableLookupVisitor(std::marker::PhantomData),
+        )
+    }
 }
 
 impl<F: Field> CrossTableLookup<F> {

@@ -126,7 +126,7 @@ impl<F: Field> From<Vec<F>> for PolynomialValues<F> {
 // use crate::goldilocks_field::_::_serde::ser::SerializeSeq;
 
 impl Serialize for PolynomialValues<GoldilocksField> {
-    fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {

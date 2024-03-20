@@ -1,5 +1,7 @@
 use core::{program::CTX_REGISTER_NUM, vm::opcodes::OlaOpcode};
 
+use serde::{Deserialize, Serialize};
+
 use {
     super::{columns::*, *},
     crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -324,7 +326,7 @@ pub fn ctl_filter_cpu_is_sccall_ext<F: Field>() -> Column<F> {
     Column::single(IS_SCCALL_EXT_LINE)
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct CpuStark<F, const D: usize> {
     pub f: PhantomData<F>,
 }
