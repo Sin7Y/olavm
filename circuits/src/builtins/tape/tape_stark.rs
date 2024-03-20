@@ -38,7 +38,7 @@ pub fn ctl_filter_tape<F: Field>() -> Column<F> {
     Column::single(COL_FILTER_LOOKED)
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct TapeStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

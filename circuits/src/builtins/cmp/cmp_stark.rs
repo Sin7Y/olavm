@@ -13,7 +13,7 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use std::marker::PhantomData;
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CmpStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

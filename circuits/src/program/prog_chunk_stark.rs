@@ -60,7 +60,7 @@ pub fn ctl_filter_to_storage_access<F: Field>() -> Column<F> {
     Column::single(COL_PROG_CHUNK_IS_RESULT_LINE)
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ProgChunkStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

@@ -91,7 +91,7 @@ pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
     Column::single(COL_POSEIDON_CHUNK_FILTER_LOOKING_POSEIDON)
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct PoseidonChunkStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

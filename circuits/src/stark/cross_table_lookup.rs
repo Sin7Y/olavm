@@ -376,7 +376,7 @@ impl<F: Field> TableWithColumns<F> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CrossTableLookup<F: Field> {
     looking_tables: Vec<TableWithColumns<F>>,
     looked_table: TableWithColumns<F>,

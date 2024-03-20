@@ -61,7 +61,7 @@ pub fn ctl_filter_sccall_end<F: Field>() -> Column<F> {
     Column::linear_combination_with_constant([(COL_SCCALL_IS_PADDING, F::NEG_ONE)], F::ONE)
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct SCCallStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

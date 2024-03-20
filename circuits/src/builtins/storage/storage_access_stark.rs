@@ -103,7 +103,7 @@ pub fn ctl_data_with_poseidon_bit1_pre<F: Field>() -> Vec<Column<F>> {
 pub fn ctl_filter_with_poseidon_bit1<F: Field>() -> Column<F> {
     Column::single(COL_ST_FILTER_IS_HASH_BIT_1)
 }
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct StorageAccessStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }
