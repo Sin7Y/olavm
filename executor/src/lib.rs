@@ -61,11 +61,13 @@ pub mod load_tx;
 pub mod ola_storage;
 pub mod storage;
 mod tape;
+#[cfg(test)]
 pub mod test;
 #[cfg(test)]
 mod tests;
 pub mod trace;
 pub mod tx_exe_manager;
+pub mod tx_pre_executor;
 
 #[macro_export]
 macro_rules! memory_zone_detect {
