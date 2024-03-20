@@ -29,13 +29,21 @@ pub struct OlaTapeInitInfo {
 }
 
 pub(crate) struct TxEventManager {
+    block_number: u64,
+    prev_events_cnt_in_batch: usize,
     biz_contract_address: ContractAddress,
     events: Vec<Event>,
 }
 
 impl TxEventManager {
-    fn new(biz_contract_address: ContractAddress) -> Self {
+    fn new(
+        block_number: u64,
+        prev_events_cnt_in_batch: usize,
+        biz_contract_address: ContractAddress,
+    ) -> Self {
         Self {
+            block_number,
+            prev_events_cnt_in_batch,
             biz_contract_address,
             events: Vec::new(),
         }
@@ -46,7 +54,10 @@ impl TxEventManager {
     }
 
     pub fn on_event(&mut self, topics: Vec<Hash>, data: Vec<u64>) {
+        let index_in_batch = (self.events.len() + self.prev_events_cnt_in_batch) as u64;
         self.events.push(Event {
+            batch_number: self.block_number,
+            index_in_batch,
             address: self.biz_contract_address,
             topics,
             data,
@@ -73,6 +84,7 @@ impl<'batch> TxExeManager<'batch> {
         tx: OlaTapeInitInfo,
         storage: &'batch mut OlaCachedStorage,
         entry_contract: ContractAddress,
+        prev_events_cnt_in_batch: usize,
     ) -> Self {
         let biz_contract_address = if entry_contract == ADDR_U64_ENTRYPOINT
         /* todo and function selector is system_entrance */
@@ -87,7 +99,11 @@ impl<'batch> TxExeManager<'batch> {
             next_env_idx: 0,
             env_stack: Vec::new(),
             tape: OlaTape::default(),
-            tx_event_manager: TxEventManager::new(biz_contract_address),
+            tx_event_manager: TxEventManager::new(
+                block_info.block_number,
+                prev_events_cnt_in_batch,
+                biz_contract_address,
+            ),
             storage,
             trace_manager: TxTraceManager::default(),
             entry_contract,
