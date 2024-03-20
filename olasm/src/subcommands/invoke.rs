@@ -137,6 +137,7 @@ impl Invoke {
             tx,
             &mut storage,
             entry_contract,
+            0,
         );
         let result = tx_exe_manager.invoke()?;
         storage.on_tx_success();

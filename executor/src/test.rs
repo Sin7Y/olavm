@@ -293,7 +293,7 @@ mod tests {
             tx_hash: None,
         };
         let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address);
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address, 0);
         tx_exe_manager.call()
     }
 
@@ -326,7 +326,7 @@ mod tests {
             tx_hash: None,
         };
         let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address);
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address, 0);
         let result = tx_exe_manager.invoke()?;
         storage.on_tx_success();
         let cached = storage.get_cached_modification();

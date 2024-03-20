@@ -64,6 +64,7 @@ impl BlockExeManager {
             tx,
             &mut self.storage,
             ADDR_U64_ENTRYPOINT,
+            self.events.len(),
         );
         let result = tx_exe_manager.invoke()?;
         self.storage.on_tx_success();
@@ -95,6 +96,7 @@ impl BlockExeManager {
             tx,
             &mut self.storage,
             ADDR_U64_ENTRYPOINT,
+            self.events.len(),
         );
         let result = tx_exe_manager.invoke()?;
         let block_tip_queries = self.storage.get_tx_storage_access_logs();
