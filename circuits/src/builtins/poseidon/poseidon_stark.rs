@@ -15,9 +15,10 @@ use plonky2::field::types::Field;
 use plonky2::hash::poseidon::Poseidon;
 use plonky2::hash::{hash_types::RichField, poseidon};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
+use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct PoseidonStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

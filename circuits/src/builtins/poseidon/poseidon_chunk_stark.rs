@@ -10,6 +10,7 @@ use plonky2::{
     hash::hash_types::RichField,
     plonk::circuit_builder::CircuitBuilder,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -90,7 +91,7 @@ pub fn ctl_filter_with_poseidon<F: Field>() -> Column<F> {
     Column::single(COL_POSEIDON_CHUNK_FILTER_LOOKING_POSEIDON)
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct PoseidonChunkStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

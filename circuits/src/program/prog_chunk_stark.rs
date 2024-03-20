@@ -10,6 +10,7 @@ use plonky2::{
     hash::hash_types::RichField,
     plonk::circuit_builder::CircuitBuilder,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::stark::{
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -59,7 +60,7 @@ pub fn ctl_filter_to_storage_access<F: Field>() -> Column<F> {
     Column::single(COL_PROG_CHUNK_IS_RESULT_LINE)
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct ProgChunkStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

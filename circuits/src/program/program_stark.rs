@@ -10,6 +10,7 @@ use plonky2::{
     hash::hash_types::RichField,
     plonk::circuit_builder::CircuitBuilder,
 };
+use serde::{Deserialize, Serialize};
 
 use super::columns::*;
 use crate::stark::{
@@ -39,7 +40,7 @@ pub fn ctl_filter_by_program_chunk<F: Field>() -> Column<F> {
     Column::single(COL_PROG_FILTER_PROG_CHUNK)
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct ProgramStark<F, const D: usize> {
     compress_challenge: Option<F>,
     pub _phantom: PhantomData<F>,

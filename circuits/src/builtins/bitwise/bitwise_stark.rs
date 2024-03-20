@@ -1,6 +1,7 @@
 use crate::builtins::bitwise::columns::*;
 use anyhow::Result;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 //use crate::var::{StarkEvaluationTargets, StarkEvaluationVars};
 use crate::stark::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 use crate::stark::cross_table_lookup::Column;
@@ -18,7 +19,7 @@ use plonky2::plonk::plonk_common::*;
 use std::marker::PhantomData;
 //use std::ops::*;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct BitwiseStark<F, const D: usize> {
     compress_challenge: Option<F>,
     pub _phantom: PhantomData<F>,
