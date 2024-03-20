@@ -82,7 +82,7 @@ pub fn ctl_filter_with_poseidon_chunk<F: Field>() -> Column<F> {
 const ADDR_HEAP_PTR: u64 = 18446744060824649731u64;
 const INIT_VALUE_HEAP_PTR: u64 = ADDR_HEAP_PTR + 1;
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct MemoryStark<F, const D: usize> {
     pub f: PhantomData<F>,
 }

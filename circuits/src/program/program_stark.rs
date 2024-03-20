@@ -40,7 +40,7 @@ pub fn ctl_filter_by_program_chunk<F: Field>() -> Column<F> {
     Column::single(COL_PROG_FILTER_PROG_CHUNK)
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ProgramStark<F, const D: usize> {
     compress_challenge: Option<F>,
     pub _phantom: PhantomData<F>,

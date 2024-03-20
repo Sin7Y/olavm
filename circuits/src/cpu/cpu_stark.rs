@@ -326,7 +326,7 @@ pub fn ctl_filter_cpu_is_sccall_ext<F: Field>() -> Column<F> {
     Column::single(IS_SCCALL_EXT_LINE)
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CpuStark<F, const D: usize> {
     pub f: PhantomData<F>,
 }

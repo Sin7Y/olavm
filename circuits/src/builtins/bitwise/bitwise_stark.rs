@@ -19,7 +19,7 @@ use plonky2::plonk::plonk_common::*;
 use std::marker::PhantomData;
 //use std::ops::*;
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct BitwiseStark<F, const D: usize> {
     compress_challenge: Option<F>,
     pub _phantom: PhantomData<F>,

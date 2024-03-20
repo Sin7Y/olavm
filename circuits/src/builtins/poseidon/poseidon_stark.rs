@@ -18,7 +18,7 @@ use plonky2::plonk::circuit_builder::CircuitBuilder;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct PoseidonStark<F, const D: usize> {
     pub _phantom: PhantomData<F>,
 }

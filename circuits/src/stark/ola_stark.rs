@@ -27,7 +27,7 @@ use serde::de::{self, MapAccess, Visitor};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OlaStark<F: RichField + Extendable<D>, const D: usize> {
     pub cpu_stark: CpuStark<F, D>,
     pub memory_stark: MemoryStark<F, D>,
