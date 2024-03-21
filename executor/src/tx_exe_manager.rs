@@ -168,6 +168,9 @@ impl<'batch> TxExeManager<'batch> {
                         anyhow::bail!("Invalid Executor result, cannot be Running.")
                     }
                     OlaContractExecutorState::DelegateCalling(callee_addr) => {
+                        if self.mode == ExecuteMode::Debug {
+                            println!("[DelagateCalling] {:?}", callee_addr);
+                        }
                         let callee_program = self.storage.get_program(callee_addr)?;
                         let storage_addr = executor.get_storage_addr();
                         self.enqueue_caller(env_idx, executor);
@@ -187,6 +190,9 @@ impl<'batch> TxExeManager<'batch> {
                         self.enqueue_new_env(callee);
                     }
                     OlaContractExecutorState::Calling(callee_addr) => {
+                        if self.mode == ExecuteMode::Debug {
+                            println!("[Calling] {:?}", callee_addr);
+                        }
                         let callee_program = self.storage.get_program(callee_addr)?;
                         self.enqueue_caller(env_idx, executor);
 
@@ -205,6 +211,9 @@ impl<'batch> TxExeManager<'batch> {
                         self.enqueue_new_env(callee);
                     }
                     OlaContractExecutorState::End(_) => {
+                        if self.mode == ExecuteMode::Debug {
+                            println!("[END] {:?}", executor.get_storage_addr());
+                        }
                         // no need to do anything
                     }
                 }
@@ -288,6 +297,14 @@ impl<'batch> TxExeManager<'batch> {
 
     fn pop_env(&mut self) -> Option<(usize, OlaContractExecutor)> {
         if let Some((env_idx, env)) = self.env_stack.pop() {
+            if self.mode == ExecuteMode::Debug {
+                println!(
+                    "[ENV_POPED] env_idx: {}, storage({:?}), code({:?})",
+                    env_idx,
+                    env.get_storage_addr(),
+                    env.get_code_addr()
+                );
+            }
             if self.is_trace_needed() {
                 self.trace_manager.set_env(
                     env_idx,
@@ -299,6 +316,9 @@ impl<'batch> TxExeManager<'batch> {
             }
             Some((env_idx, env))
         } else {
+            if self.mode == ExecuteMode::Debug {
+                println!("[ENV_POPED] None");
+            }
             None
         }
     }
