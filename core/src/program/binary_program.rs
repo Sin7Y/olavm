@@ -97,6 +97,36 @@ impl BinaryInstruction {
         }
     }
 
+    pub fn get_inst_imm_u64(&self) -> anyhow::Result<(u64, Option<u64>)> {
+        let encoded = self.encode();
+        if let Ok(res) = encoded {
+            if let Some(instruction_binary) = res.get(0) {
+                let inst = Self::parse_u64_from_string(instruction_binary.clone())?;
+                let imm = if let Some(v) = res.get(1) {
+                    let value = Self::parse_u64_from_string(v.clone())?;
+                    Some(value)
+                } else {
+                    None
+                };
+                anyhow::Ok((inst, imm))
+            } else {
+                anyhow::bail!("BinaryInstruction: get_inst_imm_u64 error.")
+            }
+        } else {
+            anyhow::bail!("BinaryInstruction: get_inst_imm_u64 error.")
+        }
+    }
+
+    fn parse_u64_from_string(s: String) -> anyhow::Result<u64> {
+        let without_prefix = s.trim_start_matches("0x");
+        let instruction_u64 = u64::from_str_radix(without_prefix, 16);
+        if let Ok(res) = instruction_u64 {
+            anyhow::Ok(res)
+        } else {
+            anyhow::bail!("BinaryInstruction: parse_u64_from_string error.")
+        }
+    }
+
     pub fn encode(&self) -> Result<Vec<String>, String> {
         let mut instruction_u64: u64 = 0;
         let mut imm: Option<ImmediateValue> = None;
