@@ -10,11 +10,28 @@ pub struct CpuExePiece {
     pub clk: u64,
     pub pc: u64,
     pub psp: u64,
+    pub tp: u64,
     pub registers: [u64; NUM_GENERAL_PURPOSE_REGISTER],
-    pub opcode: OlaOpcode,
+    pub instruction: u64,
+    pub imm: Option<u64>,
+    pub opcode: u64,
     pub op0: Option<u64>,
     pub op1: Option<u64>,
     pub dst: Option<u64>,
+    pub aux0: Option<u64>,
+    pub aux1: Option<u64>,
+    pub op0_reg_sel: [u64; NUM_GENERAL_PURPOSE_REGISTER],
+    pub op1_reg_sel: [u64; NUM_GENERAL_PURPOSE_REGISTER],
+    pub dst_reg_sel: [u64; NUM_GENERAL_PURPOSE_REGISTER],
+    pub is_ext_line: bool,
+    pub ext_cnt: u64,
+    pub aux_sccall: Option<CpuPieceAuxSCCall>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CpuPieceAuxSCCall {
+    pub addr_callee_storage: ContractAddress,
+    pub addr_callee_code: ContractAddress,
 }
 
 #[derive(Debug, Clone)]
@@ -71,7 +88,7 @@ pub struct TapeExePiece {
 
 #[derive(Debug, Clone)]
 pub struct ExeTraceStepDiff {
-    pub cpu: Option<CpuExePiece>,
+    pub cpu: Vec<CpuExePiece>,
     pub mem: Option<Vec<MemExePiece>>,
     pub rc: Option<RcExePiece>,
     pub bitwise: Option<BitwiseExePiece>,
@@ -84,8 +101,8 @@ pub struct ExeTraceStepDiff {
 #[derive(Debug, Clone)]
 pub struct TxExeTrace {
     pub programs: Vec<(ContractAddress, Vec<u64>)>, // contract address to bytecode
-    pub sorted_cpu: Vec<(u64, ExeContext, CpuExePiece)>, /* env_idx-context-step, sorted by
-                                                     * execution order. */
+    pub cpu: Vec<(u64, u64, ExeContext, Vec<CpuExePiece>)>, /* call_sc_cnt, env_idx, context, trace.
+                                                     * Sorted by execution env. */
     pub env_mem: HashMap<u64, Vec<MemExePiece>>, // env_id to mem, mem not sorted yet.
     pub rc: Vec<RcExePiece>,                     /* rc only triggered by range_check
                                                   * opcode. */

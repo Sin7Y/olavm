@@ -18,6 +18,14 @@ use crate::{
     ola_storage::OlaCachedStorage,
 };
 
+#[derive(Debug, Copy, Clone, Default)]
+pub(crate) struct EnvOutlineSnapshot {
+    pub env_idx: u64,
+    pub clk: u64,
+    pub pc: u64,
+    pub context: ExeContext,
+}
+
 pub struct OlaTapeInitInfo {
     pub version: u64,
     pub origin_address: [u64; 4],
@@ -305,13 +313,28 @@ impl<'batch> TxExeManager<'batch> {
                     env.get_code_addr()
                 );
             }
+            let caller = if self.env_stack.last().is_none() {
+                None
+            } else {
+                Some(EnvOutlineSnapshot {
+                    env_idx: self.env_stack.last().unwrap().0 as u64,
+                    clk: self.env_stack.last().unwrap().1.get_clk(),
+                    pc: self.env_stack.last().unwrap().1.get_pc(),
+                    context: ExeContext {
+                        storage_addr: self.env_stack.last().unwrap().1.get_storage_addr(),
+                        code_addr: self.env_stack.last().unwrap().1.get_code_addr(),
+                    },
+                })
+            };
             if self.is_trace_needed() {
                 self.trace_manager.set_env(
+                    self.next_env_idx,
                     env_idx,
                     ExeContext {
                         storage_addr: env.get_storage_addr(),
                         code_addr: env.get_code_addr(),
                     },
+                    caller,
                 );
             }
             Some((env_idx, env))
@@ -328,18 +351,7 @@ impl<'batch> TxExeManager<'batch> {
     }
 
     fn enqueue_new_env(&mut self, env: OlaContractExecutor) {
-        let storage_addr = env.get_storage_addr();
-        let code_addr = env.get_code_addr();
         self.env_stack.push((self.next_env_idx, env));
-        if self.is_trace_needed() {
-            self.trace_manager.set_env(
-                self.next_env_idx,
-                ExeContext {
-                    storage_addr,
-                    code_addr: code_addr.clone(),
-                },
-            );
-        }
         self.next_env_idx += 1;
     }
 

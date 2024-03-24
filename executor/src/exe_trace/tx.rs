@@ -1,15 +1,21 @@
 use core::{
     trace::exe_trace::*,
-    vm::hardware::{ContractAddress, ExeContext},
+    vm::{
+        hardware::{ContractAddress, ExeContext},
+        opcodes::OlaOpcode,
+    },
 };
 use std::collections::HashMap;
+
+use crate::tx_exe_manager::EnvOutlineSnapshot;
 
 pub struct TxTraceManager {
     current_env_idx: usize,
     current_context: ExeContext,
+    caller: Option<EnvOutlineSnapshot>,
     programs: HashMap<ContractAddress, Vec<u64>>, // contract address to bytecode
-    sorted_cpu: Vec<(u64, ExeContext, CpuExePiece)>, /* env_idx-context-step, sorted by
-                                                   * execution order. */
+    cpu: Vec<(u64, u64, ExeContext, Vec<CpuExePiece>)>, /* call_sc_cnt, env_idx, context, trace.
+                                                   * Sorted by execution env. */
     env_mem: HashMap<u64, Vec<MemExePiece>>, // env_id to mem, mem not sorted yet.
     rc: Vec<RcExePiece>,                     /* rc only triggered by range_check
                                               * opcode. */
@@ -28,8 +34,9 @@ impl Default for TxTraceManager {
                 storage_addr: ContractAddress::default(),
                 code_addr: ContractAddress::default(),
             },
+            caller: None,
             programs: HashMap::new(),
-            sorted_cpu: Vec::new(),
+            cpu: Vec::new(),
             env_mem: HashMap::new(),
             rc: Vec::new(),
             bitwise: Vec::new(),
@@ -48,15 +55,47 @@ impl TxTraceManager {
         }
     }
 
-    pub fn set_env(&mut self, env_idx: usize, context: ExeContext) {
+    pub fn set_env(
+        &mut self,
+        call_sc_cnt: usize,
+        env_idx: usize,
+        context: ExeContext,
+        caller: Option<EnvOutlineSnapshot>,
+    ) {
         self.current_env_idx = env_idx;
         self.current_context = context;
+        self.caller = caller;
+        self.cpu
+            .push((call_sc_cnt as u64, env_idx as u64, context, Vec::new()));
     }
 
     pub fn on_step(&mut self, diff: ExeTraceStepDiff) {
-        if let Some(cpu) = diff.cpu {
-            self.sorted_cpu
-                .push((self.current_env_idx as u64, self.current_context, cpu));
+        for cpu in diff.cpu {
+            if cpu.opcode == OlaOpcode::END.binary_bit_mask() {
+                // add end ext line here
+                let mut end_ext_line = cpu.clone();
+                let caller = self.caller.unwrap_or(EnvOutlineSnapshot::default());
+                end_ext_line.clk = caller.clk;
+                end_ext_line.pc = caller.pc;
+                end_ext_line.is_ext_line = true;
+                end_ext_line.ext_cnt = 1;
+                if let Some(last) = self.cpu.last_mut() {
+                    last.3.push(cpu);
+                }
+                self.cpu.push((
+                    self.cpu
+                        .last()
+                        .unwrap_or(&(0, 0, ExeContext::default(), vec![]))
+                        .0,
+                    caller.env_idx,
+                    caller.context,
+                    vec![end_ext_line],
+                ))
+            } else {
+                if let Some(last) = self.cpu.last_mut() {
+                    last.3.push(cpu);
+                }
+            }
         }
         if let Some(mem) = diff.mem {
             if self.env_mem.contains_key(&(self.current_env_idx as u64)) {
@@ -92,7 +131,7 @@ impl TxTraceManager {
     pub fn build_trace(&self, accessed_bytecodes: Vec<(ContractAddress, Vec<u64>)>) -> TxExeTrace {
         TxExeTrace {
             programs: accessed_bytecodes,
-            sorted_cpu: self.sorted_cpu.clone(),
+            cpu: self.cpu.clone(),
             env_mem: self.env_mem.clone(),
             rc: self.rc.clone(),
             bitwise: self.bitwise.clone(),
