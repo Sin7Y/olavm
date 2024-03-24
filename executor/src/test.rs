@@ -17,8 +17,9 @@ mod tests {
             types::Event,
         },
     };
+    use interpreter::sema::symbol;
 
-    use ola_lang_abi::{Abi, FixedArray8, Value};
+    use ola_lang_abi::{Abi, FixedArray4, FixedArray8, Value};
     use std::{
         collections::HashMap,
         fs::File,
@@ -261,6 +262,140 @@ mod tests {
             // encode input and function selector
             let calldata = abi
                 .encode_input_with_signature(func.signature().as_str(), &[param_0, param_1])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+    }
+
+    #[test]
+    fn test_erc20() {
+        let mut writer = get_writer().unwrap();
+        let address = [0, 0, 0, 1234588];
+        deploy(&mut writer, "contracts/erc20_bin.json", address).unwrap();
+        let abi_path = "contracts-abi/erc20_abi.json";
+        let mut path = get_test_dir();
+        path.push(abi_path);
+        let abi: Abi = {
+            let file = File::open(path).expect("failed to open ABI file");
+
+            serde_json::from_reader(file).expect("failed to parse ABI")
+        };
+        {
+            let func = abi.functions[0].clone();
+            let name = Value::String("OlaToken".to_string());
+            let symbol = Value::String("OLA".to_string());
+            let decimal = Value::U32(8);
+            let total_supply = Value::U32(100000000000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(
+                    func.signature().as_str(),
+                    &[name, symbol, decimal, total_supply],
+                )
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+        {
+            let func = abi.functions[1].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        {
+            let func = abi.functions[2].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        {
+            let func = abi.functions[3].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        {
+            let func = abi.functions[4].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        {
+            let func = abi.functions[5].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("owner result: {:?}", result)
+        }
+        {
+            let func = abi.functions[6].clone();
+            let owner = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[owner])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        // mint
+        {
+            let func = abi.functions[0].clone();
+            let to = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let value = Value::U32(100000000000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[to, value])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+    }
+
+    #[test]
+    fn test_erc20_revert() {
+        let mut writer = get_writer().unwrap();
+        let address = [0, 0, 0, 1234588];
+        deploy(&mut writer, "contracts/erc20_bin.json", address).unwrap();
+        let abi_path = "contracts-abi/erc20_abi.json";
+        let mut path = get_test_dir();
+        path.push(abi_path);
+        let abi: Abi = {
+            let file = File::open(path).expect("failed to open ABI file");
+
+            serde_json::from_reader(file).expect("failed to parse ABI")
+        };
+        // mint
+        {
+            let func = abi.functions[0].clone();
+            let to = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let value = Value::U32(100000000000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[to, value])
                 .unwrap();
             println!("input: {:?}", calldata);
             let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
