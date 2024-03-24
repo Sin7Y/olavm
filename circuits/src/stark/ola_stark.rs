@@ -300,7 +300,13 @@ impl<'de> Deserialize<'de> for OlaStark<GoldilocksField, 2> {
             "prog_chunk_stark",
             "cross_table_lookups",
         ];
-        deserializer.deserialize_struct("OlaStark", FIELDS, OlaStarkVisitor { marker: std::marker::PhantomData })
+        deserializer.deserialize_struct(
+            "OlaStark",
+            FIELDS,
+            OlaStarkVisitor {
+                marker: std::marker::PhantomData,
+            },
+        )
     }
 }
 
@@ -933,6 +939,7 @@ mod tests {
     use log::{debug, LevelFilter};
     use plonky2::plonk::config::{Blake3GoldilocksConfig, GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::util::timing::TimingTree;
+    use serde::Serialize;
     use std::collections::HashMap;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
@@ -944,6 +951,7 @@ mod tests {
 
     #[allow(dead_code)]
     const D: usize = 2;
+
     #[allow(dead_code)]
     type C = Blake3GoldilocksConfig;
     #[allow(dead_code)]
@@ -960,12 +968,24 @@ mod tests {
         let challenge2 = GoldilocksField::rand();
         ola_stark.bitwise_stark.set_compress_challenge(challenge1);
         ola_stark.program_stark.set_compress_challenge(challenge2);
-        assert_eq!(ola_stark.bitwise_stark.get_compress_challenge(), Some(challenge1));
-        assert_eq!(ola_stark.program_stark.get_compress_challenge(), Some(challenge2));
+        assert_eq!(
+            ola_stark.bitwise_stark.get_compress_challenge(),
+            Some(challenge1)
+        );
+        assert_eq!(
+            ola_stark.program_stark.get_compress_challenge(),
+            Some(challenge2)
+        );
         let data = serde_json::to_string(&ola_stark).unwrap();
         let stark: OlaStark<GoldilocksField, 2> = serde_json::from_str(&data).unwrap();
-        assert_eq!(ola_stark.bitwise_stark.get_compress_challenge(), stark.bitwise_stark.get_compress_challenge());
-        assert_eq!(ola_stark.program_stark.get_compress_challenge(), stark.program_stark.get_compress_challenge());
+        assert_eq!(
+            ola_stark.bitwise_stark.get_compress_challenge(),
+            stark.bitwise_stark.get_compress_challenge()
+        );
+        assert_eq!(
+            ola_stark.program_stark.get_compress_challenge(),
+            stark.program_stark.get_compress_challenge()
+        );
     }
 
     #[test]
@@ -1227,6 +1247,28 @@ mod tests {
         );
 
         if let Ok(proof) = proof {
+            let is_dump = if let Ok(val) = std::env::var("SERDE_PROOF") {
+                let a = val.to_lowercase().as_str();
+                match a {
+                    "true" => true,
+                    "false" => false,
+                    _ => panic!("obtain env var SERDE_PROOF failed"),
+                }
+            } else {
+                false
+            };
+
+            if true {
+                let proof_file = "proof.json";
+                let ola_stark_file = "ola_stark.json";
+                let config_file = "config.json";
+                let input = serde_json::to_string(&proof).unwrap();
+                std::fs::write(proof_file, input)?;
+                let input = serde_json::to_string(&ola_stark).unwrap();
+                std::fs::write(ola_stark_file, input)?;
+                let input = serde_json::to_string(&config).unwrap();
+                std::fs::write(config_file, input)?;
+            }
             let ola_stark = OlaStark::default();
             let verify_res = verify_proof(ola_stark, proof, &config);
             println!("verify result:{:?}", verify_res);
