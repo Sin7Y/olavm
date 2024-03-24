@@ -1248,8 +1248,8 @@ mod tests {
 
         if let Ok(proof) = proof {
             let is_dump = if let Ok(val) = std::env::var("SERDE_PROOF") {
-                let a = val.to_lowercase().as_str();
-                match a {
+                let a = val.to_lowercase();
+                match a.as_str() {
                     "true" => true,
                     "false" => false,
                     _ => panic!("obtain env var SERDE_PROOF failed"),
@@ -1263,11 +1263,11 @@ mod tests {
                 let ola_stark_file = "ola_stark.json";
                 let config_file = "config.json";
                 let input = serde_json::to_string(&proof).unwrap();
-                std::fs::write(proof_file, input)?;
+                std::fs::write(proof_file, input);
                 let input = serde_json::to_string(&ola_stark).unwrap();
-                std::fs::write(ola_stark_file, input)?;
+                std::fs::write(ola_stark_file, input);
                 let input = serde_json::to_string(&config).unwrap();
-                std::fs::write(config_file, input)?;
+                std::fs::write(config_file, input);
             }
             let ola_stark = OlaStark::default();
             let verify_res = verify_proof(ola_stark, proof, &config);
