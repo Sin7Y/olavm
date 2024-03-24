@@ -15,7 +15,7 @@ const MEM_HEAP_REGION: Range<u64> = MEM_STACK_REGION.end..(MEM_MAX_ADDR - MEM_RE
 const MEM_PROPHET_REGION: Range<u64> = MEM_HEAP_REGION.end..MEM_MAX_ADDR;
 pub const NUM_GENERAL_PURPOSE_REGISTER: usize = 10;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
 pub struct ExeContext {
     pub storage_addr: ContractAddress,
     pub code_addr: ContractAddress,

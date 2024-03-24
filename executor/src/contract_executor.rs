@@ -5,8 +5,8 @@ use core::{
         decoder::decode_binary_program_to_instructions,
     },
     trace::exe_trace::{
-        CpuExePiece, ExeTraceStepDiff, MemExePiece, PoseidonPiece, RcExePiece, StorageExePiece,
-        TapeExePiece,
+        CpuExePiece, CpuPieceAuxSCCall, ExeTraceStepDiff, MemExePiece, PoseidonPiece, RcExePiece,
+        StorageExePiece, TapeExePiece,
     },
     types::{Field, GoldilocksField, PrimeField64},
     vm::{
@@ -95,6 +95,14 @@ impl OlaContractExecutor {
             }
             Result::Err(err) => Err(ProcessorError::InstructionsInitError(err).into()),
         }
+    }
+
+    pub fn get_clk(&self) -> u64 {
+        self.clk
+    }
+
+    pub fn get_pc(&self) -> u64 {
+        self.pc
     }
 
     pub fn get_code_addr(&self) -> ContractAddress {
@@ -283,6 +291,7 @@ impl OlaContractExecutor {
         tx_event_manager: &mut TxEventManager,
         storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<Option<ExeTraceStepDiff>> {
+        let tp = tape.tp();
         let prophet_attached = instruction.prophet.clone();
         let (state_diff, mut trace_diff) = match instruction.opcode {
             OlaOpcode::ADD
@@ -292,25 +301,25 @@ impl OlaContractExecutor {
             | OlaOpcode::OR
             | OlaOpcode::XOR
             | OlaOpcode::NEQ
-            | OlaOpcode::GTE => self.process_two_operands_arithmetic_op(instruction),
-            OlaOpcode::ASSERT => self.process_assert(instruction),
-            OlaOpcode::MOV => self.process_mov(instruction),
-            OlaOpcode::JMP | OlaOpcode::CJMP => self.process_jmp(instruction),
-            OlaOpcode::CALL => self.process_call(instruction),
-            OlaOpcode::RET => self.process_ret(instruction),
-            OlaOpcode::MLOAD => self.process_mload(instruction),
-            OlaOpcode::MSTORE => self.process_mstore(instruction),
-            OlaOpcode::END => self.process_end(instruction),
-            OlaOpcode::RC => self.process_rc(instruction),
-            OlaOpcode::NOT => self.process_not(instruction),
-            OlaOpcode::POSEIDON => self.process_poseidon(instruction),
-            OlaOpcode::SLOAD => self.process_sload(instruction, storage),
-            OlaOpcode::SSTORE => self.process_sstore(instruction, storage),
+            | OlaOpcode::GTE => self.process_two_operands_arithmetic_op(tp, instruction),
+            OlaOpcode::ASSERT => self.process_assert(tp, instruction),
+            OlaOpcode::MOV => self.process_mov(tp, instruction),
+            OlaOpcode::JMP | OlaOpcode::CJMP => self.process_jmp(tp, instruction),
+            OlaOpcode::CALL => self.process_call(tp, instruction),
+            OlaOpcode::RET => self.process_ret(tp, instruction),
+            OlaOpcode::MLOAD => self.process_mload(tp, instruction),
+            OlaOpcode::MSTORE => self.process_mstore(tp, instruction),
+            OlaOpcode::END => self.process_end(tp, instruction),
+            OlaOpcode::RC => self.process_rc(tp, instruction),
+            OlaOpcode::NOT => self.process_not(tp, instruction),
+            OlaOpcode::POSEIDON => self.process_poseidon(tp, instruction),
+            OlaOpcode::SLOAD => self.process_sload(tp, instruction, storage),
+            OlaOpcode::SSTORE => self.process_sstore(tp, instruction, storage),
             OlaOpcode::TLOAD => self.process_tload(instruction, tape),
             OlaOpcode::TSTORE => self.process_tstore(instruction, tape),
             OlaOpcode::SCCALL => self.process_sccall(instruction, tape),
-            OlaOpcode::SIGCHECK => self.process_sigcheck(instruction),
-            OlaOpcode::EVENT => self.process_event(instruction, tx_event_manager),
+            OlaOpcode::SIGCHECK => self.process_sigcheck(tp, instruction),
+            OlaOpcode::EVENT => self.process_event(tp, instruction, tx_event_manager),
         }?;
 
         self.apply_state_diff(tape, storage, state_diff)?;
@@ -331,7 +340,7 @@ impl OlaContractExecutor {
                 return Ok(Some(diff));
             } else {
                 trace_diff = Some(ExeTraceStepDiff {
-                    cpu: None,
+                    cpu: vec![],
                     mem: Some(trace_mem_diffs),
                     rc: None,
                     bitwise: None,
@@ -348,11 +357,12 @@ impl OlaContractExecutor {
 
     fn process_two_operands_arithmetic_op(
         &mut self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op0, op1, dst_reg) = self.get_op0_op1_and_dst_reg(instruction)?;
+        let (op0, op1, dst_reg) = self.get_op0_op1_and_dst_reg(instruction.clone())?;
 
         if opcode == OlaOpcode::AND
             || opcode == OlaOpcode::OR
@@ -410,7 +420,7 @@ impl OlaContractExecutor {
 
         let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, res);
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu(opcode, (Some(op0), Some(op1), Some(res))))
+            Some(self.get_trace_diff_with_cpu(instruction, tp, Some(op0), Some(op1), Some(res))?)
         } else {
             None
         };
@@ -420,11 +430,11 @@ impl OlaContractExecutor {
 
     fn process_assert(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
-        let opcode = instruction.opcode;
-        let (op1, op1_reg) = match instruction.op1 {
+        let (op1, op1_reg) = match instruction.op1.clone() {
             Some(op1) => match op1 {
                 OlaOperand::RegisterOperand { register } => {
                     (self.registers[register.index() as usize], register)
@@ -449,7 +459,7 @@ impl OlaContractExecutor {
 
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu(opcode, (None, Some(op1), None)))
+            Some(self.get_trace_diff_with_cpu(instruction, tp, None, Some(op1), None)?)
         } else {
             None
         };
@@ -458,10 +468,11 @@ impl OlaContractExecutor {
 
     fn process_mov(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
-        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction)?;
+        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction.clone())?;
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
         });
@@ -471,25 +482,7 @@ impl OlaContractExecutor {
         }]);
         let state_diff = vec![spec_reg_diff, reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode: self.instructions[&self.pc].opcode,
-                    op0: None,
-                    op1: Some(op1),
-                    dst: Some(op1),
-                }),
-                mem: None,
-                rc: None,
-                bitwise: None,
-                cmp: None,
-                poseidon: None,
-                tape: None,
-                storage: None,
-            })
+            Some(self.get_trace_diff_with_cpu(instruction, tp, None, Some(op1), Some(op1))?)
         } else {
             None
         };
@@ -498,6 +491,7 @@ impl OlaContractExecutor {
 
     fn process_jmp(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
@@ -536,7 +530,7 @@ impl OlaContractExecutor {
                 }
             }
         };
-        let op1 = self.get_op1(instruction)?;
+        let op1 = self.get_op1(instruction.clone())?;
         let is_jumping = if is_cjmp { op0 == Some(1) } else { true };
         let new_pc = if is_jumping {
             op1
@@ -546,7 +540,7 @@ impl OlaContractExecutor {
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff { pc: Some(new_pc) });
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu(opcode, (op0, Some(op1), None)))
+            Some(self.get_trace_diff_with_cpu(instruction, tp, None, Some(op1), None)?)
         } else {
             None
         };
@@ -555,11 +549,12 @@ impl OlaContractExecutor {
 
     fn process_call(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let op1 = self.get_op1(instruction)?;
+        let op1 = self.get_op1(instruction.clone())?;
         let ret_pc = self.pc + inst_len as u64;
         let fp = self.get_fp();
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff { pc: Some(op1) });
@@ -569,42 +564,26 @@ impl OlaContractExecutor {
         }]);
         let state_diff = vec![spec_reg_diff, mem_diff];
         let trace_diff = if self.is_trace_needed() {
+            let mut diff = self.get_trace_diff_with_cpu(instruction, tp, None, Some(op1), None)?;
             let ret_pc = self.pc + inst_len as u64;
             let ret_fp = self.memory.read(fp - 2)?;
-            Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
+            diff.mem = Some(vec![
+                MemExePiece {
                     clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: None,
-                    op1: Some(op1),
-                    dst: None,
-                }),
-                mem: Some(vec![
-                    MemExePiece {
-                        clk: self.clk,
-                        addr: fp - 1,
-                        value: ret_pc,
-                        is_write: true,
-                        opcode: Some(opcode),
-                    },
-                    MemExePiece {
-                        clk: self.clk,
-                        addr: fp - 2,
-                        value: ret_fp,
-                        is_write: false,
-                        opcode: Some(opcode),
-                    },
-                ]),
-                rc: None,
-                bitwise: None,
-                cmp: None,
-                poseidon: None,
-                tape: None,
-                storage: None,
-            })
+                    addr: fp - 1,
+                    value: ret_pc,
+                    is_write: true,
+                    opcode: Some(opcode),
+                },
+                MemExePiece {
+                    clk: self.clk,
+                    addr: fp - 2,
+                    value: ret_fp,
+                    is_write: false,
+                    opcode: Some(opcode),
+                },
+            ]);
+            Some(diff)
         } else {
             None
         };
@@ -613,6 +592,7 @@ impl OlaContractExecutor {
 
     fn process_ret(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let opcode = instruction.opcode;
@@ -626,40 +606,24 @@ impl OlaContractExecutor {
         }]);
         let state_diff = vec![spec_reg_diff, reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
+            let mut diff = self.get_trace_diff_with_cpu(instruction, tp, None, None, None)?;
+            diff.mem = Some(vec![
+                MemExePiece {
                     clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: None,
-                    op1: None,
-                    dst: None,
-                }),
-                mem: Some(vec![
-                    MemExePiece {
-                        clk: self.clk,
-                        addr: fp - 1,
-                        value: ret_pc,
-                        is_write: false,
-                        opcode: Some(opcode),
-                    },
-                    MemExePiece {
-                        clk: self.clk,
-                        addr: fp - 2,
-                        value: ret_fp,
-                        is_write: false,
-                        opcode: Some(opcode),
-                    },
-                ]),
-                rc: None,
-                bitwise: None,
-                cmp: None,
-                poseidon: None,
-                tape: None,
-                storage: None,
-            })
+                    addr: fp - 1,
+                    value: ret_pc,
+                    is_write: false,
+                    opcode: Some(opcode),
+                },
+                MemExePiece {
+                    clk: self.clk,
+                    addr: fp - 2,
+                    value: ret_fp,
+                    is_write: false,
+                    opcode: Some(opcode),
+                },
+            ]);
+            Some(diff)
         } else {
             None
         };
@@ -668,32 +632,55 @@ impl OlaContractExecutor {
 
     fn process_mload(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (anchor, offset, value_reg) = self.get_op0_op1_and_dst_reg(instruction)?;
-        let op1 = (GoldilocksField::from_canonical_u64(anchor)
+        let op1 = instruction.op1.clone();
+        let (anchor, offset, value_reg) = self.get_op0_op1_and_dst_reg(instruction.clone())?;
+        let addr = (GoldilocksField::from_canonical_u64(anchor)
             + GoldilocksField::from_canonical_u64(offset))
         .to_canonical_u64();
         let dst_reg = value_reg;
-        let value = self.memory.read(op1)?;
+        let value = self.memory.read(addr)?;
         let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, value);
         let trace_diff = if self.is_trace_needed() {
+            let (instruction_u64, imm) = instruction.get_inst_imm_u64()?;
+            let imm_flag = (instruction_u64 >> 62) & 1 == 1;
+            let op1 = op1.unwrap();
+            let aux0 = if !imm_flag {
+                Some(imm.unwrap_or(0))
+            } else {
+                Some(0)
+            };
+            let op1 = if !imm_flag {
+                let v = match op1 {
+                    OlaOperand::RegisterOperand { register } => {
+                        self.registers[register.index() as usize]
+                    }
+                    OlaOperand::RegisterWithOffset { register, offset } => {
+                        self.registers[register.index() as usize]
+                    }
+                    OlaOperand::RegisterWithFactor { register, factor } => {
+                        self.registers[register.index() as usize]
+                    }
+                    _ => 0,
+                };
+                Some(v)
+            } else {
+                Some(offset)
+            };
+            let mut cpu =
+                self.get_common_cpu_exe_pieces(instruction, tp, Some(anchor), op1, Some(value))?;
+            cpu.aux0 = aux0;
+            cpu.aux1 = Some(addr);
+
             Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: None,
-                    op1: Some(op1),
-                    dst: None,
-                }),
+                cpu: vec![cpu],
                 mem: Some(vec![MemExePiece {
                     clk: self.clk,
-                    addr: op1,
+                    addr,
                     value,
                     is_write: false,
                     opcode: Some(opcode),
@@ -713,11 +700,13 @@ impl OlaContractExecutor {
 
     fn process_mstore(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (anchor, offset, value_reg) = self.get_op0_op1_and_dst_reg(instruction)?;
+        let op1 = instruction.op1.clone();
+        let (anchor, offset, value_reg) = self.get_op0_op1_and_dst_reg(instruction.clone())?;
         let value = self.registers[value_reg.index() as usize];
         let addr = (GoldilocksField::from_canonical_u64(anchor)
             + GoldilocksField::from_canonical_u64(offset))
@@ -728,17 +717,37 @@ impl OlaContractExecutor {
         let mem_diff = OlaStateDiff::Memory(vec![MemoryDiff { addr, value }]);
         let state_diff = vec![spec_reg_diff, mem_diff];
         let trace_diff = if self.is_trace_needed() {
+            let (instruction_u64, imm) = instruction.get_inst_imm_u64()?;
+            let imm_flag = (instruction_u64 >> 62) & 1 == 1;
+            let op1 = op1.unwrap();
+            let aux0 = if !imm_flag {
+                Some(imm.unwrap_or(0))
+            } else {
+                Some(0)
+            };
+            let op1 = if !imm_flag {
+                let v = match op1 {
+                    OlaOperand::RegisterOperand { register } => {
+                        self.registers[register.index() as usize]
+                    }
+                    OlaOperand::RegisterWithOffset { register, offset } => {
+                        self.registers[register.index() as usize]
+                    }
+                    OlaOperand::RegisterWithFactor { register, factor } => {
+                        self.registers[register.index() as usize]
+                    }
+                    _ => 0,
+                };
+                Some(v)
+            } else {
+                Some(offset)
+            };
+            let mut cpu =
+                self.get_common_cpu_exe_pieces(instruction, tp, Some(anchor), op1, Some(value))?;
+            cpu.aux0 = aux0;
+            cpu.aux1 = Some(addr);
             Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: Some(addr),
-                    op1: Some(value),
-                    dst: None,
-                }),
+                cpu: vec![cpu],
                 mem: Some(vec![MemExePiece {
                     clk: self.clk,
                     addr,
@@ -761,6 +770,7 @@ impl OlaContractExecutor {
 
     fn process_end(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
@@ -771,25 +781,8 @@ impl OlaContractExecutor {
 
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: None,
-                    op1: None,
-                    dst: None,
-                }),
-                mem: None,
-                rc: None,
-                bitwise: None,
-                cmp: None,
-                poseidon: None,
-                tape: None,
-                storage: None,
-            })
+            // ext line should be added in TxTraceManager.
+            Some(self.get_trace_diff_with_cpu(instruction, tp, None, None, None)?)
         } else {
             None
         };
@@ -798,11 +791,12 @@ impl OlaContractExecutor {
 
     fn process_rc(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let op1 = self.get_op1(instruction)?;
+        let op1 = self.get_op1(instruction.clone())?;
         if op1 > u32::MAX as u64 {
             return Err((ProcessorError::U32RangeCheckFail).into());
         }
@@ -813,25 +807,9 @@ impl OlaContractExecutor {
 
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: None,
-                    op1: Some(op1),
-                    dst: None,
-                }),
-                mem: None,
-                rc: Some(RcExePiece { value: op1 as u32 }),
-                bitwise: None,
-                cmp: None,
-                poseidon: None,
-                tape: None,
-                storage: None,
-            })
+            let mut diff = self.get_trace_diff_with_cpu(instruction, tp, None, Some(op1), None)?;
+            diff.rc = Some(RcExePiece { value: op1 as u32 });
+            Some(diff)
         } else {
             None
         };
@@ -840,16 +818,17 @@ impl OlaContractExecutor {
 
     fn process_not(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction)?;
+        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction.clone())?;
         let res = (GoldilocksField::NEG_ONE - GoldilocksField::from_canonical_u64(op1))
             .to_canonical_u64();
         let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, res);
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu(opcode, (None, Some(op1), Some(res))))
+            Some(self.get_trace_diff_with_cpu(instruction, tp, None, Some(op1), Some(res))?)
         } else {
             None
         };
@@ -858,11 +837,12 @@ impl OlaContractExecutor {
 
     fn process_poseidon(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op0, op1, dst) = self.get_op0_op1_and_dst(instruction)?;
+        let (op0, op1, dst) = self.get_op0_op1_and_dst(instruction.clone())?;
         let inputs = self.memory.batch_read(op0, op1)?;
         let outputs = calculate_arbitrary_poseidon_u64s(&inputs);
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
@@ -902,30 +882,15 @@ impl OlaContractExecutor {
         mem_trace.extend(mem_trace_write);
         let state_diff: Vec<OlaStateDiff> = vec![spec_reg_diff, mem_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: Some(op0),
-                    op1: Some(op1),
-                    dst: Some(dst),
-                }),
-                mem: Some(mem_trace),
-                rc: None,
-                bitwise: None,
-                cmp: None,
-                poseidon: Some(PoseidonPiece {
-                    clk: self.clk,
-                    src_addr: op0,
-                    dst_addr: dst,
-                    inputs,
-                }),
-                tape: None,
-                storage: None,
-            })
+            let mut diff =
+                self.get_trace_diff_with_cpu(instruction, tp, Some(op0), Some(op1), Some(dst))?;
+            diff.poseidon = Some(PoseidonPiece {
+                clk: self.clk,
+                src_addr: op0,
+                dst_addr: dst,
+                inputs,
+            });
+            Some(diff)
         } else {
             None
         };
@@ -934,12 +899,13 @@ impl OlaContractExecutor {
 
     fn process_sload(
         &mut self,
+        tp: u64,
         instruction: BinaryInstruction,
         storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op0, op1) = self.get_op0_op1(instruction)?;
+        let (op0, op1) = self.get_op0_op1(instruction.clone())?;
         let storage_key = self
             .memory
             .batch_read(op0, 4)?
@@ -964,42 +930,48 @@ impl OlaContractExecutor {
                 .collect(),
         );
         let state_diff = vec![spec_reg_diff, mem_diff];
-        let mem_read_trace: Vec<MemExePiece> = [op0, op0 + 1, op0 + 2, op0 + 3]
-            .iter()
-            .zip(storage_key.iter())
-            .map(|(addr, value)| MemExePiece {
-                clk: self.clk,
-                addr: *addr,
-                value: *value,
-                is_write: false,
-                opcode: Some(opcode),
-            })
-            .collect();
-        let mem_write_trace: Vec<MemExePiece> = [op1, op1 + 1, op1 + 2, op1 + 3]
-            .iter()
-            .zip(value.iter())
-            .map(|(addr, value)| MemExePiece {
-                clk: self.clk,
-                addr: *addr,
-                value: *value,
-                is_write: true,
-                opcode: Some(opcode),
-            })
-            .collect();
 
         let trace_diff = if self.is_trace_needed() {
             let tree_key = storage.get_tree_key(self.context.storage_addr, storage_key);
-            Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
+            let main_line =
+                self.get_common_cpu_exe_pieces(instruction, tp, Some(op0), Some(op1), None)?;
+            let mut ext_line = main_line.clone();
+            ext_line.op0_reg_sel[..4].copy_from_slice(&[op0, op0 + 1, op0 + 2, op0 + 3]);
+            ext_line.op0_reg_sel[4..8].copy_from_slice(&storage_key);
+            ext_line.op0_reg_sel[8..10].copy_from_slice(&[0; 2]);
+            ext_line.op1_reg_sel[..4].copy_from_slice(&[op1, op1 + 1, op1 + 2, op1 + 3]);
+            ext_line.op1_reg_sel[4..8].copy_from_slice(&value);
+            ext_line.op1_reg_sel[8..10].copy_from_slice(&[0; 2]);
+            ext_line.dst_reg_sel[..4].copy_from_slice(&tree_key);
+            ext_line.dst_reg_sel[4..10].copy_from_slice(&[0; 6]);
+            ext_line.is_ext_line = true;
+            ext_line.ext_cnt = 1;
+
+            let mem_read_trace: Vec<MemExePiece> = [op0, op0 + 1, op0 + 2, op0 + 3]
+                .iter()
+                .zip(storage_key.iter())
+                .map(|(addr, value)| MemExePiece {
                     clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: Some(op0),
-                    op1: Some(op1),
-                    dst: None,
-                }),
+                    addr: *addr,
+                    value: *value,
+                    is_write: false,
+                    opcode: Some(opcode),
+                })
+                .collect();
+            let mem_write_trace: Vec<MemExePiece> = [op1, op1 + 1, op1 + 2, op1 + 3]
+                .iter()
+                .zip(value.iter())
+                .map(|(addr, value)| MemExePiece {
+                    clk: self.clk,
+                    addr: *addr,
+                    value: *value,
+                    is_write: true,
+                    opcode: Some(opcode),
+                })
+                .collect();
+
+            Some(ExeTraceStepDiff {
+                cpu: vec![main_line, ext_line],
                 mem: Some(
                     mem_read_trace
                         .into_iter()
@@ -1014,7 +986,7 @@ impl OlaContractExecutor {
                 storage: Some(StorageExePiece {
                     is_write: false,
                     tree_key,
-                    pre_value: None,
+                    pre_value: Some(value),
                     value,
                 }),
             })
@@ -1026,6 +998,7 @@ impl OlaContractExecutor {
 
     fn process_sstore(
         &mut self,
+        tp: u64,
         instruction: BinaryInstruction,
         storage: &mut OlaCachedStorage,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
@@ -1034,7 +1007,7 @@ impl OlaContractExecutor {
         }
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op0, op1) = self.get_op0_op1(instruction)?;
+        let (op0, op1) = self.get_op0_op1(instruction.clone())?;
         let storage_key: [u64; 4] = self
             .memory
             .batch_read(op0, 4)?
@@ -1059,19 +1032,23 @@ impl OlaContractExecutor {
         }]);
         let state_diff = vec![spec_reg_diff, storage_diff];
         let trace_diff = if self.is_trace_needed() {
-            let pre_value = storage.read(self.context.storage_addr, storage_key)?;
             let tree_key = storage.get_tree_key(self.context.storage_addr, storage_key);
+            let main_line =
+                self.get_common_cpu_exe_pieces(instruction, tp, Some(op0), Some(op1), None)?;
+            let mut ext_line = main_line.clone();
+            ext_line.op0_reg_sel[..4].copy_from_slice(&[op0, op0 + 1, op0 + 2, op0 + 3]);
+            ext_line.op0_reg_sel[4..8].copy_from_slice(&storage_key);
+            ext_line.op0_reg_sel[8..10].copy_from_slice(&[0; 2]);
+            ext_line.op1_reg_sel[..4].copy_from_slice(&[op1, op1 + 1, op1 + 2, op1 + 3]);
+            ext_line.op1_reg_sel[4..8].copy_from_slice(&value);
+            ext_line.op1_reg_sel[8..10].copy_from_slice(&[0; 2]);
+            ext_line.dst_reg_sel[..4].copy_from_slice(&tree_key);
+            ext_line.dst_reg_sel[4..10].copy_from_slice(&[0; 6]);
+            ext_line.is_ext_line = true;
+            ext_line.ext_cnt = 1;
+
             Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: Some(op0),
-                    op1: Some(op1),
-                    dst: None,
-                }),
+                cpu: vec![main_line, ext_line],
                 mem: Some(
                     [
                         op0,
@@ -1119,7 +1096,7 @@ impl OlaContractExecutor {
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op0, op1, dst) = self.get_op0_op1_and_dst(instruction)?;
+        let (op0, op1, dst) = self.get_op0_op1_and_dst(instruction.clone())?;
         let values = if op0 == 0 {
             let v = tape.read_top(op1)?;
             vec![v]
@@ -1146,17 +1123,31 @@ impl OlaContractExecutor {
         );
         let state_diff = vec![spec_reg_diff, mem_diff];
         let trace_diff = if self.is_trace_needed() {
+            let tp = tape.tp();
+            let cnt_load = values.len() as u64;
+            let main_line =
+                self.get_common_cpu_exe_pieces(instruction, tp, Some(op0), Some(op1), None)?;
+            let mut lines: Vec<CpuExePiece> = (dst..dst + values.len() as u64)
+                .zip(values.iter())
+                .enumerate()
+                .map(|(index, (addr, value))| {
+                    let mut line = main_line.clone();
+                    line.tp = if op0 == 0 {
+                        op1
+                    } else {
+                        tp - cnt_load + index as u64
+                    };
+                    line.is_ext_line = true;
+                    line.ext_cnt = index as u64 + 1;
+                    line.aux0 = Some(addr);
+                    line.aux1 = Some(*value);
+                    line
+                })
+                .collect();
+            lines.insert(0, main_line);
+
             Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: Some(op0),
-                    op1: Some(op1),
-                    dst: None,
-                }),
+                cpu: lines,
                 mem: Some(
                     (dst..dst + values.len() as u64)
                         .zip(values.iter())
@@ -1198,7 +1189,7 @@ impl OlaContractExecutor {
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op0, op1) = self.get_op0_op1(instruction)?;
+        let (op0, op1) = self.get_op0_op1(instruction.clone())?;
         let values = self.memory.batch_read(op0, op1)?;
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
@@ -1211,17 +1202,26 @@ impl OlaContractExecutor {
         );
         let state_diff = vec![spec_reg_diff, tape_diff];
         let trace_diff = if self.is_trace_needed() {
+            let tp = tape.tp();
+            let main_line =
+                self.get_common_cpu_exe_pieces(instruction, tp, Some(op0), Some(op1), None)?;
+            let mut lines: Vec<CpuExePiece> = (tape.tp()..tape.tp() + op1)
+                .zip(values.iter())
+                .enumerate()
+                .map(|(index, (addr, value))| {
+                    let mut line = main_line.clone();
+                    line.tp = tp + index as u64;
+                    line.is_ext_line = true;
+                    line.ext_cnt = index as u64 + 1;
+                    line.aux0 = Some(addr);
+                    line.aux1 = Some(*value);
+                    line
+                })
+                .collect();
+            lines.insert(0, main_line);
+
             Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: Some(op0),
-                    op1: Some(op1),
-                    dst: None,
-                }),
+                cpu: lines,
                 mem: Some(
                     (op0..op0 + op1)
                         .zip(values.iter())
@@ -1294,17 +1294,22 @@ impl OlaContractExecutor {
 
         let state_diff = vec![spec_reg_diff, tape_diff];
         let trace_diff = if self.is_trace_needed() {
+            let tp = tape.tp();
+            let main_line =
+                self.get_common_cpu_exe_pieces(instruction, tp, Some(op0), Some(op1), None)?;
+            let mut ext_line = main_line.clone();
+            ext_line.op0_reg_sel = [0; NUM_GENERAL_PURPOSE_REGISTER];
+            ext_line.op1_reg_sel = [0; NUM_GENERAL_PURPOSE_REGISTER];
+            ext_line.dst_reg_sel = [0; NUM_GENERAL_PURPOSE_REGISTER];
+            ext_line.is_ext_line = true;
+            ext_line.ext_cnt = 1;
+            ext_line.aux_sccall = Some(CpuPieceAuxSCCall {
+                addr_callee_storage,
+                addr_callee_code,
+            });
+
             Some(ExeTraceStepDiff {
-                cpu: Some(CpuExePiece {
-                    clk: self.clk,
-                    pc: self.pc,
-                    psp: self.memory.psp(),
-                    registers: self.registers,
-                    opcode,
-                    op0: Some(op0),
-                    op1: Some(op1),
-                    dst: None,
-                }),
+                cpu: vec![main_line, ext_line],
                 mem: Some(
                     [op0, op0 + 1, op0 + 2, op0 + 3]
                         .iter()
@@ -1342,11 +1347,12 @@ impl OlaContractExecutor {
 
     fn process_sigcheck(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
-        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction)?;
+        let (op1, dst_reg) = self.get_op1_and_dst_reg(instruction.clone())?;
         let params = self.memory.batch_read(op1, 20)?;
         let msg_hash: [u64; 4] = (&params[0..4])
             .try_into()
@@ -1368,7 +1374,7 @@ impl OlaContractExecutor {
         let state_diff = self.get_state_diff_only_dst_reg(inst_len, dst_reg, res);
         // todo ecdsa piece
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu(opcode, (None, Some(op1), Some(res))))
+            Some(self.get_trace_diff_with_cpu(instruction, tp, None, Some(op1), Some(res))?)
         } else {
             None
         };
@@ -1377,6 +1383,7 @@ impl OlaContractExecutor {
 
     fn process_event(
         &self,
+        tp: u64,
         instruction: BinaryInstruction,
         tx_event_manager: &mut TxEventManager,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
@@ -1384,8 +1391,7 @@ impl OlaContractExecutor {
         if self.mode == ExecuteMode::Call {
             return Err(ProcessorError::EventOnCallError.into());
         }
-        let opcode = instruction.opcode;
-        let (op0, op1) = self.get_op0_op1(instruction)?;
+        let (op0, op1) = self.get_op0_op1(instruction.clone())?;
         let topic_len = self.memory.read(op0)?;
         let topic_start_addrs = self.memory.batch_read(op0 + 1, topic_len as u64)?;
         let mut topics: Vec<Hash> = vec![];
@@ -1404,7 +1410,7 @@ impl OlaContractExecutor {
 
         let state_diff = vec![spec_reg_diff];
         let trace_diff = if self.is_trace_needed() {
-            Some(self.get_trace_step_diff_only_cpu(opcode, (Some(op0), Some(op1), None)))
+            Some(self.get_trace_diff_with_cpu(instruction, tp, Some(op0), Some(op1), None)?)
         } else {
             None
         };
@@ -1429,32 +1435,6 @@ impl OlaContractExecutor {
             value: value,
         }]);
         vec![spec_reg_diff, reg_diff]
-    }
-
-    fn get_trace_step_diff_only_cpu(
-        &self,
-        opcode: OlaOpcode,
-        op0_op1_dst: (Option<u64>, Option<u64>, Option<u64>),
-    ) -> ExeTraceStepDiff {
-        ExeTraceStepDiff {
-            cpu: Some(CpuExePiece {
-                clk: self.clk,
-                pc: self.pc,
-                psp: self.memory.psp(),
-                registers: self.registers,
-                opcode,
-                op0: op0_op1_dst.0,
-                op1: op0_op1_dst.1,
-                dst: op0_op1_dst.2,
-            }),
-            mem: None,
-            rc: None,
-            bitwise: None,
-            cmp: None,
-            poseidon: None,
-            tape: None,
-            storage: None,
-        }
     }
 
     fn get_op1(&self, instruction: BinaryInstruction) -> anyhow::Result<u64> {
@@ -1735,6 +1715,67 @@ impl OlaContractExecutor {
 
     fn is_trace_needed(&self) -> bool {
         self.mode == ExecuteMode::Invoke || self.mode == ExecuteMode::Debug
+    }
+
+    fn get_trace_diff_with_cpu(
+        &self,
+        instruction: BinaryInstruction,
+        tp: u64,
+        op0: Option<u64>,
+        op1: Option<u64>,
+        dst: Option<u64>,
+    ) -> anyhow::Result<ExeTraceStepDiff> {
+        Ok(ExeTraceStepDiff {
+            cpu: vec![self.get_common_cpu_exe_pieces(instruction, tp, op0, op1, dst)?],
+            mem: None,
+            rc: None,
+            bitwise: None,
+            cmp: None,
+            poseidon: None,
+            tape: None,
+            storage: None,
+        })
+    }
+    fn get_common_cpu_exe_pieces(
+        &self,
+        instruction: BinaryInstruction,
+        tp: u64,
+        op0: Option<u64>,
+        op1: Option<u64>,
+        dst: Option<u64>,
+    ) -> anyhow::Result<CpuExePiece> {
+        let opcode = instruction.opcode.binary_bit_mask();
+        let (instruction, imm) = instruction.get_inst_imm_u64()?;
+        let mut op0_reg_sel: [u64; 10] = [0; 10];
+        let mut op1_reg_sel: [u64; 10] = [0; 10];
+        let mut dst_reg_sel: [u64; 10] = [0; 10];
+        for index in 0..10 {
+            op0_reg_sel[index] = (instruction >> (52 + index)) & 1;
+            op1_reg_sel[index] = (instruction >> (42 + index)) & 1;
+            dst_reg_sel[index] = (instruction >> (32 + index)) & 1;
+        }
+
+        Ok(CpuExePiece {
+            clk: self.clk,
+            pc: self.pc,
+            psp: self.memory.psp(),
+            tp,
+            registers: self.registers,
+            instruction,
+            imm,
+            opcode,
+            op0,
+            op1,
+            dst,
+            aux0: None,
+            aux1: None,
+            op0_reg_sel,
+            op1_reg_sel,
+            dst_reg_sel,
+            is_ext_line: false,
+            ext_cnt: 0,
+            aux_sccall: None,
+        })
     }
 
     fn on_step_err(
