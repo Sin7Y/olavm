@@ -1,6 +1,10 @@
+use std::fmt;
+use std::marker::PhantomData;
 use plonky2_field::goldilocks_field::GoldilocksField;
 use plonky2_field::types::{Field, PrimeField64};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{SeqAccess, Visitor};
+use serde::ser::SerializeSeq;
 
 use crate::hash::poseidon::Poseidon;
 use crate::hash::poseidon2::Poseidon2;
@@ -153,19 +157,49 @@ impl<F: RichField, const N: usize> GenericHashOut<F> for BytesHash<N> {
 }
 
 impl<const N: usize> Serialize for BytesHash<N> {
-    fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
     {
-        todo!()
+        let elems = self.0;
+        let mut seq = serializer.serialize_seq(Some(N))?;
+        for x in elems {
+            seq.serialize_element(&x.to_string())?;
+        }
+        seq.end()
     }
 }
 
 impl<'de, const N: usize> Deserialize<'de> for BytesHash<N> {
-    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
     {
-        todo!()
+        struct EntriesVisitor<const N: usize>(PhantomData<u8>);
+
+        impl<'de, const N: usize> Visitor<'de> for EntriesVisitor<N> {
+            type Value = BytesHash<N>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Bn128's Fr")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+                where
+                    A: SeqAccess<'de>,
+            {
+                let mut entries = Vec::new();
+                while let Some(entry) = seq.next_element::<String>()? {
+                    let entry: u64 = entry.parse().unwrap();
+                    entries.push(entry);
+                }
+
+                let array: [u8; N] = unsafe { std::mem::transmute_copy(&entries) };
+                let res = BytesHash::<N>(array);
+                Ok(res)
+            }
+        }
+        deserializer.deserialize_any(EntriesVisitor::<N>(Default::default()))
     }
 }
+

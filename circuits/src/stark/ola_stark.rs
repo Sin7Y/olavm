@@ -1258,7 +1258,7 @@ mod tests {
                 false
             };
 
-            if true {
+            if is_dump {
                 let proof_file = "proof.json";
                 let ola_stark_file = "ola_stark.json";
                 let config_file = "config.json";
