@@ -362,12 +362,25 @@ mod tests {
         }
         // mint
         {
-            let func = abi.functions[0].clone();
+            let func = abi.functions[7].clone();
             let to = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
             let value = Value::U32(100000000000000);
             // encode input and function selector
             let calldata = abi
                 .encode_input_with_signature(func.signature().as_str(), &[to, value])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+        // burn
+        {
+            let func = abi.functions[8].clone();
+            let from = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let value = Value::U32(100000000000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[from, value])
                 .unwrap();
             println!("input: {:?}", calldata);
             let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
@@ -390,7 +403,7 @@ mod tests {
         };
         // mint
         {
-            let func = abi.functions[0].clone();
+            let func = abi.functions[7].clone();
             let to = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
             let value = Value::U32(100000000000000);
             // encode input and function selector
