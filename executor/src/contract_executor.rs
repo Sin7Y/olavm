@@ -307,8 +307,8 @@ impl OlaContractExecutor {
             OlaOpcode::SLOAD => self.process_sload(instruction, storage),
             OlaOpcode::SSTORE => self.process_sstore(instruction, storage),
             OlaOpcode::TLOAD => self.process_tload(instruction, tape),
-            OlaOpcode::TSTORE => self.process_tstore(instruction),
-            OlaOpcode::SCCALL => self.process_sccall(instruction),
+            OlaOpcode::TSTORE => self.process_tstore(instruction, tape),
+            OlaOpcode::SCCALL => self.process_sccall(instruction, tape),
             OlaOpcode::SIGCHECK => self.process_sigcheck(instruction),
             OlaOpcode::EVENT => self.process_event(instruction, tx_event_manager),
         }?;
@@ -1194,6 +1194,7 @@ impl OlaContractExecutor {
     fn process_tstore(
         &self,
         instruction: BinaryInstruction,
+        tape: &mut OlaTape,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
@@ -1203,12 +1204,9 @@ impl OlaContractExecutor {
             pc: Some(self.pc + inst_len as u64),
         });
         let tape_diff = OlaStateDiff::Tape(
-            (op0..op0 + op1)
-                .zip(values.iter())
-                .map(|(addr, value)| TapeDiff {
-                    addr,
-                    value: *value,
-                })
+            values
+                .iter()
+                .map(|v| TapeDiff { value: v.clone() })
                 .collect(),
         );
         let state_diff = vec![spec_reg_diff, tape_diff];
@@ -1241,7 +1239,7 @@ impl OlaContractExecutor {
                 cmp: None,
                 poseidon: None,
                 tape: Some(
-                    (op0..op0 + op1)
+                    (tape.tp()..tape.tp() + op1)
                         .zip(values.iter())
                         .map(|(addr, value)| TapeExePiece {
                             addr,
@@ -1261,6 +1259,7 @@ impl OlaContractExecutor {
     fn process_sccall(
         &self,
         instruction: BinaryInstruction,
+        tape: &mut OlaTape,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
         let opcode = instruction.opcode;
@@ -1273,7 +1272,27 @@ impl OlaContractExecutor {
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
         });
-        let state_diff = vec![spec_reg_diff];
+
+        let is_delegate_call = op1 == 1;
+        let addr_caller = self.context.storage_addr;
+        let addr_callee_code = callee;
+        let addr_callee_storage = if is_delegate_call {
+            addr_caller
+        } else {
+            callee
+        };
+        let mut tape_values: Vec<u64> = Vec::new();
+        tape_values.extend_from_slice(&addr_caller);
+        tape_values.extend_from_slice(&addr_callee_code);
+        tape_values.extend_from_slice(&addr_callee_storage);
+        let tape_diff = OlaStateDiff::Tape(
+            tape_values
+                .iter()
+                .map(|v| TapeDiff { value: v.clone() })
+                .collect(),
+        );
+
+        let state_diff = vec![spec_reg_diff, tape_diff];
         let trace_diff = if self.is_trace_needed() {
             Some(ExeTraceStepDiff {
                 cpu: Some(CpuExePiece {
@@ -1303,7 +1322,16 @@ impl OlaContractExecutor {
                 bitwise: None,
                 cmp: None,
                 poseidon: None,
-                tape: None,
+                tape: Some(
+                    (tape.tp()..tape.tp() + 12)
+                        .zip(tape_values.iter())
+                        .map(|(addr, value)| TapeExePiece {
+                            addr,
+                            value: *value,
+                            opcode: Some(opcode),
+                        })
+                        .collect(),
+                ),
                 storage: None,
             })
         } else {
