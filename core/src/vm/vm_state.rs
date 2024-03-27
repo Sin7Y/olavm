@@ -38,7 +38,6 @@ pub struct StorageDiff {
 
 #[derive(Debug, Clone)]
 pub struct TapeDiff {
-    pub addr: u64,
     pub value: u64,
 }
 
