@@ -1,7 +1,7 @@
 use core::{
     trace::exe_trace::*,
     vm::{
-        hardware::{ContractAddress, ExeContext},
+        hardware::{ContractAddress, ExeContext, NUM_GENERAL_PURPOSE_REGISTER},
         opcodes::OlaOpcode,
     },
 };
@@ -9,13 +9,20 @@ use std::collections::HashMap;
 
 use crate::tx_exe_manager::EnvOutlineSnapshot;
 
+struct CallerInfo {
+    env_idx: u64,
+    context: ExeContext,
+    is_op1_imm: bool,
+    clk_caller_call: u64,
+    caller_reg: [u64; NUM_GENERAL_PURPOSE_REGISTER],
+}
+
 pub struct TxTraceManager {
     current_env_idx: usize,
     current_context: ExeContext,
     caller: Option<EnvOutlineSnapshot>,
-    programs: HashMap<ContractAddress, Vec<u64>>, // contract address to bytecode
     cpu: Vec<(u64, u64, ExeContext, Vec<CpuExePiece>)>, /* call_sc_cnt, env_idx, context, trace.
-                                                   * Sorted by execution env. */
+                                                         * Sorted by execution env. */
     env_mem: HashMap<u64, Vec<MemExePiece>>, // env_id to mem, mem not sorted yet.
     rc: Vec<RcExePiece>,                     /* rc only triggered by range_check
                                               * opcode. */
@@ -24,6 +31,8 @@ pub struct TxTraceManager {
     poseidon: Vec<PoseidonPiece>, // poseidon only triggered by poseidon opcode.
     storage: Vec<StorageExePiece>,
     tape: Vec<TapeExePiece>,
+    caller_stack: Vec<CallerInfo>,
+    sccall: Vec<SCCallPiece>,
 }
 
 impl Default for TxTraceManager {
@@ -35,7 +44,6 @@ impl Default for TxTraceManager {
                 code_addr: ContractAddress::default(),
             },
             caller: None,
-            programs: HashMap::new(),
             cpu: Vec::new(),
             env_mem: HashMap::new(),
             rc: Vec::new(),
@@ -44,15 +52,21 @@ impl Default for TxTraceManager {
             poseidon: Vec::new(),
             storage: Vec::new(),
             tape: Vec::new(),
+            caller_stack: Vec::new(),
+            sccall: Vec::new(),
         }
     }
 }
 
 impl TxTraceManager {
-    pub fn on_program(&mut self, addr_to_bytecode: (ContractAddress, Vec<u64>)) {
-        if !self.programs.contains_key(&addr_to_bytecode.0) {
-            self.programs.insert(addr_to_bytecode.0, addr_to_bytecode.1);
-        }
+    pub fn init_tape(&mut self, values: Vec<u64>) {
+        values.iter().enumerate().for_each(|(addr, value)| {
+            self.tape.push(TapeExePiece {
+                addr: addr as u64,
+                value: *value,
+                opcode: None,
+            });
+        })
     }
 
     pub fn set_env(
@@ -97,7 +111,7 @@ impl TxTraceManager {
                 }
             }
         }
-        if let Some(mem) = diff.mem {
+        if let Some(mut mem) = diff.mem {
             if self.env_mem.contains_key(&(self.current_env_idx as u64)) {
                 let mems = self
                     .env_mem
@@ -105,6 +119,16 @@ impl TxTraceManager {
                     .unwrap();
                 mems.extend(mem);
             } else {
+                let addr_heap_ptr = 18446744060824649731u64;
+                let init_value_heap_ptr = addr_heap_ptr + 1;
+                let init_piece = MemExePiece {
+                    clk: 0,
+                    addr: addr_heap_ptr,
+                    value: init_value_heap_ptr,
+                    is_write: true,
+                    opcode: None,
+                };
+                mem.insert(0, init_piece);
                 self.env_mem.insert(self.current_env_idx as u64, mem);
             }
         }
@@ -118,13 +142,48 @@ impl TxTraceManager {
             self.cmp.push(cmp);
         }
         if let Some(poseidon) = diff.poseidon {
-            self.poseidon.push(poseidon);
+            let mut p = poseidon.clone();
+            p.env_idx = self.current_env_idx as u64;
+            self.poseidon.push(p);
         }
         if let Some(storage) = diff.storage {
             self.storage.push(storage);
         }
         if let Some(tape) = diff.tape {
             self.tape.extend(tape);
+        }
+    }
+
+    pub fn on_call(
+        &mut self,
+        caller_env_idx: u64,
+        caller_context: ExeContext,
+        is_op1_imm: bool,
+        clk_caller_call: u64,
+        caller_reg: [u64; NUM_GENERAL_PURPOSE_REGISTER],
+    ) {
+        self.caller_stack.push(CallerInfo {
+            env_idx: caller_env_idx,
+            context: caller_context,
+            is_op1_imm,
+            clk_caller_call,
+            caller_reg,
+        });
+    }
+
+    pub fn on_end(&mut self, callee_env_idx: u64, clk_callee_end: u64) {
+        if let Some(caller) = self.caller_stack.pop() {
+            self.sccall.push(SCCallPiece {
+                caller_env_idx: caller.env_idx,
+                caller_storage_addr: caller.context.storage_addr,
+                caller_code_addr: caller.context.code_addr,
+                caller_op1_imm: caller.is_op1_imm,
+                clk_caller_call: caller.clk_caller_call,
+                clk_caller_ret: caller.clk_caller_call + 1,
+                reg_caller: caller.caller_reg,
+                callee_env_idx,
+                clk_callee_end,
+            });
         }
     }
 
@@ -139,6 +198,7 @@ impl TxTraceManager {
             poseidon: self.poseidon.clone(),
             storage: self.storage.clone(),
             tape: self.tape.clone(),
+            sccall: self.sccall.clone(),
         }
     }
 }
