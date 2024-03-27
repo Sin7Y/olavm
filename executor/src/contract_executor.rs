@@ -101,8 +101,16 @@ impl OlaContractExecutor {
         self.clk
     }
 
+    pub fn get_instruction(&self, pc: u64) -> Option<BinaryInstruction> {
+        self.instructions.get(&pc).cloned()
+    }
+
     pub fn get_pc(&self) -> u64 {
         self.pc
+    }
+
+    pub fn get_regs(&self) -> [u64; NUM_GENERAL_PURPOSE_REGISTER] {
+        self.registers
     }
 
     pub fn get_code_addr(&self) -> ContractAddress {
@@ -774,7 +782,6 @@ impl OlaContractExecutor {
         instruction: BinaryInstruction,
     ) -> anyhow::Result<(Vec<OlaStateDiff>, Option<ExeTraceStepDiff>)> {
         let inst_len = instruction.binary_length();
-        let opcode = instruction.opcode;
         let spec_reg_diff = OlaStateDiff::SpecReg(SpecRegisterDiff {
             pc: Some(self.pc + inst_len as u64),
         });
@@ -885,8 +892,10 @@ impl OlaContractExecutor {
             let mut diff =
                 self.get_trace_diff_with_cpu(instruction, tp, Some(op0), Some(op1), Some(dst))?;
             diff.poseidon = Some(PoseidonPiece {
+                env_idx: 0, // env_idx will be set in TxTraceManager
                 clk: self.clk,
                 src_addr: op0,
+                len: op1,
                 dst_addr: dst,
                 inputs,
             });
@@ -985,6 +994,8 @@ impl OlaContractExecutor {
                 tape: None,
                 storage: Some(StorageExePiece {
                     is_write: false,
+                    contract_addr: self.context.storage_addr,
+                    storage_key,
                     tree_key,
                     pre_value: Some(value),
                     value,
@@ -1078,6 +1089,8 @@ impl OlaContractExecutor {
                 tape: None,
                 storage: Some(StorageExePiece {
                     is_write: true,
+                    contract_addr: self.context.storage_addr,
+                    storage_key,
                     tree_key,
                     pre_value,
                     value,

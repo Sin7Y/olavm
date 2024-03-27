@@ -122,7 +122,8 @@ impl<'batch> TxExeManager<'batch> {
             entry_contract,
             accessed_bytecodes: HashMap::new(),
         };
-        manager.init_tape(block_info, tx, entry_contract);
+        let init_values = manager.init_tape(block_info, tx, entry_contract);
+        manager.trace_manager.init_tape(init_values);
         manager
     }
 
@@ -131,21 +132,24 @@ impl<'batch> TxExeManager<'batch> {
         block_info: BlockExeInfo,
         tx: OlaTapeInitInfo,
         entry_contract: ContractAddress,
-    ) {
-        self.tape.write(block_info.block_number);
-        self.tape.write(block_info.block_timestamp);
-        self.tape.batch_write(&block_info.sequencer_address);
-        self.tape.write(tx.version);
-        self.tape.write(block_info.chain_id);
-        self.tape.batch_write(&tx.origin_address);
-        self.tape.write(tx.nonce.unwrap_or(0));
-        self.tape.batch_write(&tx.signature_r.unwrap_or([0; 4]));
-        self.tape.batch_write(&tx.signature_s.unwrap_or([0; 4]));
-        self.tape.batch_write(&tx.tx_hash.unwrap_or([0; 4]));
-        self.tape.batch_write(&tx.calldata);
-        self.tape.batch_write(&tx.origin_address);
-        self.tape.batch_write(&entry_contract);
-        self.tape.batch_write(&entry_contract);
+    ) -> Vec<u64> {
+        let mut values = Vec::new();
+        values.push(block_info.block_number);
+        values.push(block_info.block_timestamp);
+        values.extend_from_slice(&block_info.sequencer_address);
+        values.push(tx.version);
+        values.push(block_info.chain_id);
+        values.extend_from_slice(&tx.origin_address);
+        values.push(tx.nonce.unwrap_or(0));
+        values.extend_from_slice(&tx.signature_r.unwrap_or([0; 4]));
+        values.extend_from_slice(&tx.signature_s.unwrap_or([0; 4]));
+        values.extend_from_slice(&tx.tx_hash.unwrap_or([0; 4]));
+        values.extend_from_slice(&tx.calldata);
+        values.extend_from_slice(&tx.origin_address);
+        values.extend_from_slice(&entry_contract);
+        values.extend_from_slice(&entry_contract);
+        self.tape.batch_write(values.as_slice());
+        values
     }
 
     pub fn invoke(&mut self) -> anyhow::Result<TxResult> {
@@ -179,6 +183,17 @@ impl<'batch> TxExeManager<'batch> {
                         if self.mode == ExecuteMode::Debug {
                             println!("[DelagateCalling] {:?}", callee_addr);
                         }
+                        let is_op1_imm = executor.get_instruction(executor.get_pc() - 2).is_some();
+                        self.trace_manager.on_call(
+                            env_idx as u64,
+                            ExeContext {
+                                storage_addr: executor.get_storage_addr(),
+                                code_addr: executor.get_code_addr(),
+                            },
+                            is_op1_imm,
+                            executor.get_clk() - 1,
+                            executor.get_regs(),
+                        );
                         let callee_program = self.storage.get_program(callee_addr)?;
                         let storage_addr = executor.get_storage_addr();
                         self.enqueue_caller(env_idx, executor);
@@ -201,6 +216,17 @@ impl<'batch> TxExeManager<'batch> {
                         if self.mode == ExecuteMode::Debug {
                             println!("[Calling] {:?}", callee_addr);
                         }
+                        let is_op1_imm = executor.get_instruction(executor.get_pc() - 2).is_some();
+                        self.trace_manager.on_call(
+                            env_idx as u64,
+                            ExeContext {
+                                storage_addr: executor.get_storage_addr(),
+                                code_addr: executor.get_code_addr(),
+                            },
+                            is_op1_imm,
+                            executor.get_clk() - 1,
+                            executor.get_regs(),
+                        );
                         let callee_program = self.storage.get_program(callee_addr)?;
                         self.enqueue_caller(env_idx, executor);
 
@@ -222,6 +248,8 @@ impl<'batch> TxExeManager<'batch> {
                         if self.mode == ExecuteMode::Debug {
                             println!("[END] {:?}", executor.get_storage_addr());
                         }
+                        self.trace_manager
+                            .on_end(env_idx as u64, executor.get_clk() - 1)
                         // no need to do anything
                     }
                 }

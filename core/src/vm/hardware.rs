@@ -9,10 +9,10 @@ use super::error::ProcessorError;
 
 const MAX_VALUE: u64 = 0xFFFFFFFF00000001;
 const MEM_MAX_ADDR: u64 = 0xFFFFFFFF00000001;
-const MEM_REGION_SPAN: u64 = u32::MAX as u64;
-const MEM_STACK_REGION: Range<u64> = 0u64..(MEM_MAX_ADDR - 2 * MEM_REGION_SPAN);
-const MEM_HEAP_REGION: Range<u64> = MEM_STACK_REGION.end..(MEM_MAX_ADDR - MEM_REGION_SPAN);
-const MEM_PROPHET_REGION: Range<u64> = MEM_HEAP_REGION.end..MEM_MAX_ADDR;
+pub const MEM_REGION_SPAN: u64 = u32::MAX as u64;
+pub const MEM_STACK_REGION: Range<u64> = 0u64..(MEM_MAX_ADDR - 2 * MEM_REGION_SPAN);
+pub const MEM_HEAP_REGION: Range<u64> = MEM_STACK_REGION.end..(MEM_MAX_ADDR - MEM_REGION_SPAN);
+pub const MEM_PROPHET_REGION: Range<u64> = MEM_HEAP_REGION.end..MEM_MAX_ADDR;
 pub const NUM_GENERAL_PURPOSE_REGISTER: usize = 10;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]

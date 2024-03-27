@@ -43,6 +43,18 @@ pub struct MemExePiece {
     pub opcode: Option<OlaOpcode>,
 }
 
+impl Default for MemExePiece {
+    fn default() -> Self {
+        Self {
+            clk: 0,
+            addr: 0,
+            value: 0,
+            is_write: true,
+            opcode: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct RcExePiece {
     pub value: u32,
@@ -65,8 +77,10 @@ pub struct CmpExePiece {
 
 #[derive(Debug, Clone)]
 pub struct PoseidonPiece {
+    pub env_idx: u64,
     pub clk: u64,
     pub src_addr: u64,
+    pub len: u64,
     pub dst_addr: u64,
     pub inputs: Vec<u64>,
 }
@@ -74,6 +88,8 @@ pub struct PoseidonPiece {
 #[derive(Debug, Clone)]
 pub struct StorageExePiece {
     pub is_write: bool,
+    pub contract_addr: [u64; 4],
+    pub storage_key: [u64; 4],
     pub tree_key: [u64; 4],
     pub pre_value: Option<[u64; 4]>,
     pub value: [u64; 4],
@@ -84,6 +100,19 @@ pub struct TapeExePiece {
     pub addr: u64,
     pub value: u64,
     pub opcode: Option<OlaOpcode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SCCallPiece {
+    pub caller_env_idx: u64,
+    pub caller_storage_addr: ContractAddress,
+    pub caller_code_addr: ContractAddress,
+    pub caller_op1_imm: bool,
+    pub clk_caller_call: u64,
+    pub clk_caller_ret: u64,
+    pub reg_caller: [u64; NUM_GENERAL_PURPOSE_REGISTER],
+    pub callee_env_idx: u64,
+    pub clk_callee_end: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -111,4 +140,5 @@ pub struct TxExeTrace {
     pub poseidon: Vec<PoseidonPiece>, // poseidon only triggered by poseidon opcode.
     pub storage: Vec<StorageExePiece>,
     pub tape: Vec<TapeExePiece>,
+    pub sccall: Vec<SCCallPiece>,
 }
