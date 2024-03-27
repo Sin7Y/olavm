@@ -17,8 +17,9 @@ mod tests {
             types::Event,
         },
     };
+    use interpreter::sema::symbol;
 
-    use ola_lang_abi::{Abi, FixedArray8, Value};
+    use ola_lang_abi::{Abi, FixedArray4, FixedArray8, Value};
     use std::{
         collections::HashMap,
         fs::File,
@@ -260,7 +261,301 @@ mod tests {
             let param_1 = Value::String("hello".to_string());
             // encode input and function selector
             let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[param_0, param_1])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+    }
+
+    #[test]
+    fn test_erc20() {
+        let mut writer = get_writer().unwrap();
+        let address = [0, 0, 0, 1234588];
+        deploy(&mut writer, "contracts/erc20_bin.json", address).unwrap();
+        let abi_path = "contracts-abi/erc20_abi.json";
+        let mut path = get_test_dir();
+        path.push(abi_path);
+        let abi: Abi = {
+            let file = File::open(path).expect("failed to open ABI file");
+            serde_json::from_reader(file).expect("failed to parse ABI")
+        };
+        {
+            let func = abi.functions[0].clone();
+            let name = Value::String("OlaToken".to_string());
+            let symbol = Value::String("OLA".to_string());
+            let decimal = Value::U32(2);
+            let total_supply = Value::U32(1000000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(
+                    func.signature().as_str(),
+                    &[name, symbol, decimal, total_supply],
+                )
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+        {
+            let func = abi.functions[1].clone();
+            // encode input and function selector
+            let calldata = abi
                 .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        {
+            let func = abi.functions[2].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        {
+            let func = abi.functions[3].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        {
+            let func = abi.functions[4].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        {
+            let func = abi.functions[5].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("owner result: {:?}", result)
+        }
+        {
+            let func = abi.functions[6].clone();
+            let owner = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[owner])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        // mint
+        {
+            let func = abi.functions[7].clone();
+            let to = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let value = Value::U32(1000000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[to, value])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+        // burn
+        {
+            let func = abi.functions[8].clone();
+            let from = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let value = Value::U32(1000000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[from, value])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+        // transfer
+        {
+            let func = abi.functions[9].clone();
+            let to = Value::Address(FixedArray4([2001, 2002, 2003, 2005]));
+            let value = Value::U32(300000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[to, value])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+        // balanceOf Owner
+        {
+            let func = abi.functions[6].clone();
+            let owner = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[owner])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        // balanceOf to
+        {
+            let func = abi.functions[6].clone();
+            let owner = Value::Address(FixedArray4([2001, 2002, 2003, 2005]));
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[owner])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+        // owner approve to spender
+        {
+            let func = abi.functions[10].clone();
+            let spender = Value::Address(FixedArray4([2001, 2002, 2003, 2006]));
+            let value = Value::U32(200000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[spender, value])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
+            println!("events: {:?}", events)
+        }
+
+        // allowance
+        {
+            let func = abi.functions[11].clone();
+            let owner = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let spender = Value::Address(FixedArray4([2001, 2002, 2003, 2006]));
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[owner, spender])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+
+        // approve to burn
+        {
+            let func = abi.functions[8].clone();
+            let from = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let caller = Some([2001, 2002, 2003, 2006]);
+            let value = Value::U32(100000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[from, value])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), caller, None).unwrap();
+            println!("events: {:?}", events)
+        }
+
+        // approve to transferFrom
+        {
+            let func = abi.functions[12].clone();
+            let from = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let caller = Some([2001, 2002, 2003, 2006]);
+            let to = Value::Address(FixedArray4([2001, 2002, 2003, 2005]));
+            let value = Value::U32(100000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[from, to, value])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let events = invoke(&mut writer, address, calldata, Some(0), caller, None).unwrap();
+            println!("events: {:?}", events)
+        }
+
+        // allowance
+        {
+            let func = abi.functions[11].clone();
+            let owner = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let spender = Value::Address(FixedArray4([2001, 2002, 2003, 2006]));
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[owner, spender])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+
+        // balanceOf Owner
+        {
+            let func = abi.functions[6].clone();
+            let owner = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[owner])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+
+        // balanceOf to
+        {
+            let func = abi.functions[6].clone();
+            let owner = Value::Address(FixedArray4([2001, 2002, 2003, 2005]));
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[owner])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+
+        // totalSupply
+        {
+            let func = abi.functions[4].clone();
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[])
+                .unwrap();
+            println!("input: {:?}", calldata);
+            let result = call(address, calldata, None).unwrap();
+            println!("result: {:?}", result)
+        }
+
+    }
+
+    #[test]
+    fn test_erc20_revert() {
+        let mut writer = get_writer().unwrap();
+        let address = [0, 0, 0, 1234588];
+        deploy(&mut writer, "contracts/erc20_bin.json", address).unwrap();
+        let abi_path = "contracts-abi/erc20_abi.json";
+        let mut path = get_test_dir();
+        path.push(abi_path);
+        let abi: Abi = {
+            let file = File::open(path).expect("failed to open ABI file");
+
+            serde_json::from_reader(file).expect("failed to parse ABI")
+        };
+        // mint
+        {
+            let func = abi.functions[7].clone();
+            let to = Value::Address(FixedArray4([2001, 2002, 2003, 2004]));
+            let value = Value::U32(100000000000000);
+            // encode input and function selector
+            let calldata = abi
+                .encode_input_with_signature(func.signature().as_str(), &[to, value])
                 .unwrap();
             println!("input: {:?}", calldata);
             let events = invoke(&mut writer, address, calldata, Some(0), None, None).unwrap();
@@ -293,7 +588,7 @@ mod tests {
             tx_hash: None,
         };
         let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address);
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address, 0);
         tx_exe_manager.call()
     }
 
@@ -326,7 +621,7 @@ mod tests {
             tx_hash: None,
         };
         let mut tx_exe_manager: TxExeManager =
-            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address);
+            TxExeManager::new(ExecuteMode::Debug, block_info, tx, &mut storage, address, 0);
         let result = tx_exe_manager.invoke()?;
         storage.on_tx_success();
         let cached = storage.get_cached_modification();

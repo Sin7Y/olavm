@@ -205,7 +205,7 @@ pub struct PoseidonRow {
     pub output: [GoldilocksField; 12],
     pub filter_looked_normal: bool,
     pub filter_looked_treekey: bool,
-    pub filter_looked_storage: bool,
+    pub filter_looked_storage: bool, // leaf
     pub filter_looked_storage_branch: bool,
 }
 
