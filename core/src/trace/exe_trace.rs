@@ -5,6 +5,8 @@ use crate::vm::{
     opcodes::OlaOpcode,
 };
 
+use super::trace::{PoseidonRow, StorageHashRow};
+
 #[derive(Debug, Clone)]
 pub struct CpuExePiece {
     pub clk: u64,
@@ -141,4 +143,11 @@ pub struct TxExeTrace {
     pub storage: Vec<StorageExePiece>,
     pub tape: Vec<TapeExePiece>,
     pub sccall: Vec<SCCallPiece>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StorageUpdateTrace {
+    pub storage_accesses: Vec<StorageHashRow>,
+    pub program_hash_access: Vec<StorageHashRow>,
+    pub storage_related_poseidon: Vec<PoseidonRow>,
 }
