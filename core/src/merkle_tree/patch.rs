@@ -283,14 +283,13 @@ impl UpdatesBatch {
                                     })?
                                     .push((
                                         *index,
-                                        HashTrace(
-                                            hash.1,
-                                            current_hash.clone(),
-                                            nei_hash.clone(),
-                                            pre_hash.0,
+                                        HashTrace {
+                                            hash: hash.1,
+                                            path: current_hash.clone(),
+                                            sibling: nei_hash.clone(),
                                             pre_path,
-                                            pre_hash.1,
-                                        ),
+                                            pre_hash: pre_hash.1,
+                                        },
                                     ));
                                 Ok(update)
                             })

@@ -532,7 +532,6 @@ mod tests {
             let result = call(address, calldata, None).unwrap();
             println!("result: {:?}", result)
         }
-
     }
 
     #[test]

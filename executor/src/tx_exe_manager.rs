@@ -19,7 +19,7 @@ use crate::{
 };
 
 #[derive(Debug, Copy, Clone, Default)]
-pub(crate) struct EnvOutlineSnapshot {
+pub struct EnvOutlineSnapshot {
     pub env_idx: u64,
     pub clk: u64,
     pub pc: u64,

@@ -219,7 +219,7 @@ pub fn storage_hash_table_gen(
     {
         let is_write = GoldilocksField::from_canonical_u64(log.storage_log.kind as u64);
         let mut root_hash = [GoldilocksField::ZERO; TREE_VALUE_LEN];
-        root_hash.clone_from_slice(&chunk.1.last().unwrap().0.output[0..4]);
+        root_hash.clone_from_slice(&chunk.1.last().unwrap().hash.output[0..4]);
         root_hashes.push(root_hash);
         let mut acc = GoldilocksField::ZERO;
         let key = tree_key_to_u256(&log.storage_log.key);
@@ -241,28 +241,30 @@ pub fn storage_hash_table_gen(
                     + GoldilocksField::from_canonical_u64(layer_bit);
 
                 let mut hash = [GoldilocksField::ZERO; 4];
-                hash.clone_from_slice(&item.1 .0.output[0..4]);
+                hash.clone_from_slice(&item.1.hash.output[0..4]);
+                let mut pre_hash = [GoldilocksField::ZERO; 4];
+                pre_hash.clone_from_slice(&item.1.pre_hash.output[0..4]);
                 let row = StorageHashRow {
                     storage_access_idx: (chunk.0 + 1) as u64,
                     pre_root,
                     root: root_hash,
                     is_write,
                     hash_type,
-                    pre_hash: item.1 .3,
+                    pre_hash,
                     hash,
                     layer,
                     layer_bit,
                     addr_acc: acc,
                     addr: log.storage_log.key,
-                    pre_path: item.1 .4,
-                    path: item.1 .1,
-                    sibling: item.1 .2,
+                    pre_path: item.1.pre_path,
+                    path: item.1.path,
+                    sibling: item.1.sibling,
                 };
                 if layer % 64 == 0 {
                     acc = GoldilocksField::ZERO;
                 }
-                program.trace.builtin_poseidon.push(item.1 .0);
-                program.trace.builtin_poseidon.push(item.1 .5);
+                program.trace.builtin_poseidon.push(item.1.hash);
+                program.trace.builtin_poseidon.push(item.1.pre_hash);
                 row
             })
             .collect();
@@ -298,7 +300,7 @@ pub fn gen_storage_hash_table(
             .1
             .last()
             .ok_or(ProcessorError::EmptyHashTraceError)?
-            .0
+            .hash
             .output[0..4];
         root_hash.clone_from_slice(hash_out);
         root_hashes.push(root_hash);
@@ -322,28 +324,30 @@ pub fn gen_storage_hash_table(
                     + GoldilocksField::from_canonical_u64(layer_bit);
 
                 let mut hash = [GoldilocksField::ZERO; 4];
-                hash.clone_from_slice(&item.1 .0.output[0..4]);
+                hash.clone_from_slice(&item.1.hash.output[0..4]);
+                let mut pre_hash = [GoldilocksField::ZERO; 4];
+                pre_hash.clone_from_slice(&item.1.pre_hash.output[0..4]);
                 let row = StorageHashRow {
                     storage_access_idx: (chunk.0 + 1) as u64,
                     pre_root,
                     root: root_hash,
                     is_write,
                     hash_type,
-                    pre_hash: item.1 .3,
+                    pre_hash,
                     hash,
                     layer,
                     layer_bit,
                     addr_acc: acc,
                     addr: log.storage_log.key,
-                    pre_path: item.1 .4,
-                    path: item.1 .1,
-                    sibling: item.1 .2,
+                    pre_path: item.1.pre_path,
+                    path: item.1.path,
+                    sibling: item.1.sibling,
                 };
                 if layer % 64 == 0 {
                     acc = GoldilocksField::ZERO;
                 }
-                program.trace.builtin_poseidon.push(item.1 .0);
-                program.trace.builtin_poseidon.push(item.1 .5);
+                program.trace.builtin_poseidon.push(item.1.hash);
+                program.trace.builtin_poseidon.push(item.1.pre_hash);
                 row
             })
             .collect();

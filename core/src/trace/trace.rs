@@ -256,14 +256,18 @@ impl Display for PoseidonRow {
 }
 
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize)]
-pub struct HashTrace(
-    pub PoseidonRow,
-    pub TreeValue,
-    pub TreeValue,
-    pub TreeValue,
-    pub TreeValue,
-    pub PoseidonRow,
-);
+pub struct HashTrace {
+    // hash = (path, sibling)
+    pub hash: PoseidonRow,
+    // path(value)
+    pub path: TreeValue,
+    // sibling
+    pub sibling: TreeValue,
+    // pre_path(pre_value)
+    pub pre_path: TreeValue,
+    // pre_hash = (pre_path, sibling)
+    pub pre_hash: PoseidonRow,
+}
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct StorageRow {
