@@ -197,8 +197,9 @@ pub fn gen_memory_trace<F: RichField>(
     opcode_to_selector.insert(0, memory::COL_MEM_S_PROPHET);
 
     let mut trace: Vec<Vec<F>> = vec![vec![F::ZERO; num_padded_rows]; memory::NUM_MEM_COLS];
+    let mut i: usize = 0;
     for (tx_idx, tx_cells) in batch_cells.iter().enumerate() {
-        for (i, c) in tx_cells.iter().enumerate() {
+        for c in tx_cells.iter() {
             trace[memory::COL_MEM_TX_IDX][i] = F::from_canonical_usize(tx_idx);
             trace[memory::COL_MEM_ENV_IDX][i] = F::from_canonical_u64(c.env_idx.to_canonical_u64());
             trace[memory::COL_MEM_IS_RW][i] = F::from_canonical_u64(c.is_rw.to_canonical_u64());
@@ -247,6 +248,7 @@ pub fn gen_memory_trace<F: RichField>(
             } else {
                 F::from_canonical_u64(0)
             };
+            i += 1;
         }
     }
 

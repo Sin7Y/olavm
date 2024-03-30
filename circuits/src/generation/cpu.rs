@@ -267,8 +267,9 @@ pub fn gen_cpu_trace<F: RichField>(batch_steps: &Vec<Vec<Step>>) -> [Vec<F>; cpu
     opcode_to_selector.insert(OlaOpcode::TSTORE.binary_bit_mask(), cpu::COL_S_TSTORE);
     opcode_to_selector.insert(OlaOpcode::SCCALL.binary_bit_mask(), cpu::COL_S_CALL_SC);
 
+    let mut i: usize = 0;
     for (tx_idx, tx_steps) in batch_steps.iter().enumerate() {
-        for (i, s) in tx_steps.iter().enumerate() {
+        for s in tx_steps.iter() {
             // env related columns.
             trace[cpu::COL_TX_IDX][i] = F::from_canonical_usize(tx_idx);
             trace[cpu::COL_ENV_IDX][i] = F::from_canonical_u64(s.env_idx.0);
@@ -387,6 +388,7 @@ pub fn gen_cpu_trace<F: RichField>(batch_steps: &Vec<Vec<Step>>) -> [Vec<F>; cpu
             } else {
                 F::ZERO
             };
+            i += 1;
         }
     }
 
