@@ -113,8 +113,8 @@ impl HashOutTarget {
 pub struct MerkleCapTarget(pub Vec<HashOutTarget>);
 
 /// Hash consisting of a byte array.
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub struct BytesHash<const N: usize>(pub [u8; N]);
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
+pub struct BytesHash<const N: usize>(#[serde(with = "serde_bytes")] pub [u8; N]);
 
 impl<const N: usize> BytesHash<N> {
     #[cfg(feature = "rand")]
@@ -149,23 +149,5 @@ impl<F: RichField, const N: usize> GenericHashOut<F> for BytesHash<N> {
                 F::from_canonical_u64(u64::from_le_bytes(arr))
             })
             .collect()
-    }
-}
-
-impl<const N: usize> Serialize for BytesHash<N> {
-    fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        todo!()
-    }
-}
-
-impl<'de, const N: usize> Deserialize<'de> for BytesHash<N> {
-    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        todo!()
     }
 }
