@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
 use crate::vm::{
     hardware::{ContractAddress, ExeContext, NUM_GENERAL_PURPOSE_REGISTER},
     opcodes::OlaOpcode,
 };
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
-use super::trace::{PoseidonRow, StorageHashRow};
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CpuExePiece {
     pub clk: u64,
     pub pc: u64,
@@ -30,13 +28,13 @@ pub struct CpuExePiece {
     pub aux_sccall: Option<CpuPieceAuxSCCall>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CpuPieceAuxSCCall {
     pub addr_callee_storage: ContractAddress,
     pub addr_callee_code: ContractAddress,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemExePiece {
     pub clk: u64,
     pub addr: u64,
@@ -57,12 +55,12 @@ impl Default for MemExePiece {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RcExePiece {
     pub value: u32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitwiseExePiece {
     pub opcode: OlaOpcode,
     pub op0: u32,
@@ -70,14 +68,14 @@ pub struct BitwiseExePiece {
     pub res: u32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CmpExePiece {
     pub op0: u32,
     pub op1: u32,
     pub is_gte: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PoseidonPiece {
     pub env_idx: u64,
     pub clk: u64,
@@ -87,7 +85,7 @@ pub struct PoseidonPiece {
     pub inputs: Vec<u64>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageExePiece {
     pub is_write: bool,
     pub contract_addr: [u64; 4],
@@ -97,14 +95,14 @@ pub struct StorageExePiece {
     pub value: [u64; 4],
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TapeExePiece {
     pub addr: u64,
     pub value: u64,
     pub opcode: Option<OlaOpcode>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SCCallPiece {
     pub caller_env_idx: u64,
     pub caller_storage_addr: ContractAddress,
@@ -129,7 +127,7 @@ pub struct ExeTraceStepDiff {
     pub tape: Option<Vec<TapeExePiece>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TxExeTrace {
     pub programs: Vec<(ContractAddress, Vec<u64>)>, // contract address to bytecode
     pub cpu: Vec<(u64, u64, ExeContext, Vec<CpuExePiece>)>, /* call_sc_cnt, env_idx, context, trace.
@@ -143,11 +141,4 @@ pub struct TxExeTrace {
     pub storage: Vec<StorageExePiece>,
     pub tape: Vec<TapeExePiece>,
     pub sccall: Vec<SCCallPiece>,
-}
-
-#[derive(Debug, Clone)]
-pub struct StorageUpdateTrace {
-    pub storage_accesses: Vec<StorageHashRow>,
-    pub program_hash_access: Vec<StorageHashRow>,
-    pub storage_related_poseidon: Vec<PoseidonRow>,
 }

@@ -78,26 +78,25 @@ pub struct TrieInputs {
 
 // #[derive(Debug, Clone)]
 // pub struct TxExeTrace {
-//     pub programs: Vec<(ContractAddress, Vec<u64>)>, // contract address to bytecode
-//     pub cpu: Vec<(u64, u64, ExeContext, Vec<CpuExePiece>)>, /* call_sc_cnt, env_idx, context, trace.
-//                                                      * Sorted by execution env. */
-//     pub env_mem: HashMap<u64, Vec<MemExePiece>>, // env_id to mem, mem not sorted yet.
-//     pub rc: Vec<RcExePiece>,                     /* rc only triggered by range_check
+//     pub programs: Vec<(ContractAddress, Vec<u64>)>, // contract address to
+// bytecode     pub cpu: Vec<(u64, u64, ExeContext, Vec<CpuExePiece>)>, /*
+// call_sc_cnt, env_idx, context, trace.
+//                                                      * Sorted by execution
+//                                                        env. */
+//     pub env_mem: HashMap<u64, Vec<MemExePiece>>, // env_id to mem, mem not
+// sorted yet.     pub rc: Vec<RcExePiece>,                     /* rc only
+// triggered by range_check
 //                                                   * opcode. */
 //     pub bitwise: Vec<BitwiseExePiece>,
 //     pub cmp: Vec<CmpExePiece>,
-//     pub poseidon: Vec<PoseidonPiece>, // poseidon only triggered by poseidon opcode.
-//     pub storage: Vec<StorageExePiece>,
+//     pub poseidon: Vec<PoseidonPiece>, // poseidon only triggered by poseidon
+// opcode.     pub storage: Vec<StorageExePiece>,
 //     pub tape: Vec<TapeExePiece>,
 // }
 
-pub(crate) struct CpuSnapshot {
+pub(crate) struct CpuSnapshot {}
 
-}
-
-pub(crate) struct BatchTxSnapshot {
-
-}
+pub(crate) struct BatchTxSnapshot {}
 
 pub fn generate_traces<F: RichField + Extendable<D>, const D: usize>(
     mut program: Program,

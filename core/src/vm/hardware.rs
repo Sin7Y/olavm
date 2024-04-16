@@ -1,5 +1,6 @@
 use anyhow::bail;
 use enum_iterator::Sequence;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::ops::Range;
@@ -15,7 +16,7 @@ pub const MEM_HEAP_REGION: Range<u64> = MEM_STACK_REGION.end..(MEM_MAX_ADDR - ME
 pub const MEM_PROPHET_REGION: Range<u64> = MEM_HEAP_REGION.end..MEM_MAX_ADDR;
 pub const NUM_GENERAL_PURPOSE_REGISTER: usize = 10;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct ExeContext {
     pub storage_addr: ContractAddress,
     pub code_addr: ContractAddress,

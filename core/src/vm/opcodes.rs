@@ -1,9 +1,9 @@
 use enum_iterator::{all, Sequence};
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-
 use std::str::FromStr;
 
-#[derive(Debug, Copy, Sequence, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Sequence, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum OlaOpcode {
     ADD,
     MUL,

@@ -300,7 +300,13 @@ impl<'de> Deserialize<'de> for OlaStark<GoldilocksField, 2> {
             "prog_chunk_stark",
             "cross_table_lookups",
         ];
-        deserializer.deserialize_struct("OlaStark", FIELDS, OlaStarkVisitor { marker: std::marker::PhantomData })
+        deserializer.deserialize_struct(
+            "OlaStark",
+            FIELDS,
+            OlaStarkVisitor {
+                marker: std::marker::PhantomData,
+            },
+        )
     }
 }
 
@@ -960,12 +966,24 @@ mod tests {
         let challenge2 = GoldilocksField::rand();
         ola_stark.bitwise_stark.set_compress_challenge(challenge1);
         ola_stark.program_stark.set_compress_challenge(challenge2);
-        assert_eq!(ola_stark.bitwise_stark.get_compress_challenge(), Some(challenge1));
-        assert_eq!(ola_stark.program_stark.get_compress_challenge(), Some(challenge2));
+        assert_eq!(
+            ola_stark.bitwise_stark.get_compress_challenge(),
+            Some(challenge1)
+        );
+        assert_eq!(
+            ola_stark.program_stark.get_compress_challenge(),
+            Some(challenge2)
+        );
         let data = serde_json::to_string(&ola_stark).unwrap();
         let stark: OlaStark<GoldilocksField, 2> = serde_json::from_str(&data).unwrap();
-        assert_eq!(ola_stark.bitwise_stark.get_compress_challenge(), stark.bitwise_stark.get_compress_challenge());
-        assert_eq!(ola_stark.program_stark.get_compress_challenge(), stark.program_stark.get_compress_challenge());
+        assert_eq!(
+            ola_stark.bitwise_stark.get_compress_challenge(),
+            stark.bitwise_stark.get_compress_challenge()
+        );
+        assert_eq!(
+            ola_stark.program_stark.get_compress_challenge(),
+            stark.program_stark.get_compress_challenge()
+        );
     }
 
     #[test]
