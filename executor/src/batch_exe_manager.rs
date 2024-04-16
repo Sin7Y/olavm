@@ -56,6 +56,10 @@ impl BlockExeManager {
         })
     }
 
+    pub fn block_number(&self) -> u64 {
+        self.block_info.block_number
+    }
+
     pub fn invoke(&mut self, tx: OlaTapeInitInfo) -> anyhow::Result<TxResult> {
         self.storage.clear_tx_cache();
         let mut tx_exe_manager: TxExeManager = TxExeManager::new(
