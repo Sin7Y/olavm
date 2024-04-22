@@ -131,7 +131,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for StorageAccess
         yield_constr.constraint_transition(
             (nv_is_padding - lv_is_padding) * (nv_is_padding - lv_is_padding - P::ONES),
         );
-        // st_access_idx: from 1, donnot change or increase by 1
+        // st_access_idx: from 1, do not change or increase by 1
         yield_constr.constraint_first_row((P::ONES - lv_is_padding) * (lv_st_access_idx - P::ONES));
         yield_constr.constraint_transition(
             (P::ONES - nv_is_padding)

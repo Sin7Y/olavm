@@ -122,7 +122,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for PoseidonChunk
         yield_constr.constraint(
             lv[COL_POSEIDON_CHUNK_IS_EXT_LINE] * (P::ONES - lv[COL_POSEIDON_CHUNK_IS_EXT_LINE]),
         );
-        // in ext line, tx_idx, env_idx, clk, opcode, op1, dst donnot change.
+        // in ext line, tx_idx, env_idx, clk, opcode, op1, dst do not change.
         yield_constr.constraint(
             nv[COL_POSEIDON_CHUNK_IS_EXT_LINE]
                 * (nv[COL_POSEIDON_CHUNK_TX_IDX] - lv[COL_POSEIDON_CHUNK_TX_IDX]),

@@ -252,7 +252,7 @@ impl AccountTree {
                             })
                         }
                         None => Err(TreeError::EmptyPatch(String::from(
-                            "Empty matadata in apply_update_batch",
+                            "Empty metadata in apply_update_batch",
                         ))),
                     }
                 })

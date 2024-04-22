@@ -46,7 +46,7 @@ pub fn ctl_data<F: Field>() -> Vec<Column<F>> {
 }
 
 pub fn ctl_filter<F: Field>() -> Column<F> {
-    // poseidon data is different, prophet write donnot lookup
+    // poseidon data is different, prophet write do not lookup
     Column::sum([
         COL_MEM_S_MLOAD,
         COL_MEM_S_MSTORE,
