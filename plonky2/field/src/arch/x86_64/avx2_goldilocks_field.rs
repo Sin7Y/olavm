@@ -437,7 +437,7 @@ unsafe fn add_small_64s_64_s(x_s: __m256i, y: __m256i) -> __m256i {
     // the addition of the low 32 bits generated a carry. This can never occur if y
     // <= 0xffffffff00000000: if y >> 32 = 0xffffffff, then no carry can occur.
     let mask = _mm256_cmpgt_epi32(x_s, res_wrapped_s); // -1 if overflowed else 0.
-                                                       // The mask contains 0xffffffff in the high 32 bits if wraparound occured and 0
+                                                       // The mask contains 0xffffffff in the high 32 bits if wraparound occurredand 0
                                                        // otherwise.
     let wrapback_amt = _mm256_srli_epi64::<32>(mask); // -FIELD_ORDER if overflowed else 0.
     let res_s = _mm256_add_epi64(res_wrapped_s, wrapback_amt);
@@ -458,7 +458,7 @@ unsafe fn sub_small_64s_64_s(x_s: __m256i, y: __m256i) -> __m256i {
     // if y <= 0xffffffff00000000: if y >> 32 = 0xffffffff, then no borrow can
     // occur.
     let mask = _mm256_cmpgt_epi32(res_wrapped_s, x_s); // -1 if underflowed else 0.
-                                                       // The mask contains 0xffffffff in the high 32 bits if wraparound occured and 0
+                                                       // The mask contains 0xffffffff in the high 32 bits if wraparound occurredand 0
                                                        // otherwise.
     let wrapback_amt = _mm256_srli_epi64::<32>(mask); // -FIELD_ORDER if underflowed else 0.
     let res_s = _mm256_sub_epi64(res_wrapped_s, wrapback_amt);

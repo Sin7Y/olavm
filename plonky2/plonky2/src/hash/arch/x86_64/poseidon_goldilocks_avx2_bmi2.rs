@@ -183,10 +183,10 @@ unsafe fn const_layer(
     // occur if all round constants are < 0xffffffff00000001 = ORDER: if the high bits are
     // 0xffffffff, then the low bits are 0, so the carry bit cannot occur. So this trick is valid
     // as long as all the round constants are in canonical form.
-    // The mask contains 0xffffffff in the high doubleword if wraparound occured and 0 otherwise.
+    // The mask contains 0xffffffff in the high doubleword if wraparound occurredand 0 otherwise.
     // We will ignore the low doubleword.
     let wraparound_mask = map3!(_mm256_cmpgt_epi32, state_s, res_maybe_wrapped_s);
-    // wraparound_adjustment contains 0xffffffff = EPSILON if wraparound occured and 0 otherwise.
+    // wraparound_adjustment contains 0xffffffff = EPSILON if wraparound occurredand 0 otherwise.
     let wraparound_adjustment = map3!(_mm256_srli_epi64::<32>, wraparound_mask);
     // XOR commutes with the addition below. Placing it here helps mask latency.
     let res_maybe_wrapped = map3!(_mm256_xor_si256, res_maybe_wrapped_s, rep sign_bit);
