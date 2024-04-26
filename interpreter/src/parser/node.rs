@@ -3,15 +3,15 @@ use std::fmt;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use crate::dispatch_travel;
 use crate::lexer::token::Token;
-use crate::parser::traversal::Traversal;
+use crate::parser::traversal::{is_node_type, safe_downcast_ref, Traversal};
 use crate::sema::symbol::Symbol;
 use crate::utils::number::{Number, NumberResult};
 use node_derive::Node;
 
 pub trait Node {
     fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
     fn traverse(&mut self, visitor: &mut dyn Traversal) -> NumberResult;
 }
 
@@ -66,33 +66,23 @@ impl BinOpNode {
 }
 
 pub fn to_string(node: &Arc<RwLock<dyn Node>>) -> String {
-    if dispatch_travel!(node, IntegerNumNode) {
-        dispatch_travel!(node, IntegerNumNode, value)
-            .value
-            .to_string()
-    } else if dispatch_travel!(node, FeltNumNode) {
-        dispatch_travel!(node, FeltNumNode, value).value.to_string()
-    } else if dispatch_travel!(node, IdentNode) {
-        dispatch_travel!(node, IdentNode, value)
-            .identifier
-            .to_string()
-    } else if dispatch_travel!(node, ContextIdentNode) {
-        dispatch_travel!(node, ContextIdentNode, value)
+    if is_node_type::<IntegerNumNode>(node) {
+        safe_downcast_ref::<IntegerNumNode>(node).value.to_string()
+    } else if is_node_type::<FeltNumNode>(node) {
+        safe_downcast_ref::<FeltNumNode>(node).value.to_string()
+    } else if is_node_type::<IdentNode>(node) {
+        safe_downcast_ref::<IdentNode>(node).identifier.to_string()
+    } else if is_node_type::<ContextIdentNode>(node) {
+        safe_downcast_ref::<ContextIdentNode>(node)
             .identifier
             .to_string()
     } else {
-        let node = node.read().unwrap();
-
-        let BinOpNode {
-            left,
-            right,
-            operator,
-        } = node.as_any().downcast_ref::<BinOpNode>().unwrap();
+        let bin_node = safe_downcast_ref::<BinOpNode>(node);
         format!(
             "BinOpNode({} {} {}) ",
-            to_string(&left),
-            to_string(&right),
-            operator
+            to_string(&bin_node.left),
+            to_string(&bin_node.right),
+            bin_node.operator
         )
     }
 }
