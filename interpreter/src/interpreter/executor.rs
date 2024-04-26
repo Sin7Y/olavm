@@ -4,7 +4,6 @@ use core::vm::hardware::OlaMemory;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use crate::dispatch_travel;
 use crate::lexer::token::Token;
 use crate::lexer::token::Token::{Array, ArrayId, Cid, Id, IndexId};
 use crate::parser::node::{
@@ -13,7 +12,7 @@ use crate::parser::node::{
     IdentDeclarationNode, IdentIndexNode, IdentNode, IntegerNumNode, LoopStatNode, MallocNode,
     MultiAssignNode, PrintfNode, ReturnNode, SqrtNode, TypeNode, UnaryOpNode,
 };
-use crate::parser::traversal::Traversal;
+use crate::parser::traversal::{is_node_type, safe_downcast_ref, Traversal};
 use crate::sema::symbol::Symbol::FuncSymbol;
 use crate::utils::number::Number::{Bool, Nil};
 use crate::utils::number::NumberRet::{Multiple, Single};
@@ -292,7 +291,7 @@ impl<'a> Executor<'a> {
 }
 
 impl<'a> Traversal for Executor<'a> {
-    fn travel_entry(&mut self, node: &EntryNode) -> NumberResult {
+    fn travel_entry(&mut self, node: &mut EntryNode) -> NumberResult {
         for declaration in node.global_declarations.iter() {
             self.travel(declaration)?;
         }
@@ -329,7 +328,7 @@ impl<'a> Traversal for Executor<'a> {
         Ok(Multiple(out_values))
     }
 
-    fn travel_call(&mut self, node: &CallNode) -> NumberResult {
+    fn travel_call(&mut self, node: &mut CallNode) -> NumberResult {
         let record_level = self.call_stack.records.len();
         let mut ctx = RuntimeRecord::new(
             node.func_name.to_string(),
@@ -357,7 +356,7 @@ impl<'a> Traversal for Executor<'a> {
         ret
     }
 
-    fn travel_block(&mut self, node: &BlockNode) -> NumberResult {
+    fn travel_block(&mut self, node: &mut BlockNode) -> NumberResult {
         for declaration in node.declarations.iter() {
             self.travel(declaration)?;
         }
@@ -365,7 +364,7 @@ impl<'a> Traversal for Executor<'a> {
         res
     }
 
-    fn travel_entry_block(&mut self, node: &EntryBlockNode) -> NumberResult {
+    fn travel_entry_block(&mut self, node: &mut EntryBlockNode) -> NumberResult {
         let record_level = self.call_stack.records.len();
         self.call_stack.records.push(RuntimeRecord::new(
             Token::Entry.to_string(),
@@ -382,7 +381,7 @@ impl<'a> Traversal for Executor<'a> {
         Ok(Single(Nil))
     }
 
-    fn travel_declaration(&mut self, node: &IdentDeclarationNode) -> NumberResult {
+    fn travel_declaration(&mut self, node: &mut IdentDeclarationNode) -> NumberResult {
         let IdentDeclarationNode {
             ident_node: IdentNode { identifier },
             type_node: TypeNode { token },
@@ -420,23 +419,23 @@ impl<'a> Traversal for Executor<'a> {
         Ok(Single(Nil))
     }
 
-    fn travel_type(&mut self, _node: &TypeNode) -> NumberResult {
+    fn travel_type(&mut self, _node: &mut TypeNode) -> NumberResult {
         Ok(Single(Nil))
     }
 
-    fn travel_array_ident(&mut self, _node: &ArrayIdentNode) -> NumberResult {
+    fn travel_array_ident(&mut self, _node: &mut ArrayIdentNode) -> NumberResult {
         Ok(Single(Nil))
     }
 
-    fn travel_integer(&mut self, node: &IntegerNumNode) -> NumberResult {
+    fn travel_integer(&mut self, node: &mut IntegerNumNode) -> NumberResult {
         Ok(Single(Number::from(node.value)))
     }
 
-    fn travel_felt(&mut self, node: &FeltNumNode) -> NumberResult {
+    fn travel_felt(&mut self, node: &mut FeltNumNode) -> NumberResult {
         Ok(Single(Number::from(node.value)))
     }
 
-    fn travel_array(&mut self, node: &ArrayNumNode) -> NumberResult {
+    fn travel_array(&mut self, node: &mut ArrayNumNode) -> NumberResult {
         debug!("travel_array");
         let mut numbers = Vec::new();
         for item in node.values.iter() {
@@ -445,14 +444,13 @@ impl<'a> Traversal for Executor<'a> {
         Ok(Multiple(numbers))
     }
 
-    fn travel_ident_index(&mut self, node: &IdentIndexNode) -> NumberResult {
+    fn travel_ident_index(&mut self, node: &mut IdentIndexNode) -> NumberResult {
         debug!("travel_ident_index");
         if let IdentIndexNode {
             identifier: Id(name),
             index,
         } = node
         {
-            // let value = dispatch_travel!(index, BinOpNode, value);
             let value = self.travel(index)?;
             debug!("ident:{},{:?}", name, value);
             self.index_lookup(name, value.get_single().get_number())
@@ -461,7 +459,7 @@ impl<'a> Traversal for Executor<'a> {
         }
     }
 
-    fn travel_binop(&mut self, node: &BinOpNode) -> NumberResult {
+    fn travel_binop(&mut self, node: &mut BinOpNode) -> NumberResult {
         let BinOpNode {
             ref left,
             ref right,
@@ -490,7 +488,7 @@ impl<'a> Traversal for Executor<'a> {
         return Ok(Single(ret));
     }
 
-    fn travel_unary_op(&mut self, node: &UnaryOpNode) -> NumberResult {
+    fn travel_unary_op(&mut self, node: &mut UnaryOpNode) -> NumberResult {
         let UnaryOpNode { operator, expr } = node;
         match operator {
             Token::Plus => self.travel(expr),
@@ -502,7 +500,7 @@ impl<'a> Traversal for Executor<'a> {
         }
     }
 
-    fn travel_compound(&mut self, node: &CompoundNode) -> NumberResult {
+    fn travel_compound(&mut self, node: &mut CompoundNode) -> NumberResult {
         for child in node.children.iter() {
             let ret = self.travel(child)?;
             if self.is_return(&ret) {
@@ -512,14 +510,14 @@ impl<'a> Traversal for Executor<'a> {
         Ok(Single(Nil))
     }
 
-    fn travel_assign(&mut self, node: &AssignNode) -> NumberResult {
+    fn travel_assign(&mut self, node: &mut AssignNode) -> NumberResult {
         let value = self.travel(&node.expr)?;
         self.assign_value(&node.identifier, value)?;
 
         Ok(Single(Nil))
     }
 
-    fn travel_ident(&mut self, node: &IdentNode) -> NumberResult {
+    fn travel_ident(&mut self, node: &mut IdentNode) -> NumberResult {
         if let IdentNode {
             identifier: Id(name),
         } = node
@@ -535,7 +533,7 @@ impl<'a> Traversal for Executor<'a> {
         }
     }
 
-    fn travel_context_ident(&mut self, node: &ContextIdentNode) -> NumberResult {
+    fn travel_context_ident(&mut self, node: &mut ContextIdentNode) -> NumberResult {
         if let ContextIdentNode {
             identifier: Cid(name),
         } = node
@@ -549,7 +547,7 @@ impl<'a> Traversal for Executor<'a> {
         }
     }
 
-    fn travel_cond(&mut self, node: &CondStatNode) -> NumberResult {
+    fn travel_cond(&mut self, node: &mut CondStatNode) -> NumberResult {
         let res = self.travel(&node.condition)?;
         if let Single(Bool(flag)) = res {
             if flag == true {
@@ -571,7 +569,7 @@ impl<'a> Traversal for Executor<'a> {
         Ok(Single(Nil))
     }
 
-    fn travel_loop(&mut self, node: &LoopStatNode) -> NumberResult {
+    fn travel_loop(&mut self, node: &mut LoopStatNode) -> NumberResult {
         let mut res = self.travel(&node.condition);
         while let Ok(Single(cond)) = res {
             if let Bool(flag) = cond {
@@ -591,11 +589,11 @@ impl<'a> Traversal for Executor<'a> {
         Ok(Single(Nil))
     }
 
-    fn travel_function(&mut self, _node: &FunctionNode) -> NumberResult {
+    fn travel_function(&mut self, _node: &mut FunctionNode) -> NumberResult {
         Ok(Single(Nil))
     }
 
-    fn travel_sqrt(&mut self, node: &SqrtNode) -> NumberResult {
+    fn travel_sqrt(&mut self, node: &mut SqrtNode) -> NumberResult {
         let value_res = self.travel(&node.sqrt_value);
         if let Ok(Single(value)) = value_res {
             let res = match value {
@@ -608,7 +606,7 @@ impl<'a> Traversal for Executor<'a> {
         }
     }
 
-    fn travel_return(&mut self, node: &ReturnNode) -> NumberResult {
+    fn travel_return(&mut self, node: &mut ReturnNode) -> NumberResult {
         debug!("travel_return");
         if node.returns.len() > 0 {
             let mut ret = Vec::new();
@@ -626,23 +624,23 @@ impl<'a> Traversal for Executor<'a> {
         }
     }
 
-    fn travel_multi_assign(&mut self, node: &MultiAssignNode) -> NumberResult {
+    fn travel_multi_assign(&mut self, node: &mut MultiAssignNode) -> NumberResult {
         let res = self.travel(&node.call)?;
         let res = res.get_multiple();
 
         for (index, ident_node) in node.identifier.iter().enumerate() {
             let ident;
-            if dispatch_travel!(ident_node, IdentNode) {
-                ident = dispatch_travel!(ident_node, IdentNode, value)
+            if is_node_type::<IdentNode>(ident_node) {
+                ident = safe_downcast_ref::<IdentNode>(ident_node)
                     .identifier
                     .clone();
-            } else if dispatch_travel!(ident_node, ContextIdentNode) {
-                ident = dispatch_travel!(ident_node, ContextIdentNode, value)
+            } else if is_node_type::<ContextIdentNode>(ident_node) {
+                ident = safe_downcast_ref::<ContextIdentNode>(ident_node)
                     .identifier
                     .clone();
-            } else if dispatch_travel!(ident_node, IdentDeclarationNode) {
+            } else if is_node_type::<IdentDeclarationNode>(ident_node) {
                 self.travel(&ident_node)?;
-                ident = dispatch_travel!(ident_node, IdentDeclarationNode, value)
+                ident = safe_downcast_ref::<IdentDeclarationNode>(ident_node)
                     .ident_node
                     .identifier
                     .clone();
@@ -654,7 +652,7 @@ impl<'a> Traversal for Executor<'a> {
         Ok(Single(Nil))
     }
 
-    fn travel_malloc(&mut self, node: &MallocNode) -> NumberResult {
+    fn travel_malloc(&mut self, node: &mut MallocNode) -> NumberResult {
         let value_res = self.travel(&node.num_bytes);
         let hp_name = self.context.get(HP_ADDR_INDEX).unwrap().clone();
         let hp = self.lookup(&hp_name);
@@ -671,7 +669,7 @@ impl<'a> Traversal for Executor<'a> {
         }
     }
 
-    fn travel_printf(&mut self, node: &PrintfNode) -> NumberResult {
+    fn travel_printf(&mut self, node: &mut PrintfNode) -> NumberResult {
         let flag_ret = self.travel(&node.flag)?.get_single().get_number();
         if flag_ret == 4 {
             let addr = self.travel(&node.val_addr)?.get_single().get_number() as u64;

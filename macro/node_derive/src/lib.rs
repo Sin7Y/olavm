@@ -43,6 +43,9 @@ pub fn node_derive(input: TokenStream) -> TokenStream {
             fn as_any(& self) -> & dyn Any {
                 self
             }
+            fn as_any_mut(&mut self) -> &mut dyn Any {
+                self
+            }
             fn traverse(&mut self, travel: &mut dyn Traversal) -> NumberResult {
                 #quot
             }
