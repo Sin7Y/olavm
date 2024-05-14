@@ -920,7 +920,7 @@ impl OlaContractExecutor {
             .batch_read(op0, 4)?
             .try_into()
             .expect("Wrong number of elements");
-        let loaded_value = storage.read(self.context.storage_addr, storage_key)?;
+        let loaded_value = storage.sload(self.context.storage_addr, storage_key)?;
         let value = match loaded_value {
             Some(value) => value,
             None => [0, 0, 0, 0],

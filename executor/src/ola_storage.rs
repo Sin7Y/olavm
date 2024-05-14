@@ -267,14 +267,6 @@ impl OlaCachedStorage {
         storage_key: OlaStorageKey,
     ) -> anyhow::Result<Option<OlaStorageValue>> {
         let pre_value = self.get_pre_value(contract_addr, storage_key)?;
-        self.tx_storage_logs.push(StorageAccessLog {
-            block_timestamp: self.block_timestamp,
-            kind: StorageAccessKind::Read,
-            contract_addr,
-            storage_key,
-            pre_value,
-            value: pre_value,
-        });
         Ok(pre_value)
     }
 
@@ -295,14 +287,6 @@ impl OlaCachedStorage {
             }
             disk_loaded
         };
-        self.tx_storage_logs.push(StorageAccessLog {
-            block_timestamp: self.block_timestamp,
-            kind: StorageAccessKind::Read,
-            contract_addr,
-            storage_key,
-            pre_value: value,
-            value,
-        });
         Ok(value)
     }
 
@@ -377,7 +361,16 @@ impl OlaStorage for OlaCachedStorage {
         contract_addr: ContractAddress,
         storage_key: OlaStorageKey,
     ) -> anyhow::Result<Option<OlaStorageValue>> {
-        self.read(contract_addr, storage_key)
+        let pre_value = self.get_pre_value(contract_addr, storage_key)?;
+        self.tx_storage_logs.push(StorageAccessLog {
+            block_timestamp: self.block_timestamp,
+            kind: StorageAccessKind::Read,
+            contract_addr,
+            storage_key,
+            pre_value,
+            value: pre_value,
+        });
+        Ok(pre_value)
     }
 
     fn sstore(
