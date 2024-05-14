@@ -538,8 +538,8 @@ pub trait OlaStorage {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum StorageAccessKind {
     Read,
-    RepeatedWrite,
     InitialWrite,
+    RepeatedWrite,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

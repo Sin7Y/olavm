@@ -284,7 +284,6 @@ impl OlaCachedStorage {
         storage_key: OlaStorageKey,
     ) -> anyhow::Result<Option<OlaStorageValue>> {
         let tree_key = self.get_tree_key(contract_addr, storage_key);
-
         let value = if let Some(value) = self.tx_cached_storage.get(&tree_key) {
             Some(*value)
         } else if let Some(value) = self.cached_storage.get(&tree_key) {
@@ -314,14 +313,13 @@ impl OlaCachedStorage {
         value: OlaStorageValue,
     ) -> anyhow::Result<()> {
         let tree_key = self.get_tree_key(contract_addr, storage_key);
-        self.tx_cached_storage.insert(tree_key, value);
-
         let pre_value = self.get_pre_value(contract_addr, storage_key)?;
         let kind = if pre_value.is_some() {
             StorageAccessKind::RepeatedWrite
         } else {
             StorageAccessKind::InitialWrite
         };
+        self.tx_cached_storage.insert(tree_key, value);
         self.tx_storage_logs.push(StorageAccessLog {
             block_timestamp: self.block_timestamp,
             kind,
