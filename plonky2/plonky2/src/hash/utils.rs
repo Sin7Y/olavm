@@ -15,7 +15,16 @@ pub fn poseidon_hash_bytes(input: &[u8]) -> [u8; 32] {
 pub fn hash_bytes<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     input: &[u8],
 ) -> [u8; 32] {
-    let field_elements = bytes_to_felts::<F, C, D>(input);
+    // Pad input with leading zero, length is a multiple of 8.
+    let mut padded_bytes = input.to_vec();
+    let padding_length = if input.len() == 0 {
+        GOLDILOCKS_FIELD_U8_LEN
+    } else {
+        GOLDILOCKS_FIELD_U8_LEN - input.len() % GOLDILOCKS_FIELD_U8_LEN
+    };
+    padded_bytes.extend(vec![0; padding_length]);
+
+    let field_elements = bytes_to_felts::<F, C, D>(&padded_bytes);
     let hash = C::InnerHasher::hash_no_pad(&field_elements);
     felts_to_bytes::<F, C, D>(&hash.to_vec())
         .try_into()
