@@ -20,7 +20,7 @@ pub fn hash_bytes<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, cons
     let padding_length = if input.len() == 0 {
         GOLDILOCKS_FIELD_U8_LEN
     } else {
-        GOLDILOCKS_FIELD_U8_LEN - input.len() % GOLDILOCKS_FIELD_U8_LEN
+        (GOLDILOCKS_FIELD_U8_LEN - input.len() % GOLDILOCKS_FIELD_U8_LEN) % GOLDILOCKS_FIELD_U8_LEN
     };
     padded_bytes.extend(vec![0; padding_length]);
 
