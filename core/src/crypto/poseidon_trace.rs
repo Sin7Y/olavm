@@ -84,7 +84,7 @@ pub fn calculate_arbitrary_poseidon_u64s(inputs_u64: &[u64]) -> [u64; 4] {
         .iter()
         .map(|x| GoldilocksField::from_canonical_u64(*x))
         .collect::<Vec<GoldilocksField>>();
-    let mut state  = [GoldilocksField::ZERO; POSEIDON_STATE_WIDTH];
+    let mut state = [GoldilocksField::ZERO; POSEIDON_STATE_WIDTH];
 
     for input_chunk in inputs.chunks(8) {
         let end = min(input_chunk.len(), 8);

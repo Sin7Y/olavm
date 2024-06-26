@@ -140,12 +140,18 @@ impl DiskStorageReader {
         let options = Self::rocksdb_options(true);
         let cfs = SequencerColumnFamily::all()
             .iter()
-            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Self::rocksdb_options(true)));
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), options.clone()));
         let storage_db_path_buf: PathBuf = storage_db_path.into();
-        let db = DB::open_cf_descriptors_read_only(&options, storage_db_path_buf, cfs, false)
-            .map_err(|e| {
-                ProcessorError::IoError(format!("[DiskStorageReader] init rocksdb failed: {}", e))
-            })?;
+        let secondary_path = storage_db_path_buf.join("ola-secondary");
+        let db = DB::open_cf_descriptors_as_secondary(
+            &options,
+            storage_db_path_buf,
+            secondary_path,
+            cfs,
+        )
+        .map_err(|e| {
+            ProcessorError::IoError(format!("[DiskStorageReader] init rocksdb failed: {}", e))
+        })?;
         Ok(Self { db })
     }
 
