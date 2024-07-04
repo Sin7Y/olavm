@@ -109,9 +109,9 @@ OlaVM runs based on the Goldilocks field and uses STARK to generate proofs for t
 
 ### Vitalik Buterin's blog series on zk-STARKs:
 
-- [Part-1](https://vitalik.ca/general/2017/11/09/starks_part_1.html): Proofs with Polynomials
-- [Part-2](https://vitalik.ca/general/2017/11/22/starks_part_2.html): Thank Goodness It's FRI-day
-- [Part-3](https://vitalik.ca/general/2018/07/21/starks_part_3.html): Into the Weeds
+- [Part-1](https://vitalik.eth.limo/general/2017/11/09/starks_part_1.html): Proofs with Polynomials
+- [Part-2](https://vitalik.eth.limo/general/2017/11/22/starks_part_2.html): Thank Goodness It's FRI-day
+- [Part-3](https://vitalik.eth.limo/general/2018/07/21/starks_part_3.html): Into the Weeds
 
 ### Alan Szepieniec's STARK tutorials:
 
