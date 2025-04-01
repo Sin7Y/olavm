@@ -1,7 +1,7 @@
 # OlaVM
 
 [![LICENSE](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Sin7Y/olavm/blob/main/LICENSE)
-[![CI checks](https://github.com/Sin7Y/olavm/actions/workflows/rust.yml/badge.svg)](https://github.com/Sin7Y/olavm/actions/workflows/unit_test.yml)
+[![CI checks](https://github.com/Sin7Y/olavm/actions/workflows/rust.yml/badge.svg)](https://github.com/Sin7Y/olavm/actions/workflows/rust.yml)
 [![issues](https://img.shields.io/github/issues/Sin7Y/olavm)](https://github.com/Sin7Y/olavm/issues?q=is%3Aopen)
 
 OlaVM is a STARK-based ZK-friendly ZKVM, it is built on a **small finite field** called [Goldilocks field](https://github.com/mir-protocol/plonky2/blob/main/field/src/goldilocks_field.rs). As the most important component of the Ola system, OlaVM is mainly used to execute a program and generate a valid proof for the **programmable scalable** case and the **programmable private** case.
