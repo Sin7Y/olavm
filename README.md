@@ -23,7 +23,7 @@ There are a lot of tricks to get a very ZK-friendly ZKVM in OlaVM. We would like
 
 - **Algebraic RISC**. The property of the instruction set of OlaVM is Algebraic RISC: "Algebraic" refers to the supported operations are field operation, "RISC" refers to the minimality of the instruction set. We can achieve a concise transition constraint based on this, see [circuit/cpu](https://github.com/Sin7Y/olavm/tree/main/circuits/src/cpu) to learn more;
 
-- **Small finite field**. The word defined in OlaVM is a finite field, [Goldilocks](https://github.com/mir-protocol/plonky2/blob/main/field/src/goldilocks_field.rs). The prime of Goldilocks is p = 2^64 - 2^32 + 1, which is less than 64 bits. The computation based on these field elements could be expected to be [much faster]((https://twitter.com/rel_zeta_tech/status/1622984483359129601)) than other large finite fields;
+- **Small finite field**. The word defined in OlaVM is a finite field, [Goldilocks](https://github.com/mir-protocol/plonky2/blob/main/field/src/goldilocks_field.rs). The prime of Goldilocks is p = 2^64 - 2^32 + 1, which is less than 64 bits. The computation based on these field elements could be expected to be [much faster](https://twitter.com/rel_zeta_tech/status/1622984483359129601) than other large finite fields;
 
 - **Builtins**. Since the cyclic group size is limited, it would be better if the trace table could contain as many transactions as possible. This means that if there are some computation cost a large trace lines in transaction logic, we should remove them from the main trace table and add a special sub-trace table to store them, this is the reason that introduce builtins, like hash, bitwise operation and so on, check the [doc/olavm](https://github.com/Sin7Y/olavm/blob/main/docs/olavm/olavm_sepc.pdf) for more details;
 
@@ -131,7 +131,7 @@ OlaVM runs based on the Goldilocks field and uses STARK to generate proofs for t
 ### Privacy:
 - [Private delagation for zksnark](https://www.youtube.com/watch?v=mFzwp8gGn-E)
 - [ZEXE: Private computation](https://eprint.iacr.org/2018/962.pdf)
-- [Zcash protocol](https://github.com/zcash/zips/blob/main/protocol/protocol.pdf)
+- [Zcash protocol](https://github.com/zcash/zips/blob/main/rendered/protocol/protocol.pdf)
 - [DPC on Aleo](https://www.youtube.com/watch?v=uMmAUssK-PA&t=1705s)
 
 ## License
