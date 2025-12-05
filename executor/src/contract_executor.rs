@@ -1712,7 +1712,7 @@ impl OlaContractExecutor {
                         value: value.get_number() as u64,
                     };
                     let trace_diff = MemExePiece {
-                        clk: 0,
+                        clk: self.clk,
                         addr: self.memory.psp(),
                         value: value.get_number() as u64,
                         is_write: true,
